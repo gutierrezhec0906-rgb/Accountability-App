@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: '📊', path: '/dashboard' },
+  { id: 'team', label: 'Team', icon: '👥', path: '/team' },
   { id: 'visual-board', label: 'Visual Mgmt Board', icon: '🔴', path: '/visual-board' },
   { id: 'quotes', label: 'Leadership Quotes', icon: '💬', path: '/quotes' },
   { id: 'training', label: 'Training Center', icon: '🎓', path: '/training' },

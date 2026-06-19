@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard';
+import Team from './pages/Team';
 import VisualBoard from './pages/VisualBoard';
 import Quotes from './pages/Quotes';
 import Training from './pages/Training';
@@ -41,6 +42,7 @@ export default function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard" element={<PrivateLayout><Dashboard /></PrivateLayout>} />
+          <Route path="/team" element={<PrivateLayout><Team /></PrivateLayout>} />
           <Route path="/visual-board" element={<PrivateLayout><VisualBoard /></PrivateLayout>} />
           <Route path="/quotes" element={<PrivateLayout><Quotes /></PrivateLayout>} />
           <Route path="/training" element={<PrivateLayout><Training /></PrivateLayout>} />
