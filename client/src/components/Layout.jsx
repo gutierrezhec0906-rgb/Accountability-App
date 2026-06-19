@@ -117,9 +117,24 @@ export default function Layout({ children }) {
         {/* User footer */}
         <div className="p-3 border-t border-white border-opacity-10">
           <div className={`flex items-center gap-3 ${collapsed ? 'justify-center' : ''}`}>
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0" style={{ background: '#0d9488' }}>
-              {initials}
-            </div>
+            <button
+              onClick={() => { navigate('/profile'); setMobileOpen(false); }}
+              title="Profile Settings"
+              style={{ padding: 0, border: 'none', background: 'none', cursor: 'pointer', flexShrink: 0 }}
+            >
+              {userProfile?.photoURL || currentUser?.photoURL ? (
+                <img
+                  src={userProfile?.photoURL || currentUser?.photoURL}
+                  alt={currentUser?.displayName}
+                  className="w-8 h-8 rounded-full object-cover"
+                  style={{ border: '2px solid #0d9488' }}
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" style={{ background: '#0d9488' }}>
+                  {initials}
+                </div>
+              )}
+            </button>
             {!collapsed && (
               <div className="flex-1 min-w-0">
                 <p className="text-white text-xs font-semibold truncate">{currentUser?.displayName || 'User'}</p>

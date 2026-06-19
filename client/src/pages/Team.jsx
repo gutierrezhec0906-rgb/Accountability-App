@@ -33,10 +33,15 @@ const sampleMembers = [
   { uid: '8', displayName: 'Tom Baker', email: 't.baker@company.com', role: 'Individual Contributor', createdAt: '2024-05-18', lastLogin: '4 hours ago', score: 3.2 },
 ];
 
-function Avatar({ name, size = 40 }) {
+function Avatar({ name, photoURL, size = 40 }) {
   const initials = name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
   const colors = ['#0d9488', '#0f2044', '#7c3aed', '#be185d', '#b45309', '#065f46'];
   const color = colors[name?.charCodeAt(0) % colors.length] || '#0d9488';
+  if (photoURL) {
+    return (
+      <img src={photoURL} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e2e8f0' }} />
+    );
+  }
   return (
     <div style={{ width: size, height: size, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: size * 0.35, flexShrink: 0 }}>
       {initials}
@@ -164,7 +169,7 @@ export default function Team() {
                   <span style={{ position: 'absolute', top: 10, right: 10, background: '#0d9488', color: 'white', fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: 9999 }}>YOU</span>
                 )}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 10 }}>
-                  <Avatar name={member.displayName} size={56} />
+                  <Avatar name={member.displayName} photoURL={member.photoURL} size={56} />
                   <div>
                     <p style={{ fontWeight: 700, color: '#1e293b', margin: 0, fontSize: '0.95rem' }}>{member.displayName || 'Unknown'}</p>
                     <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: '2px 0 0' }}>{member.email}</p>
@@ -205,7 +210,7 @@ export default function Team() {
                   <tr key={member.uid} style={{ borderBottom: '1px solid #f1f5f9', background: isMe ? '#f0fdfa' : i % 2 === 0 ? '#fff' : '#fafafa' }}>
                     <td style={{ padding: '0.75rem 1.25rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <Avatar name={member.displayName} size={36} />
+                        <Avatar name={member.displayName} photoURL={member.photoURL} size={36} />
                         <div>
                           <p style={{ fontWeight: 700, color: '#1e293b', margin: 0 }}>{member.displayName || 'Unknown'}</p>
                           {isMe && <span style={{ fontSize: '0.65rem', background: '#0d9488', color: 'white', padding: '1px 6px', borderRadius: 9999, fontWeight: 700 }}>YOU</span>}
