@@ -6,7 +6,7 @@ import {
   onAuthStateChanged,
   updateProfile,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, collection, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../firebase';
 
 const AuthContext = createContext();
@@ -23,6 +23,11 @@ export function AuthProvider({ children }) {
   async function signup(email, password, displayName, role) {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
     await updateProfile(cred.user, { displayName });
+
+    // First user ever becomes admin + auto-approved
+    const usersSnap = await getDocs(collection(db, 'users'));
+    const isFirst = usersSnap.empty;
+
     const profile = {
       uid: cred.user.uid,
       email,
@@ -30,6 +35,8 @@ export function AuthProvider({ children }) {
       role: role || 'Leader',
       createdAt: serverTimestamp(),
       scores: {},
+      status: isFirst ? 'approved' : 'pending',
+      isAdmin: isFirst,
     };
     await setDoc(doc(db, 'users', cred.user.uid), profile);
     return cred;
