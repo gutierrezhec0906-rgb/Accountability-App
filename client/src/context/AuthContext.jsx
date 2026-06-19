@@ -7,7 +7,12 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, getDocs, collection, serverTimestamp } from 'firebase/firestore';
+import emailjs from '@emailjs/browser';
 import { auth, db } from '../firebase';
+
+const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
+const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
+const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
 const AuthContext = createContext();
 
@@ -39,6 +44,23 @@ export function AuthProvider({ children }) {
       isAdmin: isFirst,
     };
     await setDoc(doc(db, 'users', cred.user.uid), profile);
+
+    // Send welcome email via EmailJS (non-blocking — failure won't break signup)
+    if (EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY) {
+      emailjs.send(
+        EMAILJS_SERVICE_ID,
+        EMAILJS_TEMPLATE_ID,
+        {
+          to_email: email,
+          to_name: displayName,
+          role: role || 'Leader',
+          status: isFirst ? 'full access' : 'pending approval',
+          is_first: isFirst ? 'true' : 'false',
+        },
+        EMAILJS_PUBLIC_KEY,
+      ).catch(() => {});
+    }
+
     return cred;
   }
 
