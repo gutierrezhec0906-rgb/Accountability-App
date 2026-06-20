@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
 
@@ -13,6 +13,7 @@ const navItems = [
   { id: 'quotes', label: 'Leadership Quotes', icon: '💬', path: '/quotes' },
   { id: 'training', label: 'Training Center', icon: '🎓', path: '/training' },
   { id: 'coaching', label: 'Coaching Log', icon: '📝', path: '/coaching' },
+  { id: 'smart-goals', label: 'SMART Goals', icon: '🎯', path: '/smart-goals' },
   { id: 'mentoring', label: 'Mentoring Tracker', icon: '🤝', path: '/mentoring' },
   { id: 'skills', label: 'Skills Development', icon: '⭐', path: '/skills' },
   { id: 'lob', label: 'Line of Balance', icon: '📈', path: '/lob' },
@@ -37,6 +38,33 @@ export default function Layout({ children }) {
   const { currentUser, userProfile, logout } = useAuth();
 
   const canApprove = userProfile?.isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager';
+  const sessionRef = useRef({ tool: null, startTime: null });
+
+  // Track tool sessions: record open/close + duration on every route change
+  useEffect(() => {
+    if (!currentUser) return;
+    const tool = location.pathname.replace('/', '') || 'dashboard';
+
+    async function endSession(prevTool, startTime) {
+      const durationSeconds = Math.round((Date.now() - startTime) / 1000);
+      if (durationSeconds < 10) return;
+      try {
+        await addDoc(collection(db, 'toolSessions'), {
+          uid: currentUser.uid,
+          tool: prevTool,
+          openedAt: startTime,
+          closedAt: Date.now(),
+          durationSeconds,
+          date: new Date().toISOString().split('T')[0],
+        });
+      } catch {}
+    }
+
+    if (sessionRef.current.tool) {
+      endSession(sessionRef.current.tool, sessionRef.current.startTime);
+    }
+    sessionRef.current = { tool, startTime: Date.now() };
+  }, [location.pathname, currentUser]);
 
   // Poll pending count for admins/leaders/managers
   useEffect(() => {

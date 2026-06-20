@@ -26,6 +26,7 @@ import DISC from './pages/DISC';
 import EQOpEx from './pages/EQOpEx';
 import Scores from './pages/Scores';
 import Profile from './pages/Profile';
+import SmartGoals from './pages/SmartGoals';
 
 function PrivateLayout({ children }) {
   return (
@@ -63,6 +64,7 @@ export default function App() {
           <Route path="/disc" element={<PrivateLayout><DISC /></PrivateLayout>} />
           <Route path="/eq-opex" element={<PrivateLayout><EQOpEx /></PrivateLayout>} />
           <Route path="/scores" element={<PrivateLayout><Scores /></PrivateLayout>} />
+          <Route path="/smart-goals" element={<PrivateLayout><SmartGoals /></PrivateLayout>} />
           <Route path="/profile" element={<PrivateLayout><Profile /></PrivateLayout>} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
