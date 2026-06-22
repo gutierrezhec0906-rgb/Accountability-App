@@ -5,6 +5,7 @@ import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
 import WelcomeModal from './WelcomeModal';
+import ToolVideoModal from './ToolVideoModal';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: '📊', path: '/dashboard' },
@@ -30,10 +31,18 @@ const navItems = [
   { id: 'scores', label: 'Score Dashboard', icon: '🏆', path: '/scores' },
 ];
 
+// Tool IDs eligible for help videos
+const VIDEO_TOOL_IDS = new Set([
+  'visual-board','quotes','training','coaching','smart-goals','mentoring',
+  'skills','lob','urgency','feedback','problem-solving','vision','lean',
+  'mindfulness','career','disc','eq-opex','scores',
+]);
+
 export default function Layout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
+  const [toolVideoOpen, setToolVideoOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser, userProfile, logout } = useAuth();
@@ -67,6 +76,17 @@ export default function Layout({ children }) {
     sessionRef.current = { tool, startTime: Date.now() };
   }, [location.pathname, currentUser]);
 
+  // Auto-show tool help video on first visit
+  useEffect(() => {
+    if (!currentUser || !userProfile) return;
+    if (userProfile.status === 'pending') return;
+    const toolId = location.pathname.replace('/', '');
+    if (!VIDEO_TOOL_IDS.has(toolId)) return;
+    const seen = userProfile.seenToolVideos || [];
+    if (seen.includes(toolId)) return;
+    setToolVideoOpen(true);
+  }, [location.pathname, currentUser, userProfile]);
+
   // Poll pending count for admins/leaders/managers
   useEffect(() => {
     if (!canApprove) return;
@@ -93,6 +113,10 @@ export default function Layout({ children }) {
     : currentUser?.email?.[0]?.toUpperCase() || 'U';
 
   const visibleNavItems = navItems.filter(item => !item.adminOnly || canApprove);
+
+  const currentToolId = location.pathname.replace('/', '') || 'dashboard';
+  const currentNavItem = navItems.find(n => n.path === location.pathname);
+  const hasToolVideo = VIDEO_TOOL_IDS.has(currentToolId);
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: '#f8fafc' }}>
@@ -187,6 +211,14 @@ export default function Layout({ children }) {
               {navItems.find(n => n.path === location.pathname)?.label || 'Dashboard'}
             </h2>
           </div>
+          {hasToolVideo && (
+            <button
+              onClick={() => setToolVideoOpen(true)}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#0f2044', color: 'white', border: 'none', borderRadius: 8, padding: '0.375rem 0.875rem', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}
+            >
+              ▶ How to use
+            </button>
+          )}
           {canApprove && pendingCount > 0 && (
             <button onClick={() => navigate('/approvals')} className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold" style={{ background: '#fef9c3', color: '#ca8a04', border: '1px solid #fcd34d' }}>
               ⏳ {pendingCount} pending approval{pendingCount > 1 ? 's' : ''}
@@ -200,6 +232,12 @@ export default function Layout({ children }) {
         </main>
       </div>
       <WelcomeModal />
+      <ToolVideoModal
+        toolId={currentToolId}
+        toolLabel={currentNavItem?.label || ''}
+        open={toolVideoOpen}
+        onClose={() => setToolVideoOpen(false)}
+      />
     </div>
   );
 }
