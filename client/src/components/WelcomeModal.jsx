@@ -12,7 +12,7 @@ export default function WelcomeModal() {
 
   useEffect(() => {
     if (!currentUser || !userProfile) return;
-    if (userProfile.status !== 'approved') return;
+    if (userProfile.status === 'pending') return;
     if (userProfile.hasSeenWelcome) return;
     if (!WELCOME_VIDEO_URL) return;
     setShow(true);
