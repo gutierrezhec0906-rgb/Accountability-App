@@ -3,160 +3,183 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const modules = [
-  { id: 'visual-board', label: 'Visual Mgmt Board', icon: '🔴', path: '/visual-board' },
-  { id: 'training', label: 'Training Center', icon: '🎓', path: '/training' },
-  { id: 'coaching', label: 'Coaching Log', icon: '📝', path: '/coaching' },
-  { id: 'mentoring', label: 'Mentoring Tracker', icon: '🤝', path: '/mentoring' },
-  { id: 'skills', label: 'Skills Development', icon: '⭐', path: '/skills' },
-  { id: 'lob', label: 'Line of Balance', icon: '📈', path: '/lob' },
-  { id: 'feedback', label: 'Feedback Box', icon: '📬', path: '/feedback' },
-  { id: 'problem-solving', label: 'Problem Solving', icon: '🔍', path: '/problem-solving' },
-  { id: 'vision', label: 'Vision Builder', icon: '🔭', path: '/vision' },
-  { id: 'lean', label: 'Lean Toolkit', icon: '🏭', path: '/lean' },
-  { id: 'mindfulness', label: 'Mindfulness', icon: '🧘', path: '/mindfulness' },
-  { id: 'career', label: 'Career Development', icon: '🚀', path: '/career' },
-  { id: 'disc', label: 'DISC Assessment', icon: '🎯', path: '/disc' },
-  { id: 'eq-opex', label: 'EQ & OpEx', icon: '💡', path: '/eq-opex' },
-  { id: 'scores', label: 'Score Dashboard', icon: '🏆', path: '/scores' },
-  { id: 'urgency', label: 'Sense of Urgency', icon: '⚡', path: '/urgency' },
+  { id: 'visual-board',    label: 'Visual Mgmt Board',  icon: '🔴', path: '/visual-board',    color: '#fee2e2', iconBg: 'linear-gradient(135deg,#fca5a5,#f87171)' },
+  { id: 'training',        label: 'Training Center',    icon: '🎓', path: '/training',         color: '#dbeafe', iconBg: 'linear-gradient(135deg,#93c5fd,#60a5fa)' },
+  { id: 'coaching',        label: 'Coaching Log',       icon: '📝', path: '/coaching',         color: '#fef9c3', iconBg: 'linear-gradient(135deg,#fde68a,#fbbf24)' },
+  { id: 'mentoring',       label: 'Mentoring Tracker',  icon: '🤝', path: '/mentoring',        color: '#dcfce7', iconBg: 'linear-gradient(135deg,#86efac,#4ade80)' },
+  { id: 'skills',          label: 'Skills Development', icon: '⭐', path: '/skills',           color: '#fef3c7', iconBg: 'linear-gradient(135deg,#fcd34d,#f59e0b)' },
+  { id: 'lob',             label: 'Line of Balance',    icon: '📈', path: '/lob',              color: '#e0e7ff', iconBg: 'linear-gradient(135deg,#a5b4fc,#818cf8)' },
+  { id: 'feedback',        label: 'Feedback Box',       icon: '📬', path: '/feedback',         color: '#f0fdf4', iconBg: 'linear-gradient(135deg,#6ee7b7,#34d399)' },
+  { id: 'problem-solving', label: 'Problem Solving',    icon: '🔍', path: '/problem-solving',  color: '#fdf4ff', iconBg: 'linear-gradient(135deg,#e879f9,#c026d3)' },
+  { id: 'vision',          label: 'Vision Builder',     icon: '🔭', path: '/vision',           color: '#eff6ff', iconBg: 'linear-gradient(135deg,#60a5fa,#2563eb)' },
+  { id: 'lean',            label: 'Lean Toolkit',       icon: '🏭', path: '/lean',             color: '#fff7ed', iconBg: 'linear-gradient(135deg,#fdba74,#f97316)' },
+  { id: 'mindfulness',     label: 'Mindfulness',        icon: '🧘', path: '/mindfulness',      color: '#f0fdf4', iconBg: 'linear-gradient(135deg,#0d9488,#0f766e)' },
+  { id: 'career',          label: 'Career Development', icon: '🚀', path: '/career',           color: '#eff6ff', iconBg: 'linear-gradient(135deg,#7dd3fc,#0ea5e9)' },
+  { id: 'disc',            label: 'DISC Assessment',    icon: '🎯', path: '/disc',             color: '#fff1f2', iconBg: 'linear-gradient(135deg,#fda4af,#fb7185)' },
+  { id: 'eq-opex',         label: 'EQ & OpEx Tools',   icon: '💡', path: '/eq-opex',          color: '#fefce8', iconBg: 'linear-gradient(135deg,#fef08a,#facc15)' },
+  { id: 'scores',          label: 'Score Dashboard',    icon: '🏆', path: '/scores',           color: '#fdf4ff', iconBg: 'linear-gradient(135deg,#c084fc,#a855f7)' },
+  { id: 'urgency',         label: 'Sense of Urgency',   icon: '⚡', path: '/urgency',          color: '#fff7ed', iconBg: 'linear-gradient(135deg,#fb923c,#ea580c)' },
 ];
 
-function ScoreRing({ score, max = 5 }) {
-  const pct = (score / max) * 100;
-  const r = 36;
-  const circ = 2 * Math.PI * r;
-  const dash = (pct / 100) * circ;
-  return (
-    <svg width="100" height="100" viewBox="0 0 100 100">
-      <circle cx="50" cy="50" r={r} fill="none" stroke="#e2e8f0" strokeWidth="8" />
-      <circle cx="50" cy="50" r={r} fill="none" stroke="#0d9488" strokeWidth="8"
-        strokeDasharray={`${dash} ${circ}`} strokeDashoffset={circ / 4}
-        strokeLinecap="round" transform="rotate(-90 50 50)" style={{ transition: 'stroke-dasharray 1s ease' }} />
-      <text x="50" y="54" textAnchor="middle" fontSize="18" fontWeight="700" fill="#0f766e">{score.toFixed(1)}</text>
-    </svg>
-  );
-}
+const quickActions = [
+  { label: 'Log Coaching Session', icon: '📝', path: '/coaching' },
+  { label: 'Submit Feedback',       icon: '📬', path: '/feedback' },
+  { label: 'Update Skills',         icon: '⭐', path: '/skills' },
+  { label: 'Add SMART Goal',        icon: '🎯', path: '/smart-goals' },
+];
 
 export default function Dashboard() {
   const { currentUser, userProfile } = useAuth();
   const navigate = useNavigate();
-  const [scores, setScores] = useState({});
-  const [pendingReviews, setPendingReviews] = useState(2);
+  const [score, setScore] = useState(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem('module-scores');
-    if (saved) setScores(JSON.parse(saved));
-    else {
-      const demo = {};
-      modules.forEach(m => { demo[m.id] = +(Math.random() * 2 + 3).toFixed(1); });
-      setScores(demo);
-    }
-  }, []);
+    if (userProfile?.calculatedScore !== undefined) setScore(userProfile.calculatedScore);
+  }, [userProfile]);
 
-  const vals = Object.values(scores);
-  const avg = vals.length ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : 0;
-
-  const recentActivity = [
-    { text: 'Completed 5S Checklist', time: '2h ago', icon: '✅' },
-    { text: 'Added coaching session note', time: '5h ago', icon: '📝' },
-    { text: 'Peer review requested from Alex', time: '1d ago', icon: '🤝' },
-    { text: 'Updated career milestone', time: '2d ago', icon: '🚀' },
-  ];
+  const firstName = currentUser?.displayName?.split(' ')[0] || 'Leader';
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* Welcome Banner */}
-      <div className="rounded-xl p-6 text-white" style={{ background: 'linear-gradient(135deg, #0f2044, #1e3a6e)' }}>
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-2xl font-bold">Welcome back, {currentUser?.displayName?.split(' ')[0] || 'Leader'}! 👋</h1>
-            <p className="text-slate-300 mt-1">{userProfile?.role || 'Leader'} · Track your accountability and growth</p>
+    <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
+
+      {/* ── Hero banner ── */}
+      <div style={{
+        borderRadius: 20,
+        background: 'linear-gradient(135deg, #0b1a38 0%, #0f2044 50%, #0d9488 140%)',
+        padding: '2rem 2.25rem',
+        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+        gap: 24, flexWrap: 'wrap',
+        boxShadow: '0 8px 40px rgba(15,32,68,0.2)',
+        position: 'relative', overflow: 'hidden',
+      }}>
+        {/* decorative circles */}
+        <div style={{ position: 'absolute', right: -40, top: -40, width: 220, height: 220, borderRadius: '50%', background: 'rgba(13,148,136,0.12)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', right: 60, bottom: -60, width: 160, height: 160, borderRadius: '50%', background: 'rgba(13,148,136,0.08)', pointerEvents: 'none' }} />
+
+        <div style={{ position: 'relative' }}>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 6px' }}>{greeting}</p>
+          <h1 style={{ color: 'white', fontSize: '1.75rem', fontWeight: 900, margin: '0 0 6px', lineHeight: 1.2 }}>
+            {firstName} 👋
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.9rem', margin: '0 0 20px', fontWeight: 400 }}>
+            {userProfile?.role || 'Leader'} · Track your accountability and growth
+          </p>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <button
+              onClick={() => navigate('/scores')}
+              style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 10, padding: '0.5rem 1.25rem', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
+            >
+              View My Score
+            </button>
+            <button
+              onClick={() => navigate('/smart-goals')}
+              style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '0.5rem 1.25rem', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}
+            >
+              My SMART Goals
+            </button>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="text-center">
-              <ScoreRing score={avg} />
-              <p className="text-xs text-slate-300 mt-1">Overall Score</p>
-            </div>
-            {pendingReviews > 0 && (
-              <div className="bg-yellow-400 text-yellow-900 rounded-xl p-4 text-center">
-                <p className="text-2xl font-bold">{pendingReviews}</p>
-                <p className="text-xs font-semibold">Peer Reviews<br/>Pending</p>
-              </div>
-            )}
+        </div>
+
+        {/* Score pill */}
+        <div style={{ position: 'relative', textAlign: 'center' }}>
+          <div style={{
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.12)',
+            borderRadius: 16, padding: '1.25rem 2rem',
+            backdropFilter: 'blur(10px)',
+          }}>
+            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 4px' }}>Accountability Score</p>
+            <p style={{ color: 'white', fontSize: '3rem', fontWeight: 900, margin: 0, lineHeight: 1 }}>
+              {score ?? '—'}
+            </p>
+            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.72rem', margin: '4px 0 0' }}>out of 100</p>
           </div>
         </div>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* ── Stats row ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         {[
-          { label: 'Overall Score', value: `${avg}/5`, sub: 'accountability index', color: '#0d9488' },
-          { label: 'Modules Active', value: `${modules.length}`, sub: 'tools available', color: '#1e3a6e' },
-          { label: 'Peer Reviews', value: pendingReviews, sub: 'awaiting response', color: '#f59e0b' },
-          { label: 'Streak', value: '7 days', sub: 'consecutive logins', color: '#10b981' },
+          { label: 'Accountability Score', value: score ?? '—', sub: 'calculated by the app', accent: '#0d9488', icon: '🏆' },
+          { label: 'Active Modules',        value: modules.length, sub: 'tools available',      accent: '#1e3a6e', icon: '🗂' },
+          { label: 'Role',                  value: userProfile?.role || 'Leader', sub: 'your position', accent: '#7c3aed', icon: '👤' },
+          { label: 'Today',                 value: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), sub: new Date().toLocaleDateString('en-US', { weekday: 'long' }), accent: '#0891b2', icon: '📅' },
         ].map(s => (
-          <div key={s.label} className="card p-4">
-            <p className="text-xs text-slate-500 font-semibold uppercase tracking-wide">{s.label}</p>
-            <p className="text-2xl font-bold mt-1" style={{ color: s.color }}>{s.value}</p>
-            <p className="text-xs text-slate-400">{s.sub}</p>
+          <div key={s.label} className="stat-tile">
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{s.label}</span>
+              <span style={{ fontSize: '1rem' }}>{s.icon}</span>
+            </div>
+            <p style={{ fontSize: '1.625rem', fontWeight: 900, color: s.accent, margin: '4px 0 2px', lineHeight: 1 }}>{s.value}</p>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>{s.sub}</p>
           </div>
         ))}
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Module Grid */}
-        <div className="lg:col-span-2">
-          <h3 className="text-base font-bold text-slate-700 mb-3">Your Modules</h3>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {modules.map(m => {
-              const s = scores[m.id] || 0;
-              return (
-                <button
-                  key={m.id}
-                  onClick={() => navigate(m.path)}
-                  className="card p-4 text-left hover:shadow-md transition-all hover:-translate-y-0.5 group"
-                >
-                  <div className="text-2xl mb-2">{m.icon}</div>
-                  <p className="text-xs font-bold text-slate-700 leading-tight mb-2">{m.label}</p>
-                  <div className="flex items-center gap-2">
-                    <div className="flex-1 bg-slate-100 rounded-full h-1.5">
-                      <div className="h-1.5 rounded-full transition-all duration-500" style={{ width: `${(s / 5) * 100}%`, background: '#0d9488' }} />
-                    </div>
-                    <span className="text-xs font-bold" style={{ color: '#0d9488' }}>{s}</span>
-                  </div>
-                </button>
-              );
-            })}
+      {/* ── Modules + Quick Actions ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px', gap: '1.5rem', alignItems: 'start' }}>
+        {/* Module grid */}
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem' }}>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1rem' }}>Your Tools</h3>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>{modules.length} modules</span>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: '0.75rem' }}>
+            {modules.map(m => (
+              <button
+                key={m.id}
+                className="module-card"
+                onClick={() => navigate(m.path)}
+              >
+                <div style={{ width: 38, height: 38, borderRadius: 10, background: m.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.125rem' }}>
+                  {m.icon}
+                </div>
+                <p style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.35 }}>{m.label}</p>
+                <div style={{ height: 3, borderRadius: 9999, background: '#e2e8f0', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', borderRadius: 9999, background: 'linear-gradient(90deg,#0d9488,#0f766e)', width: '40%' }} />
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Recent Activity */}
+        {/* Quick Actions */}
         <div>
-          <h3 className="text-base font-bold text-slate-700 mb-3">Recent Activity</h3>
-          <div className="card p-4 space-y-3">
-            {recentActivity.map((a, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <span className="text-lg">{a.icon}</span>
-                <div>
-                  <p className="text-sm text-slate-700 font-medium">{a.text}</p>
-                  <p className="text-xs text-slate-400">{a.time}</p>
-                </div>
-              </div>
+          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 0.875rem', fontSize: '1rem' }}>Quick Actions</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {quickActions.map(a => (
+              <button
+                key={a.path}
+                onClick={() => navigate(a.path)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 10,
+                  background: '#fff', border: '1px solid var(--border)',
+                  borderRadius: 12, padding: '0.75rem 1rem',
+                  cursor: 'pointer', textAlign: 'left',
+                  transition: 'all 0.18s ease',
+                  boxShadow: '0 1px 4px rgba(15,32,68,0.05)',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = '#0d9488'; e.currentTarget.style.background = '#f0fdfa'; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = '#fff'; }}
+              >
+                <span style={{ fontSize: '1.125rem' }}>{a.icon}</span>
+                <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{a.label}</span>
+              </button>
             ))}
           </div>
 
-          <h3 className="text-base font-bold text-slate-700 mt-5 mb-3">Quick Actions</h3>
-          <div className="space-y-2">
-            {[
-              { label: '+ Log Coaching Session', path: '/coaching' },
-              { label: '+ Submit Feedback', path: '/feedback' },
-              { label: '+ Update Skills Matrix', path: '/skills' },
-              { label: '+ Request Peer Review', path: '/scores' },
-            ].map(a => (
-              <button key={a.label} onClick={() => navigate(a.path)} className="btn-secondary w-full justify-start text-left text-xs">
-                {a.label}
-              </button>
-            ))}
+          {/* Mini tip card */}
+          <div style={{
+            marginTop: '1rem', borderRadius: 12, padding: '1rem',
+            background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)',
+            border: '1px solid #bbf7d0',
+          }}>
+            <p style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#15803d', margin: '0 0 4px' }}>💡 Tip</p>
+            <p style={{ fontSize: '0.8rem', color: '#166534', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
+              Use more tools consistently to grow your Accountability Score.
+            </p>
           </div>
         </div>
       </div>
