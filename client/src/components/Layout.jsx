@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { collection, getDocs, addDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
+import WelcomeModal from './WelcomeModal';
 
 const navItems = [
   { id: 'dashboard', label: 'Dashboard', icon: '📊', path: '/dashboard' },
@@ -198,6 +199,7 @@ export default function Layout({ children }) {
           {children}
         </main>
       </div>
+      <WelcomeModal />
     </div>
   );
 }
