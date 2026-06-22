@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
+import PageHeader from '../components/PageHeader';
 
 const quotes = [
   { text: "Leadership is not about being in charge. It is about taking care of those in your charge.", author: "Simon Sinek" },
@@ -12,30 +13,24 @@ const quotes = [
   { text: "Outstanding leaders go out of their way to boost the self-esteem of their personnel.", author: "Sam Walton" },
   { text: "People don't care how much you know until they know how much you care.", author: "Theodore Roosevelt" },
   { text: "A good leader takes a little more than his share of the blame, a little less than his share of the credit.", author: "Arnold Glasow" },
-  { text: "The speed of the leader is the speed of the gang.", author: "Mary Kay Ash" },
   { text: "Accountability is the glue that ties commitment to the result.", author: "Bob Proctor" },
   { text: "Earn your leadership every day.", author: "Michael Jordan" },
   { text: "Innovation distinguishes between a leader and a follower.", author: "Steve Jobs" },
-  { text: "Real integrity is doing the right thing, knowing that nobody's going to know whether you did it or not.", author: "Oprah Winfrey" },
   { text: "The challenge of leadership is to be strong, but not rude; be kind, but not weak.", author: "Jim Rohn" },
-  { text: "Don't tell people how to do things. Tell them what to do and let them surprise you with their results.", author: "George S. Patton" },
   { text: "The key to successful leadership today is influence, not authority.", author: "Kenneth Blanchard" },
-  { text: "Clarity is the most important thing. I can compare clarity to pruning in gardening. You know, you need to be clear. If you are not clear, nothing is going to happen.", author: "Diane von Furstenberg" },
-  { text: "Urgent optimism is the desire to act immediately to tackle an obstacle, combined with the belief that we have a reasonable hope of success.", author: "Jane McGonigal" },
   { text: "Accountability breeds response-ability.", author: "Stephen R. Covey" },
   { text: "High performance is not about perfection. It is about progress and consistency.", author: "Robin Sharma" },
   { text: "What you permit, you promote.", author: "Unknown" },
   { text: "Culture eats strategy for breakfast.", author: "Peter Drucker" },
-  { text: "The measure of a leader is not the quality of their ideas, but the number of people they inspire.", author: "Unknown" },
   { text: "Discipline is the bridge between goals and accomplishment.", author: "Jim Rohn" },
-  { text: "Leaders must be close enough to relate to others, but far enough ahead to motivate them.", author: "John C. Maxwell" },
   { text: "The secret of change is to focus all your energy not on fighting the old, but on building the new.", author: "Socrates" },
-  { text: "Knowing is not enough; we must apply. Willing is not enough; we must do.", author: "Johann Wolfgang von Goethe" },
+  { text: "Knowing is not enough; we must apply. Willing is not enough; we must do.", author: "Goethe" },
+  { text: "Leaders must be close enough to relate to others, but far enough ahead to motivate them.", author: "John C. Maxwell" },
+  { text: "Real integrity is doing the right thing, knowing that nobody's going to know whether you did it or not.", author: "Oprah Winfrey" },
 ];
 
 export default function Quotes() {
   const todayIdx = new Date().getDate() % quotes.length;
-  const [current, setCurrent] = useState(todayIdx);
   const [favorites, setFavorites] = useState(() => JSON.parse(localStorage.getItem('fav-quotes') || '[]'));
   const [showFavs, setShowFavs] = useState(false);
 
@@ -47,49 +42,54 @@ export default function Quotes() {
     });
   }
 
-  const displayed = showFavs ? favorites : quotes.map((_, i) => i);
+  const displayedIdxs = showFavs ? favorites : quotes.map((_, i) => i);
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Leadership & Motivational Quotes</h1>
-          <p className="text-slate-500 text-sm">Daily inspiration for high-performance leaders</p>
-        </div>
-        <div className="flex gap-2">
-          <button className={showFavs ? 'btn-primary' : 'btn-secondary'} onClick={() => setShowFavs(s => !s)}>
+    <div style={{ maxWidth: 860, margin: '0 auto' }}>
+      <PageHeader icon="💬" title="Leadership Quotes" subtitle="Daily inspiration for high-performance leaders"
+        action={
+          <button onClick={() => setShowFavs(s => !s)} className={showFavs ? 'btn-primary' : 'btn-secondary'}>
             ⭐ {showFavs ? 'All Quotes' : `Favorites (${favorites.length})`}
           </button>
-        </div>
-      </div>
+        }
+      />
 
-      {/* Featured Quote */}
-      <div className="rounded-2xl p-8 text-white relative overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f2044, #1e3a6e)' }}>
-        <div className="absolute top-4 right-4 text-6xl opacity-10 font-serif">"</div>
-        <p className="text-xs font-semibold uppercase tracking-widest mb-4" style={{ color: '#5eead4' }}>Today's Quote — {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}</p>
-        <p className="text-xl font-medium leading-relaxed mb-4">"{quotes[todayIdx].text}"</p>
-        <p className="font-bold" style={{ color: '#5eead4' }}>— {quotes[todayIdx].author}</p>
-        <button onClick={() => toggleFav(todayIdx)} className="mt-4 text-sm" style={{ color: favorites.includes(todayIdx) ? '#fbbf24' : '#94a3b8' }}>
+      {/* Featured quote */}
+      <div style={{
+        borderRadius: 20, padding: '2rem', marginBottom: '1.75rem', position: 'relative', overflow: 'hidden',
+        background: 'linear-gradient(135deg, #0b1a38 0%, #0f2044 60%, #0d9488 160%)',
+        boxShadow: '0 8px 32px rgba(15,32,68,0.25)',
+      }}>
+        <div style={{ position: 'absolute', top: 16, right: 24, fontSize: '6rem', opacity: 0.07, fontFamily: 'Georgia, serif', lineHeight: 1, color: 'white' }}>"</div>
+        <p style={{ color: '#99f6e4', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 12px' }}>
+          Today's Quote · {new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+        </p>
+        <p style={{ color: 'white', fontSize: '1.2rem', fontWeight: 500, lineHeight: 1.65, margin: '0 0 14px', maxWidth: 600 }}>
+          "{quotes[todayIdx].text}"
+        </p>
+        <p style={{ color: '#5eead4', fontWeight: 700, margin: '0 0 16px', fontSize: '0.9rem' }}>— {quotes[todayIdx].author}</p>
+        <button onClick={() => toggleFav(todayIdx)}
+          style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '0.375rem 1rem', color: favorites.includes(todayIdx) ? '#fbbf24' : 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>
           {favorites.includes(todayIdx) ? '⭐ Saved' : '☆ Save to Favorites'}
         </button>
       </div>
 
-      {/* Quote Grid */}
-      <div className="grid md:grid-cols-2 gap-4">
-        {(showFavs ? favorites : quotes.map((_, i) => i)).map(idx => (
-          <div key={idx} className={`card p-5 cursor-pointer transition-all hover:shadow-md ${current === idx ? 'ring-2 ring-teal-500' : ''}`} onClick={() => setCurrent(idx)}>
-            <p className="text-sm text-slate-700 leading-relaxed mb-3">"{quotes[idx].text}"</p>
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-bold" style={{ color: '#0d9488' }}>— {quotes[idx].author}</p>
-              <button onClick={e => { e.stopPropagation(); toggleFav(idx); }} className="text-lg">
+      {/* Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: '1rem' }}>
+        {displayedIdxs.map(idx => (
+          <div key={idx} className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: 10, transition: 'all 0.2s' }}>
+            <p style={{ color: '#475569', fontSize: '0.875rem', lineHeight: 1.65, margin: 0, flex: 1 }}>"{quotes[idx].text}"</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, borderTop: '1px solid var(--border)' }}>
+              <p style={{ color: '#0d9488', fontWeight: 700, fontSize: '0.8rem', margin: 0 }}>— {quotes[idx].author}</p>
+              <button onClick={() => toggleFav(idx)} style={{ background: 'none', border: 'none', fontSize: '1.125rem', cursor: 'pointer', padding: '2px 6px' }}>
                 {favorites.includes(idx) ? '⭐' : '☆'}
               </button>
             </div>
           </div>
         ))}
         {showFavs && favorites.length === 0 && (
-          <div className="col-span-2 card p-8 text-center text-slate-400">
-            <p className="text-3xl mb-2">☆</p>
+          <div className="card" style={{ gridColumn: '1/-1', padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+            <p style={{ fontSize: '2rem', marginBottom: 8 }}>☆</p>
             <p>No favorites yet. Click ☆ on any quote to save it.</p>
           </div>
         )}

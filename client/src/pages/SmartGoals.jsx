@@ -6,6 +6,7 @@ import {
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import PageHeader from '../components/PageHeader';
 
 const STATUS_STYLES = {
   draft:     { bg: '#f1f5f9', text: '#64748b', label: 'Draft' },
@@ -147,23 +148,15 @@ export default function SmartGoals() {
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }} className="space-y-6">
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>SMART Goals</h1>
-          <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: 4 }}>
-            Set purposeful goals that drive accountability. Each goal contributes to your Accountability Score.
-          </p>
-        </div>
-        <button className="btn-primary" onClick={openCreate}>+ New SMART Goal</button>
-      </div>
+      <PageHeader icon="🎯" title="SMART Goals" subtitle="Set purposeful goals that drive accountability. Each goal contributes to your Accountability Score."
+        action={<button className="btn-primary" onClick={openCreate}>+ New SMART Goal</button>} />
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
         {Object.entries(STATUS_STYLES).map(([key, s]) => (
-          <div key={key} className="card" style={{ padding: '1rem', textAlign: 'center' }}>
-            <div style={{ fontSize: '1.5rem', fontWeight: 800, color: s.text }}>{counts[key]}</div>
-            <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600, marginTop: 2 }}>{s.label}</div>
+          <div key={key} className="stat-tile" style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: s.text }}>{counts[key]}</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: 4 }}>{s.label}</div>
           </div>
         ))}
       </div>

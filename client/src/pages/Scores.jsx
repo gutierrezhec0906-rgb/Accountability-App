@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { calculateScore } from '../utils/scoring';
 import toast from 'react-hot-toast';
+import PageHeader from '../components/PageHeader';
 
 const BREAKDOWN_CONFIG = [
   { key: 'breadth',   label: 'Tool Diversity',     max: 20, icon: '🗂', desc: 'How many different tools you use' },
@@ -113,12 +114,7 @@ export default function Scores() {
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }} className="space-y-6">
-      <div>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>Accountability Score</h1>
-        <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: 4 }}>
-          Calculated by the app based on how you use your tools — not self-reported.
-        </p>
-      </div>
+      <PageHeader icon="📊" title="Accountability Score" subtitle="Calculated by the app based on how you use your tools — not self-reported." />
 
       {/* Score hero */}
       <div className="card" style={{ padding: '2rem', background: 'linear-gradient(135deg, #0f2044 0%, #1e3a6e 60%, #0d9488 100%)', color: 'white', display: 'flex', alignItems: 'center', gap: 32, flexWrap: 'wrap' }}>

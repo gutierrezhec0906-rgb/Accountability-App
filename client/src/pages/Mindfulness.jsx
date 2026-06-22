@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import PageHeader from '../components/PageHeader';
 
 const exercises = [
   {
@@ -7,9 +8,9 @@ const exercises = [
     description: 'Inhale 4s → Hold 4s → Exhale 4s → Hold 4s',
     phases: [
       { label: 'Inhale', duration: 4, color: '#0d9488' },
-      { label: 'Hold', duration: 4, color: '#1e3a6e' },
+      { label: 'Hold',   duration: 4, color: '#1e3a6e' },
       { label: 'Exhale', duration: 4, color: '#0d9488' },
-      { label: 'Hold', duration: 4, color: '#1e3a6e' },
+      { label: 'Hold',   duration: 4, color: '#1e3a6e' },
     ],
   },
   {
@@ -18,12 +19,12 @@ const exercises = [
     description: 'Inhale 4s → Hold 7s → Exhale 8s',
     phases: [
       { label: 'Inhale', duration: 4, color: '#0d9488' },
-      { label: 'Hold', duration: 7, color: '#1e3a6e' },
+      { label: 'Hold',   duration: 7, color: '#1e3a6e' },
       { label: 'Exhale', duration: 8, color: '#14b8a6' },
     ],
   },
   {
-    name: 'Deep Belly Breathing',
+    name: 'Deep Belly',
     icon: '🌿',
     description: 'Slow 5s inhale → 5s exhale',
     phases: [
@@ -99,78 +100,76 @@ export default function Mindfulness() {
   const dash = (phasePct / 100) * circ;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Breathing & Mindfulness</h1>
-        <p className="text-slate-500 text-sm">Guided breathing exercises and mindfulness tools for leaders</p>
-      </div>
+    <div style={{ maxWidth: 760, margin: '0 auto' }}>
+      <PageHeader icon="🧘" title="Breathing & Mindfulness" subtitle="Guided breathing exercises and mindfulness tools for leaders" />
 
-      {/* Exercise Selector */}
-      <div className="flex gap-3 flex-wrap">
+      {/* Exercise selector */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
         {exercises.map(ex => (
           <button key={ex.name} onClick={() => selectExercise(ex)}
-            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold text-sm transition-all ${selectedEx.name === ex.name ? 'text-white shadow-lg' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50'}`}
-            style={selectedEx.name === ex.name ? { background: '#0f2044' } : {}}>
+            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem 1.125rem', borderRadius: 10, fontWeight: 700, fontSize: '0.875rem', border: 'none', cursor: 'pointer', transition: 'all 0.15s', background: selectedEx.name === ex.name ? '#0f2044' : '#f1f5f9', color: selectedEx.name === ex.name ? 'white' : '#475569' }}>
             <span>{ex.icon}</span>{ex.name}
           </button>
         ))}
       </div>
 
-      {/* Breathing Circle */}
-      <div className="card p-8 text-center">
-        <p className="text-sm text-slate-500 mb-6">{selectedEx.description}</p>
-
-        <div className="flex justify-center mb-6">
-          <div className="relative">
+      {/* Breathing circle */}
+      <div className="card" style={{ padding: '2rem', textAlign: 'center', marginBottom: '1.25rem' }}>
+        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>{selectedEx.description}</p>
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+          <div style={{ position: 'relative' }}>
             <svg width="200" height="200" viewBox="0 0 200 200">
               <circle cx="100" cy="100" r={r} fill="none" stroke="#e2e8f0" strokeWidth="8" />
               <circle cx="100" cy="100" r={r} fill="none" stroke={phase.color} strokeWidth="8"
                 strokeDasharray={`${dash} ${circ}`} strokeLinecap="round"
                 transform="rotate(-90 100 100)" style={{ transition: 'stroke-dasharray 0.5s linear' }} />
-              <circle cx="100" cy="100" r="54" fill={running ? phase.color + '15' : '#f8fafc'} style={{ transition: 'fill 0.5s' }} />
+              <circle cx="100" cy="100" r="54" fill={running ? phase.color + '18' : '#f8fafc'} style={{ transition: 'fill 0.5s' }} />
             </svg>
-            <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <p className="text-3xl font-bold" style={{ color: phase.color }}>{timeLeft}</p>
-              <p className="text-sm font-bold text-slate-600">{running ? phase.label : 'Ready'}</p>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              <p style={{ fontSize: '2rem', fontWeight: 900, color: phase.color, margin: 0 }}>{timeLeft}</p>
+              <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', margin: 0 }}>{running ? phase.label : 'Ready'}</p>
             </div>
           </div>
         </div>
 
         {running && (
-          <div className="flex justify-center gap-2 mb-4 flex-wrap">
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: '1rem', flexWrap: 'wrap' }}>
             {selectedEx.phases.map((p, i) => (
-              <span key={i} className={`px-3 py-1 rounded-full text-xs font-semibold ${i === phaseIdx ? 'text-white' : 'text-slate-400 bg-slate-100'}`} style={i === phaseIdx ? { background: p.color } : {}}>
+              <span key={i} style={{ padding: '2px 12px', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 700, background: i === phaseIdx ? p.color : '#f1f5f9', color: i === phaseIdx ? 'white' : '#94a3b8', transition: 'all 0.3s' }}>
                 {p.label} ({p.duration}s)
               </span>
             ))}
           </div>
         )}
 
-        <div className="flex justify-center gap-3">
-          <button onClick={startStop} className={`px-8 py-3 rounded-xl font-bold text-white transition-all ${running ? 'hover:opacity-90' : 'hover:shadow-lg'}`} style={{ background: running ? '#ef4444' : '#0d9488' }}>
+        <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
+          <button onClick={startStop}
+            style={{ padding: '0.625rem 2rem', borderRadius: 10, fontWeight: 700, fontSize: '0.9rem', border: 'none', cursor: 'pointer', color: 'white', background: running ? '#ef4444' : '#0d9488', transition: 'all 0.15s' }}>
             {running ? '⏹ Stop' : '▶ Start Breathing'}
           </button>
         </div>
-
-        {cycles > 0 && <p className="text-sm text-slate-500 mt-4">✅ {cycles} cycle{cycles > 1 ? 's' : ''} completed</p>}
+        {cycles > 0 && <p style={{ fontSize: '0.8rem', color: '#0d9488', marginTop: '1rem', fontWeight: 600 }}>✅ {cycles} cycle{cycles > 1 ? 's' : ''} completed</p>}
       </div>
 
-      {/* Phase Guide */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* Phase guide */}
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${selectedEx.phases.length}, 1fr)`, gap: 12, marginBottom: '1.25rem' }}>
         {selectedEx.phases.map((p, i) => (
-          <div key={i} className="card p-3 text-center">
-            <div className="w-8 h-8 rounded-full mx-auto mb-2 flex items-center justify-center text-white text-sm font-bold" style={{ background: p.color }}>{i + 1}</div>
-            <p className="text-xs font-bold text-slate-700">{p.label}</p>
-            <p className="text-xs text-slate-400">{p.duration} seconds</p>
+          <div key={i} className="card" style={{ padding: '0.875rem', textAlign: 'center' }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: p.color, color: 'white', fontWeight: 900, fontSize: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>{i + 1}</div>
+            <p style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.82rem', margin: '0 0 2px' }}>{p.label}</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{p.duration} seconds</p>
           </div>
         ))}
       </div>
 
-      {/* Affirmations */}
-      <div className="card p-5" style={{ background: 'linear-gradient(135deg, #f0fdfa, #ccfbf1)' }}>
-        <h3 className="font-bold text-slate-700 mb-3">Leadership Affirmation</h3>
-        <p className="text-lg font-medium text-slate-700 italic">"{affirmations[affIdx]}"</p>
-        <button className="btn-secondary mt-4 text-xs" onClick={() => setAffIdx(i => (i + 1) % affirmations.length)}>Next Affirmation →</button>
+      {/* Affirmation */}
+      <div style={{ borderRadius: 16, padding: '1.5rem', background: 'linear-gradient(135deg,#f0fdfa,#ccfbf1)', border: '1px solid #bbf7d0' }}>
+        <h3 style={{ fontWeight: 800, color: '#166534', margin: '0 0 4px', fontSize: '1rem' }}>Leadership Affirmation</h3>
+        <p style={{ fontSize: '0.78rem', color: '#15803d', margin: '0 0 14px' }}>Start or end your session with intention</p>
+        <div style={{ background: 'white', borderRadius: 12, padding: '1rem', marginBottom: '0.875rem', boxShadow: '0 1px 4px rgba(15,32,68,0.06)' }}>
+          <p style={{ fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.6, fontStyle: 'italic' }}>"{affirmations[affIdx]}"</p>
+        </div>
+        <button className="btn-secondary" onClick={() => setAffIdx(i => (i + 1) % affirmations.length)}>Next Affirmation →</button>
       </div>
     </div>
   );
