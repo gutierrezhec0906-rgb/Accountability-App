@@ -3,19 +3,24 @@ import { doc, updateDoc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
-// Replace this URL after uploading the video to Firebase Storage
-const WELCOME_VIDEO_URL = import.meta.env.VITE_WELCOME_VIDEO_URL || '';
-
 export default function WelcomeModal() {
   const { currentUser, userProfile } = useAuth();
   const [show, setShow] = useState(false);
+  const [videoUrl, setVideoUrl] = useState('');
 
   useEffect(() => {
     if (!currentUser || !userProfile) return;
     if (userProfile.status === 'pending') return;
     if (userProfile.hasSeenWelcome) return;
-    if (!WELCOME_VIDEO_URL) return;
-    setShow(true);
+
+    // Load video URL from Firestore app config
+    getDoc(doc(db, 'appConfig', 'welcome')).then(snap => {
+      const url = snap.exists() ? snap.data().videoUrl : '';
+      if (url) {
+        setVideoUrl(url);
+        setShow(true);
+      }
+    }).catch(() => {});
   }, [currentUser, userProfile]);
 
   async function dismiss() {
@@ -61,7 +66,7 @@ export default function WelcomeModal() {
         {/* Video */}
         <div style={{ position: 'relative', background: '#000', aspectRatio: '16/9' }}>
           <video
-            src={WELCOME_VIDEO_URL}
+            src={videoUrl}
             controls
             autoPlay
             style={{ width: '100%', height: '100%', display: 'block' }}
