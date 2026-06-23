@@ -32,6 +32,7 @@ const navItems = [
 ];
 
 const VIDEO_TOOL_IDS = new Set([
+  'dashboard',
   'visual-board','quotes','training','coaching','smart-goals','mentoring',
   'skills','lob','urgency','feedback','problem-solving','vision','lean',
   'mindfulness','career','disc','eq-opex','scores',
@@ -76,7 +77,7 @@ export default function Layout({ children }) {
   useEffect(() => {
     if (!currentUser || !userProfile) return;
     if (userProfile.status === 'pending') return;
-    const toolId = location.pathname.replace('/', '');
+    const toolId = location.pathname.replace('/', '') || 'dashboard';
     if (!VIDEO_TOOL_IDS.has(toolId)) return;
     const seen = userProfile.seenToolVideos || [];
     if (seen.includes(toolId)) return;
