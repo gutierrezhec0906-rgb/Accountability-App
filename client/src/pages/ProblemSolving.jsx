@@ -12,21 +12,24 @@ const TYPE_MAP = { '5 Whys': '5whys', 'Fishbone Diagram': 'fishbone', 'A3 Templa
 
 // ─── Saved entries list ───────────────────────────────────────────────────────
 function SavedList({ entries, onLoad }) {
-  if (!entries.length) return null;
   return (
-    <div style={{ marginBottom: '1.25rem' }}>
-      <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>Saved Entries</p>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {entries.map(e => (
-          <div key={e.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f8fafc', border: '1px solid var(--border)', borderRadius: 10, padding: '0.5rem 0.875rem' }}>
-            <div>
-              <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)' }}>{e.title}</span>
-              {e.createdAt && <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 10 }}>{new Date(e.createdAt.seconds * 1000).toLocaleDateString()}</span>}
+    <div style={{ marginBottom: '1.25rem', background: '#f8fafc', border: '1px solid var(--border)', borderRadius: 12, padding: '0.875rem 1rem' }}>
+      <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>💾 Saved Entries ({entries.length})</p>
+      {entries.length === 0 ? (
+        <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0, fontStyle: 'italic' }}>No saved entries yet — fill in the form and click Save.</p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {entries.map(e => (
+            <div key={e.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'white', border: '1px solid var(--border)', borderRadius: 8, padding: '0.5rem 0.875rem' }}>
+              <div>
+                <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)' }}>{e.title}</span>
+                {e.createdAt && <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginLeft: 10 }}>{new Date(e.createdAt.seconds * 1000).toLocaleDateString()}</span>}
+              </div>
+              <button onClick={() => onLoad(e)} style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0d9488', background: 'none', border: '1px solid #0d9488', borderRadius: 7, padding: '2px 10px', cursor: 'pointer' }}>Load</button>
             </div>
-            <button onClick={() => onLoad(e)} style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0d9488', background: 'none', border: '1px solid #0d9488', borderRadius: 7, padding: '2px 10px', cursor: 'pointer' }}>Load</button>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -240,7 +243,7 @@ export default function ProblemSolving() {
       const grouped = { '5 Whys': [], 'Fishbone Diagram': [], 'A3 Template': [] };
       all.forEach(e => { if (typeToTool[e.type]) grouped[typeToTool[e.type]].push(e); });
       setSaved(grouped);
-    } catch {}
+    } catch (e) { toast.error('Could not load saved entries: ' + (e?.message || e)); }
   }
 
   useEffect(() => { fetchSaved(); }, [currentUser]);
@@ -253,7 +256,7 @@ export default function ProblemSolving() {
       });
       toast.success('Saved!');
       fetchSaved();
-    } catch { toast.error('Save failed'); }
+    } catch (e) { toast.error('Save failed: ' + (e?.message || e)); }
   }
 
   function handleLoad(tool, entry) {
