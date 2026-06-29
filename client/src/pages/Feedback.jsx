@@ -16,12 +16,12 @@ export default function Feedback() {
   const [feedback, setFeedback] = useState(sampleFeedback);
   const [showForm, setShowForm] = useState(false);
   const [filterType, setFilterType] = useState('All');
-  const [form, setForm] = useState({ type: 'Peer', from: '', anonymous: false, category: 'Leadership', rating: 5, text: '' });
+  const [form, setForm] = useState({ type: 'Peer', from: '', to: '', anonymous: false, category: 'Leadership', rating: 5, text: '' });
 
   function submitFeedback(e) {
     e.preventDefault();
     setFeedback(f => [{ ...form, id: Date.now(), date: new Date().toISOString().split('T')[0], from: form.anonymous ? 'Anonymous' : form.from }, ...f]);
-    setForm({ type: 'Peer', from: '', anonymous: false, category: 'Leadership', rating: 5, text: '' });
+    setForm({ type: 'Peer', from: '', to: '', anonymous: false, category: 'Leadership', rating: 5, text: '' });
     setShowForm(false);
     toast.success('Feedback submitted!');
   }
@@ -60,7 +60,10 @@ export default function Feedback() {
               <input type="checkbox" id="anon" checked={form.anonymous} onChange={e => setForm(f => ({ ...f, anonymous: e.target.checked }))} style={{ width: 16, height: 16 }} />
               <label htmlFor="anon" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Submit Anonymously</label>
             </div>
-            {!form.anonymous && <div><label className="label">Your Name</label><input className="input" value={form.from} onChange={e => setForm(f => ({ ...f, from: e.target.value }))} placeholder="Your name" /></div>}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+              {!form.anonymous && <div><label className="label">Your Name (From)</label><input className="input" value={form.from} onChange={e => setForm(f => ({ ...f, from: e.target.value }))} placeholder="Your name" /></div>}
+              <div style={form.anonymous ? { gridColumn: '1 / -1' } : {}}><label className="label">Recipient (To) *</label><input className="input" required value={form.to} onChange={e => setForm(f => ({ ...f, to: e.target.value }))} placeholder="Who is this feedback for?" /></div>
+            </div>
             <div>
               <label className="label">Rating</label>
               <div style={{ display: 'flex', gap: 8 }}>
@@ -102,6 +105,7 @@ export default function Feedback() {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                     <span style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{f.from}</span>
+                    {f.to && <><span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>→</span><span style={{ fontWeight: 700, fontSize: '0.875rem', color: '#0d9488' }}>{f.to}</span></>}
                     <span style={{ background: '#e0f2fe', color: '#0369a1', borderRadius: 9999, padding: '1px 8px', fontSize: '0.7rem', fontWeight: 700 }}>{f.type}</span>
                     <span style={{ background: '#f1f5f9', color: '#475569', borderRadius: 9999, padding: '1px 8px', fontSize: '0.7rem', fontWeight: 700 }}>{f.category}</span>
                   </div>
