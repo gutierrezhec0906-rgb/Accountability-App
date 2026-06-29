@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { collection, getDocs } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 
@@ -13,10 +16,25 @@ const categories = ['Leadership', 'Performance', 'Communication', 'Coaching', 'T
 const types = ['All', 'Peer', 'Supervisor', 'Direct Report', 'Self'];
 
 export default function Feedback() {
+  const { currentUser } = useAuth();
   const [feedback, setFeedback] = useState(sampleFeedback);
   const [showForm, setShowForm] = useState(false);
   const [filterType, setFilterType] = useState('All');
   const [form, setForm] = useState({ type: 'Peer', from: '', to: '', anonymous: false, category: 'Leadership', rating: 5, text: '' });
+  const [teamMembers, setTeamMembers] = useState([]);
+
+  useEffect(() => {
+    async function fetchTeam() {
+      try {
+        const snap = await getDocs(collection(db, 'users'));
+        const members = snap.docs
+          .map(d => ({ uid: d.id, ...d.data() }))
+          .filter(m => m.status === 'approved' && m.uid !== currentUser?.uid);
+        setTeamMembers(members);
+      } catch {}
+    }
+    if (currentUser) fetchTeam();
+  }, [currentUser]);
 
   function submitFeedback(e) {
     e.preventDefault();
@@ -62,7 +80,15 @@ export default function Feedback() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
               {!form.anonymous && <div><label className="label">Your Name (From)</label><input className="input" value={form.from} onChange={e => setForm(f => ({ ...f, from: e.target.value }))} placeholder="Your name" /></div>}
-              <div style={form.anonymous ? { gridColumn: '1 / -1' } : {}}><label className="label">Recipient (To) *</label><input className="input" required value={form.to} onChange={e => setForm(f => ({ ...f, to: e.target.value }))} placeholder="Who is this feedback for?" /></div>
+              <div style={form.anonymous ? { gridColumn: '1 / -1' } : {}}>
+                <label className="label">Recipient (To) *</label>
+                <select className="input" required value={form.to} onChange={e => setForm(f => ({ ...f, to: e.target.value }))}>
+                  <option value="">— Select team member —</option>
+                  {teamMembers.map(m => (
+                    <option key={m.uid} value={m.displayName || m.email}>{m.displayName || m.email}{m.role ? ` (${m.role})` : ''}</option>
+                  ))}
+                </select>
+              </div>
             </div>
             <div>
               <label className="label">Rating</label>
