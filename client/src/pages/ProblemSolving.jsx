@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  collection, addDoc, getDocs, deleteDoc, query, where, doc, serverTimestamp,
+  collection, addDoc, updateDoc, getDocs, deleteDoc, query, where, doc, serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -341,10 +341,16 @@ export default function ProblemSolving() {
   async function handleSave({ type, title, data }) {
     if (!currentUser) return toast.error('Not signed in');
     try {
-      await addDoc(collection(db, 'problemSolving'), {
-        uid: currentUser.uid, type, title, data, createdAt: serverTimestamp(),
-      });
-      toast.success('Saved!');
+      const existing = fishboneSaved.find(e => e.title.trim().toLowerCase() === title.trim().toLowerCase());
+      if (existing) {
+        await updateDoc(doc(db, 'problemSolving', existing.id), { title, data, updatedAt: serverTimestamp() });
+        toast.success('Diagram updated!');
+      } else {
+        await addDoc(collection(db, 'problemSolving'), {
+          uid: currentUser.uid, type, title, data, createdAt: serverTimestamp(),
+        });
+        toast.success('Diagram saved!');
+      }
       fetchFishbone();
     } catch (e) { toast.error('Save failed: ' + (e?.message || e)); }
   }
