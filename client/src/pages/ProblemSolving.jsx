@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  collection, addDoc, getDocs, query, where, orderBy, serverTimestamp,
+  collection, addDoc, getDocs, query, where, serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -234,9 +234,8 @@ export default function ProblemSolving() {
       const snap = await getDocs(query(
         collection(db, 'problemSolving'),
         where('uid', '==', currentUser.uid),
-        orderBy('createdAt', 'desc'),
       ));
-      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const all = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
       const typeToTool = { '5whys': '5 Whys', fishbone: 'Fishbone Diagram', a3: 'A3 Template' };
       const grouped = { '5 Whys': [], 'Fishbone Diagram': [], 'A3 Template': [] };
       all.forEach(e => { if (typeToTool[e.type]) grouped[typeToTool[e.type]].push(e); });
