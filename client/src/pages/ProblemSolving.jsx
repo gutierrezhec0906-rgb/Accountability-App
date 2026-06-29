@@ -70,6 +70,32 @@ function FiveWhys({ onSave, loadEntry }) {
 }
 
 // ─── Fishbone ─────────────────────────────────────────────────────────────────
+function CatCard({ cat, position, causes, onUpdate }) {
+  const clip = position === 'top'
+    ? 'polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%)'
+    : 'polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 50%)';
+  return (
+    <div style={{ background: 'white', borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 6px rgba(15,32,68,0.08)', border: '1px solid #e8edf5' }}>
+      <div style={{ padding: '5px 14px', background: cat.color, color: 'white', fontWeight: 700, fontSize: '0.78rem', clipPath: clip }}>
+        {cat.label}
+      </div>
+      <div style={{ padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
+        {causes[cat.id].map((v, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+            <span style={{ color: cat.color, fontSize: '0.68rem', fontWeight: 900, flexShrink: 0 }}>→</span>
+            <input
+              style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: 6, padding: '3px 7px', fontSize: '0.75rem', outline: 'none', color: '#475569', background: 'white' }}
+              value={v}
+              onChange={e => onUpdate(cat.id, i, e.target.value)}
+              placeholder={`Cause ${i + 1}...`}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const TOP_CATS    = [
   { id: 'people',      label: 'People',      color: '#0d9488' },
   { id: 'process',     label: 'Process',     color: '#1e3a6e' },
@@ -97,32 +123,6 @@ function Fishbone({ onSave, loadEntry }) {
     setCauses(c => ({ ...c, [catId]: c[catId].map((v, i) => i === idx ? val : v) }));
   }
 
-  function CatCard({ cat, position }) {
-    const clip = position === 'top'
-      ? 'polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%)'
-      : 'polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 50%)';
-    return (
-      <div style={{ background: 'white', borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 6px rgba(15,32,68,0.08)', border: '1px solid #e8edf5' }}>
-        <div style={{ padding: '5px 14px', background: cat.color, color: 'white', fontWeight: 700, fontSize: '0.78rem', clipPath: clip }}>
-          {cat.label}
-        </div>
-        <div style={{ padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-          {causes[cat.id].map((v, i) => (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-              <span style={{ color: cat.color, fontSize: '0.68rem', fontWeight: 900, flexShrink: 0 }}>→</span>
-              <input
-                style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: 6, padding: '3px 7px', fontSize: '0.75rem', outline: 'none', color: '#475569', background: 'white' }}
-                value={v}
-                onChange={e => updateCause(cat.id, i, e.target.value)}
-                placeholder={`Cause ${i + 1}...`}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div>
@@ -135,7 +135,7 @@ function Fishbone({ onSave, loadEntry }) {
 
         {/* Top cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-          {TOP_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="top" />)}
+          {TOP_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="top" causes={causes} onUpdate={updateCause} />)}
         </div>
 
         {/* Spine + diagonal bones */}
@@ -172,7 +172,7 @@ function Fishbone({ onSave, loadEntry }) {
 
         {/* Bottom cards */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-          {BOTTOM_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="bottom" />)}
+          {BOTTOM_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="bottom" causes={causes} onUpdate={updateCause} />)}
         </div>
       </div>
 
