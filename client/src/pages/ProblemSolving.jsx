@@ -1,12 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useState, useEffect } from 'react';
+import {
+  collection, addDoc, getDocs, deleteDoc, query, where, doc, serverTimestamp,
+} from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 
 const TOOLS = ['5 Whys', 'Fishbone Diagram', 'A3 Template'];
-
 
 // ─── 5 Whys ──────────────────────────────────────────────────────────────────
 function FiveWhys({ onSave }) {
@@ -79,107 +80,204 @@ const BOTTOM_CATS = [
 const ALL_CATS = [...TOP_CATS, ...BOTTOM_CATS];
 const emptyCauses = () => Object.fromEntries(ALL_CATS.map(c => [c.id, ['', '', '']]));
 
+function fishbonePrintHTML(entry) {
+  const { name, problem, causes } = entry.data;
+  const date = entry.createdAt ? new Date(entry.createdAt.seconds * 1000).toLocaleDateString() : new Date().toLocaleDateString();
 
-function Fishbone({ onSave }) {
+  function catHTML(cat) {
+    const items = (causes[cat.id] || []).map(v =>
+      `<p style="margin:3px 0;font-size:0.78rem;color:${v ? '#1e293b' : '#cbd5e1'};font-style:${v ? 'normal' : 'italic'}">${v || '—'}</p>`
+    ).join('');
+    return `<div style="border:2px solid ${cat.color};border-radius:8px;overflow:hidden">
+      <div style="background:${cat.color};color:white;font-weight:700;font-size:0.8rem;padding:4px 10px">${cat.label}</div>
+      <div style="padding:6px 10px">${items}</div>
+    </div>`;
+  }
+
+  return `
+    <div style="font-family:sans-serif;padding:24px;background:white">
+      <div style="margin-bottom:14px;border-bottom:2px solid #0f2044;padding-bottom:10px">
+        <h2 style="margin:0 0 4px;color:#0f2044;font-size:1.1rem;font-weight:900">Fishbone (Ishikawa) Diagram</h2>
+        <p style="margin:0;font-size:0.8rem;color:#64748b"><strong>Name:</strong> ${name || '—'} &nbsp;|&nbsp; <strong>Effect:</strong> ${problem || '—'} &nbsp;|&nbsp; <strong>Date:</strong> ${date}</p>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px">
+        ${TOP_CATS.map(catHTML).join('')}
+      </div>
+      <div style="position:relative;height:48px;margin:2px 0">
+        <svg width="100%" height="48" style="display:block">
+          <defs><marker id="a" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><polygon points="0 0,10 3.5,0 7" fill="#0f2044"/></marker></defs>
+          <line x1="0" y1="24" x2="88%" y2="24" stroke="#0f2044" stroke-width="3" marker-end="url(#a)"/>
+          <line x1="16.5%" y1="0" x2="24%" y2="24" stroke="#94a3b8" stroke-width="1.5"/>
+          <line x1="49.5%" y1="0" x2="50%" y2="24" stroke="#94a3b8" stroke-width="1.5"/>
+          <line x1="82.5%" y1="0" x2="73%" y2="24" stroke="#94a3b8" stroke-width="1.5"/>
+          <line x1="24%" y1="24" x2="16.5%" y2="48" stroke="#94a3b8" stroke-width="1.5"/>
+          <line x1="50%" y1="24" x2="49.5%" y2="48" stroke="#94a3b8" stroke-width="1.5"/>
+          <line x1="73%" y1="24" x2="82.5%" y2="48" stroke="#94a3b8" stroke-width="1.5"/>
+        </svg>
+        <div style="position:absolute;right:0;top:50%;transform:translateY(-50%);background:#ef4444;color:white;padding:4px 8px;border-radius:0 6px 6px 0;font-weight:700;font-size:0.68rem;max-width:11%;text-align:center;word-break:break-word;line-height:1.3">${problem || 'Effect'}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px">
+        ${BOTTOM_CATS.map(catHTML).join('')}
+      </div>
+    </div>`;
+}
+
+function printEntry(entry) {
+  const win = window.open('', '_blank', 'width=1000,height=750');
+  win.document.write(`<html><head><title>${entry.title || 'Fishbone'}</title>
+    <style>body{margin:0}@media print{@page{size:landscape;margin:12mm}}</style>
+    </head><body>${fishbonePrintHTML(entry)}</body></html>`);
+  win.document.close();
+  win.focus();
+  setTimeout(() => { win.print(); win.close(); }, 400);
+}
+
+function SavedPanel({ entries, onDelete, onLoad }) {
+  return (
+    <div style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 0 }}>
+      <div style={{ background: '#0f2044', borderRadius: '12px 12px 0 0', padding: '0.75rem 1rem' }}>
+        <p style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem', margin: 0 }}>📋 Saved Diagrams</p>
+        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', margin: '2px 0 0' }}>{entries.length} diagram{entries.length !== 1 ? 's' : ''}</p>
+      </div>
+      <div style={{ flex: 1, border: '1px solid #e8edf5', borderTop: 'none', borderRadius: '0 0 12px 12px', overflow: 'hidden', background: '#fafbfc' }}>
+        {entries.length === 0 ? (
+          <div style={{ padding: '1.5rem 1rem', textAlign: 'center' }}>
+            <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: 0, fontStyle: 'italic' }}>No saved diagrams yet. Fill out the form and click Save.</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {entries.map((e, i) => (
+              <div key={e.id} style={{ borderBottom: i < entries.length - 1 ? '1px solid #e8edf5' : 'none', padding: '0.75rem 1rem', background: 'white' }}>
+                <p style={{ fontWeight: 700, fontSize: '0.82rem', color: '#1e293b', margin: '0 0 2px', lineHeight: 1.3 }}>{e.title}</p>
+                {e.data?.problem && <p style={{ fontSize: '0.72rem', color: '#64748b', margin: '0 0 6px', lineHeight: 1.3 }}>{e.data.problem}</p>}
+                {e.createdAt && <p style={{ fontSize: '0.68rem', color: '#94a3b8', margin: '0 0 8px' }}>{new Date(e.createdAt.seconds * 1000).toLocaleDateString()}</p>}
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={() => onLoad(e)}
+                    style={{ flex: 1, fontSize: '0.72rem', fontWeight: 700, color: '#0d9488', background: 'none', border: '1px solid #0d9488', borderRadius: 6, padding: '3px 0', cursor: 'pointer' }}>
+                    ✏️ Edit
+                  </button>
+                  <button onClick={() => printEntry(e)}
+                    style={{ flex: 1, fontSize: '0.72rem', fontWeight: 700, color: '#0f2044', background: 'none', border: '1px solid #0f2044', borderRadius: 6, padding: '3px 0', cursor: 'pointer' }}>
+                    🖨️ Print
+                  </button>
+                  <button onClick={() => onDelete(e.id)}
+                    style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ef4444', background: 'none', border: '1px solid #fca5a5', borderRadius: 6, padding: '3px 7px', cursor: 'pointer' }}>
+                    🗑
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function Fishbone({ onSave, savedEntries, onDelete }) {
   const [name,    setName]    = useState('');
   const [problem, setProblem] = useState('');
   const [causes,  setCauses]  = useState(emptyCauses);
   const [saving,  setSaving]  = useState(false);
-  const printRef = useRef();
+  const [editId,  setEditId]  = useState(null);
 
   function updateCause(catId, idx, val) {
     setCauses(c => ({ ...c, [catId]: c[catId].map((v, i) => i === idx ? val : v) }));
+  }
+
+  function loadEntry(e) {
+    setName(e.data.name || e.title || '');
+    setProblem(e.data.problem || '');
+    setCauses(e.data.causes || emptyCauses());
+    setEditId(e.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   async function handleSave() {
     if (!name.trim()) return toast.error('Please enter a diagram name before saving');
     setSaving(true);
     await onSave({ type: 'fishbone', title: name, data: { name, problem, causes } });
-    setName(''); setProblem(''); setCauses(emptyCauses());
+    setName(''); setProblem(''); setCauses(emptyCauses()); setEditId(null);
     setSaving(false);
   }
 
-  function handlePrint() {
-    const printContent = document.getElementById('fishbone-print').innerHTML;
-    const win = window.open('', '_blank', 'width=1000,height=750');
-    win.document.write(`
-      <html><head><title>${name || 'Fishbone Diagram'}</title>
-      <style>
-        body { margin: 0; font-family: sans-serif; }
-        @media print { @page { size: landscape; margin: 12mm; } }
-      </style></head>
-      <body>${printContent}</body></html>
-    `);
-    win.document.close();
-    win.focus();
-    setTimeout(() => { win.print(); win.close(); }, 400);
+  function handlePrintCurrent() {
+    const fakeEntry = { id: 'current', title: name, data: { name, problem, causes }, createdAt: null };
+    printEntry(fakeEntry);
   }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-      {/* Name + Effect row */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <div>
-          <label className="label">Diagram Name *</label>
-          <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Q3 Defect Analysis" />
-        </div>
-        <div>
-          <label className="label">Effect / Problem (Fish Head)</label>
-          <input className="input" value={problem} onChange={e => setProblem(e.target.value)} placeholder="e.g. High defect rate in Assembly Line 2" />
-        </div>
-      </div>
-
-      {/* ── Fishbone diagram ── */}
-      <div ref={printRef} style={{ background: '#f8fafc', borderRadius: 16, padding: '12px', border: '1px solid #e8edf5' }}>
-        <div id="fishbone-print" style={{ background: 'white', borderRadius: 12, padding: 10 }}>
-          {/* Print header — hidden on screen */}
-          <div className="print-only" style={{ display: 'none', marginBottom: 12, borderBottom: '2px solid #0f2044', paddingBottom: 10 }}>
-            <h2 style={{ margin: '0 0 4px', color: '#0f2044', fontSize: '1.1rem', fontWeight: 900 }}>Fishbone (Ishikawa) Diagram</h2>
-            <p style={{ margin: 0, fontSize: '0.8rem', color: '#64748b' }}><strong>Name:</strong> {name || '—'} &nbsp;|&nbsp; <strong>Effect:</strong> {problem || '—'} &nbsp;|&nbsp; <strong>Date:</strong> {new Date().toLocaleDateString()}</p>
+    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+      {/* ── Form column ── */}
+      <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {editId && (
+          <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '0.625rem 1rem', fontSize: '0.8rem', color: '#1d4ed8', fontWeight: 600 }}>
+            ✏️ Editing a saved diagram — click Save to create a new copy.
           </div>
+        )}
 
-          {/* Top cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-            {TOP_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="top" causes={causes} onUpdate={updateCause} />)}
+        {/* Name + Effect row */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label className="label">Diagram Name *</label>
+            <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Q3 Defect Analysis" />
           </div>
+          <div>
+            <label className="label">Effect / Problem (Fish Head)</label>
+            <input className="input" value={problem} onChange={e => setProblem(e.target.value)} placeholder="e.g. High defect rate in Assembly Line 2" />
+          </div>
+        </div>
 
-          {/* Spine + diagonal bones */}
-          <div style={{ position: 'relative', height: 64, margin: '2px 0' }}>
-            <svg width="100%" height="64" style={{ display: 'block' }}>
-              <defs>
-                <marker id="fb-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                  <polygon points="0 0, 10 3.5, 0 7" fill="#0f2044" />
-                </marker>
-              </defs>
-              <line x1="0" y1="32" x2="88%" y2="32" stroke="#0f2044" strokeWidth="4" strokeLinecap="round" markerEnd="url(#fb-arrow)" />
-              <line x1="16.5%" y1="0"   x2="24%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
-              <line x1="49.5%" y1="0"   x2="50%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
-              <line x1="82.5%" y1="0"   x2="73%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
-              <line x1="24%"  y1="32" x2="16.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
-              <line x1="50%"  y1="32" x2="49.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
-              <line x1="73%"  y1="32" x2="82.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
-            </svg>
-            <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: '#ef4444', color: 'white', padding: '5px 10px', borderRadius: '0 10px 10px 0', fontWeight: 700, fontSize: '0.72rem', maxWidth: '11%', textAlign: 'center', wordBreak: 'break-word', lineHeight: 1.3 }}>
-              {problem || 'Effect'}
+        {/* ── Fishbone diagram ── */}
+        <div style={{ background: '#f8fafc', borderRadius: 16, padding: '12px', border: '1px solid #e8edf5' }}>
+          <div id="fishbone-print" style={{ background: 'white', borderRadius: 12, padding: 10 }}>
+            {/* Top cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+              {TOP_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="top" causes={causes} onUpdate={updateCause} />)}
+            </div>
+
+            {/* Spine */}
+            <div style={{ position: 'relative', height: 64, margin: '2px 0' }}>
+              <svg width="100%" height="64" style={{ display: 'block' }}>
+                <defs>
+                  <marker id="fb-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                    <polygon points="0 0, 10 3.5, 0 7" fill="#0f2044" />
+                  </marker>
+                </defs>
+                <line x1="0" y1="32" x2="88%" y2="32" stroke="#0f2044" strokeWidth="4" strokeLinecap="round" markerEnd="url(#fb-arrow)" />
+                <line x1="16.5%" y1="0"   x2="24%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
+                <line x1="49.5%" y1="0"   x2="50%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
+                <line x1="82.5%" y1="0"   x2="73%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
+                <line x1="24%"  y1="32" x2="16.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
+                <line x1="50%"  y1="32" x2="49.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
+                <line x1="73%"  y1="32" x2="82.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
+              </svg>
+              <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: '#ef4444', color: 'white', padding: '5px 10px', borderRadius: '0 10px 10px 0', fontWeight: 700, fontSize: '0.72rem', maxWidth: '11%', textAlign: 'center', wordBreak: 'break-word', lineHeight: 1.3 }}>
+                {problem || 'Effect'}
+              </div>
+            </div>
+
+            {/* Bottom cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+              {BOTTOM_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="bottom" causes={causes} onUpdate={updateCause} />)}
             </div>
           </div>
+        </div>
 
-          {/* Bottom cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-            {BOTTOM_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="bottom" causes={causes} onUpdate={updateCause} />)}
-          </div>
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 10 }}>
+          <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>
+            {saving ? 'Saving...' : '💾 Save Diagram'}
+          </button>
+          <button onClick={handlePrintCurrent}
+            style={{ flex: 1, background: '#0f2044', color: 'white', border: 'none', borderRadius: 10, padding: '0.6rem 1.25rem', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer' }}>
+            🖨️ Print / Save PDF
+          </button>
         </div>
       </div>
 
-      {/* Actions */}
-      <div style={{ display: 'flex', gap: 10 }}>
-        <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>
-          {saving ? 'Saving...' : '💾 Save Diagram'}
-        </button>
-        <button onClick={handlePrint} style={{ flex: 1, background: '#0f2044', color: 'white', border: 'none', borderRadius: 10, padding: '0.6rem 1.25rem', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer' }}>
-          🖨️ Print / Save PDF
-        </button>
-      </div>
+      {/* ── Saved panel (right) ── */}
+      <SavedPanel entries={savedEntries} onDelete={onDelete} onLoad={loadEntry} />
     </div>
   );
 }
@@ -199,7 +297,6 @@ const A3_FIELDS = [
 
 function A3Template({ onSave }) {
   const [form, setForm] = useState(EMPTY_A3);
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
@@ -223,6 +320,23 @@ function A3Template({ onSave }) {
 export default function ProblemSolving() {
   const { currentUser } = useAuth();
   const [activeTool, setActiveTool] = useState('5 Whys');
+  const [fishboneSaved, setFishboneSaved] = useState([]);
+
+  async function fetchFishbone() {
+    if (!currentUser) return;
+    try {
+      const snap = await getDocs(query(
+        collection(db, 'problemSolving'),
+        where('uid', '==', currentUser.uid),
+        where('type', '==', 'fishbone'),
+      ));
+      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      setFishboneSaved(all);
+    } catch (e) { console.error('fetchFishbone:', e); }
+  }
+
+  useEffect(() => { fetchFishbone(); }, [currentUser]);
 
   async function handleSave({ type, title, data }) {
     if (!currentUser) return toast.error('Not signed in');
@@ -231,11 +345,21 @@ export default function ProblemSolving() {
         uid: currentUser.uid, type, title, data, createdAt: serverTimestamp(),
       });
       toast.success('Saved!');
+      fetchFishbone();
     } catch (e) { toast.error('Save failed: ' + (e?.message || e)); }
   }
 
+  async function handleDelete(id) {
+    if (!confirm('Delete this diagram?')) return;
+    try {
+      await deleteDoc(doc(db, 'problemSolving', id));
+      toast.success('Deleted');
+      fetchFishbone();
+    } catch (e) { toast.error('Delete failed'); }
+  }
+
   return (
-    <div style={{ maxWidth: 920, margin: '0 auto' }}>
+    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       <PageHeader icon="🔍" title="Problem-Solving Tools" subtitle="5 Whys, Fishbone Diagram, and A3 Template" />
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
@@ -250,7 +374,7 @@ export default function ProblemSolving() {
       <div className="card" style={{ padding: '1.75rem' }}>
         <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '1.05rem', margin: '0 0 1.25rem' }}>{activeTool}</h3>
         {activeTool === '5 Whys'          && <FiveWhys   onSave={handleSave} />}
-        {activeTool === 'Fishbone Diagram' && <Fishbone   onSave={handleSave} />}
+        {activeTool === 'Fishbone Diagram' && <Fishbone   onSave={handleSave} savedEntries={fishboneSaved} onDelete={handleDelete} />}
         {activeTool === 'A3 Template'      && <A3Template onSave={handleSave} />}
       </div>
     </div>
