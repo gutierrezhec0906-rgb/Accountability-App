@@ -1,4 +1,4 @@
-import { collection, query, where, getDocs, getDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, getDoc, setDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // All trackable tools and their weights (1=light, 2=medium, 3=heavy)
@@ -102,12 +102,22 @@ export async function calculateScore(uid) {
     smart:     Math.round(smartScore),
   };
 
-  // Persist calculated score to Firestore user doc
+  // Persist calculated score to user doc
   await updateDoc(doc(db, 'users', uid), {
     calculatedScore: total,
     scoreBreakdown: breakdown,
     scoreUpdatedAt: serverTimestamp(),
   });
+
+  // Save daily snapshot (upsert by uid+date so only one per day)
+  const today = new Date().toISOString().split('T')[0];
+  await setDoc(doc(db, 'scoreHistory', `${uid}_${today}`), {
+    uid,
+    score: total,
+    breakdown,
+    date: today,
+    savedAt: serverTimestamp(),
+  }, { merge: true });
 
   return { total, breakdown };
 }
