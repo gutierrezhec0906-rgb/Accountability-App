@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { calculateScore } from '../utils/scoring';
@@ -145,34 +145,57 @@ function ScoreLineChart({ history }) {
   );
 }
 
-function DailyMovementFeed({ history }) {
-  if (history.length === 0) return (
-    <p style={{ fontSize: '0.78rem', color: '#94a3b8', textAlign: 'center', marginTop: 16 }}>No history yet — calculate your score to start tracking.</p>
+function DailyMovementFeed({ logs }) {
+  if (logs.length === 0) return (
+    <p style={{ fontSize: '0.78rem', color: '#94a3b8', textAlign: 'center', marginTop: 16 }}>
+      No point events yet — calculate your score or use tools to start tracking.
+    </p>
   );
 
-  const entries = [...history].reverse().slice(0, 14);
+  // Group events by date, newest first
+  const byDate = {};
+  logs.forEach(e => {
+    if (!byDate[e.date]) byDate[e.date] = [];
+    byDate[e.date].push(e);
+  });
+  const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a)).slice(0, 14);
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 320, overflowY: 'auto' }}>
-      {entries.map((entry, i) => {
-        const prev = entries[i + 1];
-        const delta = prev != null ? entry.score - prev.score : null;
-        const d = new Date(entry.date + 'T00:00:00');
-        const label = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto' }}>
+      {dates.map((date, di) => {
+        const events = byDate[date];
+        const netDelta = events.reduce((sum, e) => sum + e.points, 0);
+        const d = new Date(date + 'T00:00:00');
+        const dateLabel = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
         return (
-          <div key={entry.date} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.5rem 0.75rem', borderRadius: 9, background: i === 0 ? '#f0fdfa' : '#f8fafc', border: `1px solid ${i === 0 ? '#99f6e4' : '#f1f5f9'}` }}>
-            <div style={{ flex: 1 }}>
-              <p style={{ fontSize: '0.72rem', color: '#64748b', margin: 0 }}>{label}</p>
-              <p style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>{entry.score}<span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 400 }}>/100</span></p>
-            </div>
-            {delta !== null && (
+          <div key={date} style={{ borderRadius: 10, border: `1px solid ${di === 0 ? '#99f6e4' : '#f1f5f9'}`, overflow: 'hidden' }}>
+            {/* Day header */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: di === 0 ? '#f0fdfa' : '#f8fafc' }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b' }}>{dateLabel}</span>
               <span style={{
-                padding: '2px 10px', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 800,
-                background: delta > 0 ? '#dcfce7' : delta < 0 ? '#fee2e2' : '#f1f5f9',
-                color: delta > 0 ? '#15803d' : delta < 0 ? '#dc2626' : '#64748b',
+                padding: '2px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 800,
+                background: netDelta > 0 ? '#dcfce7' : netDelta < 0 ? '#fee2e2' : '#f1f5f9',
+                color: netDelta > 0 ? '#15803d' : netDelta < 0 ? '#dc2626' : '#64748b',
               }}>
-                {delta > 0 ? `+${delta}` : delta === 0 ? '—' : delta}
+                {netDelta > 0 ? `+${netDelta}` : netDelta === 0 ? '—' : netDelta} pts net
               </span>
-            )}
+            </div>
+            {/* Individual events */}
+            {events.map((ev, i) => (
+              <div key={i} style={{ display: 'flex', gap: 8, padding: '0.45rem 0.75rem', borderTop: '1px solid #f1f5f9', alignItems: 'flex-start' }}>
+                <span style={{
+                  padding: '1px 7px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 800, flexShrink: 0, marginTop: 2,
+                  background: ev.points > 0 ? '#dcfce7' : '#fee2e2',
+                  color: ev.points > 0 ? '#15803d' : '#dc2626',
+                }}>
+                  {ev.points > 0 ? `+${ev.points}` : ev.points}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1e293b', margin: '0 0 1px' }}>{ev.toolLabel}</p>
+                  <p style={{ fontSize: '0.68rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>{ev.reason}</p>
+                </div>
+              </div>
+            ))}
           </div>
         );
       })}
@@ -189,6 +212,7 @@ export default function Scores() {
   const [teamScores, setTeamScores] = useState([]);
   const [loadingTeam, setLoadingTeam] = useState(false);
   const [history, setHistory]       = useState([]);
+  const [pointsLog, setPointsLog]   = useState([]);
 
   const canSeeTeam = userProfile?.isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager';
 
@@ -207,17 +231,26 @@ export default function Scores() {
     if (!currentUser) return;
     async function fetchHistory() {
       try {
-        const q = query(collection(db, 'scoreHistory'), where('uid', '==', currentUser.uid));
-        const snap = await getDocs(q);
-        const entries = snap.docs.map(d => d.data());
+        const [histSnap, logSnap] = await Promise.all([
+          getDocs(query(collection(db, 'scoreHistory'), where('uid', '==', currentUser.uid))),
+          getDocs(query(collection(db, 'pointsLog'),    where('uid', '==', currentUser.uid))),
+        ]);
+        const entries = histSnap.docs.map(d => d.data());
         entries.sort((a, b) => a.date.localeCompare(b.date));
         setHistory(entries);
+
+        const logs = logSnap.docs.map(d => d.data());
+        logs.sort((a, b) => {
+          if (a.date !== b.date) return b.date.localeCompare(a.date);
+          return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+        });
+        setPointsLog(logs);
       } catch (e) {
         console.error('history fetch error:', e);
       }
     }
     fetchHistory();
-  }, [currentUser, score]); // re-fetch when score recalculates
+  }, [currentUser, score]);
 
   useEffect(() => {
     if (!canSeeTeam) return;
@@ -379,7 +412,7 @@ export default function Scores() {
           <div className="card" style={{ padding: '1.25rem' }}>
             <p style={{ fontWeight: 800, color: '#1e293b', margin: '0 0 4px', fontSize: '0.9rem' }}>Daily Movement</p>
             <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '0 0 12px' }}>Points gained or lost each day</p>
-            <DailyMovementFeed history={history} />
+            <DailyMovementFeed logs={pointsLog} />
           </div>
         </div>
       </div>

@@ -4,6 +4,7 @@ import PageHeader from '../components/PageHeader';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, query, where, doc, serverTimestamp, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { logPointEvent } from '../utils/scoring';
 
 // Status is computed automatically from due date — never manually set
 function computeStatus(dueDate, recommitmentDate) {
@@ -153,6 +154,12 @@ export default function VisualBoard() {
     try {
       await updateDoc(doc(db, 'visualBoard', modalEntry.id), { deductionApplied: true });
       await updateDoc(doc(db, 'users', currentUser.uid), { penaltyPoints: increment(5) });
+      await logPointEvent(currentUser.uid, {
+        points: -5,
+        tool: 'Visual Board',
+        toolLabel: 'Visual Management Board',
+        reason: `Missed recommitment deadline for action: "${modalEntry.title}"`,
+      });
       toast.error('−5 points deducted for missed recommitment');
       setModalEntry(null);
       fetchItems();
