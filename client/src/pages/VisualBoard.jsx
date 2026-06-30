@@ -79,6 +79,7 @@ export default function VisualBoard() {
   const [filter, setFilter]     = useState('All');
   const [form, setForm]         = useState(EMPTY_FORM);
   const [modalEntry, setModalEntry] = useState(null);
+  const [inlineDates, setInlineDates] = useState({});
 
   async function fetchItems() {
     if (!currentUser) return;
@@ -134,14 +135,31 @@ export default function VisualBoard() {
     }
   }
 
-  async function handleRecommit(id, newDate) {
+  async function handleRecommit(id, newDate, item) {
+    // newDate must not be past due
+    const st = computeStatus(newDate, null);
+    if (st.overdue) return toast.error('Recommitment date must be today or in the future');
     try {
+      const wasDeducted = item?.deductionApplied && item?.recommitmentDate == null;
       await updateDoc(doc(db, 'visualBoard', id), {
         recommitmentDate: newDate,
         recommitmentSetAt: serverTimestamp(),
         deductionApplied: true,
+        pointsRestored: wasDeducted ? true : (item?.pointsRestored || false),
       });
-      toast.success('New commitment date set!');
+      // Restore 5 points if they were previously deducted (dismissed modal)
+      if (wasDeducted && !item?.pointsRestored) {
+        await updateDoc(doc(db, 'users', currentUser.uid), { penaltyPoints: increment(-5) });
+        await logPointEvent(currentUser.uid, {
+          points: +5,
+          tool: 'Visual Board',
+          toolLabel: 'Visual Management Board',
+          reason: `Recommitted to action: "${item.title}" — 5 points restored`,
+        });
+        toast.success('+5 points restored for recommitting!');
+      } else {
+        toast.success('New commitment date set!');
+      }
       setModalEntry(null);
       fetchItems();
     } catch (e) {
@@ -181,7 +199,7 @@ export default function VisualBoard() {
         action={<button className="btn-primary" onClick={() => setShowForm(s => !s)}>+ Add Action</button>} />
 
       {modalEntry && (
-        <RecommitModal entry={modalEntry} onSubmit={handleRecommit} onDismiss={handleDismissModal} />
+        <RecommitModal entry={modalEntry} onSubmit={(id, date) => handleRecommit(id, date, modalEntry)} onDismiss={handleDismissModal} />
       )}
 
       {/* Status legend */}
@@ -250,30 +268,68 @@ export default function VisualBoard() {
         {filtered.map(item => {
           const { st } = item;
           const activeDue = item.recommitmentDate || item.dueDate;
+          const inlineDate = inlineDates[item.id] || '';
+          const inlineSt = inlineDate ? computeStatus(inlineDate, null) : null;
           return (
-            <div key={item.id} className="card" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'flex-start', gap: 14, borderLeft: `4px solid ${st.color}`, background: st.overdue ? '#fff8f8' : 'white' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                  <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>{item.title}</h4>
-                  <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 800, background: st.bg, color: st.text, border: `1px solid ${st.border}` }}>
-                    {st.label === 'Red' ? '🔴' : st.label === 'Yellow' ? '🟡' : '🟢'} {st.label}
-                    {st.daysLeft !== null && st.daysLeft < 0 && ` · ${Math.abs(st.daysLeft)}d overdue`}
-                    {st.daysLeft !== null && st.daysLeft >= 0 && ` · ${st.daysLeft}d left`}
-                  </span>
-                  {item.recommitmentDate && (
-                    <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: '0.65rem', fontWeight: 700, background: '#eff6ff', color: '#3b82f6', border: '1px solid #bfdbfe' }}>
-                      🔄 Recommitted
+            <div key={item.id} className="card" style={{ padding: '1rem 1.25rem', borderLeft: `4px solid ${st.color}`, background: st.overdue ? '#fff8f8' : 'white' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                    <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>{item.title}</h4>
+                    <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 800, background: st.bg, color: st.text, border: `1px solid ${st.border}` }}>
+                      {st.label === 'Red' ? '🔴' : st.label === 'Yellow' ? '🟡' : '🟢'} {st.label}
+                      {st.daysLeft !== null && st.daysLeft < 0 && ` · ${Math.abs(st.daysLeft)}d overdue`}
+                      {st.daysLeft !== null && st.daysLeft >= 0 && ` · ${st.daysLeft}d left`}
+                    </span>
+                    {item.recommitmentDate && !st.overdue && (
+                      <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: '0.65rem', fontWeight: 700, background: '#eff6ff', color: '#3b82f6', border: '1px solid #bfdbfe' }}>
+                        🔄 Recommitted
+                      </span>
+                    )}
+                  </div>
+                  {item.notes && <p style={{ color: 'var(--text-secondary)', fontSize: '0.8375rem', margin: '0 0 6px', lineHeight: 1.5 }}>{item.notes}</p>}
+                  <div style={{ display: 'flex', gap: 16, fontSize: '0.75rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                    <span>👤 {item.owner}</span>
+                    {activeDue && <span>📅 Due: {new Date(activeDue + 'T00:00:00').toLocaleDateString()}</span>}
+                  </div>
+                </div>
+                <button onClick={() => handleDelete(item.id)}
+                  style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', fontSize: '1.25rem', lineHeight: 1, padding: '0 4px', flexShrink: 0 }}>×</button>
+              </div>
+
+              {/* Inline recommitment row — only for red items */}
+              {st.overdue && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed #fca5a5', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#dc2626' }}>📅 Recommit to:</span>
+                  <input
+                    type="date"
+                    value={inlineDate}
+                    min={new Date().toISOString().split('T')[0]}
+                    onChange={e => setInlineDates(d => ({ ...d, [item.id]: e.target.value }))}
+                    style={{ padding: '0.25rem 0.5rem', borderRadius: 8, border: `1.5px solid ${inlineSt ? inlineSt.border : '#fca5a5'}`, fontSize: '0.8rem', outline: 'none' }}
+                  />
+                  {inlineDate && inlineSt && (
+                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: inlineSt.text }}>
+                      {inlineSt.label === 'Green' ? '🟢' : inlineSt.label === 'Yellow' ? '🟡' : '🔴'} {inlineSt.label}
                     </span>
                   )}
+                  <button
+                    disabled={!inlineDate || (inlineSt && inlineSt.overdue)}
+                    onClick={() => {
+                      handleRecommit(item.id, inlineDate, item);
+                      setInlineDates(d => ({ ...d, [item.id]: '' }));
+                    }}
+                    style={{
+                      padding: '0.25rem 0.875rem', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, border: 'none', cursor: (!inlineDate || (inlineSt && inlineSt.overdue)) ? 'not-allowed' : 'pointer',
+                      background: (!inlineDate || (inlineSt && inlineSt.overdue)) ? '#e2e8f0' : '#0f2044',
+                      color: (!inlineDate || (inlineSt && inlineSt.overdue)) ? '#94a3b8' : 'white',
+                    }}>
+                    ✓ Commit
+                    {item.deductionApplied && !item.pointsRestored ? ' (+5 pts)' : ''}
+                  </button>
+                  {inlineSt?.overdue && <span style={{ fontSize: '0.68rem', color: '#ef4444' }}>Date must be today or later</span>}
                 </div>
-                {item.notes && <p style={{ color: 'var(--text-secondary)', fontSize: '0.8375rem', margin: '0 0 6px', lineHeight: 1.5 }}>{item.notes}</p>}
-                <div style={{ display: 'flex', gap: 16, fontSize: '0.75rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-                  <span>👤 {item.owner}</span>
-                  {activeDue && <span>📅 Due: {new Date(activeDue + 'T00:00:00').toLocaleDateString()}</span>}
-                </div>
-              </div>
-              <button onClick={() => handleDelete(item.id)}
-                style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', fontSize: '1.25rem', lineHeight: 1, padding: '0 4px', flexShrink: 0 }}>×</button>
+              )}
             </div>
           );
         })}
