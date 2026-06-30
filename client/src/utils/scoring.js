@@ -1,4 +1,4 @@
-import { collection, query, where, getDocs, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, query, where, getDocs, getDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
 // All trackable tools and their weights (1=light, 2=medium, 3=heavy)
@@ -53,13 +53,12 @@ export async function calculateScore(uid) {
   const [sessionsSnap, goalsSnap, userSnap] = await Promise.all([
     getDocs(query(collection(db, 'toolSessions'), where('uid', '==', uid))),
     getDocs(query(collection(db, 'smartGoals'),   where('uid', '==', uid))),
-    getDocs(query(collection(db, 'users'),        where('__name__', '==', uid))),
+    getDoc(doc(db, 'users', uid)),
   ]);
 
-  const sessions    = sessionsSnap.docs.map(d => d.data());
-  const goals       = goalsSnap.docs.map(d => d.data());
-  const userData    = userSnap.docs[0]?.data() || {};
-  const penaltyPts  = userData.penaltyPoints || 0;
+  const sessions   = sessionsSnap.docs.map(d => d.data());
+  const goals      = goalsSnap.docs.map(d => d.data());
+  const penaltyPts = userSnap.data()?.penaltyPoints || 0;
 
   // --- Breadth (0-20) ---
   const uniqueTools = new Set(sessions.map(s => s.tool));

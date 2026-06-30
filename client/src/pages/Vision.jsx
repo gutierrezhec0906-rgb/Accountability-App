@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import { collection, addDoc, getDocs, deleteDoc, updateDoc, query, where, doc, serverTimestamp, increment } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, query, where, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -13,78 +13,13 @@ const prompts = [
   { step: 5, question: "What specific actions will I commit to starting this week?",       placeholder: "Be concrete — what will you do Monday?" },
 ];
 
-function escalation(dueDate) {
-  if (!dueDate) return null;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const due   = new Date(dueDate + 'T00:00:00');
-  const days  = Math.round((due - today) / 86400000);
-  if (days < 0)  return { color: '#ef4444', bg: '#fef2f2', border: '#fca5a5', label: `${Math.abs(days)}d overdue`, icon: '🔴', overdue: true };
-  if (days <= 5) return { color: '#d97706', bg: '#fffbeb', border: '#fcd34d', label: days === 0 ? 'Due today' : `Due in ${days}d`, icon: '🟡', overdue: false };
-  return           { color: '#059669', bg: '#ecfdf5', border: '#6ee7b7', label: `Due in ${days}d`, icon: '🟢', overdue: false };
-}
-
-// Modal for past-due recommitment
-function RecommitModal({ entry, onSubmit, onDismiss }) {
-  const [newDate, setNewDate] = useState('');
-  const esc = escalation(entry.dueDate);
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.55)', padding: '1rem' }}>
-      <div style={{ background: 'white', borderRadius: 18, padding: '2rem', maxWidth: 460, width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.25)' }}>
-        {/* Header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1rem' }}>
-          <div style={{ width: 40, height: 40, borderRadius: 12, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', flexShrink: 0 }}>🔴</div>
-          <div>
-            <p style={{ fontWeight: 900, color: '#ef4444', margin: 0, fontSize: '1rem' }}>Action Past Due — Recommitment Required</p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>Originally due {new Date(entry.dueDate + 'T00:00:00').toLocaleDateString()} · {esc?.label}</p>
-          </div>
-        </div>
-
-        {/* Vision excerpt */}
-        <div style={{ background: '#f8fafc', borderRadius: 10, padding: '0.875rem', marginBottom: '1.25rem', borderLeft: '4px solid #ef4444' }}>
-          <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 4px' }}>{entry.mode === 'personal' ? '👤 Personal' : '👥 Team'} Vision</p>
-          <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5,
-            display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>"{entry.vision}"</p>
-        </div>
-
-        {/* Penalty warning */}
-        <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 10, padding: '0.75rem', marginBottom: '1.25rem', display: 'flex', gap: 8 }}>
-          <span style={{ fontSize: '1rem', flexShrink: 0 }}>⚠️</span>
-          <p style={{ fontSize: '0.78rem', color: '#92400e', margin: 0, lineHeight: 1.5 }}>
-            <strong>5 points will be deducted</strong> from your accountability score if you close this without setting a new commitment date.
-          </p>
-        </div>
-
-        {/* New date picker */}
-        <label style={{ display: 'block', fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-primary)', marginBottom: 6 }}>
-          📅 New Commitment Date
-        </label>
-        <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
-          min={new Date().toISOString().split('T')[0]}
-          style={{ width: '100%', padding: '0.6rem 0.875rem', borderRadius: 10, border: '2px solid #e2e8f0', fontSize: '0.9rem', marginBottom: '1.25rem', boxSizing: 'border-box', outline: 'none' }} />
-
-        <div style={{ display: 'flex', gap: 10 }}>
-          <button onClick={() => onSubmit(entry.id, newDate)} disabled={!newDate}
-            style={{ flex: 1, padding: '0.65rem', borderRadius: 10, background: newDate ? '#0f2044' : '#e2e8f0', color: newDate ? 'white' : '#94a3b8', fontWeight: 800, fontSize: '0.875rem', border: 'none', cursor: newDate ? 'pointer' : 'not-allowed' }}>
-            ✓ Commit to New Date
-          </button>
-          <button onClick={onDismiss}
-            style={{ padding: '0.65rem 1rem', borderRadius: 10, background: '#fef2f2', color: '#ef4444', fontWeight: 700, fontSize: '0.875rem', border: '1px solid #fca5a5', cursor: 'pointer' }}>
-            Close (−5 pts)
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 function SavedPanel({ entries, onDelete, onLoad, activeTab, setActiveTab }) {
   const personal = entries.filter(e => e.mode === 'personal');
   const team     = entries.filter(e => e.mode === 'team');
   const list     = activeTab === 'personal' ? personal : team;
 
   return (
-    <div style={{ width: 280, flexShrink: 0, background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', alignSelf: 'flex-start', position: 'sticky', top: 24 }}>
+    <div style={{ width: 270, flexShrink: 0, background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', alignSelf: 'flex-start', position: 'sticky', top: 24 }}>
       <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)', margin: '0 0 12px' }}>Saved Visions</p>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
@@ -97,43 +32,14 @@ function SavedPanel({ entries, onDelete, onLoad, activeTab, setActiveTab }) {
         ))}
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
-        {[['🔴', '#ef4444', 'Past due'], ['🟡', '#d97706', '≤ 5 days'], ['🟢', '#059669', '6+ days']].map(([icon, color, label]) => (
-          <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.65rem', color, fontWeight: 700 }}>
-            {icon} {label}
-          </span>
-        ))}
-      </div>
-
       {list.length === 0
         ? <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 24 }}>No saved {activeTab} visions yet.</p>
-        : <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 540, overflowY: 'auto' }}>
+        : <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 520, overflowY: 'auto' }}>
             {list.map(e => {
-              const saved = e.createdAt?.seconds ? new Date(e.createdAt.seconds * 1000) : new Date();
-              const activeDue = e.recommitmentDate || e.dueDate;
-              const esc = escalation(activeDue);
+              const d = e.createdAt?.seconds ? new Date(e.createdAt.seconds * 1000) : new Date();
               return (
-                <div key={e.id} style={{
-                  borderRadius: 10, padding: '0.75rem',
-                  border: `2px solid ${esc ? esc.border : 'var(--border)'}`,
-                  background: esc ? esc.bg : '#f8fafc',
-                }}>
-                  {esc && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6, flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.68rem', fontWeight: 800, color: esc.color, background: 'white', border: `1px solid ${esc.border}`, borderRadius: 9999, padding: '1px 8px' }}>
-                        {esc.icon} {esc.label}
-                      </span>
-                      {e.recommitmentDate && (
-                        <span style={{ fontSize: '0.65rem', color: '#3b82f6', fontWeight: 700 }}>🔄 Recommitted</span>
-                      )}
-                    </div>
-                  )}
-                  {esc && (
-                    <p style={{ fontSize: '0.65rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>
-                      Due {new Date(activeDue + 'T00:00:00').toLocaleDateString()}
-                    </p>
-                  )}
-                  <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>Saved {saved.toLocaleDateString()}</p>
+                <div key={e.id} style={{ background: '#f8fafc', borderRadius: 10, padding: '0.75rem', border: '1px solid var(--border)' }}>
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>{d.toLocaleDateString()}</p>
                   <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0 0 8px', lineHeight: 1.5,
                     display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     "{e.vision}"
@@ -162,12 +68,9 @@ export default function Vision() {
   const [mode, setMode]         = useState('personal');
   const [answers, setAnswers]   = useState({});
   const [vision, setVision]     = useState('');
-  const [dueDate, setDueDate]   = useState('');
   const [step, setStep]         = useState(0);
   const [saved, setSaved]       = useState([]);
   const [panelTab, setPanelTab] = useState('personal');
-  // modal state: null or the entry needing recommitment
-  const [modalEntry, setModalEntry] = useState(null);
 
   async function fetchSaved() {
     if (!currentUser) return;
@@ -177,51 +80,12 @@ export default function Vision() {
       const entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
       entries.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
       setSaved(entries);
-
-      // Find first past-due entry that hasn't been penalized yet and has no recommitment
-      const overdueEntry = entries.find(e => {
-        const activeDue = e.recommitmentDate || e.dueDate;
-        const esc = escalation(activeDue);
-        return esc?.overdue && !e.deductionApplied;
-      });
-      if (overdueEntry) setModalEntry(overdueEntry);
     } catch (e) {
       console.error('fetchSaved error:', e);
     }
   }
 
   useEffect(() => { fetchSaved(); }, [currentUser]);
-
-  async function handleRecommit(id, newDate) {
-    try {
-      await updateDoc(doc(db, 'visions', id), {
-        recommitmentDate: newDate,
-        recommitmentSetAt: serverTimestamp(),
-        deductionApplied: true, // mark so we don't prompt again
-      });
-      toast.success('New commitment date set!');
-      setModalEntry(null);
-      fetchSaved();
-    } catch (e) {
-      toast.error('Failed to save: ' + e?.message);
-    }
-  }
-
-  async function handleDismissModal() {
-    if (!modalEntry || !currentUser) { setModalEntry(null); return; }
-    try {
-      // Mark deduction applied on the vision doc so modal doesn't re-fire
-      await updateDoc(doc(db, 'visions', modalEntry.id), { deductionApplied: true });
-      // Deduct 5 points from user's penalty tracker
-      await updateDoc(doc(db, 'users', currentUser.uid), { penaltyPoints: increment(5) });
-      toast.error('−5 points deducted for missed recommitment');
-      setModalEntry(null);
-      fetchSaved();
-    } catch (e) {
-      console.error('Dismiss error:', e);
-      setModalEntry(null);
-    }
-  }
 
   function generateVision() {
     if (Object.keys(answers).filter(k => answers[k]).length < 2) return toast.error('Answer at least 2 questions first');
@@ -231,8 +95,7 @@ export default function Vision() {
   }
 
   async function handleSave() {
-    if (!vision)  return toast.error('Generate a vision statement first');
-    if (!dueDate) return toast.error('Please set an action due date before saving');
+    if (!vision) return toast.error('Generate a vision statement first');
     if (!currentUser) return toast.error('Not logged in');
     try {
       await addDoc(collection(db, 'visions'), {
@@ -240,8 +103,6 @@ export default function Vision() {
         mode,
         vision,
         answers,
-        dueDate,
-        deductionApplied: false,
         createdAt: serverTimestamp(),
       });
       toast.success('Vision saved!');
@@ -265,26 +126,15 @@ export default function Vision() {
     setMode(entry.mode);
     setAnswers(entry.answers || {});
     setVision(entry.vision);
-    setDueDate(entry.recommitmentDate || entry.dueDate || '');
     setStep(0);
     toast.success('Vision loaded!');
   }
 
   const answeredCount = prompts.filter(p => answers[p.step]).length;
-  const esc = escalation(dueDate);
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <PageHeader icon="🔭" title="Vision Builder" subtitle="Create a compelling personal or team vision statement" />
-
-      {/* Recommitment modal */}
-      {modalEntry && (
-        <RecommitModal
-          entry={modalEntry}
-          onSubmit={handleRecommit}
-          onDismiss={handleDismissModal}
-        />
-      )}
 
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -303,23 +153,9 @@ export default function Vision() {
             <div style={{ borderRadius: 16, padding: '1.75rem', marginBottom: '1.5rem', background: 'linear-gradient(135deg,#0b1a38,#0f2044,#0d9488)', color: 'white', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: 12, right: 20, fontSize: '5rem', opacity: 0.07, fontFamily: 'Georgia,serif', lineHeight: 1 }}>"</div>
               <p style={{ color: '#99f6e4', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 10px' }}>Your Vision Statement</p>
-              <p style={{ fontSize: '1rem', lineHeight: 1.7, margin: '0 0 16px', color: 'rgba(255,255,255,0.9)' }}>"{vision}"</p>
-
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.75)' }}>📅 Action Due Date:</label>
-                  <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-                    style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '0.25rem 0.625rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', colorScheme: 'dark' }} />
-                </div>
-                {esc && (
-                  <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 800, background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.25)' }}>
-                    {esc.icon} {esc.label}
-                  </span>
-                )}
-              </div>
-
+              <p style={{ fontSize: '1rem', lineHeight: 1.7, margin: '0 0 14px', color: 'rgba(255,255,255,0.9)' }}>"{vision}"</p>
               <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => { setVision(''); setAnswers({}); setDueDate(''); }}
+                <button onClick={() => { setVision(''); setAnswers({}); }}
                   style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600 }}>
                   Clear & Start Over
                 </button>
@@ -366,7 +202,6 @@ export default function Vision() {
           </div>
         </div>
 
-        {/* Right: saved panel */}
         <SavedPanel
           entries={saved}
           onDelete={handleDelete}
