@@ -50,13 +50,16 @@ function fieldQuality(text = '') {
 }
 
 export async function calculateScore(uid) {
-  const [sessionsSnap, goalsSnap] = await Promise.all([
+  const [sessionsSnap, goalsSnap, userSnap] = await Promise.all([
     getDocs(query(collection(db, 'toolSessions'), where('uid', '==', uid))),
     getDocs(query(collection(db, 'smartGoals'),   where('uid', '==', uid))),
+    getDocs(query(collection(db, 'users'),        where('__name__', '==', uid))),
   ]);
 
-  const sessions = sessionsSnap.docs.map(d => d.data());
-  const goals    = goalsSnap.docs.map(d => d.data());
+  const sessions    = sessionsSnap.docs.map(d => d.data());
+  const goals       = goalsSnap.docs.map(d => d.data());
+  const userData    = userSnap.docs[0]?.data() || {};
+  const penaltyPts  = userData.penaltyPoints || 0;
 
   // --- Breadth (0-20) ---
   const uniqueTools = new Set(sessions.map(s => s.tool));
@@ -89,7 +92,7 @@ export async function calculateScore(uid) {
   const completedGoals = goals.filter(g => g.status === 'completed').length;
   const smartScore = Math.min(activeGoals * 2 + completedGoals * 4, 10);
 
-  const total = Math.round(Math.min(100, breadth + frequency + depth + quality + evidence + smartScore));
+  const total = Math.round(Math.max(0, Math.min(100, breadth + frequency + depth + quality + evidence + smartScore - penaltyPts)));
 
   const breakdown = {
     breadth:   Math.round(breadth),
