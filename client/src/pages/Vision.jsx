@@ -13,16 +13,26 @@ const prompts = [
   { step: 5, question: "What specific actions will I commit to starting this week?",       placeholder: "Be concrete — what will you do Monday?" },
 ];
 
+// Returns escalation info based on due date string (YYYY-MM-DD)
+function escalation(dueDate) {
+  if (!dueDate) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const due   = new Date(dueDate + 'T00:00:00');
+  const days  = Math.round((due - today) / 86400000);
+  if (days < 0)  return { color: '#ef4444', bg: '#fef2f2', border: '#fca5a5', label: `${Math.abs(days)}d overdue`, icon: '🔴' };
+  if (days <= 5) return { color: '#d97706', bg: '#fffbeb', border: '#fcd34d', label: days === 0 ? 'Due today' : `Due in ${days}d`, icon: '🟡' };
+  return           { color: '#059669', bg: '#ecfdf5', border: '#6ee7b7', label: `Due in ${days}d`, icon: '🟢' };
+}
+
 function SavedPanel({ entries, onDelete, onLoad, activeTab, setActiveTab }) {
   const personal = entries.filter(e => e.mode === 'personal');
   const team     = entries.filter(e => e.mode === 'team');
   const list     = activeTab === 'personal' ? personal : team;
 
   return (
-    <div style={{ width: 270, flexShrink: 0, background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', alignSelf: 'flex-start', position: 'sticky', top: 24 }}>
+    <div style={{ width: 280, flexShrink: 0, background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', alignSelf: 'flex-start', position: 'sticky', top: 24 }}>
       <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)', margin: '0 0 12px' }}>Saved Visions</p>
 
-      {/* tabs */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
         {[['personal', `👤 Personal (${personal.length})`], ['team', `👥 Team (${team.length})`]].map(([key, label]) => (
           <button key={key} onClick={() => setActiveTab(key)}
@@ -33,18 +43,43 @@ function SavedPanel({ entries, onDelete, onLoad, activeTab, setActiveTab }) {
         ))}
       </div>
 
+      {/* legend */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12, flexWrap: 'wrap' }}>
+        {[['🔴', '#ef4444', 'Past due'], ['🟡', '#d97706', '≤ 5 days'], ['🟢', '#059669', '6+ days']].map(([icon, color, label]) => (
+          <span key={label} style={{ display: 'flex', alignItems: 'center', gap: 3, fontSize: '0.65rem', color, fontWeight: 700 }}>
+            {icon} {label}
+          </span>
+        ))}
+      </div>
+
       {list.length === 0
         ? <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 24 }}>No saved {activeTab} visions yet.</p>
-        : <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 520, overflowY: 'auto' }}>
+        : <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 540, overflowY: 'auto' }}>
             {list.map(e => {
-              const d = e.createdAt?.seconds ? new Date(e.createdAt.seconds * 1000) : new Date();
+              const saved = e.createdAt?.seconds ? new Date(e.createdAt.seconds * 1000) : new Date();
+              const esc   = escalation(e.dueDate);
               return (
-                <div key={e.id} style={{ background: '#f8fafc', borderRadius: 10, padding: '0.75rem', border: '1px solid var(--border)' }}>
-                  <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>{d.toLocaleDateString()}</p>
+                <div key={e.id} style={{
+                  borderRadius: 10, padding: '0.75rem',
+                  border: `2px solid ${esc ? esc.border : 'var(--border)'}`,
+                  background: esc ? esc.bg : '#f8fafc',
+                }}>
+                  {/* escalation badge */}
+                  {esc && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 800, color: esc.color, background: 'white', border: `1px solid ${esc.border}`, borderRadius: 9999, padding: '1px 8px' }}>
+                        {esc.icon} {esc.label}
+                      </span>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Due {new Date(e.dueDate + 'T00:00:00').toLocaleDateString()}</span>
+                    </div>
+                  )}
+
+                  <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>Saved {saved.toLocaleDateString()}</p>
                   <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0 0 8px', lineHeight: 1.5,
                     display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
                     "{e.vision}"
                   </p>
+
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button onClick={() => onLoad(e)}
                       style={{ flex: 1, padding: '0.25rem 0', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #0d9488', background: 'white', color: '#0d9488', cursor: 'pointer' }}>
@@ -69,6 +104,7 @@ export default function Vision() {
   const [mode, setMode]       = useState('personal');
   const [answers, setAnswers] = useState({});
   const [vision, setVision]   = useState('');
+  const [dueDate, setDueDate] = useState('');
   const [step, setStep]       = useState(0);
   const [saved, setSaved]     = useState([]);
   const [panelTab, setPanelTab] = useState('personal');
@@ -96,7 +132,8 @@ export default function Vision() {
   }
 
   async function handleSave() {
-    if (!vision) return toast.error('Generate a vision statement first');
+    if (!vision)   return toast.error('Generate a vision statement first');
+    if (!dueDate)  return toast.error('Please set an action due date before saving');
     if (!currentUser) return toast.error('Not logged in');
     try {
       await addDoc(collection(db, 'visions'), {
@@ -104,6 +141,7 @@ export default function Vision() {
         mode,
         vision,
         answers,
+        dueDate,
         createdAt: serverTimestamp(),
       });
       toast.success('Vision saved!');
@@ -127,18 +165,19 @@ export default function Vision() {
     setMode(entry.mode);
     setAnswers(entry.answers || {});
     setVision(entry.vision);
+    setDueDate(entry.dueDate || '');
     setStep(0);
     toast.success('Vision loaded!');
   }
 
   const answeredCount = prompts.filter(p => answers[p.step]).length;
+  const esc = escalation(dueDate);
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <PageHeader icon="🔭" title="Vision Builder" subtitle="Create a compelling personal or team vision statement" />
 
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
-        {/* Left: main form */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* Mode toggle */}
           <div style={{ display: 'flex', gap: 8, marginBottom: '1.5rem' }}>
@@ -155,9 +194,24 @@ export default function Vision() {
             <div style={{ borderRadius: 16, padding: '1.75rem', marginBottom: '1.5rem', background: 'linear-gradient(135deg,#0b1a38,#0f2044,#0d9488)', color: 'white', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: 12, right: 20, fontSize: '5rem', opacity: 0.07, fontFamily: 'Georgia,serif', lineHeight: 1 }}>"</div>
               <p style={{ color: '#99f6e4', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 10px' }}>Your Vision Statement</p>
-              <p style={{ fontSize: '1rem', lineHeight: 1.7, margin: '0 0 14px', color: 'rgba(255,255,255,0.9)' }}>"{vision}"</p>
+              <p style={{ fontSize: '1rem', lineHeight: 1.7, margin: '0 0 16px', color: 'rgba(255,255,255,0.9)' }}>"{vision}"</p>
+
+              {/* Due date row */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'rgba(255,255,255,0.75)' }}>📅 Action Due Date:</label>
+                  <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
+                    style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '0.25rem 0.625rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', colorScheme: 'dark' }} />
+                </div>
+                {esc && (
+                  <span style={{ padding: '3px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 800, background: 'rgba(255,255,255,0.15)', color: 'white', border: '1px solid rgba(255,255,255,0.25)' }}>
+                    {esc.icon} {esc.label}
+                  </span>
+                )}
+              </div>
+
               <div style={{ display: 'flex', gap: 10 }}>
-                <button onClick={() => { setVision(''); setAnswers({}); }}
+                <button onClick={() => { setVision(''); setAnswers({}); setDueDate(''); }}
                   style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600 }}>
                   Clear & Start Over
                 </button>
