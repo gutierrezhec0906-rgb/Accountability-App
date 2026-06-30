@@ -62,10 +62,25 @@ function ScoreLineChart({ history }) {
   const chartW = W - PAD_L - PAD_R;
   const chartH = H - PAD_T - PAD_B;
 
-  if (history.length < 2) {
+  if (history.length === 0) {
     return (
-      <div style={{ height: H, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.78rem' }}>
-        Calculate your score on multiple days to see the trend
+      <div style={{ height: H, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.78rem', textAlign: 'center', padding: '0 1rem' }}>
+        Calculate your score to start tracking the trend
+      </div>
+    );
+  }
+
+  // Single point — show as a labelled dot
+  if (history.length === 1) {
+    const d = new Date(history[0].date + 'T00:00:00');
+    const label = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return (
+      <div style={{ height: H, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        <svg width="60" height="60" viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="22" fill="#f0fdfa" stroke="#0d9488" strokeWidth="3" />
+          <text x="30" y="34" textAnchor="middle" fontSize="16" fontWeight="900" fill="#0d9488">{history[0].score}</text>
+        </svg>
+        <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: 0 }}>{label} — calculate again tomorrow to see your trend</p>
       </div>
     );
   }
