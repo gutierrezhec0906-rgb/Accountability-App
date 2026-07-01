@@ -156,6 +156,20 @@ export default function Vision() {
     }
   }
 
+  const [editingQ, setEditingQ]     = useState(null); // step number being edited
+  const [editQVal, setEditQVal]     = useState('');
+
+  function startEditQ(step) {
+    setEditingQ(step);
+    setEditQVal(answers[step] || '');
+  }
+
+  function saveEditQ(step) {
+    setAnswers(a => ({ ...a, [step]: editQVal }));
+    setEditingQ(null);
+    setEditQVal('');
+  }
+
   const answeredCount = prompts.filter(p => answers[p.step]).length;
 
   return (
@@ -199,21 +213,39 @@ export default function Vision() {
             <div style={{ borderRadius: 16, padding: '1.75rem', marginBottom: '1.5rem', background: 'linear-gradient(135deg,#0b1a38,#0f2044,#0d9488)', color: 'white', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: 12, right: 20, fontSize: '5rem', opacity: 0.07, fontFamily: 'Georgia,serif', lineHeight: 1 }}>"</div>
               <p style={{ color: '#99f6e4', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 10px' }}>Your Vision Statement</p>
-              <p style={{ fontSize: '1rem', lineHeight: 1.7, margin: '0 0 14px', color: 'rgba(255,255,255,0.9)' }}>"{vision}"</p>
-              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                <button onClick={() => { setVision(''); setAnswers({}); }}
-                  style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600 }}>
-                  Clear & Start Over
-                </button>
-                <button onClick={() => { setEditingId('current'); setEditVision(vision); }}
-                  style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>
-                  ✏️ Edit
-                </button>
-                <button onClick={handleSave}
-                  style={{ background: '#0d9488', border: 'none', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>
-                  💾 Save Vision
-                </button>
-              </div>
+              {editingId === 'current'
+                ? <>
+                    <textarea value={editVision} onChange={e => setEditVision(e.target.value)} rows={4} autoFocus
+                      style={{ width: '100%', fontSize: '0.95rem', lineHeight: 1.7, borderRadius: 10, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.1)', color: 'white', padding: '0.75rem', marginBottom: 12, resize: 'vertical', outline: 'none' }} />
+                    <div style={{ display: 'flex', gap: 10 }}>
+                      <button onClick={() => { setVision(editVision); setEditingId(null); }}
+                        style={{ background: '#0d9488', border: 'none', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>
+                        ✓ Apply
+                      </button>
+                      <button onClick={() => setEditingId(null)}
+                        style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600 }}>
+                        Cancel
+                      </button>
+                    </div>
+                  </>
+                : <>
+                    <p style={{ fontSize: '1rem', lineHeight: 1.7, margin: '0 0 14px', color: 'rgba(255,255,255,0.9)' }}>"{vision}"</p>
+                    <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                      <button onClick={() => { setVision(''); setAnswers({}); }}
+                        style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600 }}>
+                        Clear & Start Over
+                      </button>
+                      <button onClick={() => { setEditingId('current'); setEditVision(vision); }}
+                        style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>
+                        ✏️ Edit
+                      </button>
+                      <button onClick={handleSave}
+                        style={{ background: '#0d9488', border: 'none', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>
+                        💾 Save Vision
+                      </button>
+                    </div>
+                  </>
+              }
             </div>
           )}
 
@@ -243,10 +275,35 @@ export default function Vision() {
           {/* Answers summary */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {prompts.map((p, i) => answers[p.step] && (
-              <div key={p.step} className="card" style={{ padding: '1rem 1.25rem', cursor: 'pointer' }} onClick={() => setStep(i)}>
-                <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 4px' }}>Q{p.step}</p>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>{p.question}</p>
-                <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>{answers[p.step]}</p>
+              <div key={p.step} className="card" style={{ padding: '1rem 1.25rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                  <p style={{ fontSize: '0.7rem', fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.07em', margin: 0 }}>Q{p.step}</p>
+                  {editingQ !== p.step
+                    ? <button onClick={() => startEditQ(p.step)}
+                        style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: 6, padding: '2px 8px', fontSize: '0.68rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>
+                        ✏️ Edit
+                      </button>
+                    : <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => saveEditQ(p.step)}
+                          style={{ background: '#0d9488', border: 'none', borderRadius: 6, padding: '2px 10px', fontSize: '0.68rem', fontWeight: 700, color: 'white', cursor: 'pointer' }}>
+                          Save
+                        </button>
+                        <button onClick={() => setEditingQ(null)}
+                          style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: 6, padding: '2px 8px', fontSize: '0.68rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>
+                          Cancel
+                        </button>
+                      </div>
+                  }
+                </div>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0 0 6px' }}>{p.question}</p>
+                {editingQ === p.step
+                  ? <textarea className="input" rows={3} value={editQVal} onChange={e => setEditQVal(e.target.value)}
+                      style={{ fontSize: '0.875rem' }} autoFocus />
+                  : <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5, cursor: 'pointer' }}
+                      onClick={() => setStep(i)}>
+                      {answers[p.step]}
+                    </p>
+                }
               </div>
             ))}
           </div>
