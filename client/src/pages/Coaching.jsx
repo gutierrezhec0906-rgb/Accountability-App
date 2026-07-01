@@ -18,6 +18,17 @@ const typeColors = { Performance: '#0d9488', Development: '#0f2044', Disciplinar
 
 const emptyForm = { date: '', coachee: '', type: 'Performance', duration: '', notes: '', actionItems: '', nextSession: '' };
 
+function sessionCountdown(nextSession) {
+  if (!nextSession) return null;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const due   = new Date(nextSession + 'T00:00:00');
+  const days  = Math.round((due - today) / 86400000);
+  if (days < 0)  return { label: `${Math.abs(days)}d overdue`, color: '#ef4444', bg: '#fef2f2' };
+  if (days === 0) return { label: 'Today',        color: '#ef4444', bg: '#fef2f2' };
+  if (days <= 3)  return { label: `${days}d left`, color: '#eab308', bg: '#fefce8' };
+  return               { label: `${days}d left`, color: '#16a34a', bg: '#f0fdf4' };
+}
+
 export default function Coaching() {
   const [sessions, setSessions]           = useState(sampleSessions);
   const [showForm, setShowForm]           = useState(false);
@@ -111,7 +122,14 @@ export default function Coaching() {
                     <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>{s.coachee}</h4>
                     <span style={{ background: typeColors[s.type] || '#0d9488', color: 'white', borderRadius: 9999, padding: '2px 10px', fontSize: '0.7rem', fontWeight: 700 }}>{s.type}</span>
                   </div>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>📅 {s.date} · ⏱ {s.duration}</p>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>📅 {s.date} · ⏱ {s.duration}</p>
+                    {(() => { const cd = sessionCountdown(s.nextSession); return cd ? (
+                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: cd.color, background: cd.bg, border: `1px solid ${cd.color}33`, borderRadius: 9999, padding: '1px 8px' }}>
+                        Next: {cd.label}
+                      </span>
+                    ) : null; })()}
+                  </div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
