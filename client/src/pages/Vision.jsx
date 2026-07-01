@@ -93,21 +93,30 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, activeTab, setActiveTab
 export default function Vision() {
   const { currentUser } = useAuth();
   const [mode, setMode]             = useState('personal');
-  const [answers, setAnswers]       = useState({});
-  const [vision, setVision]         = useState('');
-  const [step, setStep]             = useState(0);
   const [saved, setSaved]           = useState([]);
   const [panelTab, setPanelTab]     = useState('personal');
-  // Track loaded doc separately per mode so personal and team never overwrite each other
-  const [loadedIds, setLoadedIds]   = useState({ personal: null, team: null });
-  const [editingId, setEditingId]   = useState(null); // 'current' | Firestore id
+  const [editingId, setEditingId]   = useState(null);
   const [editVision, setEditVision] = useState('');
   const [editingQ, setEditingQ]     = useState(null);
   const [editQVal, setEditQVal]     = useState('');
   const [expandedId, setExpandedId] = useState(null);
 
-  const loadedId = loadedIds[mode];
-  function setLoadedId(id) { setLoadedIds(prev => ({ ...prev, [mode]: id })); }
+  // Per-mode state: answers, vision, step, loadedId stored separately
+  const [modeState, setModeState] = useState({
+    personal: { answers: {}, vision: '', step: 0, loadedId: null },
+    team:     { answers: {}, vision: '', step: 0, loadedId: null },
+  });
+
+  const { answers, vision, step, loadedId } = modeState[mode];
+
+  function updateMode(patch) {
+    setModeState(prev => ({ ...prev, [mode]: { ...prev[mode], ...patch } }));
+  }
+
+  const setAnswers  = val => updateMode({ answers: typeof val === 'function' ? val(modeState[mode].answers) : val });
+  const setVision   = val => updateMode({ vision: val });
+  const setStep     = val => updateMode({ step: typeof val === 'function' ? val(modeState[mode].step) : val });
+  const setLoadedId = val => updateMode({ loadedId: val });
 
   async function fetchSaved() {
     if (!currentUser) return;
@@ -156,9 +165,10 @@ export default function Vision() {
   async function handleDelete(id) {
     try {
       await deleteDoc(doc(db, 'visions', id));
-      if (loadedIds.personal === id || loadedIds.team === id) {
-        setLoadedIds(prev => ({ personal: prev.personal === id ? null : prev.personal, team: prev.team === id ? null : prev.team }));
-      }
+      setModeState(prev => ({
+        personal: prev.personal.loadedId === id ? { ...prev.personal, loadedId: null } : prev.personal,
+        team:     prev.team.loadedId     === id ? { ...prev.team,     loadedId: null } : prev.team,
+      }));
       if (expandedId === id) setExpandedId(null);
       fetchSaved();
     } catch (e) {
@@ -252,7 +262,7 @@ export default function Vision() {
           {/* Mode toggle */}
           <div style={{ display: 'flex', gap: 8, marginBottom: '1.5rem' }}>
             {[{ key: 'personal', label: '👤 Personal Vision' }, { key: 'team', label: '👥 Team Vision' }].map(m => (
-              <button key={m.key} onClick={() => { setMode(m.key); setAnswers({}); setVision(''); setStep(0); setEditingQ(null); setPanelTab(m.key); }}
+              <button key={m.key} onClick={() => { setMode(m.key); setEditingQ(null); setEditingId(null); setPanelTab(m.key); }}
                 style={{ padding: '0.5rem 1.25rem', borderRadius: 10, fontWeight: 700, fontSize: '0.875rem', border: 'none', cursor: 'pointer', transition: 'all 0.15s', background: mode === m.key ? '#0f2044' : '#f1f5f9', color: mode === m.key ? 'white' : '#475569' }}>
                 {m.label}
               </button>
@@ -284,7 +294,7 @@ export default function Vision() {
                 : <>
                     <p style={{ fontSize: '1rem', lineHeight: 1.7, margin: '0 0 14px', color: 'rgba(255,255,255,0.9)' }}>"{vision}"</p>
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                      <button onClick={() => { setVision(''); setAnswers({}); setStep(0); setLoadedId(null); }}
+                      <button onClick={() => updateMode({ vision: '', answers: {}, step: 0, loadedId: null })}
                         style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600 }}>
                         Clear & Start Over
                       </button>
