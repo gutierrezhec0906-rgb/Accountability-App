@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import { collection, addDoc, getDocs, deleteDoc, query, where, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, deleteDoc, updateDoc, query, where, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -13,7 +13,7 @@ const prompts = [
   { step: 5, question: "What specific actions will I commit to starting this week?",       placeholder: "Be concrete — what will you do Monday?" },
 ];
 
-function SavedPanel({ entries, onDelete, onLoad, activeTab, setActiveTab }) {
+function SavedPanel({ entries, onDelete, onLoad, onEdit, activeTab, setActiveTab }) {
   const personal = entries.filter(e => e.mode === 'personal');
   const team     = entries.filter(e => e.mode === 'team');
   const list     = activeTab === 'personal' ? personal : team;
@@ -49,6 +49,10 @@ function SavedPanel({ entries, onDelete, onLoad, activeTab, setActiveTab }) {
                       style={{ flex: 1, padding: '0.25rem 0', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #0d9488', background: 'white', color: '#0d9488', cursor: 'pointer' }}>
                       Load
                     </button>
+                    <button onClick={() => onEdit(e)}
+                      style={{ flex: 1, padding: '0.25rem 0', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #0f2044', background: 'white', color: '#0f2044', cursor: 'pointer' }}>
+                      ✏️ Edit
+                    </button>
                     <button onClick={() => onDelete(e.id)}
                       style={{ padding: '0.25rem 0.5rem', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #fca5a5', background: 'white', color: '#ef4444', cursor: 'pointer' }}>
                       ✕
@@ -65,12 +69,14 @@ function SavedPanel({ entries, onDelete, onLoad, activeTab, setActiveTab }) {
 
 export default function Vision() {
   const { currentUser } = useAuth();
-  const [mode, setMode]         = useState('personal');
-  const [answers, setAnswers]   = useState({});
-  const [vision, setVision]     = useState('');
-  const [step, setStep]         = useState(0);
-  const [saved, setSaved]       = useState([]);
-  const [panelTab, setPanelTab] = useState('personal');
+  const [mode, setMode]           = useState('personal');
+  const [answers, setAnswers]     = useState({});
+  const [vision, setVision]       = useState('');
+  const [step, setStep]           = useState(0);
+  const [saved, setSaved]         = useState([]);
+  const [panelTab, setPanelTab]   = useState('personal');
+  const [editingId, setEditingId] = useState(null);
+  const [editVision, setEditVision] = useState('');
 
   async function fetchSaved() {
     if (!currentUser) return;
@@ -116,6 +122,7 @@ export default function Vision() {
   async function handleDelete(id) {
     try {
       await deleteDoc(doc(db, 'visions', id));
+      if (editingId === id) { setEditingId(null); setEditVision(''); }
       fetchSaved();
     } catch (e) {
       toast.error('Delete failed: ' + e?.message);
@@ -127,7 +134,26 @@ export default function Vision() {
     setAnswers(entry.answers || {});
     setVision(entry.vision);
     setStep(0);
+    setEditingId(null);
     toast.success('Vision loaded!');
+  }
+
+  function handleEdit(entry) {
+    setEditingId(entry.id);
+    setEditVision(entry.vision);
+  }
+
+  async function handleSaveEdit() {
+    if (!editVision.trim()) return toast.error('Vision statement cannot be empty');
+    try {
+      await updateDoc(doc(db, 'visions', editingId), { vision: editVision });
+      toast.success('Vision updated!');
+      setEditingId(null);
+      setEditVision('');
+      fetchSaved();
+    } catch (e) {
+      toast.error('Update failed: ' + e?.message);
+    }
   }
 
   const answeredCount = prompts.filter(p => answers[p.step]).length;
@@ -135,6 +161,26 @@ export default function Vision() {
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <PageHeader icon="🔭" title="Vision Builder" subtitle="Create a compelling personal or team vision statement" />
+
+      {/* Edit modal overlay */}
+      {editingId && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div style={{ background: 'white', borderRadius: 16, padding: '2rem', width: '100%', maxWidth: 560, boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 1rem', fontSize: '1.05rem' }}>✏️ Edit Vision Statement</h3>
+            <textarea
+              className="input"
+              rows={6}
+              value={editVision}
+              onChange={e => setEditVision(e.target.value)}
+              style={{ width: '100%', fontSize: '0.9rem', lineHeight: 1.7 }}
+            />
+            <div style={{ display: 'flex', gap: 10, marginTop: '1rem' }}>
+              <button className="btn-primary" onClick={handleSaveEdit}>Save Changes</button>
+              <button className="btn-secondary" onClick={() => { setEditingId(null); setEditVision(''); }}>Cancel</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
@@ -154,10 +200,14 @@ export default function Vision() {
               <div style={{ position: 'absolute', top: 12, right: 20, fontSize: '5rem', opacity: 0.07, fontFamily: 'Georgia,serif', lineHeight: 1 }}>"</div>
               <p style={{ color: '#99f6e4', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 10px' }}>Your Vision Statement</p>
               <p style={{ fontSize: '1rem', lineHeight: 1.7, margin: '0 0 14px', color: 'rgba(255,255,255,0.9)' }}>"{vision}"</p>
-              <div style={{ display: 'flex', gap: 10 }}>
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                 <button onClick={() => { setVision(''); setAnswers({}); }}
                   style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600 }}>
                   Clear & Start Over
+                </button>
+                <button onClick={() => { setEditingId('current'); setEditVision(vision); }}
+                  style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>
+                  ✏️ Edit
                 </button>
                 <button onClick={handleSave}
                   style={{ background: '#0d9488', border: 'none', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>
@@ -206,6 +256,7 @@ export default function Vision() {
           entries={saved}
           onDelete={handleDelete}
           onLoad={handleLoad}
+          onEdit={handleEdit}
           activeTab={panelTab}
           setActiveTab={setPanelTab}
         />
