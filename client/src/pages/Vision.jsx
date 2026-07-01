@@ -6,20 +6,20 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
 const prompts = [
-  { step: 1, question: "What kind of leader do I want to be known as in 5 years?",        placeholder: "Describe your ideal leadership identity..." },
-  { step: 2, question: "What impact do I want to have on my team and organization?",       placeholder: "What change or legacy do you want to leave?" },
-  { step: 3, question: "What values are non-negotiable in how I lead?",                    placeholder: "e.g. Integrity, transparency, accountability..." },
-  { step: 4, question: "What does success look like for my team in 3 years?",              placeholder: "Describe your team's future state..." },
-  { step: 5, question: "What specific actions will I commit to starting this week?",       placeholder: "Be concrete — what will you do Monday?" },
+  { step: 1, question: "What kind of leader do I want to be known as in 5 years?",     placeholder: "Describe your ideal leadership identity..." },
+  { step: 2, question: "What impact do I want to have on my team and organization?",    placeholder: "What change or legacy do you want to leave?" },
+  { step: 3, question: "What values are non-negotiable in how I lead?",                 placeholder: "e.g. Integrity, transparency, accountability..." },
+  { step: 4, question: "What does success look like for my team in 3 years?",           placeholder: "Describe your team's future state..." },
+  { step: 5, question: "What specific actions will I commit to starting this week?",    placeholder: "Be concrete — what will you do Monday?" },
 ];
 
-function SavedPanel({ entries, onDelete, onLoad, onEdit, activeTab, setActiveTab }) {
+function SavedPanel({ entries, onDelete, onLoad, onEdit, activeTab, setActiveTab, expandedId, setExpandedId }) {
   const personal = entries.filter(e => e.mode === 'personal');
   const team     = entries.filter(e => e.mode === 'team');
   const list     = activeTab === 'personal' ? personal : team;
 
   return (
-    <div style={{ width: 270, flexShrink: 0, background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', alignSelf: 'flex-start', position: 'sticky', top: 24 }}>
+    <div style={{ width: 290, flexShrink: 0, background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', alignSelf: 'flex-start', position: 'sticky', top: 24 }}>
       <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)', margin: '0 0 12px' }}>Saved Visions</p>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
@@ -34,16 +34,39 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, activeTab, setActiveTab
 
       {list.length === 0
         ? <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 24 }}>No saved {activeTab} visions yet.</p>
-        : <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 520, overflowY: 'auto' }}>
+        : <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 620, overflowY: 'auto' }}>
             {list.map(e => {
               const d = e.createdAt?.seconds ? new Date(e.createdAt.seconds * 1000) : new Date();
+              const isExpanded = expandedId === e.id;
               return (
                 <div key={e.id} style={{ background: '#f8fafc', borderRadius: 10, padding: '0.75rem', border: '1px solid var(--border)' }}>
                   <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>{d.toLocaleDateString()}</p>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0 0 8px', lineHeight: 1.5,
-                    display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+
+                  {/* Vision statement */}
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0 0 6px', lineHeight: 1.5,
+                    ...(!isExpanded ? { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } : {}) }}>
                     "{e.vision}"
                   </p>
+
+                  {/* Toggle Q&A */}
+                  <button onClick={() => setExpandedId(isExpanded ? null : e.id)}
+                    style={{ background: 'none', border: 'none', color: '#0d9488', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', padding: '0 0 6px' }}>
+                    {isExpanded ? '▲ Hide answers' : '▼ Show Q&A answers'}
+                  </button>
+
+                  {/* Q&A answers */}
+                  {isExpanded && e.answers && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
+                      {prompts.map(p => e.answers[p.step] && (
+                        <div key={p.step} style={{ borderLeft: '3px solid #0d9488', paddingLeft: 8 }}>
+                          <p style={{ fontSize: '0.62rem', fontWeight: 700, color: '#0d9488', margin: '0 0 2px', textTransform: 'uppercase' }}>Q{p.step}</p>
+                          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 2px' }}>{p.question}</p>
+                          <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>{e.answers[p.step]}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button onClick={() => onLoad(e)}
                       style={{ flex: 1, padding: '0.25rem 0', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #0d9488', background: 'white', color: '#0d9488', cursor: 'pointer' }}>
@@ -69,14 +92,18 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, activeTab, setActiveTab
 
 export default function Vision() {
   const { currentUser } = useAuth();
-  const [mode, setMode]           = useState('personal');
-  const [answers, setAnswers]     = useState({});
-  const [vision, setVision]       = useState('');
-  const [step, setStep]           = useState(0);
-  const [saved, setSaved]         = useState([]);
-  const [panelTab, setPanelTab]   = useState('personal');
-  const [editingId, setEditingId] = useState(null);
+  const [mode, setMode]             = useState('personal');
+  const [answers, setAnswers]       = useState({});
+  const [vision, setVision]         = useState('');
+  const [step, setStep]             = useState(0);
+  const [saved, setSaved]           = useState([]);
+  const [panelTab, setPanelTab]     = useState('personal');
+  const [loadedId, setLoadedId]     = useState(null); // currently loaded Firestore doc id
+  const [editingId, setEditingId]   = useState(null); // 'current' | Firestore id
   const [editVision, setEditVision] = useState('');
+  const [editingQ, setEditingQ]     = useState(null);
+  const [editQVal, setEditQVal]     = useState('');
+  const [expandedId, setExpandedId] = useState(null);
 
   async function fetchSaved() {
     if (!currentUser) return;
@@ -104,14 +131,17 @@ export default function Vision() {
     if (!vision) return toast.error('Generate a vision statement first');
     if (!currentUser) return toast.error('Not logged in');
     try {
-      await addDoc(collection(db, 'visions'), {
-        uid: currentUser.uid,
-        mode,
-        vision,
-        answers,
-        createdAt: serverTimestamp(),
-      });
-      toast.success('Vision saved!');
+      if (loadedId) {
+        // Update existing doc
+        await updateDoc(doc(db, 'visions', loadedId), { vision, answers, mode });
+        toast.success('Vision updated!');
+      } else {
+        const ref = await addDoc(collection(db, 'visions'), {
+          uid: currentUser.uid, mode, vision, answers, createdAt: serverTimestamp(),
+        });
+        setLoadedId(ref.id);
+        toast.success('Vision saved!');
+      }
       fetchSaved();
       setPanelTab(mode);
     } catch (e) {
@@ -122,7 +152,8 @@ export default function Vision() {
   async function handleDelete(id) {
     try {
       await deleteDoc(doc(db, 'visions', id));
-      if (editingId === id) { setEditingId(null); setEditVision(''); }
+      if (loadedId === id) { setLoadedId(null); }
+      if (expandedId === id) setExpandedId(null);
       fetchSaved();
     } catch (e) {
       toast.error('Delete failed: ' + e?.message);
@@ -134,7 +165,9 @@ export default function Vision() {
     setAnswers(entry.answers || {});
     setVision(entry.vision);
     setStep(0);
+    setLoadedId(entry.id);
     setEditingId(null);
+    setEditingQ(null);
     toast.success('Vision loaded!');
   }
 
@@ -146,28 +179,45 @@ export default function Vision() {
   async function handleSaveEdit() {
     if (!editVision.trim()) return toast.error('Vision statement cannot be empty');
     try {
-      await updateDoc(doc(db, 'visions', editingId), { vision: editVision });
+      if (editingId === 'current') {
+        setVision(editVision);
+        // If we have a loaded doc, persist to Firestore
+        if (loadedId) {
+          await updateDoc(doc(db, 'visions', loadedId), { vision: editVision });
+          fetchSaved();
+        }
+      } else {
+        await updateDoc(doc(db, 'visions', editingId), { vision: editVision });
+        fetchSaved();
+      }
       toast.success('Vision updated!');
       setEditingId(null);
       setEditVision('');
-      fetchSaved();
     } catch (e) {
       toast.error('Update failed: ' + e?.message);
     }
   }
-
-  const [editingQ, setEditingQ]     = useState(null); // step number being edited
-  const [editQVal, setEditQVal]     = useState('');
 
   function startEditQ(step) {
     setEditingQ(step);
     setEditQVal(answers[step] || '');
   }
 
-  function saveEditQ(step) {
-    setAnswers(a => ({ ...a, [step]: editQVal }));
+  async function saveEditQ(stepNum) {
+    const newAnswers = { ...answers, [stepNum]: editQVal };
+    setAnswers(newAnswers);
     setEditingQ(null);
     setEditQVal('');
+    // Persist to Firestore if a vision doc is loaded
+    if (loadedId) {
+      try {
+        await updateDoc(doc(db, 'visions', loadedId), { answers: newAnswers });
+        fetchSaved();
+        toast.success('Answer saved');
+      } catch (e) {
+        toast.error('Save failed: ' + e?.message);
+      }
+    }
   }
 
   const answeredCount = prompts.filter(p => answers[p.step]).length;
@@ -176,18 +226,13 @@ export default function Vision() {
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <PageHeader icon="🔭" title="Vision Builder" subtitle="Create a compelling personal or team vision statement" />
 
-      {/* Edit modal overlay */}
-      {editingId && (
+      {/* Edit saved vision modal */}
+      {editingId && editingId !== 'current' && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div style={{ background: 'white', borderRadius: 16, padding: '2rem', width: '100%', maxWidth: 560, boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
             <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 1rem', fontSize: '1.05rem' }}>✏️ Edit Vision Statement</h3>
-            <textarea
-              className="input"
-              rows={6}
-              value={editVision}
-              onChange={e => setEditVision(e.target.value)}
-              style={{ width: '100%', fontSize: '0.9rem', lineHeight: 1.7 }}
-            />
+            <textarea className="input" rows={6} value={editVision} onChange={e => setEditVision(e.target.value)}
+              style={{ width: '100%', fontSize: '0.9rem', lineHeight: 1.7 }} autoFocus />
             <div style={{ display: 'flex', gap: 10, marginTop: '1rem' }}>
               <button className="btn-primary" onClick={handleSaveEdit}>Save Changes</button>
               <button className="btn-secondary" onClick={() => { setEditingId(null); setEditVision(''); }}>Cancel</button>
@@ -208,17 +253,19 @@ export default function Vision() {
             ))}
           </div>
 
-          {/* Vision statement display */}
+          {/* Vision statement banner */}
           {vision && (
             <div style={{ borderRadius: 16, padding: '1.75rem', marginBottom: '1.5rem', background: 'linear-gradient(135deg,#0b1a38,#0f2044,#0d9488)', color: 'white', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: 12, right: 20, fontSize: '5rem', opacity: 0.07, fontFamily: 'Georgia,serif', lineHeight: 1 }}>"</div>
-              <p style={{ color: '#99f6e4', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 10px' }}>Your Vision Statement</p>
+              <p style={{ color: '#99f6e4', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 10px' }}>
+                Your Vision Statement {loadedId && <span style={{ opacity: 0.7 }}>· Auto-saved</span>}
+              </p>
               {editingId === 'current'
                 ? <>
                     <textarea value={editVision} onChange={e => setEditVision(e.target.value)} rows={4} autoFocus
                       style={{ width: '100%', fontSize: '0.95rem', lineHeight: 1.7, borderRadius: 10, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.1)', color: 'white', padding: '0.75rem', marginBottom: 12, resize: 'vertical', outline: 'none' }} />
                     <div style={{ display: 'flex', gap: 10 }}>
-                      <button onClick={() => { setVision(editVision); setEditingId(null); }}
+                      <button onClick={handleSaveEdit}
                         style={{ background: '#0d9488', border: 'none', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>
                         ✓ Apply
                       </button>
@@ -231,7 +278,7 @@ export default function Vision() {
                 : <>
                     <p style={{ fontSize: '1rem', lineHeight: 1.7, margin: '0 0 14px', color: 'rgba(255,255,255,0.9)' }}>"{vision}"</p>
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                      <button onClick={() => { setVision(''); setAnswers({}); }}
+                      <button onClick={() => { setVision(''); setAnswers({}); setLoadedId(null); }}
                         style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600 }}>
                         Clear & Start Over
                       </button>
@@ -241,7 +288,7 @@ export default function Vision() {
                       </button>
                       <button onClick={handleSave}
                         style={{ background: '#0d9488', border: 'none', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>
-                        💾 Save Vision
+                        💾 {loadedId ? 'Update Vision' : 'Save Vision'}
                       </button>
                     </div>
                   </>
@@ -258,11 +305,13 @@ export default function Vision() {
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>{answeredCount} of {prompts.length} questions answered</p>
 
-          {/* Current prompt */}
+          {/* Current prompt input */}
           <div className="card" style={{ padding: '1.75rem', marginBottom: '1.5rem' }}>
             <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>Question {step + 1} of {prompts.length}</p>
             <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '1.05rem', margin: '0 0 1rem', lineHeight: 1.4 }}>{prompts[step].question}</h3>
-            <textarea className="input" rows={5} value={answers[prompts[step].step] || ''} onChange={e => setAnswers(a => ({ ...a, [prompts[step].step]: e.target.value }))} placeholder={prompts[step].placeholder} />
+            <textarea className="input" rows={5} value={answers[prompts[step].step] || ''}
+              onChange={e => setAnswers(a => ({ ...a, [prompts[step].step]: e.target.value }))}
+              placeholder={prompts[step].placeholder} />
             <div style={{ display: 'flex', gap: 10, marginTop: '1rem' }}>
               {step > 0 && <button className="btn-secondary" onClick={() => setStep(s => s - 1)}>← Previous</button>}
               {step < prompts.length - 1
@@ -272,7 +321,7 @@ export default function Vision() {
             </div>
           </div>
 
-          {/* Answers summary */}
+          {/* Answers summary with inline edit */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {prompts.map((p, i) => answers[p.step] && (
               <div key={p.step} className="card" style={{ padding: '1rem 1.25rem' }}>
@@ -316,6 +365,8 @@ export default function Vision() {
           onEdit={handleEdit}
           activeTab={panelTab}
           setActiveTab={setPanelTab}
+          expandedId={expandedId}
+          setExpandedId={setExpandedId}
         />
       </div>
     </div>
