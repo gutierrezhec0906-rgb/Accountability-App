@@ -1,48 +1,69 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-
-const sampleSessions = [
-  { id: 1, date: '2024-07-15', coachee: 'Marcus Johnson', type: 'Performance', duration: '45 min',
-    notes: 'Discussed Q2 performance gaps. Marcus needs support with prioritization and delegation.',
-    actionItems: ['Complete time-management worksheet by 7/22', 'Shadow Sara in daily stand-ups', 'Read "The One Thing" chapter 3'],
-    nextSession: '2024-07-29' },
-  { id: 2, date: '2024-07-10', coachee: 'Elena Martinez', type: 'Development', duration: '30 min',
-    notes: 'Career growth conversation. Elena is interested in transitioning to a project lead role.',
-    actionItems: ['Complete PMP prep course', 'Lead next Kaizen event', 'Present at team meeting 7/18'],
-    nextSession: '2024-07-24' },
-];
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, query, where, doc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useAuth } from '../context/AuthContext';
 
 const sessionTypes = ['Performance', 'Development', 'Disciplinary', 'Recognition', 'Career', 'General'];
-const typeColors = { Performance: '#0d9488', Development: '#0f2044', Disciplinary: '#ef4444', Recognition: '#f59e0b', Career: '#8b5cf6', General: '#64748b' };
-
-const emptyForm = { date: '', coachee: '', type: 'Performance', duration: '', notes: '', actionItems: '', nextSession: '' };
+const typeColors   = { Performance: '#0d9488', Development: '#0f2044', Disciplinary: '#ef4444', Recognition: '#f59e0b', Career: '#8b5cf6', General: '#64748b' };
+const emptyForm    = { date: '', coachee: '', type: 'Performance', duration: '', notes: '', actionItems: '', nextSession: '' };
 
 function sessionCountdown(nextSession) {
   if (!nextSession) return null;
   const today = new Date(); today.setHours(0, 0, 0, 0);
   const due   = new Date(nextSession + 'T00:00:00');
   const days  = Math.round((due - today) / 86400000);
-  if (days < 0)  return { label: `${Math.abs(days)}d overdue`, color: '#ef4444', bg: '#fef2f2' };
-  if (days === 0) return { label: 'Today',        color: '#ef4444', bg: '#fef2f2' };
-  if (days <= 3)  return { label: `${days}d left`, color: '#eab308', bg: '#fefce8' };
-  return               { label: `${days}d left`, color: '#16a34a', bg: '#f0fdf4' };
+  if (days < 0)   return { label: `${Math.abs(days)}d overdue`, color: '#ef4444', bg: '#fef2f2' };
+  if (days === 0)  return { label: 'Today',         color: '#ef4444', bg: '#fef2f2' };
+  if (days <= 3)   return { label: `${days}d left`,  color: '#eab308', bg: '#fefce8' };
+  return                   { label: `${days}d left`,  color: '#16a34a', bg: '#f0fdf4' };
 }
 
 export default function Coaching() {
-  const [sessions, setSessions]           = useState(sampleSessions);
+  const { currentUser } = useAuth();
+  const [sessions, setSessions]           = useState([]);
+  const [loading, setLoading]             = useState(true);
   const [showForm, setShowForm]           = useState(false);
   const [selectedSession, setSelectedSession] = useState(null);
   const [editingId, setEditingId]         = useState(null);
   const [editForm, setEditForm]           = useState(null);
   const [form, setForm]                   = useState(emptyForm);
 
-  function addSession(e) {
+  async function fetchSessions() {
+    if (!currentUser) return;
+    try {
+      const snap = await getDocs(query(collection(db, 'coachingSessions'), where('uid', '==', currentUser.uid)));
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      setSessions(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => { fetchSessions(); }, [currentUser]);
+
+  async function addSession(e) {
     e.preventDefault();
-    setSessions(s => [{ ...form, id: Date.now(), actionItems: form.actionItems.split('\n').filter(Boolean) }, ...s]);
-    setForm(emptyForm);
-    setShowForm(false);
-    toast.success('Session logged');
+    if (!currentUser) return toast.error('Not logged in');
+    try {
+      const newSession = {
+        uid: currentUser.uid,
+        ...form,
+        actionItems: form.actionItems.split('\n').filter(Boolean),
+        createdAt: serverTimestamp(),
+      };
+      const ref = await addDoc(collection(db, 'coachingSessions'), newSession);
+      setSessions(s => [{ ...newSession, id: ref.id }, ...s]);
+      setForm(emptyForm);
+      setShowForm(false);
+      toast.success('Session logged');
+    } catch (e) {
+      toast.error('Save failed: ' + e.message);
+    }
   }
 
   function startEdit(s) {
@@ -50,14 +71,21 @@ export default function Coaching() {
     setEditForm({ ...s, actionItems: (s.actionItems || []).join('\n') });
   }
 
-  function saveEdit(e) {
+  async function saveEdit(e) {
     e.preventDefault();
-    const updated = { ...editForm, actionItems: editForm.actionItems.split('\n').filter(Boolean) };
-    setSessions(ss => ss.map(s => s.id === editingId ? updated : s));
-    setSelectedSession(updated);
-    setEditingId(null);
-    setEditForm(null);
-    toast.success('Session updated');
+    if (!currentUser) return;
+    try {
+      const updated = { ...editForm, actionItems: editForm.actionItems.split('\n').filter(Boolean) };
+      delete updated.createdAt;
+      await updateDoc(doc(db, 'coachingSessions', editingId), updated);
+      setSessions(ss => ss.map(s => s.id === editingId ? { ...updated, id: editingId } : s));
+      setSelectedSession({ ...updated, id: editingId });
+      setEditingId(null);
+      setEditForm(null);
+      toast.success('Session updated');
+    } catch (e) {
+      toast.error('Update failed: ' + e.message);
+    }
   }
 
   function cancelEdit() {
@@ -108,96 +136,108 @@ export default function Coaching() {
         </div>
       )}
 
+      {loading && <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>Loading sessions...</p>}
+
+      {!loading && sessions.length === 0 && (
+        <div className="card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+          <p style={{ fontSize: '2rem', margin: '0 0 8px' }}>📝</p>
+          <p style={{ fontWeight: 700, margin: 0 }}>No sessions logged yet. Click "+ Log Session" to get started.</p>
+        </div>
+      )}
+
       {/* Session cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {sessions.map(s => (
-          <div key={s.id} className="card" style={{ padding: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 12, background: (typeColors[s.type] || '#0d9488') + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                  <span style={{ fontSize: '1.25rem' }}>👤</span>
-                </div>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 2 }}>
-                    <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>{s.coachee}</h4>
-                    <span style={{ background: typeColors[s.type] || '#0d9488', color: 'white', borderRadius: 9999, padding: '2px 10px', fontSize: '0.7rem', fontWeight: 700 }}>{s.type}</span>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                    <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>📅 {s.date} · ⏱ {s.duration}</p>
-                    {(() => { const cd = sessionCountdown(s.nextSession); return cd ? (
-                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: cd.color, background: cd.bg, border: `1px solid ${cd.color}33`, borderRadius: 9999, padding: '1px 8px' }}>
-                        Next: {cd.label}
-                      </span>
-                    ) : null; })()}
-                  </div>
-                </div>
-              </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => { startEdit(s); setSelectedSession(s); }}
-                  style={{ background: 'none', border: '1px solid #0d9488', borderRadius: 8, padding: '0.3rem 0.875rem', fontSize: '0.78rem', fontWeight: 700, color: '#0d9488', cursor: 'pointer' }}>
-                  ✏️ Edit
-                </button>
-                <button onClick={() => setSelectedSession(selectedSession?.id === s.id && editingId !== s.id ? null : s)}
-                  style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '0.3rem 0.875rem', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>
-                  {selectedSession?.id === s.id && editingId !== s.id ? 'Collapse' : 'View Details'}
-                </button>
-              </div>
-            </div>
-
-            {/* Edit form */}
-            {editingId === s.id && (
-              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
-                <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.875rem', margin: '0 0 1rem' }}>Edit Session</h4>
-                <form onSubmit={saveEdit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                  <div><label className="label">Coachee Name</label><input className="input" required value={editForm.coachee} onChange={e => setEditForm(f => ({ ...f, coachee: e.target.value }))} /></div>
-                  <div><label className="label">Session Type</label><select className="input" value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))}>{sessionTypes.map(t => <option key={t}>{t}</option>)}</select></div>
-                  <div><label className="label">Date</label><input className="input" type="date" required value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} /></div>
-                  <div><label className="label">Duration</label><input className="input" value={editForm.duration} onChange={e => setEditForm(f => ({ ...f, duration: e.target.value }))} /></div>
-                  <div style={{ gridColumn: '1/-1' }}>
-                    <label className="label">Session Notes</label>
-                    <textarea className="input" rows={4} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} />
-                  </div>
-                  <div style={{ gridColumn: '1/-1' }}>
-                    <label className="label">Action Items (one per line)</label>
-                    <textarea className="input" rows={3} value={editForm.actionItems} onChange={e => setEditForm(f => ({ ...f, actionItems: e.target.value }))} />
+        {sessions.map(s => {
+          const cd = sessionCountdown(s.nextSession);
+          return (
+            <div key={s.id} className="card" style={{ padding: '1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 44, height: 44, borderRadius: 12, background: (typeColors[s.type] || '#0d9488') + '18', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                    <span style={{ fontSize: '1.25rem' }}>👤</span>
                   </div>
                   <div>
-                    <label className="label">Next Session Date</label>
-                    <input className="input" type="date" value={editForm.nextSession} onChange={e => setEditForm(f => ({ ...f, nextSession: e.target.value }))} />
-                  </div>
-                  <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10 }}>
-                    <button className="btn-primary" type="submit">Save Changes</button>
-                    <button className="btn-secondary" type="button" onClick={cancelEdit}>Cancel</button>
-                  </div>
-                </form>
-              </div>
-            )}
-
-            {/* View details */}
-            {selectedSession?.id === s.id && editingId !== s.id && (
-              <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
-                <div style={{ marginBottom: '0.875rem' }}>
-                  <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>Session Notes</p>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>{s.notes}</p>
-                </div>
-                {s.actionItems?.length > 0 && (
-                  <div>
-                    <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>Action Items</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {s.actionItems.map((item, i) => (
-                        <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
-                          <span style={{ color: '#0d9488', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>→</span>
-                          <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{item}</span>
-                        </div>
-                      ))}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
+                      <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>{s.coachee}</h4>
+                      <span style={{ background: typeColors[s.type] || '#0d9488', color: 'white', borderRadius: 9999, padding: '2px 10px', fontSize: '0.7rem', fontWeight: 700 }}>{s.type}</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>📅 {s.date} · ⏱ {s.duration}</p>
+                      {cd && (
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: cd.color, background: cd.bg, border: `1px solid ${cd.color}44`, borderRadius: 9999, padding: '2px 8px' }}>
+                          Next: {cd.label}
+                        </span>
+                      )}
                     </div>
                   </div>
-                )}
-                {s.nextSession && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 10 }}>📅 Next session: <strong>{s.nextSession}</strong></p>}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => { startEdit(s); setSelectedSession(null); }}
+                    style={{ background: 'none', border: '1px solid #0d9488', borderRadius: 8, padding: '0.3rem 0.875rem', fontSize: '0.78rem', fontWeight: 700, color: '#0d9488', cursor: 'pointer' }}>
+                    ✏️ Edit
+                  </button>
+                  <button onClick={() => setSelectedSession(selectedSession?.id === s.id ? null : s)}
+                    style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '0.3rem 0.875rem', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>
+                    {selectedSession?.id === s.id ? 'Collapse' : 'View Details'}
+                  </button>
+                </div>
               </div>
-            )}
-          </div>
-        ))}
+
+              {/* Edit form */}
+              {editingId === s.id && (
+                <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+                  <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.875rem', margin: '0 0 1rem' }}>Edit Session</h4>
+                  <form onSubmit={saveEdit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div><label className="label">Coachee Name</label><input className="input" required value={editForm.coachee} onChange={e => setEditForm(f => ({ ...f, coachee: e.target.value }))} /></div>
+                    <div><label className="label">Session Type</label><select className="input" value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))}>{sessionTypes.map(t => <option key={t}>{t}</option>)}</select></div>
+                    <div><label className="label">Date</label><input className="input" type="date" required value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} /></div>
+                    <div><label className="label">Duration</label><input className="input" value={editForm.duration} onChange={e => setEditForm(f => ({ ...f, duration: e.target.value }))} /></div>
+                    <div style={{ gridColumn: '1/-1' }}>
+                      <label className="label">Session Notes</label>
+                      <textarea className="input" rows={4} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} />
+                    </div>
+                    <div style={{ gridColumn: '1/-1' }}>
+                      <label className="label">Action Items (one per line)</label>
+                      <textarea className="input" rows={3} value={editForm.actionItems} onChange={e => setEditForm(f => ({ ...f, actionItems: e.target.value }))} />
+                    </div>
+                    <div>
+                      <label className="label">Next Session Date</label>
+                      <input className="input" type="date" value={editForm.nextSession} onChange={e => setEditForm(f => ({ ...f, nextSession: e.target.value }))} />
+                    </div>
+                    <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10 }}>
+                      <button className="btn-primary" type="submit">Save Changes</button>
+                      <button className="btn-secondary" type="button" onClick={cancelEdit}>Cancel</button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* View details */}
+              {selectedSession?.id === s.id && editingId !== s.id && (
+                <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+                  <div style={{ marginBottom: '0.875rem' }}>
+                    <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>Session Notes</p>
+                    <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>{s.notes}</p>
+                  </div>
+                  {s.actionItems?.length > 0 && (
+                    <div>
+                      <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>Action Items</p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {s.actionItems.map((item, i) => (
+                          <div key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                            <span style={{ color: '#0d9488', fontWeight: 700, flexShrink: 0, marginTop: 1 }}>→</span>
+                            <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)' }}>{item}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {s.nextSession && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 10 }}>📅 Next session: <strong>{s.nextSession}</strong></p>}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );
