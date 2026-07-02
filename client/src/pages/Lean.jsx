@@ -49,17 +49,22 @@ const WASTES = ['Defects','Overproduction','Waiting','Non-Utilized Talent','Tran
 const tabs = [{ id: '5s', label: '5S Checklist' }, { id: 'waste', label: 'Waste Types' }, { id: 'kaizen', label: 'Kaizen Log' }];
 
 function KaizenForm({ initial, onSave, onCancel, title: formTitle }) {
-  const [form, setForm]       = useState(initial);
+  const [form, setForm]       = useState({
+    ...emptyKaizen,
+    ...initial,
+    wastesIdentified: Array.isArray(initial?.wastesIdentified) ? initial.wastesIdentified : [],
+  });
   const [phase, setPhase]     = useState('prepare');
 
   function set(field, val) { setForm(f => ({ ...f, [field]: val })); }
   function toggleWaste(w) {
-    setForm(f => ({
-      ...f,
-      wastesIdentified: f.wastesIdentified.includes(w)
-        ? f.wastesIdentified.filter(x => x !== w)
-        : [...f.wastesIdentified, w],
-    }));
+    setForm(f => {
+      const current = Array.isArray(f.wastesIdentified) ? f.wastesIdentified : [];
+      return {
+        ...f,
+        wastesIdentified: current.includes(w) ? current.filter(x => x !== w) : [...current, w],
+      };
+    });
   }
 
   const phaseIdx = PHASES.findIndex(p => p.key === phase);
@@ -142,9 +147,9 @@ function KaizenForm({ initial, onSave, onCancel, title: formTitle }) {
                 {WASTES.map(w => (
                   <button key={w} type="button" onClick={() => toggleWaste(w)}
                     style={{ padding: '4px 12px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', border: '1.5px solid',
-                      background: form.wastesIdentified.includes(w) ? '#0f2044' : 'white',
-                      color:      form.wastesIdentified.includes(w) ? 'white'   : '#475569',
-                      borderColor: form.wastesIdentified.includes(w) ? '#0f2044' : '#e2e8f0' }}>
+                      background: (form.wastesIdentified || []).includes(w) ? '#0f2044' : 'white',
+                      color:      (form.wastesIdentified || []).includes(w) ? 'white'   : '#475569',
+                      borderColor: (form.wastesIdentified || []).includes(w) ? '#0f2044' : '#e2e8f0' }}>
                     {w}
                   </button>
                 ))}
