@@ -386,6 +386,12 @@ export default function Lean() {
       return toast.error(`An audit for "${auditArea.trim()}" already exists. Use a different name or delete the existing one first.`);
     }
     try {
+      // Strip base64 images before saving — Firestore has a 1 MB document limit
+      const findingsNoImages = Object.fromEntries(
+        Object.entries(findings)
+          .filter(([, v]) => v.note)
+          .map(([k, v]) => [k, { note: v.note }])
+      );
       const record = {
         id: Date.now().toString(),
         area: auditArea.trim(),
@@ -393,7 +399,7 @@ export default function Lean() {
         checked: checkedItems,
         total: totalItems,
         checks: { ...checks },
-        findings: { ...findings },
+        findings: findingsNoImages,
         date: new Date().toISOString(),
       };
       const updated = [record, ...auditHistory].slice(0, 50);
@@ -627,7 +633,7 @@ export default function Lean() {
                           <div style={{ padding: '0.75rem', borderTop: '1px solid var(--border)', background: '#f8fafc', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
                             <p style={{ margin: '0 0 4px', fontWeight: 700 }}>{record.checked} / {record.total} items completed</p>
                             {Object.keys(record.findings || {}).length > 0 && (
-                              <p style={{ margin: 0, color: '#b45309' }}>📎 {Object.keys(record.findings).length} finding(s) attached</p>
+                              <p style={{ margin: 0, color: '#b45309' }}>📝 {Object.keys(record.findings).length} note(s) recorded</p>
                             )}
                           </div>
                         )}
