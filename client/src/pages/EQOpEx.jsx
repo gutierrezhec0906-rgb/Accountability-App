@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
+import { collection, addDoc, getDocs, query, where, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useAuth } from '../context/AuthContext';
 
 const SCALE_LABELS = {
   1: { label: 'Rarely',    desc: 'This behavior is absent or reactive. Others would not recognize it as a strength. Immediate focus needed.' },
@@ -63,9 +66,58 @@ const opexChecklist = [
 ];
 
 export default function EQOpEx() {
+  const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('eq');
   const [eqScores, setEqScores] = useState({});
   const [opexChecks, setOpexChecks] = useState({});
+  const [eqDocId, setEqDocId] = useState(null);
+  const [opexDocId, setOpexDocId] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    async function load() {
+      try {
+        const snap = await getDocs(query(collection(db, 'eqOpex'), where('uid', '==', currentUser.uid)));
+        snap.forEach(d => {
+          const data = d.data();
+          if (data.type === 'eq') { setEqScores(data.scores || {}); setEqDocId(d.id); }
+          if (data.type === 'opex') { setOpexChecks(data.checks || {}); setOpexDocId(d.id); }
+        });
+      } catch (e) { console.error(e); }
+    }
+    load();
+  }, [currentUser]);
+
+  async function saveEQ() {
+    if (!currentUser) return toast.error('Not logged in');
+    setSaving(true);
+    try {
+      if (eqDocId) {
+        await updateDoc(doc(db, 'eqOpex', eqDocId), { scores: eqScores, updatedAt: serverTimestamp() });
+      } else {
+        const ref = await addDoc(collection(db, 'eqOpex'), { uid: currentUser.uid, type: 'eq', scores: eqScores, createdAt: serverTimestamp() });
+        setEqDocId(ref.id);
+      }
+      toast.success('EQ assessment saved!');
+    } catch (e) { toast.error('Save failed: ' + e.message); }
+    setSaving(false);
+  }
+
+  async function saveOpex() {
+    if (!currentUser) return toast.error('Not logged in');
+    setSaving(true);
+    try {
+      if (opexDocId) {
+        await updateDoc(doc(db, 'eqOpex', opexDocId), { checks: opexChecks, updatedAt: serverTimestamp() });
+      } else {
+        const ref = await addDoc(collection(db, 'eqOpex'), { uid: currentUser.uid, type: 'opex', checks: opexChecks, createdAt: serverTimestamp() });
+        setOpexDocId(ref.id);
+      }
+      toast.success('OpEx checklist saved!');
+    } catch (e) { toast.error('Save failed: ' + e.message); }
+    setSaving(false);
+  }
 
   function setScore(dimId, qIdx, val) { setEqScores(s => ({ ...s, [`${dimId}-${qIdx}`]: val })); }
   function toggleOpex(cat, idx) { const k = `${cat}-${idx}`; setOpexChecks(c => ({ ...c, [k]: !c[k] })); }
@@ -142,7 +194,7 @@ export default function EQOpEx() {
               ))}
             </div>
           ))}
-          <button className="btn-primary" onClick={() => toast.success('EQ assessment saved!')}>Save Assessment</button>
+          <button className="btn-primary" onClick={saveEQ} disabled={saving}>{saving ? 'Saving…' : 'Save Assessment'}</button>
         </div>
       )}
 
@@ -180,6 +232,7 @@ export default function EQOpEx() {
               })}
             </div>
           ))}
+          <button className="btn-primary" onClick={saveOpex} disabled={saving}>{saving ? 'Saving…' : 'Save Checklist'}</button>
         </div>
       )}
     </div>
