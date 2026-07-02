@@ -40,6 +40,7 @@ export default function Career() {
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({ title: '', category: 'Leadership', priority: 'High', targetDate: '' });
+  const [milestoneInputs, setMilestoneInputs] = useState({});
 
   function addGoal(e) {
     e.preventDefault();
@@ -47,6 +48,27 @@ export default function Career() {
     setForm({ title: '', category: 'Leadership', priority: 'High', targetDate: '' });
     setShowForm(false);
     toast.success('Career goal added');
+  }
+
+  function addMilestone(goalId) {
+    const input = milestoneInputs[goalId] || { text: '', date: '' };
+    if (!input.text.trim()) return;
+    setGoals(goals => goals.map(g => {
+      if (g.id !== goalId) return g;
+      const milestones = [...g.milestones, { text: input.text.trim(), date: input.date, done: false }];
+      const progress = Math.round((milestones.filter(m => m.done).length / milestones.length) * 100);
+      return { ...g, milestones, progress };
+    }));
+    setMilestoneInputs(s => ({ ...s, [goalId]: { text: '', date: '' } }));
+  }
+
+  function deleteMilestone(goalId, mIdx) {
+    setGoals(goals => goals.map(g => {
+      if (g.id !== goalId) return g;
+      const milestones = g.milestones.filter((_, i) => i !== mIdx);
+      const progress = milestones.length ? Math.round((milestones.filter(m => m.done).length / milestones.length) * 100) : 0;
+      return { ...g, milestones, progress };
+    }));
   }
 
   function toggleMilestone(goalId, mIdx) {
@@ -139,18 +161,45 @@ export default function Career() {
                 </button>
               </div>
 
-              {selected === goal.id && goal.milestones.length > 0 && (
+              {selected === goal.id && (
                 <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {goal.milestones.length === 0 && (
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0 4px', fontStyle: 'italic' }}>No milestones yet — add one below.</p>
+                  )}
                   {goal.milestones.map((m, i) => (
-                    <button key={i} onClick={() => toggleMilestone(goal.id, i)}
-                      style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0' }}>
-                      <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${m.done ? '#0d9488' : '#e2e8f0'}`, background: m.done ? '#0d9488' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0, transition: 'all 0.2s' }}>
-                        {m.done && '✓'}
-                      </div>
-                      <span style={{ flex: 1, fontSize: '0.875rem', color: m.done ? '#94a3b8' : 'var(--text-secondary)', textDecoration: m.done ? 'line-through' : 'none' }}>{m.text}</span>
-                      {m.date && <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{m.date}</span>}
-                    </button>
+                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <button onClick={() => toggleMilestone(goal.id, i)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0' }}>
+                        <div style={{ width: 20, height: 20, borderRadius: 6, border: `2px solid ${m.done ? '#0d9488' : '#e2e8f0'}`, background: m.done ? '#0d9488' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.72rem', fontWeight: 700, flexShrink: 0, transition: 'all 0.2s' }}>
+                          {m.done && '✓'}
+                        </div>
+                        <span style={{ flex: 1, fontSize: '0.875rem', color: m.done ? '#94a3b8' : 'var(--text-secondary)', textDecoration: m.done ? 'line-through' : 'none' }}>{m.text}</span>
+                        {m.date && <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{m.date}</span>}
+                      </button>
+                      <button onClick={() => deleteMilestone(goal.id, i)}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '0.85rem', padding: '0 4px', flexShrink: 0 }} title="Delete milestone">✕</button>
+                    </div>
                   ))}
+
+                  {/* Add milestone input */}
+                  <div style={{ display: 'flex', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+                    <input
+                      className="input"
+                      style={{ flex: 2, minWidth: 160, fontSize: '0.825rem' }}
+                      placeholder="Milestone description…"
+                      value={milestoneInputs[goal.id]?.text || ''}
+                      onChange={e => setMilestoneInputs(s => ({ ...s, [goal.id]: { ...s[goal.id], text: e.target.value } }))}
+                      onKeyDown={e => e.key === 'Enter' && addMilestone(goal.id)}
+                    />
+                    <input
+                      className="input"
+                      type="date"
+                      style={{ flex: 1, minWidth: 120, fontSize: '0.825rem' }}
+                      value={milestoneInputs[goal.id]?.date || ''}
+                      onChange={e => setMilestoneInputs(s => ({ ...s, [goal.id]: { ...s[goal.id], date: e.target.value } }))}
+                    />
+                    <button className="btn-primary" style={{ fontSize: '0.825rem', padding: '0.4rem 0.9rem' }} onClick={() => addMilestone(goal.id)}>+ Add</button>
+                  </div>
                 </div>
               )}
             </div>
