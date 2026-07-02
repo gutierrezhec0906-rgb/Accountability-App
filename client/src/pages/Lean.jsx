@@ -337,11 +337,31 @@ export default function Lean() {
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('5s');
   const [checks, setChecks]       = useState({});
+  // findings: { [key]: { note: string, image: base64 string } }
+  const [findings, setFindings]   = useState({});
+  const [expandedItem, setExpandedItem] = useState(null);
   const [kaizen, setKaizen]       = useState([]);
   const [showForm, setShowForm]   = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
 
   function toggle(cat, idx) { const k = `${cat}-${idx}`; setChecks(c => ({ ...c, [k]: !c[k] })); }
+
+  function setFinding(key, field, value) {
+    setFindings(f => ({ ...f, [key]: { ...(f[key] || {}), [field]: value } }));
+  }
+
+  function handleImageUpload(key, e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5 MB'); return; }
+    const reader = new FileReader();
+    reader.onload = ev => setFinding(key, 'image', ev.target.result);
+    reader.readAsDataURL(file);
+  }
+
+  function removeImage(key) {
+    setFindings(f => ({ ...f, [key]: { ...(f[key] || {}), image: null } }));
+  }
 
   const totalItems   = fiveSItems.reduce((a, c) => a + c.items.length, 0);
   const checkedItems = Object.values(checks).filter(Boolean).length;
@@ -415,16 +435,71 @@ export default function Lean() {
               </div>
               {cat.items.map((item, i) => {
                 const key = `${cat.category}-${i}`;
+                const isExpanded = expandedItem === key;
+                const finding = findings[key] || {};
+                const hasFinding = finding.note || finding.image;
                 return (
-                  <button key={i} onClick={() => toggle(cat.category, i)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0.75rem 1.25rem', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', borderBottom: i < cat.items.length - 1 ? '1px solid var(--border)' : 'none', transition: 'background 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'none'}>
-                    <div style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, border: `2px solid ${checks[key] ? '#0d9488' : '#e2e8f0'}`, background: checks[key] ? '#0d9488' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.75rem', fontWeight: 700, transition: 'all 0.2s' }}>
-                      {checks[key] && '✓'}
+                  <div key={i} style={{ borderBottom: i < cat.items.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                    {/* Checkbox row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.75rem 1.25rem' }}>
+                      <button onClick={() => toggle(cat.category, i)}
+                        style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                        <div style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, border: `2px solid ${checks[key] ? '#0d9488' : '#e2e8f0'}`, background: checks[key] ? '#0d9488' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.75rem', fontWeight: 700, transition: 'all 0.2s' }}>
+                          {checks[key] && '✓'}
+                        </div>
+                        <span style={{ fontSize: '0.875rem', color: checks[key] ? '#94a3b8' : 'var(--text-secondary)', textDecoration: checks[key] ? 'line-through' : 'none' }}>{item}</span>
+                      </button>
+                      {/* Finding indicator */}
+                      {hasFinding && !isExpanded && (
+                        <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#fef9c3', color: '#b45309', border: '1px solid #fde68a', borderRadius: 9999, padding: '1px 7px', flexShrink: 0 }}>
+                          {finding.image ? '📎 Photo' : '📝 Note'}
+                        </span>
+                      )}
+                      {/* Expand toggle */}
+                      <button onClick={() => setExpandedItem(isExpanded ? null : key)}
+                        title={isExpanded ? 'Collapse' : 'Add finding / photo'}
+                        style={{ background: isExpanded ? '#f1f5f9' : 'none', border: '1px solid #e2e8f0', borderRadius: 7, padding: '3px 9px', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', cursor: 'pointer', flexShrink: 0 }}>
+                        {isExpanded ? '▲' : '📎'}
+                      </button>
                     </div>
-                    <span style={{ fontSize: '0.875rem', color: checks[key] ? '#94a3b8' : 'var(--text-secondary)', textDecoration: checks[key] ? 'line-through' : 'none' }}>{item}</span>
-                  </button>
+
+                    {/* Expanded finding panel */}
+                    {isExpanded && (
+                      <div style={{ margin: '0 1.25rem 0.875rem', background: '#f8fafc', borderRadius: 10, border: '1px solid var(--border)', padding: '1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                        <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Finding Details</p>
+
+                        {/* Description */}
+                        <div>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Description / Finding</label>
+                          <textarea
+                            className="input"
+                            rows={3}
+                            style={{ fontSize: '0.825rem', resize: 'vertical' }}
+                            placeholder="Describe what was found, the condition, or the non-conformance…"
+                            value={finding.note || ''}
+                            onChange={e => setFinding(key, 'note', e.target.value)}
+                          />
+                        </div>
+
+                        {/* Image upload */}
+                        <div>
+                          <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Photo Evidence (PNG, JPG, GIF — max 5 MB)</label>
+                          {finding.image ? (
+                            <div style={{ position: 'relative', display: 'inline-block' }}>
+                              <img src={finding.image} alt="Finding" style={{ maxWidth: '100%', maxHeight: 220, borderRadius: 8, border: '1px solid var(--border)', display: 'block' }} />
+                              <button onClick={() => removeImage(key)}
+                                style={{ position: 'absolute', top: 6, right: 6, background: '#ef4444', border: 'none', borderRadius: '50%', width: 24, height: 24, color: 'white', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                            </div>
+                          ) : (
+                            <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem 1rem', borderRadius: 8, border: '1.5px dashed #cbd5e1', cursor: 'pointer', background: 'white', fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                              📷 Click to attach photo
+                              <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleImageUpload(key, e)} />
+                            </label>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
