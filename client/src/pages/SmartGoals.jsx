@@ -1,8 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  collection, addDoc, updateDoc, deleteDoc,
-  query, where, getDocs, doc, serverTimestamp,
-} from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -95,16 +92,21 @@ export default function SmartGoals() {
   const [expanded, setExpanded] = useState(null);
 
   async function fetchGoals() {
+    if (!currentUser) return;
     try {
-      const snap = await getDocs(query(collection(db, 'smartGoals'), where('uid', '==', currentUser.uid)));
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      const snap = await getDoc(doc(db, 'users', currentUser.uid));
+      const data = snap.exists() ? (snap.data().smartGoals || []) : [];
       setGoals(data);
     } catch { toast.error('Could not load goals'); }
     setLoading(false);
   }
 
-  useEffect(() => { fetchGoals(); }, []);
+  async function persist(updated) {
+    await setDoc(doc(db, 'users', currentUser.uid), { smartGoals: updated }, { merge: true });
+    setGoals(updated);
+  }
+
+  useEffect(() => { fetchGoals(); }, [currentUser]);
 
   function openCreate() { setForm(emptyForm); setEditing(null); setShowForm(true); }
   function openEdit(goal) {
@@ -118,30 +120,28 @@ export default function SmartGoals() {
     if (!form.title.trim()) return toast.error('Goal title is required');
     setSaving(true);
     try {
-      const payload = { ...form, uid: currentUser.uid, updatedAt: serverTimestamp() };
       if (editing) {
-        await updateDoc(doc(db, 'smartGoals', editing), payload);
+        const updated = goals.map(g => g.id === editing ? { ...g, ...form, updatedAt: new Date().toISOString() } : g);
+        await persist(updated);
         toast.success('Goal updated');
       } else {
-        await addDoc(collection(db, 'smartGoals'), { ...payload, createdAt: serverTimestamp() });
+        const newGoal = { ...form, id: Date.now().toString(), createdAt: new Date().toISOString() };
+        await persist([newGoal, ...goals]);
         toast.success('Goal created');
       }
       setShowForm(false);
-      fetchGoals();
     } catch { toast.error('Save failed'); }
     setSaving(false);
   }
 
   async function handleDelete(id) {
     if (!confirm('Delete this goal?')) return;
-    await deleteDoc(doc(db, 'smartGoals', id));
+    await persist(goals.filter(g => g.id !== id));
     toast.success('Goal deleted');
-    fetchGoals();
   }
 
   async function changeStatus(id, status) {
-    await updateDoc(doc(db, 'smartGoals', id), { status, updatedAt: serverTimestamp() });
-    fetchGoals();
+    await persist(goals.map(g => g.id === id ? { ...g, status } : g));
   }
 
   const counts = { draft: 0, active: 0, completed: 0, paused: 0 };
