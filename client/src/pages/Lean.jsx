@@ -381,6 +381,10 @@ export default function Lean() {
     if (!auditArea.trim()) return toast.error('Please enter the area being audited');
     if (checkedItems === 0) return toast.error('Complete at least one checklist item before saving');
     if (!currentUser) return toast.error('Not logged in');
+    const dupName = auditArea.trim().toLowerCase();
+    if (auditHistory.some(a => a.area.toLowerCase() === dupName)) {
+      return toast.error(`An audit for "${auditArea.trim()}" already exists. Use a different name or delete the existing one first.`);
+    }
     try {
       const record = {
         id: Date.now().toString(),
@@ -494,6 +498,13 @@ export default function Lean() {
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn-secondary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem' }} onClick={resetAudit}>↺ Reset</button>
                 <button className="btn-primary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.875rem' }} onClick={saveAudit}>💾 Save Audit</button>
+                {(auditArea.trim() || checkedItems > 0) && (
+                  <button
+                    style={{ fontSize: '0.78rem', padding: '0.3rem 0.875rem', borderRadius: 9999, fontWeight: 700, border: '1.5px solid #0d9488', background: 'white', color: '#0d9488', cursor: 'pointer' }}
+                    onClick={resetAudit}>
+                    ＋ New Audit
+                  </button>
+                )}
               </div>
             </div>
           </div>
