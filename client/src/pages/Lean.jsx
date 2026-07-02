@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, query, where, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, query, where, doc, serverTimestamp, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -337,9 +337,11 @@ export default function Lean() {
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('5s');
   const [checks, setChecks]       = useState({});
-  // findings: { [key]: { note: string, image: base64 string } }
+  const [auditArea, setAuditArea] = useState('');
   const [findings, setFindings]   = useState({});
   const [expandedItem, setExpandedItem] = useState(null);
+  const [auditHistory, setAuditHistory] = useState([]);
+  const [expandedAudit, setExpandedAudit] = useState(null);
   const [kaizen, setKaizen]       = useState([]);
   const [showForm, setShowForm]   = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
@@ -367,6 +369,58 @@ export default function Lean() {
   const checkedItems = Object.values(checks).filter(Boolean).length;
   const pct          = Math.round((checkedItems / totalItems) * 100);
 
+  async function loadAuditHistory() {
+    if (!currentUser) return;
+    try {
+      const snap = await getDoc(doc(db, 'users', currentUser.uid));
+      if (snap.exists()) setAuditHistory(snap.data().fiveSAudits || []);
+    } catch {}
+  }
+
+  async function saveAudit() {
+    if (!auditArea.trim()) return toast.error('Please enter the area being audited');
+    if (checkedItems === 0) return toast.error('Complete at least one checklist item before saving');
+    if (!currentUser) return toast.error('Not logged in');
+    try {
+      const record = {
+        id: Date.now().toString(),
+        area: auditArea.trim(),
+        score: pct,
+        checked: checkedItems,
+        total: totalItems,
+        checks: { ...checks },
+        findings: { ...findings },
+        date: new Date().toISOString(),
+      };
+      const updated = [record, ...auditHistory].slice(0, 50);
+      await setDoc(doc(db, 'users', currentUser.uid), { fiveSAudits: updated }, { merge: true });
+      setAuditHistory(updated);
+      toast.success(`Audit saved — ${pct}% for "${auditArea}"`);
+    } catch (e) { toast.error('Save failed: ' + e.message); }
+  }
+
+  function loadAudit(record) {
+    setChecks(record.checks || {});
+    setFindings(record.findings || {});
+    setAuditArea(record.area || '');
+    setExpandedItem(null);
+    toast.success(`Loaded audit: ${record.area}`);
+  }
+
+  async function deleteAudit(id) {
+    const updated = auditHistory.filter(a => a.id !== id);
+    await setDoc(doc(db, 'users', currentUser.uid), { fiveSAudits: updated }, { merge: true });
+    setAuditHistory(updated);
+    toast.success('Audit deleted');
+  }
+
+  function resetAudit() {
+    setChecks({});
+    setFindings({});
+    setAuditArea('');
+    setExpandedItem(null);
+  }
+
   async function fetchKaizen() {
     if (!currentUser) return;
     try {
@@ -377,7 +431,7 @@ export default function Lean() {
     } catch (e) { console.error(e); }
   }
 
-  useEffect(() => { fetchKaizen(); }, [currentUser]);
+  useEffect(() => { fetchKaizen(); loadAuditHistory(); }, [currentUser]);
 
   async function handleSaveNew(form) {
     if (!form.title.trim()) return toast.error('Please enter a Kaizen event title');
@@ -403,7 +457,7 @@ export default function Lean() {
   }
 
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
+    <div style={{ maxWidth: 1180, margin: '0 auto' }}>
       <PageHeader icon="🏭" title="Lean Manufacturing Toolkit" subtitle="5S checklist, waste identification, and Kaizen event log" />
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
@@ -417,16 +471,31 @@ export default function Lean() {
 
       {/* 5S Tab */}
       {activeTab === '5s' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+          {/* ── Left: checklist ── */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+          {/* Area input + score */}
           <div className="card" style={{ padding: '1.25rem' }}>
+            <div style={{ marginBottom: 12 }}>
+              <label className="label">Area / Location Being Audited</label>
+              <input className="input" value={auditArea} onChange={e => setAuditArea(e.target.value)}
+                placeholder="e.g. Assembly Line 3, Warehouse Zone B, Office Floor 2…" />
+            </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
               <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>5S Audit Score</span>
               <span style={{ fontSize: '1.75rem', fontWeight: 900, color: pct >= 80 ? '#0d9488' : pct >= 60 ? '#f59e0b' : '#ef4444' }}>{pct}%</span>
             </div>
-            <div style={{ background: '#e2e8f0', borderRadius: 9999, height: 10 }}>
+            <div style={{ background: '#e2e8f0', borderRadius: 9999, height: 10, marginBottom: 6 }}>
               <div style={{ height: 10, borderRadius: 9999, transition: 'width 0.6s ease', width: `${pct}%`, background: pct >= 80 ? '#0d9488' : pct >= 60 ? '#f59e0b' : '#ef4444' }} />
             </div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 6 }}>{checkedItems} of {totalItems} items completed</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{checkedItems} of {totalItems} items completed</p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="btn-secondary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem' }} onClick={resetAudit}>↺ Reset</button>
+                <button className="btn-primary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.875rem' }} onClick={saveAudit}>💾 Save Audit</button>
+              </div>
+            </div>
           </div>
           {fiveSItems.map(cat => (
             <div key={cat.category} className="card" style={{ overflow: 'hidden' }}>
@@ -504,6 +573,60 @@ export default function Lean() {
               })}
             </div>
           ))}
+          </div>{/* end left checklist */}
+
+          {/* ── Right: audit history ── */}
+          <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="card" style={{ padding: '1.125rem' }}>
+              <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px', fontSize: '0.9rem' }}>📋 Audit History</h4>
+              {auditHistory.length === 0 ? (
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', margin: '1.5rem 0' }}>No audits saved yet. Complete the checklist and click Save Audit.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {auditHistory.map(record => {
+                    const scoreColor = record.score >= 80 ? '#0d9488' : record.score >= 60 ? '#f59e0b' : '#ef4444';
+                    const scoreBg = record.score >= 80 ? '#f0fdfa' : record.score >= 60 ? '#fffbeb' : '#fef2f2';
+                    const isExp = expandedAudit === record.id;
+                    const d = new Date(record.date);
+                    const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    return (
+                      <div key={record.id} style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+                        <div style={{ padding: '0.75rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-primary)', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{record.area}</p>
+                            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>{dateStr}</p>
+                          </div>
+                          <span style={{ background: scoreBg, color: scoreColor, fontWeight: 800, fontSize: '0.875rem', borderRadius: 8, padding: '2px 10px', border: `1px solid ${scoreColor}33`, flexShrink: 0 }}>{record.score}%</span>
+                        </div>
+                        <div style={{ display: 'flex', borderTop: '1px solid var(--border)' }}>
+                          <button onClick={() => loadAudit(record)}
+                            style={{ flex: 1, padding: '0.4rem', fontSize: '0.72rem', fontWeight: 700, background: 'none', border: 'none', borderRight: '1px solid var(--border)', cursor: 'pointer', color: '#0d9488' }}>
+                            📂 Load
+                          </button>
+                          <button onClick={() => setExpandedAudit(isExp ? null : record.id)}
+                            style={{ flex: 1, padding: '0.4rem', fontSize: '0.72rem', fontWeight: 700, background: 'none', border: 'none', borderRight: '1px solid var(--border)', cursor: 'pointer', color: '#64748b' }}>
+                            {isExp ? '▲' : '▼'} Details
+                          </button>
+                          <button onClick={() => deleteAudit(record.id)}
+                            style={{ flex: 1, padding: '0.4rem', fontSize: '0.72rem', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
+                            🗑
+                          </button>
+                        </div>
+                        {isExp && (
+                          <div style={{ padding: '0.75rem', borderTop: '1px solid var(--border)', background: '#f8fafc', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                            <p style={{ margin: '0 0 4px', fontWeight: 700 }}>{record.checked} / {record.total} items completed</p>
+                            {Object.keys(record.findings || {}).length > 0 && (
+                              <p style={{ margin: 0, color: '#b45309' }}>📎 {Object.keys(record.findings).length} finding(s) attached</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
