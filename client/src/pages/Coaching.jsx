@@ -35,7 +35,9 @@ export default function Coaching() {
   }
 
   async function persist(updated) {
-    await setDoc(doc(db, 'users', currentUser.uid), { coachingSessions: updated }, { merge: true });
+    if (!currentUser) throw new Error('Not logged in');
+    const ref = doc(db, 'users', currentUser.uid);
+    await setDoc(ref, { coachingSessions: updated }, { merge: true });
     setSessions(updated);
   }
 
