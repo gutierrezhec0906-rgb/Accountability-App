@@ -14,29 +14,327 @@ const fiveSItems = [
 ];
 
 const wasteTypes = [
+  { type: 'Defects',         icon: '❌', desc: 'Work requiring rework or scrap',                    example: 'Parts failing inspection, customer returns' },
+  { type: 'Overproduction',  icon: '⚙️', desc: 'Producing more than customer demand',               example: 'Making parts before they are needed' },
+  { type: 'Waiting',         icon: '⏳', desc: 'Idle time when value is not being added',            example: 'Machine downtime, waiting for approvals' },
+  { type: 'Non-Utilized Talent', icon: '💡', desc: "Underutilizing people's knowledge and creativity", example: 'Not involving operators in improvement' },
   { type: 'Transportation',  icon: '🚚', desc: 'Unnecessary movement of materials or products',     example: 'Moving parts between distant workstations' },
   { type: 'Inventory',       icon: '📦', desc: 'Excess materials, WIP, or finished goods',           example: 'Large batch sizes sitting idle' },
   { type: 'Motion',          icon: '🏃', desc: 'Unnecessary movement of people',                    example: 'Searching for tools or walking for supplies' },
-  { type: 'Waiting',         icon: '⏳', desc: 'Idle time when value is not being added',            example: 'Machine downtime, waiting for approvals' },
-  { type: 'Overproduction',  icon: '⚙️', desc: 'Producing more than customer demand',               example: 'Making parts before they are needed' },
-  { type: 'Over-processing', icon: '🔄', desc: 'More work or quality than required',                example: 'Extra steps not adding customer value' },
-  { type: 'Defects',         icon: '❌', desc: 'Work requiring rework or scrap',                    example: 'Parts failing inspection, customer returns' },
-  { type: 'Skills (8th)',    icon: '💡', desc: "Underutilizing people's knowledge and creativity",  example: 'Not involving operators in improvement' },
+  { type: 'Extra-Processing',icon: '🔄', desc: 'More work or quality than required',                example: 'Extra steps not adding customer value' },
 ];
 
-const statusOptions = ['Open', 'In Progress', 'Complete'];
-const emptyForm = { title: '', area: '', owner: '', benefit: '', status: 'Open' };
+const PHASES = [
+  { key: 'prepare',    label: 'Phase 1: Prepare',    icon: '📋' },
+  { key: 'event',      label: 'Phase 2: Event',       icon: '⚡' },
+  { key: 'sustain',    label: 'Phase 3: Sustain',     icon: '📈' },
+];
+
+const emptyKaizen = {
+  title: '',
+  status: 'Preparing',
+  // Phase 1
+  scope: '', goal: '', team: '', baselineData: '',
+  // Phase 2
+  gembaFindings: '', wastesIdentified: [], rootCauses: '', futureState: '', implementationNotes: '', standardWork: '',
+  // Phase 3
+  resultsTracking: '', followUpOwners: '', auditSchedule: '', wins: '',
+};
+
+const statusOptions = ['Preparing', 'In Progress', 'Report-Out', 'Sustaining', 'Complete'];
+const statusColors  = { Preparing: '#f59e0b', 'In Progress': '#0d9488', 'Report-Out': '#8b5cf6', Sustaining: '#0f2044', Complete: '#16a34a' };
+
+const WASTES = ['Defects','Overproduction','Waiting','Non-Utilized Talent','Transportation','Inventory','Motion','Extra-Processing'];
+
 const tabs = [{ id: '5s', label: '5S Checklist' }, { id: 'waste', label: 'Waste Types' }, { id: 'kaizen', label: 'Kaizen Log' }];
+
+function KaizenForm({ initial, onSave, onCancel, title: formTitle }) {
+  const [form, setForm]       = useState(initial);
+  const [phase, setPhase]     = useState('prepare');
+
+  function set(field, val) { setForm(f => ({ ...f, [field]: val })); }
+  function toggleWaste(w) {
+    setForm(f => ({
+      ...f,
+      wastesIdentified: f.wastesIdentified.includes(w)
+        ? f.wastesIdentified.filter(x => x !== w)
+        : [...f.wastesIdentified, w],
+    }));
+  }
+
+  const phaseIdx = PHASES.findIndex(p => p.key === phase);
+
+  return (
+    <div className="card" style={{ padding: '1.5rem', marginBottom: '1rem' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+        <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '1rem', margin: 0 }}>{formTitle}</h4>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <label className="label" style={{ margin: 0 }}>Status:</label>
+          <select className="input" style={{ width: 'auto', padding: '0.25rem 0.5rem', fontSize: '0.78rem' }}
+            value={form.status} onChange={e => set('status', e.target.value)}>
+            {statusOptions.map(s => <option key={s}>{s}</option>)}
+          </select>
+        </div>
+      </div>
+
+      {/* Event title */}
+      <div style={{ marginBottom: '1rem' }}>
+        <label className="label">Kaizen Event Title</label>
+        <input className="input" required value={form.title} onChange={e => set('title', e.target.value)} placeholder="e.g. Reduce changeover time on Line 3" />
+      </div>
+
+      {/* Phase tabs */}
+      <div style={{ display: 'flex', gap: 6, marginBottom: '1.25rem', borderBottom: '2px solid #e2e8f0', paddingBottom: 0 }}>
+        {PHASES.map((p, i) => (
+          <button key={p.key} onClick={() => setPhase(p.key)} type="button"
+            style={{ padding: '0.5rem 1rem', borderRadius: '8px 8px 0 0', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer',
+              background: phase === p.key ? '#0f2044' : '#f1f5f9', color: phase === p.key ? 'white' : '#64748b',
+              borderBottom: phase === p.key ? '2px solid #0f2044' : 'none', marginBottom: phase === p.key ? -2 : 0 }}>
+            {p.icon} {p.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Phase 1: Prepare */}
+      {phase === 'prepare' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ background: '#f0fdf4', borderRadius: 10, padding: '0.75rem 1rem', borderLeft: '4px solid #16a34a' }}>
+            <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#16a34a', margin: '0 0 4px', textTransform: 'uppercase' }}>Phase 1 — Before the Event</p>
+            <p style={{ fontSize: '0.78rem', color: '#374151', margin: 0 }}>Define scope, goal, team, and gather baseline data before the event begins.</p>
+          </div>
+          <div>
+            <label className="label">1. Scope — Specific process or area</label>
+            <input className="input" value={form.scope} onChange={e => set('scope', e.target.value)} placeholder="e.g. Reduce changeover time on Line 3 (not 'fix all of manufacturing')" />
+          </div>
+          <div>
+            <label className="label">2. Goal — Measurable target</label>
+            <input className="input" value={form.goal} onChange={e => set('goal', e.target.value)} placeholder="e.g. Cut cycle time by 30%, reduce defects by 50%" />
+          </div>
+          <div>
+            <label className="label">3. Team — Cross-functional members, facilitator, sponsor</label>
+            <textarea className="input" rows={3} value={form.team} onChange={e => set('team', e.target.value)} placeholder="List team members, roles, and the sponsor with authority to approve changes..." />
+          </div>
+          <div>
+            <label className="label">4. Baseline Data — Current-state metrics</label>
+            <textarea className="input" rows={3} value={form.baselineData} onChange={e => set('baselineData', e.target.value)} placeholder="Current metrics, process maps, time studies, defect rates..." />
+          </div>
+        </div>
+      )}
+
+      {/* Phase 2: Event */}
+      {phase === 'event' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+          <div style={{ background: '#eff6ff', borderRadius: 10, padding: '0.75rem 1rem', borderLeft: '4px solid #2563eb' }}>
+            <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#2563eb', margin: '0 0 4px', textTransform: 'uppercase' }}>Phase 2 — The Kaizen Event</p>
+            <p style={{ fontSize: '0.78rem', color: '#374151', margin: 0 }}>Understand current state, analyze root causes, design and implement the future state.</p>
+          </div>
+
+          {/* 2a Current State */}
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '1rem' }}>
+            <p style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.85rem', margin: '0 0 10px' }}>A. Understand Current State</p>
+            <div style={{ marginBottom: 12 }}>
+              <label className="label">Gemba Walk & Process Map Findings</label>
+              <textarea className="input" rows={3} value={form.gembaFindings} onChange={e => set('gembaFindings', e.target.value)} placeholder="What did you observe walking the process? Value stream findings..." />
+            </div>
+            <div>
+              <label className="label">Wastes Identified (DOWNTIME)</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 6 }}>
+                {WASTES.map(w => (
+                  <button key={w} type="button" onClick={() => toggleWaste(w)}
+                    style={{ padding: '4px 12px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', border: '1.5px solid',
+                      background: form.wastesIdentified.includes(w) ? '#0f2044' : 'white',
+                      color:      form.wastesIdentified.includes(w) ? 'white'   : '#475569',
+                      borderColor: form.wastesIdentified.includes(w) ? '#0f2044' : '#e2e8f0' }}>
+                    {w}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* 2b Root Cause */}
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '1rem' }}>
+            <p style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.85rem', margin: '0 0 10px' }}>B. Root Cause Analysis</p>
+            <label className="label">Findings — 5 Whys, Fishbone, Pareto</label>
+            <textarea className="input" rows={4} value={form.rootCauses} onChange={e => set('rootCauses', e.target.value)} placeholder="Root causes identified (not just symptoms). Reference 5 Whys or fishbone results..." />
+          </div>
+
+          {/* 2c Future State */}
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '1rem' }}>
+            <p style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.85rem', margin: '0 0 10px' }}>C. Future State Design</p>
+            <label className="label">Solutions, Future-State Process Map & Priorities</label>
+            <textarea className="input" rows={4} value={form.futureState} onChange={e => set('futureState', e.target.value)} placeholder="Brainstormed solutions, future-state map, prioritized by impact vs. effort..." />
+          </div>
+
+          {/* 2d Implement */}
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '1rem' }}>
+            <p style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.85rem', margin: '0 0 10px' }}>D. Implement & Test</p>
+            <label className="label">Changes Made, Test Results & Adjustments</label>
+            <textarea className="input" rows={3} value={form.implementationNotes} onChange={e => set('implementationNotes', e.target.value)} placeholder="Physical/process changes made on the spot, small-scale tests, adjustments..." />
+          </div>
+
+          {/* 2e Standardize */}
+          <div style={{ border: '1px solid #e2e8f0', borderRadius: 10, padding: '1rem' }}>
+            <p style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.85rem', margin: '0 0 10px' }}>E. Standardize & Report-Out</p>
+            <label className="label">Standard Work Documentation & Leadership Presentation Notes</label>
+            <textarea className="input" rows={3} value={form.standardWork} onChange={e => set('standardWork', e.target.value)} placeholder="New standard work, training completed, results presented to leadership..." />
+          </div>
+        </div>
+      )}
+
+      {/* Phase 3: Sustain */}
+      {phase === 'sustain' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ background: '#fdf4ff', borderRadius: 10, padding: '0.75rem 1rem', borderLeft: '4px solid #9333ea' }}>
+            <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#9333ea', margin: '0 0 4px', textTransform: 'uppercase' }}>Phase 3 — After the Event</p>
+            <p style={{ fontSize: '0.78rem', color: '#374151', margin: 0 }}>Monitor results, assign follow-up owners, audit, and celebrate wins.</p>
+          </div>
+          <div>
+            <label className="label">1. Results Tracking — Daily/weekly metrics vs. target</label>
+            <textarea className="input" rows={3} value={form.resultsTracking} onChange={e => set('resultsTracking', e.target.value)} placeholder="How are results being tracked? Current metrics vs. baseline target..." />
+          </div>
+          <div>
+            <label className="label">2. Follow-Up Owners — Open action items with owners & deadlines</label>
+            <textarea className="input" rows={3} value={form.followUpOwners} onChange={e => set('followUpOwners', e.target.value)} placeholder="Action item | Owner | Deadline&#10;e.g. Install shadow board | J. Smith | 7/30" />
+          </div>
+          <div>
+            <label className="label">3. Audit Schedule — 30 / 60 / 90 day checks</label>
+            <input className="input" value={form.auditSchedule} onChange={e => set('auditSchedule', e.target.value)} placeholder="e.g. 30-day audit: 8/1 | 60-day: 9/1 | 90-day: 10/1" />
+          </div>
+          <div>
+            <label className="label">4. Wins — Results & momentum to share with the team</label>
+            <textarea className="input" rows={3} value={form.wins} onChange={e => set('wins', e.target.value)} placeholder="Quantified improvements, team recognition, communication plan..." />
+          </div>
+        </div>
+      )}
+
+      {/* Phase navigation */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {phaseIdx > 0 && (
+            <button type="button" className="btn-secondary" onClick={() => setPhase(PHASES[phaseIdx - 1].key)}>← Previous Phase</button>
+          )}
+          {phaseIdx < PHASES.length - 1 && (
+            <button type="button" className="btn-primary" onClick={() => setPhase(PHASES[phaseIdx + 1].key)}>Next Phase →</button>
+          )}
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>
+          <button type="button" className="btn-primary" onClick={() => onSave(form)}>💾 Save Kaizen</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function KaizenCard({ k, onEdit }) {
+  const [expanded, setExpanded] = useState(false);
+  const color = statusColors[k.status] || '#64748b';
+
+  const phases2Check = [
+    { label: 'Scope',            val: k.scope },
+    { label: 'Goal',             val: k.goal },
+    { label: 'Team',             val: k.team },
+    { label: 'Baseline',         val: k.baselineData },
+    { label: 'Gemba Findings',   val: k.gembaFindings },
+    { label: 'Root Causes',      val: k.rootCauses },
+    { label: 'Future State',     val: k.futureState },
+    { label: 'Implementation',   val: k.implementationNotes },
+    { label: 'Standard Work',    val: k.standardWork },
+    { label: 'Results Tracking', val: k.resultsTracking },
+    { label: 'Follow-Up Owners', val: k.followUpOwners },
+    { label: 'Wins',             val: k.wins },
+  ];
+  const filled = phases2Check.filter(p => p.val).length;
+  const pct    = Math.round((filled / phases2Check.length) * 100);
+
+  return (
+    <div className="card" style={{ padding: '1.125rem' }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+            <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>{k.title}</h4>
+            <span style={{ background: color + '18', color, borderRadius: 9999, padding: '2px 10px', fontSize: '0.7rem', fontWeight: 700, border: `1px solid ${color}44` }}>{k.status}</span>
+          </div>
+          {k.goal && <p style={{ fontSize: '0.78rem', color: '#0d9488', fontWeight: 600, margin: '0 0 4px' }}>🎯 {k.goal}</p>}
+          <div style={{ display: 'flex', gap: 12, fontSize: '0.72rem', color: 'var(--text-muted)', flexWrap: 'wrap', marginBottom: 8 }}>
+            {k.scope && <span>📂 {k.scope}</span>}
+            <span>📅 {k.date}</span>
+            {k.wastesIdentified?.length > 0 && <span>⚠️ {k.wastesIdentified.length} waste{k.wastesIdentified.length > 1 ? 's' : ''} identified</span>}
+          </div>
+          {/* Completion progress */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ flex: 1, background: '#e2e8f0', borderRadius: 9999, height: 5, maxWidth: 160 }}>
+              <div style={{ height: 5, borderRadius: 9999, background: '#0d9488', width: `${pct}%`, transition: 'width 0.4s' }} />
+            </div>
+            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600 }}>{pct}% complete</span>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button onClick={() => onEdit(k)}
+            style={{ background: 'none', border: '1px solid #0d9488', borderRadius: 8, padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 700, color: '#0d9488', cursor: 'pointer' }}>
+            ✏️ Edit
+          </button>
+          <button onClick={() => setExpanded(e => !e)}
+            style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>
+            {expanded ? '▲ Collapse' : '▼ Details'}
+          </button>
+        </div>
+      </div>
+
+      {expanded && (
+        <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Phase 1 */}
+          {(k.scope || k.goal || k.team || k.baselineData) && (
+            <div>
+              <p style={{ fontSize: '0.72rem', fontWeight: 800, color: '#16a34a', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>📋 Phase 1: Prepare</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {[['Scope', k.scope], ['Goal', k.goal], ['Team', k.team], ['Baseline Data', k.baselineData]].map(([lbl, val]) => val && (
+                  <div key={lbl}><span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>{lbl}: </span><span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{val}</span></div>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Phase 2 */}
+          {(k.gembaFindings || k.wastesIdentified?.length || k.rootCauses || k.futureState || k.implementationNotes || k.standardWork) && (
+            <div>
+              <p style={{ fontSize: '0.72rem', fontWeight: 800, color: '#2563eb', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>⚡ Phase 2: Event</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {k.wastesIdentified?.length > 0 && (
+                  <div><span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>Wastes: </span>
+                    {k.wastesIdentified.map(w => <span key={w} style={{ fontSize: '0.68rem', background: '#0f204418', color: '#0f2044', borderRadius: 9999, padding: '1px 8px', marginLeft: 4, fontWeight: 700 }}>{w}</span>)}
+                  </div>
+                )}
+                {[['Gemba Findings', k.gembaFindings], ['Root Causes', k.rootCauses], ['Future State', k.futureState], ['Implementation', k.implementationNotes], ['Standard Work', k.standardWork]].map(([lbl, val]) => val && (
+                  <div key={lbl}><span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>{lbl}: </span><span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{val}</span></div>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Phase 3 */}
+          {(k.resultsTracking || k.followUpOwners || k.auditSchedule || k.wins) && (
+            <div>
+              <p style={{ fontSize: '0.72rem', fontWeight: 800, color: '#9333ea', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>📈 Phase 3: Sustain</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {[['Results', k.resultsTracking], ['Follow-Up', k.followUpOwners], ['Audit Schedule', k.auditSchedule], ['Wins', k.wins]].map(([lbl, val]) => val && (
+                  <div key={lbl}><span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>{lbl}: </span><span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{val}</span></div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Lean() {
   const { currentUser } = useAuth();
-  const [activeTab, setActiveTab]     = useState('5s');
-  const [checks, setChecks]           = useState({});
-  const [kaizen, setKaizen]           = useState([]);
-  const [showForm, setShowForm]       = useState(false);
-  const [kForm, setKForm]             = useState(emptyForm);
-  const [editingId, setEditingId]     = useState(null);
-  const [editForm, setEditForm]       = useState(null);
+  const [activeTab, setActiveTab] = useState('5s');
+  const [checks, setChecks]       = useState({});
+  const [kaizen, setKaizen]       = useState([]);
+  const [showForm, setShowForm]   = useState(false);
+  const [editingEntry, setEditingEntry] = useState(null);
 
   function toggle(cat, idx) { const k = `${cat}-${idx}`; setChecks(c => ({ ...c, [k]: !c[k] })); }
 
@@ -56,40 +354,32 @@ export default function Lean() {
 
   useEffect(() => { fetchKaizen(); }, [currentUser]);
 
-  async function addKaizen(e) {
-    e.preventDefault();
+  async function handleSaveNew(form) {
+    if (!form.title.trim()) return toast.error('Please enter a Kaizen event title');
     if (!currentUser) return toast.error('Not logged in');
     try {
-      const entry = { uid: currentUser.uid, ...kForm, date: new Date().toISOString().split('T')[0], createdAt: serverTimestamp() };
+      const entry = { uid: currentUser.uid, ...form, date: new Date().toISOString().split('T')[0], createdAt: serverTimestamp() };
       const ref   = await addDoc(collection(db, 'kaizenLog'), entry);
       setKaizen(k => [{ ...entry, id: ref.id }, ...k]);
-      setKForm(emptyForm);
       setShowForm(false);
-      toast.success('Kaizen logged');
+      toast.success('Kaizen event logged');
     } catch (e) { toast.error('Save failed: ' + e.message); }
   }
 
-  function startEdit(k) {
-    setEditingId(k.id);
-    setEditForm({ title: k.title, area: k.area, owner: k.owner, benefit: k.benefit, status: k.status });
-  }
-
-  async function saveEdit(e) {
-    e.preventDefault();
+  async function handleSaveEdit(form) {
+    if (!form.title.trim()) return toast.error('Please enter a Kaizen event title');
     try {
-      await updateDoc(doc(db, 'kaizenLog', editingId), editForm);
-      setKaizen(ks => ks.map(k => k.id === editingId ? { ...k, ...editForm } : k));
-      setEditingId(null);
-      setEditForm(null);
+      const { id, createdAt, uid, ...rest } = { ...editingEntry, ...form };
+      await updateDoc(doc(db, 'kaizenLog', editingEntry.id), rest);
+      setKaizen(ks => ks.map(k => k.id === editingEntry.id ? { ...k, ...rest } : k));
+      setEditingEntry(null);
       toast.success('Kaizen updated');
     } catch (e) { toast.error('Update failed: ' + e.message); }
   }
 
-  const statusStyle = { Complete: 'badge-green', 'In Progress': 'badge-yellow', Open: 'badge-red' };
-
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      <PageHeader icon="🏭" title="Lean Manufacturing Toolkit" subtitle="5S checklist, waste identification, and Kaizen log" />
+      <PageHeader icon="🏭" title="Lean Manufacturing Toolkit" subtitle="5S checklist, waste identification, and Kaizen event log" />
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
         {tabs.map(t => (
@@ -157,73 +447,39 @@ export default function Lean() {
       {activeTab === 'kaizen' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button className="btn-primary" onClick={() => { setShowForm(s => !s); setEditingId(null); }}>+ Log Kaizen</button>
+            <button className="btn-primary" onClick={() => { setShowForm(s => !s); setEditingEntry(null); }}>
+              {showForm ? '✕ Cancel' : '+ Log Kaizen Event'}
+            </button>
           </div>
 
-          {/* New Kaizen form */}
-          {showForm && (
-            <div className="card" style={{ padding: '1.25rem' }}>
-              <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.9rem', margin: '0 0 1rem' }}>New Kaizen Event</h4>
-              <form onSubmit={addKaizen} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                <div style={{ gridColumn: '1/-1' }}><label className="label">Improvement Idea</label><input className="input" required value={kForm.title} onChange={e => setKForm(f => ({ ...f, title: e.target.value }))} placeholder="Describe the improvement..." /></div>
-                <div><label className="label">Area</label><input className="input" value={kForm.area} onChange={e => setKForm(f => ({ ...f, area: e.target.value }))} placeholder="e.g. Production, Quality" /></div>
-                <div><label className="label">Owner</label><input className="input" value={kForm.owner} onChange={e => setKForm(f => ({ ...f, owner: e.target.value }))} placeholder="Responsible person" /></div>
-                <div style={{ gridColumn: '1/-1' }}><label className="label">Expected Benefit</label><input className="input" value={kForm.benefit} onChange={e => setKForm(f => ({ ...f, benefit: e.target.value }))} placeholder="e.g. Reduce cycle time by 15%" /></div>
-                <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10 }}>
-                  <button className="btn-primary" type="submit">Log Kaizen</button>
-                  <button className="btn-secondary" type="button" onClick={() => setShowForm(false)}>Cancel</button>
-                </div>
-              </form>
-            </div>
+          {showForm && !editingEntry && (
+            <KaizenForm
+              initial={emptyKaizen}
+              title="New Kaizen Event"
+              onSave={handleSaveNew}
+              onCancel={() => setShowForm(false)}
+            />
+          )}
+
+          {editingEntry && (
+            <KaizenForm
+              initial={editingEntry}
+              title={`Editing: ${editingEntry.title}`}
+              onSave={handleSaveEdit}
+              onCancel={() => setEditingEntry(null)}
+            />
           )}
 
           {kaizen.length === 0 && !showForm && (
             <div className="card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
               <p style={{ fontSize: '2rem', margin: '0 0 8px' }}>🏭</p>
-              <p style={{ fontWeight: 700, margin: 0 }}>No Kaizen events logged yet. Click "+ Log Kaizen" to get started.</p>
+              <p style={{ fontWeight: 700, margin: '0 0 4px' }}>No Kaizen events logged yet.</p>
+              <p style={{ fontSize: '0.8rem', margin: 0 }}>Click "+ Log Kaizen Event" to document your first improvement event.</p>
             </div>
           )}
 
-          {/* Kaizen cards */}
           {kaizen.map(k => (
-            <div key={k.id} className="card" style={{ padding: '1.125rem' }}>
-              {editingId === k.id
-                ? /* Edit form */
-                  <form onSubmit={saveEdit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                    <div style={{ gridColumn: '1/-1' }}><label className="label">Improvement Idea</label><input className="input" required value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} /></div>
-                    <div><label className="label">Area</label><input className="input" value={editForm.area} onChange={e => setEditForm(f => ({ ...f, area: e.target.value }))} /></div>
-                    <div><label className="label">Owner</label><input className="input" value={editForm.owner} onChange={e => setEditForm(f => ({ ...f, owner: e.target.value }))} /></div>
-                    <div style={{ gridColumn: '1/-1' }}><label className="label">Expected Benefit</label><input className="input" value={editForm.benefit} onChange={e => setEditForm(f => ({ ...f, benefit: e.target.value }))} /></div>
-                    <div>
-                      <label className="label">Status</label>
-                      <select className="input" value={editForm.status} onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))}>
-                        {statusOptions.map(s => <option key={s}>{s}</option>)}
-                      </select>
-                    </div>
-                    <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10 }}>
-                      <button className="btn-primary" type="submit">Save Changes</button>
-                      <button className="btn-secondary" type="button" onClick={() => setEditingId(null)}>Cancel</button>
-                    </div>
-                  </form>
-                : /* View card */
-                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-                    <div>
-                      <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '0.9375rem' }}>{k.title}</h4>
-                      <div style={{ display: 'flex', gap: 14, fontSize: '0.75rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-                        <span>📂 {k.area}</span><span>👤 {k.owner}</span><span>📅 {k.date}</span>
-                        {k.benefit && <span style={{ color: '#0d9488', fontWeight: 600 }}>💡 {k.benefit}</span>}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
-                      <button onClick={() => startEdit(k)}
-                        style={{ background: 'none', border: '1px solid #0d9488', borderRadius: 8, padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 700, color: '#0d9488', cursor: 'pointer' }}>
-                        ✏️ Edit
-                      </button>
-                      <span className={statusStyle[k.status] || 'badge-red'}>{k.status}</span>
-                    </div>
-                  </div>
-              }
-            </div>
+            <KaizenCard key={k.id} k={k} onEdit={entry => { setEditingEntry(entry); setShowForm(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }} />
           ))}
         </div>
       )}
