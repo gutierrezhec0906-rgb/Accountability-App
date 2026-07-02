@@ -7,6 +7,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
+import DateStatus from '../components/DateStatus';
 
 const STATUS_STYLES = {
   draft:     { bg: '#f1f5f9', text: '#64748b', label: 'Draft' },
@@ -184,7 +185,7 @@ export default function SmartGoals() {
                   <span style={{ fontSize: '1.25rem' }}>🎯</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontWeight: 700, color: '#1e293b', margin: 0, fontSize: '0.95rem' }}>{goal.title}</p>
-                    {goal.dueDate && <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: '2px 0 0' }}>Due: {goal.dueDate}</p>}
+                    {goal.dueDate && <div style={{ marginTop: 4 }}><DateStatus date={goal.dueDate} /></div>}
                   </div>
                   <QualityBadge pct={qpct} />
                   <span style={{ background: st.bg, color: st.text, padding: '3px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 700 }}>{st.label}</span>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
+import DateStatus from '../components/DateStatus';
 
 const sampleTrainings = [
   { id: 1, title: 'Lean Manufacturing Fundamentals', category: 'Lean',       duration: '4h',   dueDate: '2024-08-31', completed: true,  completedDate: '2024-07-20', mandatory: true  },
@@ -119,7 +120,8 @@ export default function Training() {
               <div style={{ display: 'flex', gap: 14, fontSize: '0.75rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
                 <span style={{ background: catColors[t.category] ? catColors[t.category] + '18' : '#f1f5f9', color: catColors[t.category] || '#475569', padding: '1px 8px', borderRadius: 9999, fontWeight: 700, fontSize: '0.7rem' }}>{t.category}</span>
                 {t.duration && <span>⏱ {t.duration}</span>}
-                {t.dueDate && <span>📅 Due: {t.dueDate}</span>}
+                {t.dueDate && !t.completed && <DateStatus date={t.dueDate} />}
+                {t.dueDate && t.completed && <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>📅 {t.dueDate}</span>}
                 {t.completedDate && <span style={{ color: '#0d9488', fontWeight: 600 }}>✅ {t.completedDate}</span>}
               </div>
             </div>

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
+import DateStatus from '../components/DateStatus';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, query, where, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -9,16 +10,6 @@ const sessionTypes = ['Performance', 'Development', 'Disciplinary', 'Recognition
 const typeColors   = { Performance: '#0d9488', Development: '#0f2044', Disciplinary: '#ef4444', Recognition: '#f59e0b', Career: '#8b5cf6', General: '#64748b' };
 const emptyForm    = { date: '', coachee: '', type: 'Performance', duration: '', notes: '', actionItems: '', nextSession: '' };
 
-function sessionCountdown(nextSession) {
-  if (!nextSession) return null;
-  const today = new Date(); today.setHours(0, 0, 0, 0);
-  const due   = new Date(nextSession + 'T00:00:00');
-  const days  = Math.round((due - today) / 86400000);
-  if (days < 0)   return { label: `${Math.abs(days)}d overdue`, color: '#ef4444', bg: '#fef2f2' };
-  if (days === 0)  return { label: 'Today',         color: '#ef4444', bg: '#fef2f2' };
-  if (days <= 3)   return { label: `${days}d left`,  color: '#eab308', bg: '#fefce8' };
-  return                   { label: `${days}d left`,  color: '#16a34a', bg: '#f0fdf4' };
-}
 
 export default function Coaching() {
   const { currentUser } = useAuth();
@@ -148,7 +139,6 @@ export default function Coaching() {
       {/* Session cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         {sessions.map(s => {
-          const cd = sessionCountdown(s.nextSession);
           return (
             <div key={s.id} className="card" style={{ padding: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
@@ -163,9 +153,9 @@ export default function Coaching() {
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>📅 {s.date} · ⏱ {s.duration}</p>
-                      {cd && (
-                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: cd.color, background: cd.bg, border: `1px solid ${cd.color}44`, borderRadius: 9999, padding: '2px 8px' }}>
-                          Next: {cd.label}
+                      {s.nextSession && (
+                        <span>
+                          <DateStatus date={s.nextSession} prefix="Next · " />
                         </span>
                       )}
                     </div>
@@ -232,7 +222,7 @@ export default function Coaching() {
                       </div>
                     </div>
                   )}
-                  {s.nextSession && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 10 }}>📅 Next session: <strong>{s.nextSession}</strong></p>}
+                  {s.nextSession && <div style={{ marginTop: 10 }}><DateStatus date={s.nextSession} prefix="Next session · " /></div>}
                 </div>
               )}
             </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
+import DateStatus from '../components/DateStatus';
 
 const sampleGoals = [
   {
@@ -147,7 +148,7 @@ export default function Career() {
                     <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 700, background: pc.bg, color: pc.text }}>{goal.priority}</span>
                     <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 600, background: '#f1f5f9', color: '#64748b' }}>{goal.category}</span>
                   </div>
-                  {goal.targetDate && <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0 0 10px' }}>🎯 Target: {goal.targetDate}</p>}
+                  {goal.targetDate && <div style={{ marginBottom: 10 }}><DateStatus date={goal.targetDate} prefix="Target · " /></div>}
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ flex: 1, background: '#e2e8f0', borderRadius: 9999, height: 8 }}>
                       <div style={{ height: 8, borderRadius: 9999, background: '#0d9488', width: `${goal.progress}%`, transition: 'width 0.6s ease' }} />
@@ -174,7 +175,8 @@ export default function Career() {
                           {m.done && '✓'}
                         </div>
                         <span style={{ flex: 1, fontSize: '0.875rem', color: m.done ? '#94a3b8' : 'var(--text-secondary)', textDecoration: m.done ? 'line-through' : 'none' }}>{m.text}</span>
-                        {m.date && <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{m.date}</span>}
+                        {m.date && !m.done && <DateStatus date={m.date} />}
+                        {m.date && m.done && <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{m.date}</span>}
                       </button>
                       <button onClick={() => deleteMilestone(goal.id, i)}
                         style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '0.85rem', padding: '0 4px', flexShrink: 0 }} title="Delete milestone">✕</button>
