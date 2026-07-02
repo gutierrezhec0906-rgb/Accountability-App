@@ -1,6 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
+import { collection, addDoc, getDocs, updateDoc, deleteDoc, query, where, doc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useAuth } from '../context/AuthContext';
 
 const fiveSItems = [
   { category: 'Sort (Seiri)',          items: ['Remove all unnecessary items from the work area','Red-tag items not needed in the next 30 days','Dispose of or relocate red-tagged items','Document what was removed and why'] },
@@ -21,34 +24,68 @@ const wasteTypes = [
   { type: 'Skills (8th)',    icon: '💡', desc: "Underutilizing people's knowledge and creativity",  example: 'Not involving operators in improvement' },
 ];
 
-const sampleKaizen = [
-  { id: 1, title: 'Reduce setup time on Line 3',        area: 'Production', status: 'In Progress', owner: 'T. Nguyen', date: '2024-07-15', benefit: 'Save 45 min/day' },
-  { id: 2, title: 'Implement shadow board at Tool Crib', area: '5S',         status: 'Complete',    owner: 'A. Reyes',  date: '2024-07-08', benefit: 'Eliminate tool search time' },
-  { id: 3, title: 'Reduce defects in welding station',  area: 'Quality',    status: 'Open',        owner: 'M. Torres', date: '2024-07-20', benefit: 'Reduce scrap by 20%' },
-];
-
-const tabs = [{ id: '5s', label: '5S Checklist' },{ id: 'waste', label: 'Waste Types' },{ id: 'kaizen', label: 'Kaizen Log' }];
+const statusOptions = ['Open', 'In Progress', 'Complete'];
+const emptyForm = { title: '', area: '', owner: '', benefit: '', status: 'Open' };
+const tabs = [{ id: '5s', label: '5S Checklist' }, { id: 'waste', label: 'Waste Types' }, { id: 'kaizen', label: 'Kaizen Log' }];
 
 export default function Lean() {
-  const [activeTab, setActiveTab] = useState('5s');
-  const [checks, setChecks] = useState({});
-  const [kaizen, setKaizen] = useState(sampleKaizen);
-  const [showKaizenForm, setShowKaizenForm] = useState(false);
-  const [kForm, setKForm] = useState({ title:'',area:'',owner:'',benefit:'' });
+  const { currentUser } = useAuth();
+  const [activeTab, setActiveTab]     = useState('5s');
+  const [checks, setChecks]           = useState({});
+  const [kaizen, setKaizen]           = useState([]);
+  const [showForm, setShowForm]       = useState(false);
+  const [kForm, setKForm]             = useState(emptyForm);
+  const [editingId, setEditingId]     = useState(null);
+  const [editForm, setEditForm]       = useState(null);
 
   function toggle(cat, idx) { const k = `${cat}-${idx}`; setChecks(c => ({ ...c, [k]: !c[k] })); }
 
-  const totalItems = fiveSItems.reduce((a,c) => a + c.items.length, 0);
+  const totalItems   = fiveSItems.reduce((a, c) => a + c.items.length, 0);
   const checkedItems = Object.values(checks).filter(Boolean).length;
-  const pct = Math.round((checkedItems / totalItems) * 100);
+  const pct          = Math.round((checkedItems / totalItems) * 100);
 
-  function addKaizen(e) {
-    e.preventDefault();
-    setKaizen(k => [...k, { ...kForm, id: Date.now(), status: 'Open', date: new Date().toISOString().split('T')[0] }]);
-    setKForm({ title:'',area:'',owner:'',benefit:'' });
-    setShowKaizenForm(false);
-    toast.success('Kaizen logged');
+  async function fetchKaizen() {
+    if (!currentUser) return;
+    try {
+      const snap = await getDocs(query(collection(db, 'kaizenLog'), where('uid', '==', currentUser.uid)));
+      const data  = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      setKaizen(data);
+    } catch (e) { console.error(e); }
   }
+
+  useEffect(() => { fetchKaizen(); }, [currentUser]);
+
+  async function addKaizen(e) {
+    e.preventDefault();
+    if (!currentUser) return toast.error('Not logged in');
+    try {
+      const entry = { uid: currentUser.uid, ...kForm, date: new Date().toISOString().split('T')[0], createdAt: serverTimestamp() };
+      const ref   = await addDoc(collection(db, 'kaizenLog'), entry);
+      setKaizen(k => [{ ...entry, id: ref.id }, ...k]);
+      setKForm(emptyForm);
+      setShowForm(false);
+      toast.success('Kaizen logged');
+    } catch (e) { toast.error('Save failed: ' + e.message); }
+  }
+
+  function startEdit(k) {
+    setEditingId(k.id);
+    setEditForm({ title: k.title, area: k.area, owner: k.owner, benefit: k.benefit, status: k.status });
+  }
+
+  async function saveEdit(e) {
+    e.preventDefault();
+    try {
+      await updateDoc(doc(db, 'kaizenLog', editingId), editForm);
+      setKaizen(ks => ks.map(k => k.id === editingId ? { ...k, ...editForm } : k));
+      setEditingId(null);
+      setEditForm(null);
+      toast.success('Kaizen updated');
+    } catch (e) { toast.error('Update failed: ' + e.message); }
+  }
+
+  const statusStyle = { Complete: 'badge-green', 'In Progress': 'badge-yellow', Open: 'badge-red' };
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
@@ -63,6 +100,7 @@ export default function Lean() {
         ))}
       </div>
 
+      {/* 5S Tab */}
       {activeTab === '5s' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div className="card" style={{ padding: '1.25rem' }}>
@@ -99,6 +137,7 @@ export default function Lean() {
         </div>
       )}
 
+      {/* Waste Types Tab */}
       {activeTab === 'waste' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(340px,1fr))', gap: '0.875rem' }}>
           {wasteTypes.map(w => (
@@ -114,13 +153,17 @@ export default function Lean() {
         </div>
       )}
 
+      {/* Kaizen Log Tab */}
       {activeTab === 'kaizen' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <button className="btn-primary" onClick={() => setShowKaizenForm(s => !s)}>+ Log Kaizen</button>
+            <button className="btn-primary" onClick={() => { setShowForm(s => !s); setEditingId(null); }}>+ Log Kaizen</button>
           </div>
-          {showKaizenForm && (
+
+          {/* New Kaizen form */}
+          {showForm && (
             <div className="card" style={{ padding: '1.25rem' }}>
+              <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.9rem', margin: '0 0 1rem' }}>New Kaizen Event</h4>
               <form onSubmit={addKaizen} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                 <div style={{ gridColumn: '1/-1' }}><label className="label">Improvement Idea</label><input className="input" required value={kForm.title} onChange={e => setKForm(f => ({ ...f, title: e.target.value }))} placeholder="Describe the improvement..." /></div>
                 <div><label className="label">Area</label><input className="input" value={kForm.area} onChange={e => setKForm(f => ({ ...f, area: e.target.value }))} placeholder="e.g. Production, Quality" /></div>
@@ -128,21 +171,58 @@ export default function Lean() {
                 <div style={{ gridColumn: '1/-1' }}><label className="label">Expected Benefit</label><input className="input" value={kForm.benefit} onChange={e => setKForm(f => ({ ...f, benefit: e.target.value }))} placeholder="e.g. Reduce cycle time by 15%" /></div>
                 <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10 }}>
                   <button className="btn-primary" type="submit">Log Kaizen</button>
-                  <button className="btn-secondary" type="button" onClick={() => setShowKaizenForm(false)}>Cancel</button>
+                  <button className="btn-secondary" type="button" onClick={() => setShowForm(false)}>Cancel</button>
                 </div>
               </form>
             </div>
           )}
+
+          {kaizen.length === 0 && !showForm && (
+            <div className="card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+              <p style={{ fontSize: '2rem', margin: '0 0 8px' }}>🏭</p>
+              <p style={{ fontWeight: 700, margin: 0 }}>No Kaizen events logged yet. Click "+ Log Kaizen" to get started.</p>
+            </div>
+          )}
+
+          {/* Kaizen cards */}
           {kaizen.map(k => (
-            <div key={k.id} className="card" style={{ padding: '1.125rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-              <div>
-                <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '0.9375rem' }}>{k.title}</h4>
-                <div style={{ display: 'flex', gap: 14, fontSize: '0.75rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-                  <span>📂 {k.area}</span><span>👤 {k.owner}</span><span>📅 {k.date}</span>
-                  {k.benefit && <span style={{ color: '#0d9488', fontWeight: 600 }}>💡 {k.benefit}</span>}
-                </div>
-              </div>
-              <span className={k.status === 'Complete' ? 'badge-green' : k.status === 'In Progress' ? 'badge-yellow' : 'badge-red'}>{k.status}</span>
+            <div key={k.id} className="card" style={{ padding: '1.125rem' }}>
+              {editingId === k.id
+                ? /* Edit form */
+                  <form onSubmit={saveEdit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                    <div style={{ gridColumn: '1/-1' }}><label className="label">Improvement Idea</label><input className="input" required value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} /></div>
+                    <div><label className="label">Area</label><input className="input" value={editForm.area} onChange={e => setEditForm(f => ({ ...f, area: e.target.value }))} /></div>
+                    <div><label className="label">Owner</label><input className="input" value={editForm.owner} onChange={e => setEditForm(f => ({ ...f, owner: e.target.value }))} /></div>
+                    <div style={{ gridColumn: '1/-1' }}><label className="label">Expected Benefit</label><input className="input" value={editForm.benefit} onChange={e => setEditForm(f => ({ ...f, benefit: e.target.value }))} /></div>
+                    <div>
+                      <label className="label">Status</label>
+                      <select className="input" value={editForm.status} onChange={e => setEditForm(f => ({ ...f, status: e.target.value }))}>
+                        {statusOptions.map(s => <option key={s}>{s}</option>)}
+                      </select>
+                    </div>
+                    <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10 }}>
+                      <button className="btn-primary" type="submit">Save Changes</button>
+                      <button className="btn-secondary" type="button" onClick={() => setEditingId(null)}>Cancel</button>
+                    </div>
+                  </form>
+                : /* View card */
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                    <div>
+                      <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '0.9375rem' }}>{k.title}</h4>
+                      <div style={{ display: 'flex', gap: 14, fontSize: '0.75rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
+                        <span>📂 {k.area}</span><span>👤 {k.owner}</span><span>📅 {k.date}</span>
+                        {k.benefit && <span style={{ color: '#0d9488', fontWeight: 600 }}>💡 {k.benefit}</span>}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                      <button onClick={() => startEdit(k)}
+                        style={{ background: 'none', border: '1px solid #0d9488', borderRadius: 8, padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 700, color: '#0d9488', cursor: 'pointer' }}>
+                        ✏️ Edit
+                      </button>
+                      <span className={statusStyle[k.status] || 'badge-red'}>{k.status}</span>
+                    </div>
+                  </div>
+              }
             </div>
           ))}
         </div>
