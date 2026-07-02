@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, addDoc, getDocs, deleteDoc, query, where, orderBy, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -101,24 +101,16 @@ export default function Feedback() {
   async function fetchFeedback() {
     if (!currentUser) return;
     try {
-      const snap = await getDocs(query(
-        collection(db, 'feedback'),
-        where('uid', '==', currentUser.uid),
-      ));
-      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-      setGiven(all);
-    } catch (e) { console.error('fetchGiven:', e); }
+      const snap = await getDoc(doc(db, 'users', currentUser.uid));
+      const entries = snap.exists() ? (snap.data().feedbackEntries || []) : [];
+      setGiven(entries);
+      setReceived([]);
+    } catch (e) { console.error('fetchFeedback:', e); }
+  }
 
-    try {
-      const snap2 = await getDocs(query(
-        collection(db, 'feedback'),
-        where('to', '==', myName),
-      ));
-      const recv = snap2.docs.map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-      setReceived(recv);
-    } catch (e) { console.error('fetchReceived:', e); }
+  async function persist(updated) {
+    await setDoc(doc(db, 'users', currentUser.uid), { feedbackEntries: updated }, { merge: true });
+    setGiven(updated);
   }
 
   useEffect(() => { fetchFeedback(); }, [currentUser]);
@@ -128,7 +120,8 @@ export default function Feedback() {
     if (!form.to) return toast.error('Please select a recipient');
     setSubmitting(true);
     try {
-      await addDoc(collection(db, 'feedback'), {
+      const newEntry = {
+        id: Date.now().toString(),
         uid: currentUser.uid,
         type: form.type,
         from: form.anonymous ? 'Anonymous' : (form.from || myName),
@@ -138,12 +131,12 @@ export default function Feedback() {
         rating: form.rating,
         text: form.text,
         date: new Date().toISOString().split('T')[0],
-        createdAt: serverTimestamp(),
-      });
+        createdAt: { seconds: Math.floor(Date.now() / 1000) },
+      };
+      await persist([newEntry, ...given]);
       toast.success('Feedback submitted!');
       setForm({ type: 'Peer', from: '', to: '', anonymous: false, category: 'Leadership', rating: 5, text: '' });
       setShowForm(false);
-      fetchFeedback();
     } catch (e) { toast.error('Submit failed: ' + (e?.message || e)); }
     setSubmitting(false);
   }
@@ -151,9 +144,8 @@ export default function Feedback() {
   async function handleDelete(id) {
     if (!confirm('Delete this feedback?')) return;
     try {
-      await deleteDoc(doc(db, 'feedback', id));
+      await persist(given.filter(f => f.id !== id));
       toast.success('Deleted');
-      fetchFeedback();
     } catch { toast.error('Delete failed'); }
   }
 

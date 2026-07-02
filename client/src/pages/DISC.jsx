@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import { collection, addDoc, getDocs, deleteDoc, query, where, doc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -105,14 +105,17 @@ export default function DISC() {
   async function fetchSaved() {
     if (!currentUser) return;
     try {
-      const q = query(collection(db, 'discAssessments'), where('uid', '==', currentUser.uid));
-      const snap = await getDocs(q);
-      const entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      entries.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      const snap = await getDoc(doc(db, 'users', currentUser.uid));
+      const entries = snap.exists() ? (snap.data().discAssessments || []) : [];
       setSaved(entries);
     } catch (e) {
       console.error('fetchSaved error:', e);
     }
+  }
+
+  async function persist(updated) {
+    await setDoc(doc(db, 'users', currentUser.uid), { discAssessments: updated }, { merge: true });
+    setSaved(updated);
   }
 
   useEffect(() => { fetchSaved(); }, [currentUser]);
@@ -130,15 +133,15 @@ export default function DISC() {
     if (!result) return;
     if (!currentUser) return toast.error('Not logged in');
     try {
-      await addDoc(collection(db, 'discAssessments'), {
-        uid: currentUser.uid,
+      const newEntry = {
+        id: Date.now().toString(),
         scores: result.scores,
         primary: result.primary,
         answers,
-        createdAt: serverTimestamp(),
-      });
+        createdAt: { seconds: Math.floor(Date.now() / 1000) },
+      };
+      await persist([newEntry, ...saved]);
       toast.success('Assessment saved!');
-      fetchSaved();
     } catch (e) {
       toast.error('Save failed: ' + e?.message);
     }
@@ -146,8 +149,7 @@ export default function DISC() {
 
   async function handleDelete(id) {
     try {
-      await deleteDoc(doc(db, 'discAssessments', id));
-      fetchSaved();
+      await persist(saved.filter(e => e.id !== id));
     } catch (e) {
       toast.error('Delete failed: ' + e?.message);
     }
