@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import { collection, addDoc, getDocs, query, where, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, updateDoc, query, where, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -103,13 +103,14 @@ export default function EQOpEx() {
     if (!currentUser) return;
     async function load() {
       try {
-        // Load EQ history (all snapshots)
+        // Load EQ history (all snapshots), sort client-side
         const eqSnap = await getDocs(query(
           collection(db, 'eqAssessments'),
-          where('uid', '==', currentUser.uid),
-          orderBy('createdAt', 'desc')
+          where('uid', '==', currentUser.uid)
         ));
-        setEqHistory(eqSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+        const records = eqSnap.docs.map(d => ({ id: d.id, ...d.data() }));
+        records.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+        setEqHistory(records);
 
         // Load OpEx (single doc, overwrite model)
         const opexSnap = await getDocs(query(collection(db, 'eqOpex'), where('uid', '==', currentUser.uid), where('type', '==', 'opex')));
@@ -146,7 +147,6 @@ export default function EQOpEx() {
     setSaving(true);
     try {
       if (opexDocId) {
-        const { updateDoc, doc } = await import('firebase/firestore');
         await updateDoc(doc(db, 'eqOpex', opexDocId), { checks: opexChecks });
       } else {
         const ref = await addDoc(collection(db, 'eqOpex'), { uid: currentUser.uid, type: 'opex', checks: opexChecks, createdAt: serverTimestamp() });
