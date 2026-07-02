@@ -13,17 +13,26 @@ const SCALE_LABELS = {
   5: { label: 'Always',    desc: 'Deeply embedded. You demonstrate it when hard, teach it to others, and it shapes how your team operates.' },
 };
 
-function ScaleButton({ n, selected, onClick }) {
+function ScaleButton({ n, selected, onClick, isLast }) {
   const [hovered, setHovered] = useState(false);
   const isActive = n <= selected;
   const color = isActive ? '#0d9488' : hovered ? '#0f2044' : '#e2e8f0';
   const textColor = isActive || hovered ? 'white' : '#94a3b8';
 
+  // Shift tooltip left for the last button so it doesn't overflow viewport
+  const tooltipLeft = isLast ? 'auto' : '50%';
+  const tooltipRight = isLast ? 0 : 'auto';
+  const tooltipTransform = isLast ? 'none' : 'translateX(-50%)';
+  const arrowLeft = isLast ? 'auto' : '50%';
+  const arrowRight = isLast ? 12 : 'auto';
+  const arrowTransform = isLast ? 'none' : 'translateX(-50%)';
+
   return (
     <div style={{ position: 'relative' }}>
       {hovered && (
         <div style={{
-          position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)',
+          position: 'absolute', bottom: 'calc(100% + 8px)',
+          left: tooltipLeft, right: tooltipRight, transform: tooltipTransform,
           background: '#0f2044', color: 'white', borderRadius: 10, padding: '8px 12px', zIndex: 100,
           width: 180, boxShadow: '0 4px 16px rgba(0,0,0,0.2)', pointerEvents: 'none',
         }}>
@@ -33,7 +42,7 @@ function ScaleButton({ n, selected, onClick }) {
           <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.85)', margin: 0, lineHeight: 1.45 }}>
             {SCALE_LABELS[n].desc}
           </p>
-          <div style={{ position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: '6px solid #0f2044' }} />
+          <div style={{ position: 'absolute', bottom: -6, left: arrowLeft, right: arrowRight, transform: arrowTransform, width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: '6px solid #0f2044' }} />
         </div>
       )}
       <button
@@ -307,7 +316,7 @@ export default function EQOpEx() {
                     <p style={{ flex: 1, fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>{q}</p>
                     <div style={{ display: 'flex', gap: 6 }}>
                       {[1, 2, 3, 4, 5].map(n => (
-                        <ScaleButton key={n} n={n} selected={eqScores[`${dim.id}-${i}`] || 0} onClick={() => setScore(dim.id, i, n)} />
+                        <ScaleButton key={n} n={n} selected={eqScores[`${dim.id}-${i}`] || 0} onClick={() => setScore(dim.id, i, n)} isLast={n === 5} />
                       ))}
                     </div>
                   </div>
