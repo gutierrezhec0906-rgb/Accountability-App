@@ -5,12 +5,20 @@ import { collection, addDoc, getDocs, deleteDoc, updateDoc, query, where, doc, s
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
-const prompts = [
+const personalPrompts = [
   { step: 1, question: "What kind of leader do I want to be known as in 5 years?",     placeholder: "Describe your ideal leadership identity..." },
   { step: 2, question: "What impact do I want to have on my team and organization?",    placeholder: "What change or legacy do you want to leave?" },
   { step: 3, question: "What values are non-negotiable in how I lead?",                 placeholder: "e.g. Integrity, transparency, accountability..." },
-  { step: 4, question: "What does success look like for my team in 3 years?",           placeholder: "Describe your team's future state..." },
+  { step: 4, question: "What does success look like for my career in 3 years?",        placeholder: "Describe your personal future state..." },
   { step: 5, question: "What specific actions will I commit to starting this week?",    placeholder: "Be concrete — what will you do Monday?" },
+];
+
+const teamPrompts = [
+  { step: 1, question: "What kind of team do we want to be known as in 5 years?",      placeholder: "Describe your team's ideal identity..." },
+  { step: 2, question: "What impact do we want to have on the organization?",           placeholder: "What change or legacy will your team leave?" },
+  { step: 3, question: "What values are non-negotiable in how we operate?",             placeholder: "e.g. Accountability, trust, continuous improvement..." },
+  { step: 4, question: "What does success look like for our team in 3 years?",         placeholder: "Describe your team's future state..." },
+  { step: 5, question: "What commitments will our team make starting this week?",       placeholder: "Be concrete — what will the team do Monday?" },
 ];
 
 function SavedPanel({ entries, onDelete, onLoad, onEdit, activeTab, setActiveTab, expandedId, setExpandedId }) {
@@ -57,7 +65,7 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, activeTab, setActiveTab
                   {/* Q&A answers */}
                   {isExpanded && e.answers && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
-                      {prompts.map(p => e.answers[p.step] && (
+                      {(e.mode === 'personal' ? personalPrompts : teamPrompts).map(p => e.answers[p.step] && (
                         <div key={p.step} style={{ borderLeft: '3px solid #0d9488', paddingLeft: 8 }}>
                           <p style={{ fontSize: '0.62rem', fontWeight: 700, color: '#0d9488', margin: '0 0 2px', textTransform: 'uppercase' }}>Q{p.step}</p>
                           <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 2px' }}>{p.question}</p>
@@ -135,7 +143,12 @@ export default function Vision() {
 
   function generateVision() {
     if (Object.keys(answers).filter(k => answers[k]).length < 2) return toast.error('Answer at least 2 questions first');
-    const stmt = `As a ${mode === 'personal' ? 'leader' : 'team'}, I am committed to ${answers[2] || 'my core values'}. I will ${answers[1] || 'make a lasting impact'} by ${answers[5] || 'taking deliberate daily actions'}. My vision is to ${answers[4] || 'build a high-performance team'} where ${answers[3] || 'everyone grows and thrives'}.`;
+    let stmt;
+    if (mode === 'personal') {
+      stmt = `As a leader, I am committed to ${answers[3] || 'my core values'}. I will ${answers[2] || 'make a lasting impact'} by ${answers[5] || 'taking deliberate daily actions'}. My vision is to ${answers[4] || 'build a high-performance team'} where ${answers[1] || 'I am known as a trusted leader'}.`;
+    } else {
+      stmt = `As a team, we are committed to ${answers[3] || 'our core values'}. We will ${answers[2] || 'make a lasting impact on the organization'} by ${answers[5] || 'taking deliberate collective action'}. Our vision is to ${answers[4] || 'be a high-performing team'} where ${answers[1] || 'we are known for excellence'}.`;
+    }
     setVision(stmt);
     toast.success('Vision statement generated!');
   }
@@ -236,6 +249,7 @@ export default function Vision() {
     }
   }
 
+  const prompts       = mode === 'personal' ? personalPrompts : teamPrompts;
   const answeredCount = prompts.filter(p => answers[p.step]).length;
 
   return (
