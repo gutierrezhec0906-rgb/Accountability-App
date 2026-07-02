@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, query, where, doc, serverTimestamp, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -434,11 +434,15 @@ export default function Lean() {
   async function fetchKaizen() {
     if (!currentUser) return;
     try {
-      const snap = await getDocs(query(collection(db, 'kaizenLog'), where('uid', '==', currentUser.uid)));
-      const data  = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      const snap = await getDoc(doc(db, 'users', currentUser.uid));
+      const data = snap.exists() ? (snap.data().kaizenLog || []) : [];
       setKaizen(data);
     } catch (e) { console.error(e); }
+  }
+
+  async function persistKaizen(updated) {
+    await setDoc(doc(db, 'users', currentUser.uid), { kaizenLog: updated }, { merge: true });
+    setKaizen(updated);
   }
 
   useEffect(() => { fetchKaizen(); loadAuditHistory(); }, [currentUser]);
@@ -447,9 +451,14 @@ export default function Lean() {
     if (!form.title.trim()) return toast.error('Please enter a Kaizen event title');
     if (!currentUser) return toast.error('Not logged in');
     try {
-      const entry = { uid: currentUser.uid, ...form, date: new Date().toISOString().split('T')[0], createdAt: serverTimestamp() };
-      const ref   = await addDoc(collection(db, 'kaizenLog'), entry);
-      setKaizen(k => [{ ...entry, id: ref.id }, ...k]);
+      const entry = {
+        id: Date.now().toString(),
+        uid: currentUser.uid,
+        ...form,
+        date: new Date().toISOString().split('T')[0],
+        createdAt: { seconds: Math.floor(Date.now() / 1000) },
+      };
+      await persistKaizen([entry, ...kaizen]);
       setShowForm(false);
       toast.success('Kaizen event logged');
     } catch (e) { toast.error('Save failed: ' + e.message); }
@@ -459,8 +468,7 @@ export default function Lean() {
     if (!form.title.trim()) return toast.error('Please enter a Kaizen event title');
     try {
       const { id, createdAt, uid, ...rest } = { ...editingEntry, ...form };
-      await updateDoc(doc(db, 'kaizenLog', editingEntry.id), rest);
-      setKaizen(ks => ks.map(k => k.id === editingEntry.id ? { ...k, ...rest } : k));
+      await persistKaizen(kaizen.map(k => k.id === editingEntry.id ? { ...k, ...rest } : k));
       setEditingEntry(null);
       toast.success('Kaizen updated');
     } catch (e) { toast.error('Update failed: ' + e.message); }

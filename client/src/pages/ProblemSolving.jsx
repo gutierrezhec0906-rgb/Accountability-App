@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
-import {
-  collection, addDoc, updateDoc, getDocs, deleteDoc, query, where, doc, serverTimestamp,
-} from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -410,12 +408,8 @@ export default function ProblemSolving() {
   async function fetchSaved() {
     if (!currentUser) return;
     try {
-      const snap = await getDocs(query(
-        collection(db, 'problemSolving'),
-        where('uid', '==', currentUser.uid),
-      ));
-      const all = snap.docs.map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      const snap = await getDoc(doc(db, 'users', currentUser.uid));
+      const all = snap.exists() ? (snap.data().problemSolving || []) : [];
       setSaved({
         '5whys':    all.filter(e => e.type === '5whys'),
         fishbone:   all.filter(e => e.type === 'fishbone'),
@@ -424,32 +418,49 @@ export default function ProblemSolving() {
     } catch (e) { console.error('fetchSaved:', e); }
   }
 
+  async function persist(updated) {
+    await setDoc(doc(db, 'users', currentUser.uid), { problemSolving: updated }, { merge: true });
+    setSaved({
+      '5whys':    updated.filter(e => e.type === '5whys'),
+      fishbone:   updated.filter(e => e.type === 'fishbone'),
+      a3:         updated.filter(e => e.type === 'a3'),
+    });
+  }
+
   useEffect(() => { fetchSaved(); }, [currentUser]);
 
   async function handleSave({ type, title, data, onSaved }) {
     if (!currentUser) return toast.error('Not signed in');
     try {
+      const all = [...saved['5whys'], ...saved.fishbone, ...saved.a3];
       const existing = saved[type]?.find(e => e.title.trim().toLowerCase() === title.trim().toLowerCase());
+      let updated;
       if (existing) {
-        await updateDoc(doc(db, 'problemSolving', existing.id), { title, data, updatedAt: serverTimestamp() });
+        updated = all.map(e => e.id === existing.id ? { ...e, title, data, updatedAt: { seconds: Math.floor(Date.now() / 1000) } } : e);
         toast.success('Template updated!');
       } else {
-        await addDoc(collection(db, 'problemSolving'), {
-          uid: currentUser.uid, type, title, data, createdAt: serverTimestamp(),
-        });
+        const newEntry = {
+          id: Date.now().toString(),
+          uid: currentUser.uid,
+          type,
+          title,
+          data,
+          createdAt: { seconds: Math.floor(Date.now() / 1000) },
+        };
+        updated = [newEntry, ...all];
         toast.success('Template saved!');
       }
+      await persist(updated);
       onSaved?.();
-      fetchSaved();
     } catch (e) { toast.error('Save failed: ' + (e?.message || e)); }
   }
 
   async function handleDelete(id) {
     if (!confirm('Delete this template?')) return;
     try {
-      await deleteDoc(doc(db, 'problemSolving', id));
+      const all = [...saved['5whys'], ...saved.fishbone, ...saved.a3];
+      await persist(all.filter(e => e.id !== id));
       toast.success('Deleted');
-      fetchSaved();
     } catch { toast.error('Delete failed'); }
   }
 

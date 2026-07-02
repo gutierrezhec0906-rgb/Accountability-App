@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, query, where, doc, serverTimestamp, increment } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent } from '../utils/scoring';
@@ -84,9 +84,8 @@ export default function VisualBoard() {
   async function fetchItems() {
     if (!currentUser) return;
     try {
-      const q = query(collection(db, 'visualBoard'), where('uid', '==', currentUser.uid));
-      const snap = await getDocs(q);
-      const entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const snap = await getDoc(doc(db, 'users', currentUser.uid));
+      const entries = snap.exists() ? (snap.data().visualBoard || []) : [];
       entries.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
       setItems(entries);
 
@@ -101,13 +100,19 @@ export default function VisualBoard() {
     }
   }
 
+  async function persist(updated) {
+    await setDoc(doc(db, 'users', currentUser.uid), { visualBoard: updated }, { merge: true });
+    setItems(updated);
+  }
+
   useEffect(() => { fetchItems(); }, [currentUser]);
 
   async function handleAdd(e) {
     e.preventDefault();
     if (!currentUser) return toast.error('Not logged in');
     try {
-      await addDoc(collection(db, 'visualBoard'), {
+      const newItem = {
+        id: Date.now().toString(),
         uid: currentUser.uid,
         title:   form.title,
         owner:   form.owner,
@@ -115,12 +120,12 @@ export default function VisualBoard() {
         notes:   form.notes,
         recommitmentDate: null,
         deductionApplied: false,
-        createdAt: serverTimestamp(),
-      });
+        createdAt: { seconds: Math.floor(Date.now() / 1000) },
+      };
+      await persist([newItem, ...items]);
       setForm(EMPTY_FORM);
       setShowForm(false);
       toast.success('Action added to board');
-      fetchItems();
     } catch (e) {
       toast.error('Save failed: ' + e?.message);
     }
@@ -128,8 +133,7 @@ export default function VisualBoard() {
 
   async function handleDelete(id) {
     try {
-      await deleteDoc(doc(db, 'visualBoard', id));
-      fetchItems();
+      await persist(items.filter(i => i.id !== id));
     } catch (e) {
       toast.error('Delete failed: ' + e?.message);
     }
@@ -141,12 +145,14 @@ export default function VisualBoard() {
     if (st.overdue) return toast.error('Recommitment date must be today or in the future');
     try {
       const wasDeducted = item?.deductionApplied && item?.recommitmentDate == null;
-      await updateDoc(doc(db, 'visualBoard', id), {
+      const updatedItem = {
+        ...item,
         recommitmentDate: newDate,
-        recommitmentSetAt: serverTimestamp(),
+        recommitmentSetAt: { seconds: Math.floor(Date.now() / 1000) },
         deductionApplied: true,
         pointsRestored: wasDeducted ? true : (item?.pointsRestored || false),
-      });
+      };
+      await persist(items.map(i => i.id === id ? updatedItem : i));
       // Restore 5 points if they were previously deducted (dismissed modal)
       if (wasDeducted && !item?.pointsRestored) {
         await updateDoc(doc(db, 'users', currentUser.uid), { penaltyPoints: increment(-5) });
@@ -161,7 +167,6 @@ export default function VisualBoard() {
         toast.success('New commitment date set!');
       }
       setModalEntry(null);
-      fetchItems();
     } catch (e) {
       toast.error('Failed to save: ' + e?.message);
     }
@@ -170,7 +175,7 @@ export default function VisualBoard() {
   async function handleDismissModal() {
     if (!modalEntry || !currentUser) { setModalEntry(null); return; }
     try {
-      await updateDoc(doc(db, 'visualBoard', modalEntry.id), { deductionApplied: true });
+      await persist(items.map(i => i.id === modalEntry.id ? { ...i, deductionApplied: true } : i));
       await updateDoc(doc(db, 'users', currentUser.uid), { penaltyPoints: increment(5) });
       await logPointEvent(currentUser.uid, {
         points: -5,
@@ -180,7 +185,6 @@ export default function VisualBoard() {
       });
       toast.error('−5 points deducted for missed recommitment');
       setModalEntry(null);
-      fetchItems();
     } catch (e) {
       console.error(e);
       setModalEntry(null);
