@@ -249,9 +249,20 @@ export default function Mindfulness() {
             </p>
           </div>
 
+          {/* Personal Best banner */}
+          {activeLog.best > 0 && (
+            <div style={{ margin: '0.75rem 1.25rem 0', background: 'linear-gradient(135deg, #fef9c3, #fef3c7)', border: '1.5px solid #f59e0b', borderRadius: 12, padding: '0.6rem 0.875rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>🏆</span>
+              <div>
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Personal Best</div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#78350f', lineHeight: 1.1 }}>{activeLog.best} cycles</div>
+              </div>
+            </div>
+          )}
+
           {/* Stats */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '0.75rem 1.25rem', borderBottom: '1px solid var(--border)' }}>
-            <div style={{ background: '#f0fdfa', borderRadius: 10, padding: '0.6rem 0.75rem', textAlign: 'center' }}>
+            <div style={{ background: '#f0fdfa', borderRadius: 10, padding: '0.6rem 0.75rem', textAlign: 'center', border: '1.5px solid #99f6e4' }}>
               <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0d9488', lineHeight: 1 }}>{activeLog.best || 0}</div>
               <div style={{ fontSize: '0.65rem', color: '#0f766e', fontWeight: 700, marginTop: 3 }}>BEST CYCLES</div>
             </div>
@@ -273,10 +284,17 @@ export default function Mindfulness() {
           {/* Session history list */}
           <div style={{ maxHeight: 280, overflowY: 'auto', padding: '0.5rem 0' }}>
             {activeLog.sessions?.length > 0 ? activeLog.sessions.map((s, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.45rem 1.25rem', borderBottom: i < activeLog.sessions.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
-                <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{formatDate(s.date)}</span>
-                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: s.cycles >= (activeLog.best || 0) ? '#0d9488' : '#64748b', background: s.cycles >= (activeLog.best || 0) ? '#f0fdfa' : '#f8fafc', padding: '1px 8px', borderRadius: 9999 }}>
-                  {s.cycles} {s.cycles === activeLog.best && activeLog.best > 0 ? '🏆' : 'cycles'}
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.45rem 1.25rem', borderBottom: i < activeLog.sessions.length - 1 ? '1px solid #f1f5f9' : 'none', background: s.cycles === activeLog.best && activeLog.best > 0 ? '#fffbeb' : 'transparent' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {s.cycles === activeLog.best && activeLog.best > 0 && <span style={{ fontSize: '0.75rem' }}>🏆</span>}
+                  <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{formatDate(s.date)}</span>
+                </div>
+                <span style={{ fontSize: '0.72rem', fontWeight: 800,
+                  color: s.cycles === activeLog.best && activeLog.best > 0 ? '#92400e' : s.cycles >= (activeLog.best || 0) ? '#0d9488' : '#64748b',
+                  background: s.cycles === activeLog.best && activeLog.best > 0 ? '#fef3c7' : s.cycles >= (activeLog.best || 0) ? '#f0fdfa' : '#f8fafc',
+                  border: s.cycles === activeLog.best && activeLog.best > 0 ? '1px solid #f59e0b' : 'none',
+                  padding: '1px 8px', borderRadius: 9999 }}>
+                  {s.cycles} cycles
                 </span>
               </div>
             )) : (
