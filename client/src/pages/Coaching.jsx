@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import DateStatus from '../components/DateStatus';
-import { collection, addDoc, getDocs, updateDoc, deleteDoc, query, where, doc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -24,15 +24,19 @@ export default function Coaching() {
   async function fetchSessions() {
     if (!currentUser) return;
     try {
-      const snap = await getDocs(query(collection(db, 'coachingSessions'), where('uid', '==', currentUser.uid)));
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      const snap = await getDoc(doc(db, 'users', currentUser.uid));
+      const data = snap.exists() ? (snap.data().coachingSessions || []) : [];
       setSessions(data);
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
     }
+  }
+
+  async function persist(updated) {
+    await setDoc(doc(db, 'users', currentUser.uid), { coachingSessions: updated }, { merge: true });
+    setSessions(updated);
   }
 
   useEffect(() => { fetchSessions(); }, [currentUser]);
@@ -42,13 +46,13 @@ export default function Coaching() {
     if (!currentUser) return toast.error('Not logged in');
     try {
       const newSession = {
-        uid: currentUser.uid,
+        id: Date.now().toString(),
         ...form,
         actionItems: form.actionItems.split('\n').filter(Boolean),
-        createdAt: serverTimestamp(),
+        createdAt: new Date().toISOString(),
       };
-      const ref = await addDoc(collection(db, 'coachingSessions'), newSession);
-      setSessions(s => [{ ...newSession, id: ref.id }, ...s]);
+      const updated = [newSession, ...sessions];
+      await persist(updated);
       setForm(emptyForm);
       setShowForm(false);
       toast.success('Session logged');
@@ -66,11 +70,13 @@ export default function Coaching() {
     e.preventDefault();
     if (!currentUser) return;
     try {
-      const updated = { ...editForm, actionItems: editForm.actionItems.split('\n').filter(Boolean) };
-      delete updated.createdAt;
-      await updateDoc(doc(db, 'coachingSessions', editingId), updated);
-      setSessions(ss => ss.map(s => s.id === editingId ? { ...updated, id: editingId } : s));
-      setSelectedSession({ ...updated, id: editingId });
+      const updated = sessions.map(s =>
+        s.id === editingId
+          ? { ...s, ...editForm, actionItems: editForm.actionItems.split('\n').filter(Boolean) }
+          : s
+      );
+      await persist(updated);
+      setSelectedSession(updated.find(s => s.id === editingId) || null);
       setEditingId(null);
       setEditForm(null);
       toast.success('Session updated');
