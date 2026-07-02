@@ -122,18 +122,31 @@ export default function EQOpEx() {
 
   async function saveEQ() {
     if (!currentUser) return toast.error('Not logged in');
-    const label = saveLabel.trim() || `Assessment ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    const now = new Date();
+    const nextTest = new Date(now);
+    nextTest.setDate(nextTest.getDate() + 60);
+    const label = saveLabel.trim() || `Assessment — ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
     setSaving(true);
     try {
       const dimResults = eqDimensions.map(d => ({
         id: d.id, label: d.label, icon: d.icon,
         avg: calcDimAvg(eqScores, d.id, d.questions.length),
       }));
-      const overall = +(dimResults.filter(d => d.avg > 0).reduce((a, d) => a + d.avg, 0) / (dimResults.filter(d => d.avg > 0).length || 1)).toFixed(1);
+      const scored = dimResults.filter(d => d.avg > 0);
+      const overall = scored.length ? +(scored.reduce((a, d) => a + d.avg, 0) / scored.length).toFixed(1) : 0;
+      const strongest = [...dimResults].filter(d => d.avg > 0).sort((a, b) => b.avg - a.avg)[0];
+      const weakest  = [...dimResults].filter(d => d.avg > 0).sort((a, b) => a.avg - b.avg)[0];
+      const nextTestISO = nextTest.toISOString().slice(0, 10);
       const ref = await addDoc(collection(db, 'eqAssessments'), {
-        uid: currentUser.uid, label, scores: eqScores, dimResults, overall, createdAt: serverTimestamp(),
+        uid: currentUser.uid, label, scores: eqScores, dimResults, overall,
+        strongest: strongest?.label || '', weakest: weakest?.label || '',
+        nextTestDate: nextTestISO, createdAt: serverTimestamp(),
       });
-      const newRecord = { id: ref.id, label, scores: eqScores, dimResults, overall, createdAt: null };
+      const newRecord = {
+        id: ref.id, label, scores: eqScores, dimResults, overall,
+        strongest: strongest?.label || '', weakest: weakest?.label || '',
+        nextTestDate: nextTestISO, createdAt: { seconds: Math.floor(now.getTime() / 1000) },
+      };
       setEqHistory(h => [newRecord, ...h]);
       setSaveLabel('');
       setShowLabelInput(false);
@@ -275,39 +288,71 @@ export default function EQOpEx() {
                   <p style={{ fontSize: '0.78rem', margin: 0 }}>No assessments saved yet</p>
                 </div>
               ) : (
-                <div style={{ maxHeight: 520, overflowY: 'auto' }}>
+                <div style={{ maxHeight: 620, overflowY: 'auto' }}>
                   {eqHistory.map((rec, idx) => {
                     const isSelected = selectedRecord === rec.id;
                     const overall = rec.overall || 0;
+                    const nextDate = rec.nextTestDate
+                      ? new Date(rec.nextTestDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                      : null;
+                    const today = new Date(); today.setHours(0,0,0,0);
+                    const daysUntil = rec.nextTestDate
+                      ? Math.round((new Date(rec.nextTestDate + 'T00:00:00') - today) / 86400000)
+                      : null;
+                    const reminderColor = daysUntil !== null && daysUntil <= 0 ? '#ef4444' : daysUntil <= 7 ? '#f59e0b' : '#0d9488';
+                    const reminderBg   = daysUntil !== null && daysUntil <= 0 ? '#fef2f2' : daysUntil <= 7 ? '#fefce8' : '#f0fdf4';
+                    const reminderText = daysUntil !== null && daysUntil <= 0 ? 'Retake overdue!' : daysUntil === 0 ? 'Retake today!' : daysUntil !== null ? `Retake in ${daysUntil}d` : null;
                     return (
                       <div key={rec.id} style={{ borderBottom: idx < eqHistory.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                        <button
-                          onClick={() => loadRecord(rec)}
-                          style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', background: isSelected ? '#f0fdf4' : 'none', border: 'none', cursor: 'pointer', transition: 'background 0.15s' }}
-                          onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#f8fafc'; }}
-                          onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'none'; }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                        <div style={{ padding: '0.875rem 1rem', background: isSelected ? '#f0fdf4' : 'white' }}>
+
+                          {/* Header row */}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
                             <span style={{ fontSize: '0.8rem', fontWeight: 800, color: isSelected ? '#0d9488' : 'var(--text-primary)', lineHeight: 1.3, flex: 1, marginRight: 6 }}>{rec.label}</span>
-                            <span style={{ fontSize: '1rem', fontWeight: 900, color: overall >= 4 ? '#0d9488' : overall >= 3 ? '#f59e0b' : overall > 0 ? '#ef4444' : '#94a3b8', flexShrink: 0 }}>{overall || '—'}</span>
+                            <span style={{ fontSize: '1.1rem', fontWeight: 900, color: overall >= 4 ? '#0d9488' : overall >= 3 ? '#f59e0b' : overall > 0 ? '#ef4444' : '#94a3b8', flexShrink: 0 }}>{overall || '—'}<span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 600 }}>/5</span></span>
                           </div>
+
+                          {/* Date */}
                           {rec.createdAt && (
-                            <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: '0 0 8px' }}>{formatDate(rec.createdAt)}</p>
+                            <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: '0 0 8px' }}>📅 {formatDate(rec.createdAt)}</p>
                           )}
+
+                          {/* Dimension bars */}
                           {rec.dimResults && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 8 }}>
                               {rec.dimResults.map(d => (
                                 <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <span style={{ fontSize: '0.65rem', width: 70, color: 'var(--text-muted)', flexShrink: 0 }}>{d.icon} {d.label}</span>
+                                  <span style={{ fontSize: '0.65rem', width: 76, color: 'var(--text-muted)', flexShrink: 0 }}>{d.icon} {d.label}</span>
                                   <ScoreBar value={d.avg} />
                                   <span style={{ fontSize: '0.65rem', fontWeight: 700, color: d.avg >= 4 ? '#0d9488' : d.avg >= 3 ? '#f59e0b' : d.avg > 0 ? '#ef4444' : '#94a3b8', width: 22, textAlign: 'right', flexShrink: 0 }}>{d.avg || '—'}</span>
                                 </div>
                               ))}
                             </div>
                           )}
-                          {isSelected && (
-                            <div style={{ marginTop: 8, fontSize: '0.68rem', color: '#0d9488', fontWeight: 700 }}>✓ Loaded</div>
+
+                          {/* Strongest / Weakest */}
+                          {(rec.strongest || rec.weakest) && (
+                            <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
+                              {rec.strongest && <span style={{ fontSize: '0.65rem', background: '#f0fdf4', color: '#0d9488', border: '1px solid #0d948830', borderRadius: 6, padding: '2px 7px', fontWeight: 700 }}>⬆ {rec.strongest}</span>}
+                              {rec.weakest  && <span style={{ fontSize: '0.65rem', background: '#fef2f2', color: '#ef4444', border: '1px solid #ef444430', borderRadius: 6, padding: '2px 7px', fontWeight: 700 }}>⬇ {rec.weakest}</span>}
+                            </div>
                           )}
-                        </button>
+
+                          {/* 60-day reminder */}
+                          {nextDate && (
+                            <div style={{ background: reminderBg, border: `1px solid ${reminderColor}44`, borderRadius: 8, padding: '6px 10px', marginBottom: 8 }}>
+                              <p style={{ fontSize: '0.68rem', fontWeight: 800, color: reminderColor, margin: '0 0 1px' }}>🔔 Next assessment: {nextDate}</p>
+                              {reminderText && <p style={{ fontSize: '0.65rem', color: reminderColor, margin: 0, fontWeight: 600 }}>{reminderText}</p>}
+                            </div>
+                          )}
+
+                          {/* Load button */}
+                          <button
+                            onClick={() => loadRecord(rec)}
+                            style={{ width: '100%', padding: '0.3rem', borderRadius: 7, fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${isSelected ? '#0d9488' : '#e2e8f0'}`, background: isSelected ? '#0d9488' : 'white', color: isSelected ? 'white' : '#64748b', transition: 'all 0.15s' }}>
+                            {isSelected ? '✓ Loaded' : 'Load this assessment'}
+                          </button>
+                        </div>
                       </div>
                     );
                   })}
