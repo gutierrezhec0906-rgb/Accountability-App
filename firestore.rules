@@ -1,0 +1,89 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // App config — readable by all authenticated users, writable by none (admin only)
+    match /appConfig/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
+    // Users — each user can read/write their own document
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // All per-user collections — authenticated users can only access their own docs
+    match /toolSessions/{docId} {
+      allow read, write: if request.auth != null &&
+        (resource == null || resource.data.uid == request.auth.uid) &&
+        (request.resource == null || request.resource.data.uid == request.auth.uid);
+    }
+
+    match /smartGoals/{docId} {
+      allow read, write: if request.auth != null &&
+        (resource == null || resource.data.uid == request.auth.uid) &&
+        (request.resource == null || request.resource.data.uid == request.auth.uid);
+    }
+
+    match /problemSolving/{docId} {
+      allow read, write: if request.auth != null &&
+        (resource == null || resource.data.uid == request.auth.uid) &&
+        (request.resource == null || request.resource.data.uid == request.auth.uid);
+    }
+
+    match /feedback/{docId} {
+      allow read, write: if request.auth != null &&
+        (resource == null || resource.data.uid == request.auth.uid) &&
+        (request.resource == null || request.resource.data.uid == request.auth.uid);
+    }
+
+    match /visions/{docId} {
+      allow read, write: if request.auth != null &&
+        (resource == null || resource.data.uid == request.auth.uid) &&
+        (request.resource == null || request.resource.data.uid == request.auth.uid);
+    }
+
+    match /discAssessments/{docId} {
+      allow read, write: if request.auth != null &&
+        (resource == null || resource.data.uid == request.auth.uid) &&
+        (request.resource == null || request.resource.data.uid == request.auth.uid);
+    }
+
+    match /visualBoard/{docId} {
+      allow read, write: if request.auth != null &&
+        (resource == null || resource.data.uid == request.auth.uid) &&
+        (request.resource == null || request.resource.data.uid == request.auth.uid);
+    }
+
+    match /scoreHistory/{docId} {
+      allow read, write: if request.auth != null &&
+        (resource == null || resource.data.uid == request.auth.uid) &&
+        (request.resource == null || request.resource.data.uid == request.auth.uid);
+    }
+
+    match /pointsLog/{docId} {
+      allow read, write: if request.auth != null &&
+        (resource == null || resource.data.uid == request.auth.uid) &&
+        (request.resource == null || request.resource.data.uid == request.auth.uid);
+    }
+
+    match /coachingSessions/{docId} {
+      allow read, write: if request.auth != null &&
+        (resource == null || resource.data.uid == request.auth.uid) &&
+        (request.resource == null || request.resource.data.uid == request.auth.uid);
+    }
+
+    match /kaizenLog/{docId} {
+      allow read, write: if request.auth != null &&
+        (resource == null || resource.data.uid == request.auth.uid) &&
+        (request.resource == null || request.resource.data.uid == request.auth.uid);
+    }
+
+    match /eqOpex/{docId} {
+      allow read, write: if request.auth != null &&
+        (resource == null || resource.data.uid == request.auth.uid) &&
+        (request.resource == null || request.resource.data.uid == request.auth.uid);
+    }
+  }
+}
