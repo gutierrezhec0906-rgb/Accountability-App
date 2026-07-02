@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import { collection, addDoc, getDocs, query, where, updateDoc, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, query, where, orderBy, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -33,7 +33,6 @@ function ScaleButton({ n, selected, onClick }) {
           <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.85)', margin: 0, lineHeight: 1.45 }}>
             {SCALE_LABELS[n].desc}
           </p>
-          {/* Arrow */}
           <div style={{ position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: '6px solid #0f2044' }} />
         </div>
       )}
@@ -65,25 +64,56 @@ const opexChecklist = [
   { category: 'Customer Focus',         items: ['Voice of customer captured monthly','Customer complaint root causes addressed','First-time quality metrics tracked','On-time delivery performance monitored'] },
 ];
 
+function calcDimAvg(scores, dimId, qCount) {
+  const vals = Array.from({ length: qCount }, (_, i) => scores[`${dimId}-${i}`] || 0).filter(Boolean);
+  return vals.length ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : 0;
+}
+
+function formatDate(ts) {
+  if (!ts) return '';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function ScoreBar({ value, max = 5 }) {
+  const pct = (value / max) * 100;
+  const color = value >= 4 ? '#0d9488' : value >= 3 ? '#f59e0b' : value > 0 ? '#ef4444' : '#e2e8f0';
+  return (
+    <div style={{ background: '#f1f5f9', borderRadius: 9999, height: 6, flex: 1 }}>
+      <div style={{ height: 6, borderRadius: 9999, background: color, width: `${pct}%`, transition: 'width 0.4s' }} />
+    </div>
+  );
+}
+
 export default function EQOpEx() {
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('eq');
   const [eqScores, setEqScores] = useState({});
   const [opexChecks, setOpexChecks] = useState({});
-  const [eqDocId, setEqDocId] = useState(null);
   const [opexDocId, setOpexDocId] = useState(null);
   const [saving, setSaving] = useState(false);
+
+  // EQ history sidebar
+  const [eqHistory, setEqHistory] = useState([]);
+  const [selectedRecord, setSelectedRecord] = useState(null); // record being viewed in sidebar
+  const [saveLabel, setSaveLabel] = useState('');
+  const [showLabelInput, setShowLabelInput] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
     async function load() {
       try {
-        const snap = await getDocs(query(collection(db, 'eqOpex'), where('uid', '==', currentUser.uid)));
-        snap.forEach(d => {
-          const data = d.data();
-          if (data.type === 'eq') { setEqScores(data.scores || {}); setEqDocId(d.id); }
-          if (data.type === 'opex') { setOpexChecks(data.checks || {}); setOpexDocId(d.id); }
-        });
+        // Load EQ history (all snapshots)
+        const eqSnap = await getDocs(query(
+          collection(db, 'eqAssessments'),
+          where('uid', '==', currentUser.uid),
+          orderBy('createdAt', 'desc')
+        ));
+        setEqHistory(eqSnap.docs.map(d => ({ id: d.id, ...d.data() })));
+
+        // Load OpEx (single doc, overwrite model)
+        const opexSnap = await getDocs(query(collection(db, 'eqOpex'), where('uid', '==', currentUser.uid), where('type', '==', 'opex')));
+        opexSnap.forEach(d => { setOpexChecks(d.data().checks || {}); setOpexDocId(d.id); });
       } catch (e) { console.error(e); }
     }
     load();
@@ -91,15 +121,22 @@ export default function EQOpEx() {
 
   async function saveEQ() {
     if (!currentUser) return toast.error('Not logged in');
+    const label = saveLabel.trim() || `Assessment ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
     setSaving(true);
     try {
-      if (eqDocId) {
-        await updateDoc(doc(db, 'eqOpex', eqDocId), { scores: eqScores, updatedAt: serverTimestamp() });
-      } else {
-        const ref = await addDoc(collection(db, 'eqOpex'), { uid: currentUser.uid, type: 'eq', scores: eqScores, createdAt: serverTimestamp() });
-        setEqDocId(ref.id);
-      }
-      toast.success('EQ assessment saved!');
+      const dimResults = eqDimensions.map(d => ({
+        id: d.id, label: d.label, icon: d.icon,
+        avg: calcDimAvg(eqScores, d.id, d.questions.length),
+      }));
+      const overall = +(dimResults.filter(d => d.avg > 0).reduce((a, d) => a + d.avg, 0) / (dimResults.filter(d => d.avg > 0).length || 1)).toFixed(1);
+      const ref = await addDoc(collection(db, 'eqAssessments'), {
+        uid: currentUser.uid, label, scores: eqScores, dimResults, overall, createdAt: serverTimestamp(),
+      });
+      const newRecord = { id: ref.id, label, scores: eqScores, dimResults, overall, createdAt: null };
+      setEqHistory(h => [newRecord, ...h]);
+      setSaveLabel('');
+      setShowLabelInput(false);
+      toast.success('Assessment saved!');
     } catch (e) { toast.error('Save failed: ' + e.message); }
     setSaving(false);
   }
@@ -109,7 +146,8 @@ export default function EQOpEx() {
     setSaving(true);
     try {
       if (opexDocId) {
-        await updateDoc(doc(db, 'eqOpex', opexDocId), { checks: opexChecks, updatedAt: serverTimestamp() });
+        const { updateDoc, doc } = await import('firebase/firestore');
+        await updateDoc(doc(db, 'eqOpex', opexDocId), { checks: opexChecks });
       } else {
         const ref = await addDoc(collection(db, 'eqOpex'), { uid: currentUser.uid, type: 'opex', checks: opexChecks, createdAt: serverTimestamp() });
         setOpexDocId(ref.id);
@@ -122,22 +160,26 @@ export default function EQOpEx() {
   function setScore(dimId, qIdx, val) { setEqScores(s => ({ ...s, [`${dimId}-${qIdx}`]: val })); }
   function toggleOpex(cat, idx) { const k = `${cat}-${idx}`; setOpexChecks(c => ({ ...c, [k]: !c[k] })); }
 
+  function loadRecord(record) {
+    setEqScores(record.scores || {});
+    setSelectedRecord(record.id);
+    toast.success(`Loaded: ${record.label}`);
+  }
+
   const eqResults = eqDimensions.map(dim => {
-    const scores = dim.questions.map((_, i) => eqScores[`${dim.id}-${i}`] || 0).filter(Boolean);
-    const avg = scores.length ? +(scores.reduce((a, b) => a + b, 0) / scores.length).toFixed(1) : 0;
+    const avg = calcDimAvg(eqScores, dim.id, dim.questions.length);
     return { ...dim, avg };
   });
+  const avgEQ = eqResults.filter(d => d.avg > 0).length
+    ? +(eqResults.filter(d => d.avg > 0).reduce((a, d) => a + d.avg, 0) / eqResults.filter(d => d.avg > 0).length).toFixed(1)
+    : 0;
 
   const totalOpex = opexChecklist.reduce((a, c) => a + c.items.length, 0);
   const checkedOpex = Object.values(opexChecks).filter(Boolean).length;
   const opexPct = Math.round((checkedOpex / totalOpex) * 100);
 
-  const avgEQ = eqResults.filter(d => d.avg > 0).length
-    ? +(eqResults.filter(d => d.avg > 0).reduce((a, d) => a + d.avg, 0) / eqResults.filter(d => d.avg > 0).length).toFixed(1)
-    : 0;
-
   return (
-    <div style={{ maxWidth: 900, margin: '0 auto' }}>
+    <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       <PageHeader icon="💡" title="EQ & OpEx Tools" subtitle="Emotional Intelligence self-assessment and Operational Excellence checklist" />
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
@@ -150,51 +192,129 @@ export default function EQOpEx() {
       </div>
 
       {activeTab === 'eq' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          {eqResults.some(d => d.avg > 0) && (
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 4 }}>
-              {eqResults.map(dim => (
-                <div key={dim.id} className="stat-tile" style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '1.375rem', marginBottom: 4 }}>{dim.icon}</div>
-                  <div style={{ fontSize: '1.25rem', fontWeight: 900, color: dim.avg >= 4 ? '#0d9488' : dim.avg >= 3 ? '#f59e0b' : dim.avg > 0 ? '#ef4444' : '#94a3b8' }}>{dim.avg || '—'}</div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>{dim.label}</div>
-                </div>
-              ))}
-            </div>
-          )}
+        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
 
-          {eqDimensions.map(dim => (
-            <div key={dim.id} className="card" style={{ overflow: 'hidden' }}>
-              <div style={{ padding: '0.875rem 1.25rem', background: '#f8fafc', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '0.75rem' }}>
-                  <span style={{ fontSize: '1.25rem' }}>{dim.icon}</span>
-                  <div>
-                    <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>{dim.label}</h4>
-                    <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>{dim.desc}</p>
+          {/* Main assessment area */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {eqResults.some(d => d.avg > 0) && (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 4 }}>
+                {eqResults.map(dim => (
+                  <div key={dim.id} className="stat-tile" style={{ textAlign: 'center' }}>
+                    <div style={{ fontSize: '1.375rem', marginBottom: 4 }}>{dim.icon}</div>
+                    <div style={{ fontSize: '1.25rem', fontWeight: 900, color: dim.avg >= 4 ? '#0d9488' : dim.avg >= 3 ? '#f59e0b' : dim.avg > 0 ? '#ef4444' : '#94a3b8' }}>{dim.avg || '—'}</div>
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>{dim.label}</div>
                   </div>
-                </div>
-                <div style={{ display: 'flex', gap: 6 }}>
-                  {[1, 2, 3, 4, 5].map(n => (
-                    <div key={n} style={{ flex: 1, background: 'white', border: '1px solid var(--border)', borderRadius: 8, padding: '0.35rem 0.5rem', textAlign: 'center' }}>
-                      <div style={{ fontSize: '0.72rem', fontWeight: 900, color: '#0d9488', marginBottom: 2 }}>{n} — {SCALE_LABELS[n].label}</div>
-                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', lineHeight: 1.35 }}>{SCALE_LABELS[n].desc}</div>
-                    </div>
-                  ))}
-                </div>
+                ))}
               </div>
-              {dim.questions.map((q, i) => (
-                <div key={i} style={{ padding: '0.875rem 1.25rem', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', borderBottom: i < dim.questions.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                  <p style={{ flex: 1, fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>{q}</p>
+            )}
+
+            {eqDimensions.map(dim => (
+              <div key={dim.id} className="card" style={{ overflow: 'hidden' }}>
+                <div style={{ padding: '0.875rem 1.25rem', background: '#f8fafc', borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '0.75rem' }}>
+                    <span style={{ fontSize: '1.25rem' }}>{dim.icon}</span>
+                    <div>
+                      <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>{dim.label}</h4>
+                      <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>{dim.desc}</p>
+                    </div>
+                  </div>
                   <div style={{ display: 'flex', gap: 6 }}>
                     {[1, 2, 3, 4, 5].map(n => (
-                      <ScaleButton key={n} n={n} selected={eqScores[`${dim.id}-${i}`] || 0} onClick={() => setScore(dim.id, i, n)} />
+                      <div key={n} style={{ flex: 1, background: 'white', border: '1px solid var(--border)', borderRadius: 8, padding: '0.35rem 0.5rem', textAlign: 'center' }}>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 900, color: '#0d9488', marginBottom: 2 }}>{n} — {SCALE_LABELS[n].label}</div>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', lineHeight: 1.35 }}>{SCALE_LABELS[n].desc}</div>
+                      </div>
                     ))}
                   </div>
                 </div>
-              ))}
+                {dim.questions.map((q, i) => (
+                  <div key={i} style={{ padding: '0.875rem 1.25rem', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', borderBottom: i < dim.questions.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                    <p style={{ flex: 1, fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>{q}</p>
+                    <div style={{ display: 'flex', gap: 6 }}>
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <ScaleButton key={n} n={n} selected={eqScores[`${dim.id}-${i}`] || 0} onClick={() => setScore(dim.id, i, n)} />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+
+            {/* Save area */}
+            <div className="card" style={{ padding: '1rem' }}>
+              {showLabelInput ? (
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    className="input"
+                    style={{ flex: 1 }}
+                    placeholder="Assessment label (e.g. Q2 2025)"
+                    value={saveLabel}
+                    onChange={e => setSaveLabel(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && saveEQ()}
+                    autoFocus
+                  />
+                  <button className="btn-primary" onClick={saveEQ} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
+                  <button className="btn-secondary" onClick={() => { setShowLabelInput(false); setSaveLabel(''); }}>Cancel</button>
+                </div>
+              ) : (
+                <button className="btn-primary" onClick={() => setShowLabelInput(true)}>Save Assessment</button>
+              )}
             </div>
-          ))}
-          <button className="btn-primary" onClick={saveEQ} disabled={saving}>{saving ? 'Saving…' : 'Save Assessment'}</button>
+          </div>
+
+          {/* Right sidebar — history */}
+          <div style={{ width: 260, flexShrink: 0 }}>
+            <div className="card" style={{ overflow: 'hidden', position: 'sticky', top: 20 }}>
+              <div style={{ padding: '0.875rem 1rem', background: '#0f2044', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ color: 'white', fontWeight: 800, fontSize: '0.875rem' }}>Saved Assessments</span>
+                <span style={{ color: '#99f6e4', fontSize: '0.75rem', fontWeight: 700 }}>{eqHistory.length}</span>
+              </div>
+              {eqHistory.length === 0 ? (
+                <div style={{ padding: '1.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                  <p style={{ fontSize: '1.5rem', margin: '0 0 6px' }}>📋</p>
+                  <p style={{ fontSize: '0.78rem', margin: 0 }}>No assessments saved yet</p>
+                </div>
+              ) : (
+                <div style={{ maxHeight: 520, overflowY: 'auto' }}>
+                  {eqHistory.map((rec, idx) => {
+                    const isSelected = selectedRecord === rec.id;
+                    const overall = rec.overall || 0;
+                    return (
+                      <div key={rec.id} style={{ borderBottom: idx < eqHistory.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                        <button
+                          onClick={() => loadRecord(rec)}
+                          style={{ width: '100%', textAlign: 'left', padding: '0.75rem 1rem', background: isSelected ? '#f0fdf4' : 'none', border: 'none', cursor: 'pointer', transition: 'background 0.15s' }}
+                          onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = '#f8fafc'; }}
+                          onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'none'; }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 6 }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: isSelected ? '#0d9488' : 'var(--text-primary)', lineHeight: 1.3, flex: 1, marginRight: 6 }}>{rec.label}</span>
+                            <span style={{ fontSize: '1rem', fontWeight: 900, color: overall >= 4 ? '#0d9488' : overall >= 3 ? '#f59e0b' : overall > 0 ? '#ef4444' : '#94a3b8', flexShrink: 0 }}>{overall || '—'}</span>
+                          </div>
+                          {rec.createdAt && (
+                            <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: '0 0 8px' }}>{formatDate(rec.createdAt)}</p>
+                          )}
+                          {rec.dimResults && (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              {rec.dimResults.map(d => (
+                                <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                  <span style={{ fontSize: '0.65rem', width: 70, color: 'var(--text-muted)', flexShrink: 0 }}>{d.icon} {d.label}</span>
+                                  <ScoreBar value={d.avg} />
+                                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: d.avg >= 4 ? '#0d9488' : d.avg >= 3 ? '#f59e0b' : d.avg > 0 ? '#ef4444' : '#94a3b8', width: 22, textAlign: 'right', flexShrink: 0 }}>{d.avg || '—'}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {isSelected && (
+                            <div style={{ marginTop: 8, fontSize: '0.68rem', color: '#0d9488', fontWeight: 700 }}>✓ Loaded</div>
+                          )}
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
 
