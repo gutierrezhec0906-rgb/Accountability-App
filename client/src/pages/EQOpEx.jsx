@@ -341,7 +341,15 @@ export default function EQOpEx() {
                   <button className="btn-secondary" onClick={() => { setShowLabelInput(false); setSaveLabel(''); }}>Cancel</button>
                 </div>
               ) : (
-                <button className="btn-primary" onClick={() => setShowLabelInput(true)}>Save Assessment</button>
+                <button className="btn-primary" onClick={() => {
+                  const totalQuestions = eqDimensions.reduce((sum, d) => sum + d.questions.length, 0);
+                  const answered = eqDimensions.reduce((sum, d) => sum + d.questions.filter((_, i) => eqScores[`${d.id}-${i}`]).length, 0);
+                  if (answered < totalQuestions) {
+                    toast.error(`Please complete the full assessment — ${answered} of ${totalQuestions} questions answered.`, { duration: 4000 });
+                    return;
+                  }
+                  setShowLabelInput(true);
+                }}>Save Assessment</button>
               )}
             </div>
           </div>
