@@ -95,9 +95,10 @@ export default function EQOpEx() {
 
   // EQ history sidebar
   const [eqHistory, setEqHistory] = useState([]);
-  const [selectedRecord, setSelectedRecord] = useState(null); // record being viewed in sidebar
+  const [selectedRecord, setSelectedRecord] = useState(null);
   const [saveLabel, setSaveLabel] = useState('');
   const [showLabelInput, setShowLabelInput] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -115,7 +116,7 @@ export default function EQOpEx() {
         // Load OpEx (single doc, overwrite model)
         const opexSnap = await getDocs(query(collection(db, 'eqOpex'), where('uid', '==', currentUser.uid), where('type', '==', 'opex')));
         opexSnap.forEach(d => { setOpexChecks(d.data().checks || {}); setOpexDocId(d.id); });
-      } catch (e) { console.error(e); }
+      } catch (e) { console.error(e); setLoadError(true); }
     }
     load();
   }, [currentUser]);
@@ -151,7 +152,10 @@ export default function EQOpEx() {
       setSaveLabel('');
       setShowLabelInput(false);
       toast.success('Assessment saved!');
-    } catch (e) { toast.error('Save failed: ' + e.message); }
+    } catch (e) {
+      console.error(e);
+      toast.error('Save failed: ' + e.message, { duration: 6000 });
+    }
     setSaving(false);
   }
 
@@ -282,7 +286,12 @@ export default function EQOpEx() {
                 <span style={{ color: 'white', fontWeight: 800, fontSize: '0.875rem' }}>Saved Assessments</span>
                 <span style={{ color: '#99f6e4', fontSize: '0.75rem', fontWeight: 700 }}>{eqHistory.length}</span>
               </div>
-              {eqHistory.length === 0 ? (
+              {loadError ? (
+                <div style={{ padding: '1rem', background: '#fef2f2', borderBottom: '1px solid #fecaca' }}>
+                  <p style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 700, margin: '0 0 4px' }}>⚠️ Permission error</p>
+                  <p style={{ fontSize: '0.7rem', color: '#ef4444', margin: 0, lineHeight: 1.4 }}>Update Firestore rules to include the <strong>eqAssessments</strong> collection, then refresh.</p>
+                </div>
+              ) : eqHistory.length === 0 ? (
                 <div style={{ padding: '1.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
                   <p style={{ fontSize: '1.5rem', margin: '0 0 6px' }}>📋</p>
                   <p style={{ fontSize: '0.78rem', margin: 0 }}>No assessments saved yet</p>
