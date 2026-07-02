@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import { collection, addDoc, getDocs, updateDoc, query, where, doc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, getDocs, updateDoc, arrayUnion, query, where, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -69,9 +69,9 @@ function calcDimAvg(scores, dimId, qCount) {
   return vals.length ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : 0;
 }
 
-function formatDate(ts) {
-  if (!ts) return '';
-  const d = ts.toDate ? ts.toDate() : new Date(ts);
+function formatDate(val) {
+  if (!val) return '';
+  const d = val.toDate ? val.toDate() : val.seconds ? new Date(val.seconds * 1000) : new Date(val);
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
@@ -90,7 +90,6 @@ export default function EQOpEx() {
   const [activeTab, setActiveTab] = useState('eq');
   const [eqScores, setEqScores] = useState({});
   const [opexChecks, setOpexChecks] = useState({});
-  const [opexDocId, setOpexDocId] = useState(null);
   const [saving, setSaving] = useState(false);
 
   // EQ history sidebar
@@ -104,18 +103,13 @@ export default function EQOpEx() {
     if (!currentUser) return;
     async function load() {
       try {
-        // Load EQ history (all snapshots), sort client-side
-        const eqSnap = await getDocs(query(
-          collection(db, 'eqAssessments'),
-          where('uid', '==', currentUser.uid)
-        ));
-        const records = eqSnap.docs.map(d => ({ id: d.id, ...d.data() }));
-        records.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-        setEqHistory(records);
-
-        // Load OpEx (single doc, overwrite model)
-        const opexSnap = await getDocs(query(collection(db, 'eqOpex'), where('uid', '==', currentUser.uid), where('type', '==', 'opex')));
-        opexSnap.forEach(d => { setOpexChecks(d.data().checks || {}); setOpexDocId(d.id); });
+        const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
+        if (userSnap.exists()) {
+          const data = userSnap.data();
+          const history = (data.eqHistory || []).slice().reverse();
+          setEqHistory(history);
+          if (data.opexChecks) setOpexChecks(data.opexChecks);
+        }
       } catch (e) { console.error(e); setLoadError(true); }
     }
     load();
@@ -136,18 +130,20 @@ export default function EQOpEx() {
       const scored = dimResults.filter(d => d.avg > 0);
       const overall = scored.length ? +(scored.reduce((a, d) => a + d.avg, 0) / scored.length).toFixed(1) : 0;
       const strongest = [...dimResults].filter(d => d.avg > 0).sort((a, b) => b.avg - a.avg)[0];
-      const weakest  = [...dimResults].filter(d => d.avg > 0).sort((a, b) => a.avg - b.avg)[0];
-      const nextTestISO = nextTest.toISOString().slice(0, 10);
-      const ref = await addDoc(collection(db, 'eqAssessments'), {
-        uid: currentUser.uid, label, scores: eqScores, dimResults, overall,
-        strongest: strongest?.label || '', weakest: weakest?.label || '',
-        nextTestDate: nextTestISO, createdAt: serverTimestamp(),
-      });
+      const weakest   = [...dimResults].filter(d => d.avg > 0).sort((a, b) => a.avg - b.avg)[0];
       const newRecord = {
-        id: ref.id, label, scores: eqScores, dimResults, overall,
-        strongest: strongest?.label || '', weakest: weakest?.label || '',
-        nextTestDate: nextTestISO, createdAt: { seconds: Math.floor(now.getTime() / 1000) },
+        id: now.getTime().toString(),
+        label,
+        scores: eqScores,
+        dimResults,
+        overall,
+        strongest: strongest?.label || '',
+        weakest:   weakest?.label  || '',
+        nextTestDate: nextTest.toISOString().slice(0, 10),
+        savedAt: now.toISOString(),
       };
+      const userRef = doc(db, 'users', currentUser.uid);
+      await setDoc(userRef, { eqHistory: arrayUnion(newRecord) }, { merge: true });
       setEqHistory(h => [newRecord, ...h]);
       setSaveLabel('');
       setShowLabelInput(false);
@@ -163,14 +159,9 @@ export default function EQOpEx() {
     if (!currentUser) return toast.error('Not logged in');
     setSaving(true);
     try {
-      if (opexDocId) {
-        await updateDoc(doc(db, 'eqOpex', opexDocId), { checks: opexChecks });
-      } else {
-        const ref = await addDoc(collection(db, 'eqOpex'), { uid: currentUser.uid, type: 'opex', checks: opexChecks, createdAt: serverTimestamp() });
-        setOpexDocId(ref.id);
-      }
+      await setDoc(doc(db, 'users', currentUser.uid), { opexChecks }, { merge: true });
       toast.success('OpEx checklist saved!');
-    } catch (e) { toast.error('Save failed: ' + e.message); }
+    } catch (e) { toast.error('Save failed: ' + e.message, { duration: 6000 }); }
     setSaving(false);
   }
 
@@ -322,8 +313,8 @@ export default function EQOpEx() {
                           </div>
 
                           {/* Date */}
-                          {rec.createdAt && (
-                            <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: '0 0 8px' }}>📅 {formatDate(rec.createdAt)}</p>
+                          {(rec.savedAt || rec.createdAt) && (
+                            <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: '0 0 8px' }}>📅 {formatDate(rec.savedAt || rec.createdAt)}</p>
                           )}
 
                           {/* Dimension bars */}
