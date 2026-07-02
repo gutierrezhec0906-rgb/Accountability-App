@@ -113,11 +113,21 @@ export default function EQOpEx() {
 
           {eqDimensions.map(dim => (
             <div key={dim.id} className="card" style={{ overflow: 'hidden' }}>
-              <div style={{ padding: '0.875rem 1.25rem', background: '#f8fafc', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
-                <span style={{ fontSize: '1.25rem' }}>{dim.icon}</span>
-                <div>
-                  <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>{dim.label}</h4>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>{dim.desc}</p>
+              <div style={{ padding: '0.875rem 1.25rem', background: '#f8fafc', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '0.75rem' }}>
+                  <span style={{ fontSize: '1.25rem' }}>{dim.icon}</span>
+                  <div>
+                    <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>{dim.label}</h4>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>{dim.desc}</p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {[1, 2, 3, 4, 5].map(n => (
+                    <div key={n} style={{ flex: 1, background: 'white', border: '1px solid var(--border)', borderRadius: 8, padding: '0.35rem 0.5rem', textAlign: 'center' }}>
+                      <div style={{ fontSize: '0.72rem', fontWeight: 900, color: '#0d9488', marginBottom: 2 }}>{n} — {SCALE_LABELS[n].label}</div>
+                      <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', lineHeight: 1.35 }}>{SCALE_LABELS[n].desc}</div>
+                    </div>
+                  ))}
                 </div>
               </div>
               {dim.questions.map((q, i) => (
