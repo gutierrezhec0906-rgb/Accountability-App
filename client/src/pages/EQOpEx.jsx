@@ -200,10 +200,85 @@ export default function EQOpEx() {
       </div>
 
       {activeTab === 'eq' && (
-        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {/* Main assessment area */}
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          {/* Saved assessments history panel */}
+          {(eqHistory.length > 0 || loadError) && (
+            <div className="card" style={{ overflow: 'hidden' }}>
+              <div style={{ padding: '0.875rem 1.25rem', background: '#0f2044', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ color: 'white', fontWeight: 800, fontSize: '0.9rem' }}>📋 Saved Assessments</span>
+                <span style={{ color: '#99f6e4', fontSize: '0.78rem', fontWeight: 700 }}>{eqHistory.length} record{eqHistory.length !== 1 ? 's' : ''}</span>
+              </div>
+              {loadError && (
+                <div style={{ padding: '0.75rem 1.25rem', background: '#fef2f2', borderBottom: '1px solid #fecaca' }}>
+                  <p style={{ fontSize: '0.78rem', color: '#ef4444', fontWeight: 700, margin: 0 }}>⚠️ Could not load history — check Firestore rules for the users collection.</p>
+                </div>
+              )}
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 0 }}>
+                {eqHistory.map((rec, idx) => {
+                  const isSelected = selectedRecord === rec.id;
+                  const overall = rec.overall || 0;
+                  const nextDate = rec.nextTestDate
+                    ? new Date(rec.nextTestDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                    : null;
+                  const today = new Date(); today.setHours(0,0,0,0);
+                  const daysUntil = rec.nextTestDate ? Math.round((new Date(rec.nextTestDate + 'T00:00:00') - today) / 86400000) : null;
+                  const reminderColor = daysUntil !== null && daysUntil <= 0 ? '#ef4444' : daysUntil !== null && daysUntil <= 7 ? '#f59e0b' : '#0d9488';
+                  const reminderBg   = daysUntil !== null && daysUntil <= 0 ? '#fef2f2' : daysUntil !== null && daysUntil <= 7 ? '#fefce8' : '#f0fdf4';
+                  const reminderText = daysUntil !== null && daysUntil <= 0 ? 'Retake overdue!' : daysUntil !== null ? `Retake in ${daysUntil} days` : null;
+                  return (
+                    <div key={rec.id} style={{ padding: '1rem 1.25rem', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: isSelected ? '#f0fdf4' : 'white' }}>
+                      {/* Header */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
+                        <span style={{ fontSize: '0.875rem', fontWeight: 800, color: isSelected ? '#0d9488' : 'var(--text-primary)', flex: 1, marginRight: 8 }}>{rec.label}</span>
+                        <span style={{ fontSize: '1.25rem', fontWeight: 900, color: overall >= 4 ? '#0d9488' : overall >= 3 ? '#f59e0b' : overall > 0 ? '#ef4444' : '#94a3b8' }}>
+                          {overall || '—'}<span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 600 }}>/5</span>
+                        </span>
+                      </div>
+                      {/* Date */}
+                      {(rec.savedAt || rec.createdAt) && (
+                        <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 10px' }}>📅 {formatDate(rec.savedAt || rec.createdAt)}</p>
+                      )}
+                      {/* Dimension bars */}
+                      {rec.dimResults && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 10 }}>
+                          {rec.dimResults.map(d => (
+                            <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                              <span style={{ fontSize: '0.68rem', width: 90, color: 'var(--text-muted)', flexShrink: 0 }}>{d.icon} {d.label}</span>
+                              <ScoreBar value={d.avg} />
+                              <span style={{ fontSize: '0.68rem', fontWeight: 700, color: d.avg >= 4 ? '#0d9488' : d.avg >= 3 ? '#f59e0b' : d.avg > 0 ? '#ef4444' : '#94a3b8', width: 24, textAlign: 'right', flexShrink: 0 }}>{d.avg || '—'}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      {/* Strongest / Weakest tags */}
+                      {(rec.strongest || rec.weakest) && (
+                        <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+                          {rec.strongest && <span style={{ fontSize: '0.68rem', background: '#f0fdf4', color: '#0d9488', border: '1px solid #0d948830', borderRadius: 6, padding: '2px 8px', fontWeight: 700 }}>⬆ {rec.strongest}</span>}
+                          {rec.weakest   && <span style={{ fontSize: '0.68rem', background: '#fef2f2', color: '#ef4444', border: '1px solid #ef444430', borderRadius: 6, padding: '2px 8px', fontWeight: 700 }}>⬇ {rec.weakest}</span>}
+                        </div>
+                      )}
+                      {/* 60-day reminder */}
+                      {nextDate && (
+                        <div style={{ background: reminderBg, border: `1px solid ${reminderColor}44`, borderRadius: 8, padding: '6px 10px', marginBottom: 10 }}>
+                          <p style={{ fontSize: '0.72rem', fontWeight: 800, color: reminderColor, margin: '0 0 2px' }}>🔔 Next: {nextDate}</p>
+                          {reminderText && <p style={{ fontSize: '0.68rem', color: reminderColor, margin: 0, fontWeight: 600 }}>{reminderText}</p>}
+                        </div>
+                      )}
+                      {/* Load button */}
+                      <button onClick={() => loadRecord(rec)}
+                        style={{ width: '100%', padding: '0.35rem', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${isSelected ? '#0d9488' : '#e2e8f0'}`, background: isSelected ? '#0d9488' : 'white', color: isSelected ? 'white' : '#64748b', transition: 'all 0.15s' }}>
+                        {isSelected ? '✓ Loaded into form' : 'Load this assessment'}
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Assessment form */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {eqResults.some(d => d.avg > 0) && (
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 10, marginBottom: 4 }}>
                 {eqResults.map(dim => (
@@ -255,7 +330,7 @@ export default function EQOpEx() {
                   <input
                     className="input"
                     style={{ flex: 1 }}
-                    placeholder="Assessment label (e.g. Q2 2025)"
+                    placeholder="Label (e.g. Q2 2025) — optional"
                     value={saveLabel}
                     onChange={e => setSaveLabel(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && saveEQ()}
@@ -266,97 +341,6 @@ export default function EQOpEx() {
                 </div>
               ) : (
                 <button className="btn-primary" onClick={() => setShowLabelInput(true)}>Save Assessment</button>
-              )}
-            </div>
-          </div>
-
-          {/* Right sidebar — history */}
-          <div style={{ width: 260, flexShrink: 0 }}>
-            <div className="card" style={{ overflow: 'hidden', position: 'sticky', top: 20 }}>
-              <div style={{ padding: '0.875rem 1rem', background: '#0f2044', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ color: 'white', fontWeight: 800, fontSize: '0.875rem' }}>Saved Assessments</span>
-                <span style={{ color: '#99f6e4', fontSize: '0.75rem', fontWeight: 700 }}>{eqHistory.length}</span>
-              </div>
-              {loadError ? (
-                <div style={{ padding: '1rem', background: '#fef2f2', borderBottom: '1px solid #fecaca' }}>
-                  <p style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 700, margin: '0 0 4px' }}>⚠️ Permission error</p>
-                  <p style={{ fontSize: '0.7rem', color: '#ef4444', margin: 0, lineHeight: 1.4 }}>Update Firestore rules to include the <strong>eqAssessments</strong> collection, then refresh.</p>
-                </div>
-              ) : eqHistory.length === 0 ? (
-                <div style={{ padding: '1.5rem 1rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-                  <p style={{ fontSize: '1.5rem', margin: '0 0 6px' }}>📋</p>
-                  <p style={{ fontSize: '0.78rem', margin: 0 }}>No assessments saved yet</p>
-                </div>
-              ) : (
-                <div style={{ maxHeight: 620, overflowY: 'auto' }}>
-                  {eqHistory.map((rec, idx) => {
-                    const isSelected = selectedRecord === rec.id;
-                    const overall = rec.overall || 0;
-                    const nextDate = rec.nextTestDate
-                      ? new Date(rec.nextTestDate + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-                      : null;
-                    const today = new Date(); today.setHours(0,0,0,0);
-                    const daysUntil = rec.nextTestDate
-                      ? Math.round((new Date(rec.nextTestDate + 'T00:00:00') - today) / 86400000)
-                      : null;
-                    const reminderColor = daysUntil !== null && daysUntil <= 0 ? '#ef4444' : daysUntil <= 7 ? '#f59e0b' : '#0d9488';
-                    const reminderBg   = daysUntil !== null && daysUntil <= 0 ? '#fef2f2' : daysUntil <= 7 ? '#fefce8' : '#f0fdf4';
-                    const reminderText = daysUntil !== null && daysUntil <= 0 ? 'Retake overdue!' : daysUntil === 0 ? 'Retake today!' : daysUntil !== null ? `Retake in ${daysUntil}d` : null;
-                    return (
-                      <div key={rec.id} style={{ borderBottom: idx < eqHistory.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                        <div style={{ padding: '0.875rem 1rem', background: isSelected ? '#f0fdf4' : 'white' }}>
-
-                          {/* Header row */}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: isSelected ? '#0d9488' : 'var(--text-primary)', lineHeight: 1.3, flex: 1, marginRight: 6 }}>{rec.label}</span>
-                            <span style={{ fontSize: '1.1rem', fontWeight: 900, color: overall >= 4 ? '#0d9488' : overall >= 3 ? '#f59e0b' : overall > 0 ? '#ef4444' : '#94a3b8', flexShrink: 0 }}>{overall || '—'}<span style={{ fontSize: '0.6rem', color: 'var(--text-muted)', fontWeight: 600 }}>/5</span></span>
-                          </div>
-
-                          {/* Date */}
-                          {(rec.savedAt || rec.createdAt) && (
-                            <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: '0 0 8px' }}>📅 {formatDate(rec.savedAt || rec.createdAt)}</p>
-                          )}
-
-                          {/* Dimension bars */}
-                          {rec.dimResults && (
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 8 }}>
-                              {rec.dimResults.map(d => (
-                                <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                  <span style={{ fontSize: '0.65rem', width: 76, color: 'var(--text-muted)', flexShrink: 0 }}>{d.icon} {d.label}</span>
-                                  <ScoreBar value={d.avg} />
-                                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: d.avg >= 4 ? '#0d9488' : d.avg >= 3 ? '#f59e0b' : d.avg > 0 ? '#ef4444' : '#94a3b8', width: 22, textAlign: 'right', flexShrink: 0 }}>{d.avg || '—'}</span>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          {/* Strongest / Weakest */}
-                          {(rec.strongest || rec.weakest) && (
-                            <div style={{ display: 'flex', gap: 6, marginBottom: 8, flexWrap: 'wrap' }}>
-                              {rec.strongest && <span style={{ fontSize: '0.65rem', background: '#f0fdf4', color: '#0d9488', border: '1px solid #0d948830', borderRadius: 6, padding: '2px 7px', fontWeight: 700 }}>⬆ {rec.strongest}</span>}
-                              {rec.weakest  && <span style={{ fontSize: '0.65rem', background: '#fef2f2', color: '#ef4444', border: '1px solid #ef444430', borderRadius: 6, padding: '2px 7px', fontWeight: 700 }}>⬇ {rec.weakest}</span>}
-                            </div>
-                          )}
-
-                          {/* 60-day reminder */}
-                          {nextDate && (
-                            <div style={{ background: reminderBg, border: `1px solid ${reminderColor}44`, borderRadius: 8, padding: '6px 10px', marginBottom: 8 }}>
-                              <p style={{ fontSize: '0.68rem', fontWeight: 800, color: reminderColor, margin: '0 0 1px' }}>🔔 Next assessment: {nextDate}</p>
-                              {reminderText && <p style={{ fontSize: '0.65rem', color: reminderColor, margin: 0, fontWeight: 600 }}>{reminderText}</p>}
-                            </div>
-                          )}
-
-                          {/* Load button */}
-                          <button
-                            onClick={() => loadRecord(rec)}
-                            style={{ width: '100%', padding: '0.3rem', borderRadius: 7, fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${isSelected ? '#0d9488' : '#e2e8f0'}`, background: isSelected ? '#0d9488' : 'white', color: isSelected ? 'white' : '#64748b', transition: 'all 0.15s' }}>
-                            {isSelected ? '✓ Loaded' : 'Load this assessment'}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
               )}
             </div>
           </div>
