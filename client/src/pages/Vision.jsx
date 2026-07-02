@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import { collection, addDoc, getDocs, deleteDoc, updateDoc, query, where, doc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -44,28 +44,28 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, activeTab, setActiveTab
         ? <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 24 }}>No saved {activeTab} visions yet.</p>
         : <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 620, overflowY: 'auto' }}>
             {list.map(e => {
-              const d = e.createdAt?.seconds ? new Date(e.createdAt.seconds * 1000) : new Date();
+              const d = e.createdAt ? new Date(e.createdAt) : new Date();
               const isExpanded = expandedId === e.id;
+              const prompts = e.mode === 'personal' ? personalPrompts : teamPrompts;
               return (
                 <div key={e.id} style={{ background: '#f8fafc', borderRadius: 10, padding: '0.75rem', border: '1px solid var(--border)' }}>
                   <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>{d.toLocaleDateString()}</p>
 
-                  {/* Vision statement */}
                   <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0 0 6px', lineHeight: 1.5,
                     ...(!isExpanded ? { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } : {}) }}>
                     "{e.vision}"
                   </p>
 
-                  {/* Toggle Q&A */}
+                  {/* Toggle Q&A dropdown */}
                   <button onClick={() => setExpandedId(isExpanded ? null : e.id)}
                     style={{ background: 'none', border: 'none', color: '#0d9488', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', padding: '0 0 6px' }}>
                     {isExpanded ? '▲ Hide answers' : '▼ Show Q&A answers'}
                   </button>
 
-                  {/* Q&A answers */}
+                  {/* Q&A answers dropdown */}
                   {isExpanded && e.answers && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 }}>
-                      {(e.mode === 'personal' ? personalPrompts : teamPrompts).map(p => e.answers[p.step] && (
+                      {prompts.map(p => e.answers[p.step] && (
                         <div key={p.step} style={{ borderLeft: '3px solid #0d9488', paddingLeft: 8 }}>
                           <p style={{ fontSize: '0.62rem', fontWeight: 700, color: '#0d9488', margin: '0 0 2px', textTransform: 'uppercase' }}>Q{p.step}</p>
                           <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 2px' }}>{p.question}</p>
@@ -100,7 +100,6 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, activeTab, setActiveTab
 
 export default function Vision() {
   const { currentUser } = useAuth();
-  const [mode, setMode]             = useState('personal');
   const [saved, setSaved]           = useState([]);
   const [panelTab, setPanelTab]     = useState('personal');
   const [editingId, setEditingId]   = useState(null);
@@ -108,8 +107,8 @@ export default function Vision() {
   const [editingQ, setEditingQ]     = useState(null);
   const [editQVal, setEditQVal]     = useState('');
   const [expandedId, setExpandedId] = useState(null);
+  const [mode, setMode]             = useState('personal');
 
-  // Per-mode state: answers, vision, step, loadedId stored separately
   const [modeState, setModeState] = useState({
     personal: { answers: {}, vision: '', step: 0, loadedId: null },
     team:     { answers: {}, vision: '', step: 0, loadedId: null },
@@ -120,23 +119,23 @@ export default function Vision() {
   function updateMode(patch) {
     setModeState(prev => ({ ...prev, [mode]: { ...prev[mode], ...patch } }));
   }
-
   const setAnswers  = val => updateMode({ answers: typeof val === 'function' ? val(modeState[mode].answers) : val });
   const setVision   = val => updateMode({ vision: val });
   const setStep     = val => updateMode({ step: typeof val === 'function' ? val(modeState[mode].step) : val });
   const setLoadedId = val => updateMode({ loadedId: val });
 
+  // Load from users/{uid}.visions array
   async function fetchSaved() {
     if (!currentUser) return;
     try {
-      const q = query(collection(db, 'visions'), where('uid', '==', currentUser.uid));
-      const snap = await getDocs(q);
-      const entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      entries.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-      setSaved(entries);
-    } catch (e) {
-      console.error('fetchSaved error:', e);
-    }
+      const snap = await getDoc(doc(db, 'users', currentUser.uid));
+      if (snap.exists()) setSaved(snap.data().visions || []);
+    } catch (e) { console.error('fetchSaved error:', e); }
+  }
+
+  async function persistSaved(list) {
+    await setDoc(doc(db, 'users', currentUser.uid), { visions: list }, { merge: true });
+    setSaved(list);
   }
 
   useEffect(() => { fetchSaved(); }, [currentUser]);
@@ -158,43 +157,38 @@ export default function Vision() {
     if (!currentUser) return toast.error('Not logged in');
     try {
       if (loadedId) {
-        // Update existing doc
-        await updateDoc(doc(db, 'visions', loadedId), { vision, answers, mode });
+        const updated = saved.map(e => e.id === loadedId ? { ...e, vision, answers, mode } : e);
+        await persistSaved(updated);
         toast.success('Vision updated!');
       } else {
-        const ref = await addDoc(collection(db, 'visions'), {
-          uid: currentUser.uid, mode, vision, answers, createdAt: serverTimestamp(),
-        });
-        setLoadedId(ref.id);
+        const newEntry = { id: Date.now().toString(), mode, vision, answers, createdAt: new Date().toISOString() };
+        const updated = [newEntry, ...saved];
+        await persistSaved(updated);
+        setLoadedId(newEntry.id);
         toast.success('Vision saved!');
       }
-      fetchSaved();
       setPanelTab(mode);
-    } catch (e) {
-      toast.error('Save failed: ' + e?.message);
-    }
+    } catch (e) { toast.error('Save failed: ' + e?.message); }
   }
 
   async function handleDelete(id) {
     try {
-      await deleteDoc(doc(db, 'visions', id));
+      const updated = saved.filter(e => e.id !== id);
+      await persistSaved(updated);
       setModeState(prev => ({
         personal: prev.personal.loadedId === id ? { ...prev.personal, loadedId: null } : prev.personal,
         team:     prev.team.loadedId     === id ? { ...prev.team,     loadedId: null } : prev.team,
       }));
       if (expandedId === id) setExpandedId(null);
-      fetchSaved();
-    } catch (e) {
-      toast.error('Delete failed: ' + e?.message);
-    }
+    } catch (e) { toast.error('Delete failed: ' + e?.message); }
   }
 
   function handleLoad(entry) {
     setMode(entry.mode);
-    setAnswers(entry.answers || {});
-    setVision(entry.vision);
-    setStep(0);
-    setLoadedId(entry.id);
+    setModeState(prev => ({
+      ...prev,
+      [entry.mode]: { answers: entry.answers || {}, vision: entry.vision, step: 0, loadedId: entry.id },
+    }));
     setEditingId(null);
     setEditingQ(null);
     toast.success('Vision loaded!');
@@ -210,26 +204,23 @@ export default function Vision() {
     try {
       if (editingId === 'current') {
         setVision(editVision);
-        // If we have a loaded doc, persist to Firestore
         if (loadedId) {
-          await updateDoc(doc(db, 'visions', loadedId), { vision: editVision });
-          fetchSaved();
+          const updated = saved.map(e => e.id === loadedId ? { ...e, vision: editVision } : e);
+          await persistSaved(updated);
         }
       } else {
-        await updateDoc(doc(db, 'visions', editingId), { vision: editVision });
-        fetchSaved();
+        const updated = saved.map(e => e.id === editingId ? { ...e, vision: editVision } : e);
+        await persistSaved(updated);
       }
       toast.success('Vision updated!');
       setEditingId(null);
       setEditVision('');
-    } catch (e) {
-      toast.error('Update failed: ' + e?.message);
-    }
+    } catch (e) { toast.error('Update failed: ' + e?.message); }
   }
 
-  function startEditQ(step) {
-    setEditingQ(step);
-    setEditQVal(answers[step] || '');
+  function startEditQ(stepNum) {
+    setEditingQ(stepNum);
+    setEditQVal(answers[stepNum] || '');
   }
 
   async function saveEditQ(stepNum) {
@@ -237,15 +228,12 @@ export default function Vision() {
     setAnswers(newAnswers);
     setEditingQ(null);
     setEditQVal('');
-    // Persist to Firestore if a vision doc is loaded
     if (loadedId) {
       try {
-        await updateDoc(doc(db, 'visions', loadedId), { answers: newAnswers });
-        fetchSaved();
+        const updated = saved.map(e => e.id === loadedId ? { ...e, answers: newAnswers } : e);
+        await persistSaved(updated);
         toast.success('Answer saved');
-      } catch (e) {
-        toast.error('Save failed: ' + e?.message);
-      }
+      } catch (e) { toast.error('Save failed: ' + e?.message); }
     }
   }
 
@@ -349,7 +337,7 @@ export default function Vision() {
           </div>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>{answeredCount} of {prompts.length} questions answered</p>
 
-          {/* Current prompt input */}
+          {/* Current prompt */}
           <div className="card" style={{ padding: '1.75rem', marginBottom: '1.5rem' }}>
             <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>Question {step + 1} of {prompts.length}</p>
             <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '1.05rem', margin: '0 0 1rem', lineHeight: 1.4 }}>{prompts[step].question}</h3>
