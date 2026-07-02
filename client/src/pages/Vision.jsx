@@ -284,6 +284,20 @@ export default function Vision() {
           </div>
 
           {/* Vision statement banner */}
+          {!vision && (
+            <div style={{ borderRadius: 16, padding: '1.75rem', marginBottom: '1.5rem', background: 'linear-gradient(135deg,#0b1a38,#0f2044,#1e3a6e)', color: 'white', position: 'relative', overflow: 'hidden', border: '2px dashed rgba(255,255,255,0.15)' }}>
+              <div style={{ position: 'absolute', top: 12, right: 20, fontSize: '5rem', opacity: 0.05, fontFamily: 'Georgia,serif', lineHeight: 1 }}>"</div>
+              <p style={{ color: '#99f6e4', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 10px' }}>
+                {mode === 'personal' ? '👤 Personal Vision Statement' : '👥 Team Vision Statement'}
+              </p>
+              <p style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.5)', margin: '0 0 6px', fontStyle: 'italic' }}>
+                Your {mode === 'personal' ? 'personal' : 'team'} vision will appear here once generated.
+              </p>
+              <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)', margin: 0 }}>
+                Answer the {prompts.length} questions below and click ✨ Generate Vision Statement.
+              </p>
+            </div>
+          )}
           {vision && (
             <div style={{ borderRadius: 16, padding: '1.75rem', marginBottom: '1.5rem', background: 'linear-gradient(135deg,#0b1a38,#0f2044,#0d9488)', color: 'white', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: 12, right: 20, fontSize: '5rem', opacity: 0.07, fontFamily: 'Georgia,serif', lineHeight: 1 }}>"</div>
