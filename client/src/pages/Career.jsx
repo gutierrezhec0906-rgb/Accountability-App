@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, addDoc, updateDoc, deleteDoc, getDocs, query, where, doc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -30,18 +30,21 @@ export default function Career() {
 
   async function loadGoals() {
     try {
-      const snap = await getDocs(query(collection(db, 'careerGoals'), where('uid', '==', currentUser.uid)));
-      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
-      setGoals(data);
+      const snap = await getDoc(doc(db, 'users', currentUser.uid));
+      setGoals(snap.exists() ? (snap.data().careerGoals || []) : []);
     } catch { toast.error('Could not load goals'); }
+  }
+
+  async function persist(updated) {
+    await setDoc(doc(db, 'users', currentUser.uid), { careerGoals: updated }, { merge: true });
+    setGoals(updated);
   }
 
   async function addGoal(e) {
     e.preventDefault();
     try {
-      const ref = await addDoc(collection(db, 'careerGoals'), { ...form, uid: currentUser.uid, progress: 0, milestones: [], createdAt: serverTimestamp() });
-      setGoals(gs => [{ id: ref.id, ...form, progress: 0, milestones: [] }, ...gs]);
+      const newGoal = { ...form, id: Date.now().toString(), progress: 0, milestones: [], createdAt: new Date().toISOString() };
+      await persist([newGoal, ...goals]);
       setForm(emptyForm);
       setShowForm(false);
       toast.success('Career goal added');
@@ -50,8 +53,8 @@ export default function Career() {
 
   async function updateGoal(goalId, changes) {
     try {
-      await updateDoc(doc(db, 'careerGoals', goalId), changes);
-      setGoals(gs => gs.map(g => g.id === goalId ? { ...g, ...changes } : g));
+      const updated = goals.map(g => g.id === goalId ? { ...g, ...changes } : g);
+      await persist(updated);
     } catch { toast.error('Could not save changes'); }
   }
 
@@ -71,8 +74,7 @@ export default function Career() {
   async function deleteGoal(goalId) {
     if (!window.confirm('Delete this goal and all its milestones?')) return;
     try {
-      await deleteDoc(doc(db, 'careerGoals', goalId));
-      setGoals(gs => gs.filter(g => g.id !== goalId));
+      await persist(goals.filter(g => g.id !== goalId));
       if (selected === goalId) setSelected(null);
       toast.success('Goal deleted');
     } catch { toast.error('Could not delete goal'); }
