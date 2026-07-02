@@ -2,6 +2,51 @@ import { useState } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 
+const SCALE_LABELS = {
+  1: { label: 'Rarely',       desc: 'I almost never demonstrate this behavior. Significant development needed.' },
+  2: { label: 'Sometimes',    desc: 'I occasionally show this behavior but inconsistently. More practice needed.' },
+  3: { label: 'Often',        desc: 'I demonstrate this behavior regularly but not yet consistently.' },
+  4: { label: 'Usually',      desc: 'I consistently demonstrate this behavior in most situations.' },
+  5: { label: 'Always',       desc: 'I model this behavior exceptionally well. A strength and example for others.' },
+};
+
+function ScaleButton({ n, selected, onClick }) {
+  const [hovered, setHovered] = useState(false);
+  const isActive = n <= selected;
+  const color = isActive ? '#0d9488' : hovered ? '#0f2044' : '#e2e8f0';
+  const textColor = isActive || hovered ? 'white' : '#94a3b8';
+
+  return (
+    <div style={{ position: 'relative' }}>
+      {hovered && (
+        <div style={{
+          position: 'absolute', bottom: 'calc(100% + 8px)', left: '50%', transform: 'translateX(-50%)',
+          background: '#0f2044', color: 'white', borderRadius: 10, padding: '8px 12px', zIndex: 100,
+          width: 180, boxShadow: '0 4px 16px rgba(0,0,0,0.2)', pointerEvents: 'none',
+        }}>
+          <p style={{ fontSize: '0.72rem', fontWeight: 800, color: '#99f6e4', margin: '0 0 3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            {n} — {SCALE_LABELS[n].label}
+          </p>
+          <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.85)', margin: 0, lineHeight: 1.45 }}>
+            {SCALE_LABELS[n].desc}
+          </p>
+          {/* Arrow */}
+          <div style={{ position: 'absolute', bottom: -6, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: '6px solid #0f2044' }} />
+        </div>
+      )}
+      <button
+        onClick={onClick}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        style={{ width: 34, height: 34, borderRadius: '50%', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer',
+          border: `2px solid ${color}`, background: isActive ? '#0d9488' : hovered ? '#0f2044' : 'transparent',
+          color: textColor, transition: 'all 0.15s' }}>
+        {n}
+      </button>
+    </div>
+  );
+}
+
 const eqDimensions = [
   { id: 'self-awareness', label: 'Self-Awareness',  icon: '🪞', desc: 'Understanding your emotions and their impact',         questions: ['I recognize my emotional states in real-time','I understand my triggers and how they affect my behavior','I seek feedback to understand my blind spots','I know my strengths and development areas clearly'] },
   { id: 'self-regulation',label: 'Self-Regulation', icon: '🎛️', desc: 'Managing your emotions and impulses effectively',       questions: ['I stay calm under pressure and in conflict','I think before reacting in tense situations','I adapt my approach when things change unexpectedly','I maintain a positive attitude in challenging situations'] },
@@ -80,10 +125,7 @@ export default function EQOpEx() {
                   <p style={{ flex: 1, fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>{q}</p>
                   <div style={{ display: 'flex', gap: 6 }}>
                     {[1, 2, 3, 4, 5].map(n => (
-                      <button key={n} onClick={() => setScore(dim.id, i, n)}
-                        style={{ width: 32, height: 32, borderRadius: '50%', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer', border: `2px solid ${n <= (eqScores[`${dim.id}-${i}`] || 0) ? '#0d9488' : '#e2e8f0'}`, background: n <= (eqScores[`${dim.id}-${i}`] || 0) ? '#0d9488' : 'transparent', color: n <= (eqScores[`${dim.id}-${i}`] || 0) ? 'white' : '#94a3b8', transition: 'all 0.15s' }}>
-                        {n}
-                      </button>
+                      <ScaleButton key={n} n={n} selected={eqScores[`${dim.id}-${i}`] || 0} onClick={() => setScore(dim.id, i, n)} />
                     ))}
                   </div>
                 </div>
