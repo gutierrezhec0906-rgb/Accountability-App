@@ -7,7 +7,7 @@ const SCALE_LABELS = {
   2: { label: 'Sometimes', desc: 'Visible in low-stakes moments but breaks down under pressure or when it costs something. Inconsistent.' },
   3: { label: 'Often',     desc: 'Practiced intentionally but not yet automatic. You catch yourself after the fact more than in the moment.' },
   4: { label: 'Usually',   desc: 'Reliable across most situations, including difficult ones. Others notice and trust it. Minor blind spots remain.' },
-  5: { label: 'Always',    desc: 'Deeply embedded. You demonstrate it when it's hard, teach it to others, and it shapes how your team operates.' },
+  5: { label: 'Always',    desc: 'Deeply embedded. You demonstrate it when hard, teach it to others, and it shapes how your team operates.' },
 };
 
 function ScaleButton({ n, selected, onClick }) {
