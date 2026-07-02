@@ -183,6 +183,19 @@ export default function EQOpEx() {
     toast.success(`Loaded: ${record.label}`);
   }
 
+  async function deleteRecord(recordId) {
+    if (!currentUser) return;
+    const updated = eqHistory.filter(r => r.id !== recordId);
+    try {
+      await setDoc(doc(db, 'users', currentUser.uid), { eqHistory: updated }, { merge: true });
+      setEqHistory(updated);
+      if (selectedRecord === recordId) setSelectedRecord(null);
+      toast.success('Assessment deleted.');
+    } catch {
+      toast.error('Could not delete — try again.');
+    }
+  }
+
   const eqResults = eqDimensions.map(dim => {
     const avg = calcDimAvg(eqScores, dim.id, dim.questions.length);
     return { ...dim, avg };
@@ -274,11 +287,19 @@ export default function EQOpEx() {
                           {reminderText && <p style={{ fontSize: '0.68rem', color: reminderColor, margin: 0, fontWeight: 600 }}>{reminderText}</p>}
                         </div>
                       )}
-                      {/* Load button */}
-                      <button onClick={() => loadRecord(rec)}
-                        style={{ width: '100%', padding: '0.35rem', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${isSelected ? '#0d9488' : '#e2e8f0'}`, background: isSelected ? '#0d9488' : 'white', color: isSelected ? 'white' : '#64748b', transition: 'all 0.15s' }}>
-                        {isSelected ? '✓ Loaded into form' : 'Load this assessment'}
-                      </button>
+                      {/* Load + Delete buttons */}
+                      <div style={{ display: 'flex', gap: 6 }}>
+                        <button onClick={() => loadRecord(rec)}
+                          style={{ flex: 1, padding: '0.35rem', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${isSelected ? '#0d9488' : '#e2e8f0'}`, background: isSelected ? '#0d9488' : 'white', color: isSelected ? 'white' : '#64748b', transition: 'all 0.15s' }}>
+                          {isSelected ? '✓ Loaded' : 'Load'}
+                        </button>
+                        <button onClick={() => {
+                          if (window.confirm('Delete this assessment? This cannot be undone.')) deleteRecord(rec.id);
+                        }}
+                          style={{ padding: '0.35rem 0.6rem', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', border: '1.5px solid #fecaca', background: 'white', color: '#ef4444', transition: 'all 0.15s' }}>
+                          🗑 Delete
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
