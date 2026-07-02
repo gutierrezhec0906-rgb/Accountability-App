@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -72,21 +72,24 @@ export default function Team() {
 
   useEffect(() => {
     async function fetchMembers() {
+      if (!currentUser) return;
       try {
-        const snap = await getDocs(collection(db, 'users'));
-        if (snap.empty) {
-          setMembers(sampleMembers);
+        const snap = await getDoc(doc(db, 'users', currentUser.uid));
+        const stored = snap.exists() ? snap.data().myTeam : null;
+        if (stored && stored.length > 0) {
+          setMembers(stored);
         } else {
-          const users = snap.docs.map(doc => ({ uid: doc.id, ...doc.data(), score: +(Math.random() * 2 + 3).toFixed(1) }));
-          setMembers(users);
+          // Seed with sample members on first visit and persist
+          await setDoc(doc(db, 'users', currentUser.uid), { myTeam: sampleMembers }, { merge: true });
+          setMembers(sampleMembers);
         }
-      } catch (e) {
+      } catch {
         setMembers(sampleMembers);
       }
       setLoading(false);
     }
     fetchMembers();
-  }, []);
+  }, [currentUser]);
 
   const filtered = members.filter(m => {
     const matchRole = filter === 'All' || m.role === filter;

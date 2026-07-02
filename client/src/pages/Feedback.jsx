@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -84,17 +84,17 @@ export default function Feedback() {
 
   const myName = userProfile?.displayName || currentUser?.displayName || currentUser?.email || '';
 
-  // Fetch team members
+  // Fetch team members from users/{uid}.myTeam
   useEffect(() => {
     async function fetchTeam() {
+      if (!currentUser) return;
       try {
-        const snap = await getDocs(collection(db, 'users'));
-        setTeamMembers(snap.docs
-          .map(d => ({ uid: d.id, ...d.data() }))
-          .filter(m => m.status === 'approved' && m.uid !== currentUser?.uid));
+        const snap = await getDoc(doc(db, 'users', currentUser.uid));
+        const stored = snap.exists() ? (snap.data().myTeam || []) : [];
+        setTeamMembers(stored.filter(m => m.uid !== currentUser.uid));
       } catch {}
     }
-    if (currentUser) fetchTeam();
+    fetchTeam();
   }, [currentUser]);
 
   // Fetch feedback given and received
