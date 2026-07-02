@@ -3,11 +3,11 @@ import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 
 const SCALE_LABELS = {
-  1: { label: 'Rarely',       desc: 'I almost never demonstrate this behavior. Significant development needed.' },
-  2: { label: 'Sometimes',    desc: 'I occasionally show this behavior but inconsistently. More practice needed.' },
-  3: { label: 'Often',        desc: 'I demonstrate this behavior regularly but not yet consistently.' },
-  4: { label: 'Usually',      desc: 'I consistently demonstrate this behavior in most situations.' },
-  5: { label: 'Always',       desc: 'I model this behavior exceptionally well. A strength and example for others.' },
+  1: { label: 'Rarely',    desc: 'This behavior is absent or reactive. Others would not recognize it as a strength. Immediate focus needed.' },
+  2: { label: 'Sometimes', desc: 'Visible in low-stakes moments but breaks down under pressure or when it costs something. Inconsistent.' },
+  3: { label: 'Often',     desc: 'Practiced intentionally but not yet automatic. You catch yourself after the fact more than in the moment.' },
+  4: { label: 'Usually',   desc: 'Reliable across most situations, including difficult ones. Others notice and trust it. Minor blind spots remain.' },
+  5: { label: 'Always',    desc: 'Deeply embedded. You demonstrate it when it's hard, teach it to others, and it shapes how your team operates.' },
 };
 
 function ScaleButton({ n, selected, onClick }) {
