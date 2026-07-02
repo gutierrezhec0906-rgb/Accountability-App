@@ -1,62 +1,58 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { collection, addDoc, updateDoc, deleteDoc, getDocs, query, where, doc, serverTimestamp } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import DateStatus from '../components/DateStatus';
 
-const sampleGoals = [
-  {
-    id: 1, title: 'Earn PMP Certification', category: 'Certification', priority: 'High',
-    targetDate: '2024-12-31', progress: 60,
-    milestones: [
-      { text: 'Register for PMP prep course',          done: true,  date: '2024-06-01' },
-      { text: 'Complete 35 hours of PM education',     done: true,  date: '2024-07-15' },
-      { text: 'Submit PMP application',                done: false, date: '2024-09-01' },
-      { text: 'Pass PMP exam',                         done: false, date: '2024-12-01' },
-    ],
-  },
-  {
-    id: 2, title: 'Develop Executive Presence', category: 'Leadership', priority: 'High',
-    targetDate: '2025-06-01', progress: 30,
-    milestones: [
-      { text: 'Complete executive coaching assessment', done: true,  date: '2024-07-01' },
-      { text: 'Present at quarterly leadership meeting',done: false, date: '2024-09-15' },
-      { text: 'Lead company-wide initiative',           done: false, date: '2025-03-01' },
-    ],
-  },
-  {
-    id: 3, title: 'Build Data Analytics Skills', category: 'Technical', priority: 'Medium',
-    targetDate: '2025-03-31', progress: 20,
-    milestones: [
-      { text: 'Complete Power BI fundamentals course',  done: true,  date: '2024-07-20' },
-      { text: 'Build first departmental dashboard',     done: false, date: '2024-10-01' },
-    ],
-  },
-];
-
 const categories = ['Leadership', 'Technical', 'Certification', 'Soft Skills', 'Education', 'Networking'];
 const priorityColors = { High: { bg: '#fee2e2', text: '#dc2626' }, Medium: { bg: '#fef9c3', text: '#b45309' }, Low: { bg: '#dcfce7', text: '#15803d' } };
+const emptyForm = { title: '', category: 'Leadership', priority: 'High', targetDate: '' };
 
 export default function Career() {
-  const [goals, setGoals] = useState(sampleGoals);
+  const { currentUser } = useAuth();
+  const [goals, setGoals] = useState([]);
   const [selected, setSelected] = useState(null);
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: '', category: 'Leadership', priority: 'High', targetDate: '' });
+  const [form, setForm] = useState(emptyForm);
   const [milestoneInputs, setMilestoneInputs] = useState({});
 
   // Goal editing
   const [editingGoalId, setEditingGoalId] = useState(null);
   const [editGoalForm, setEditGoalForm] = useState({});
 
-  // Milestone editing: key = `${goalId}-${mIdx}`
+  // Milestone editing
   const [editingMilestone, setEditingMilestone] = useState(null);
   const [editMilestoneForm, setEditMilestoneForm] = useState({ text: '', date: '' });
 
-  function addGoal(e) {
+  useEffect(() => { if (currentUser) loadGoals(); }, [currentUser]);
+
+  async function loadGoals() {
+    try {
+      const snap = await getDocs(query(collection(db, 'careerGoals'), where('uid', '==', currentUser.uid)));
+      const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      data.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
+      setGoals(data);
+    } catch { toast.error('Could not load goals'); }
+  }
+
+  async function addGoal(e) {
     e.preventDefault();
-    setGoals(g => [...g, { ...form, id: Date.now(), progress: 0, milestones: [] }]);
-    setForm({ title: '', category: 'Leadership', priority: 'High', targetDate: '' });
-    setShowForm(false);
-    toast.success('Career goal added');
+    try {
+      const ref = await addDoc(collection(db, 'careerGoals'), { ...form, uid: currentUser.uid, progress: 0, milestones: [], createdAt: serverTimestamp() });
+      setGoals(gs => [{ id: ref.id, ...form, progress: 0, milestones: [] }, ...gs]);
+      setForm(emptyForm);
+      setShowForm(false);
+      toast.success('Career goal added');
+    } catch { toast.error('Could not save goal'); }
+  }
+
+  async function updateGoal(goalId, changes) {
+    try {
+      await updateDoc(doc(db, 'careerGoals', goalId), changes);
+      setGoals(gs => gs.map(g => g.id === goalId ? { ...g, ...changes } : g));
+    } catch { toast.error('Could not save changes'); }
   }
 
   function startEditGoal(goal) {
@@ -65,29 +61,30 @@ export default function Career() {
     setSelected(null);
   }
 
-  function saveEditGoal(e) {
+  async function saveEditGoal(e) {
     e.preventDefault();
-    setGoals(gs => gs.map(g => g.id === editingGoalId ? { ...g, ...editGoalForm } : g));
+    await updateGoal(editingGoalId, editGoalForm);
     setEditingGoalId(null);
     toast.success('Goal updated');
   }
 
-  function deleteGoal(goalId) {
+  async function deleteGoal(goalId) {
     if (!window.confirm('Delete this goal and all its milestones?')) return;
-    setGoals(gs => gs.filter(g => g.id !== goalId));
-    if (selected === goalId) setSelected(null);
-    toast.success('Goal deleted');
+    try {
+      await deleteDoc(doc(db, 'careerGoals', goalId));
+      setGoals(gs => gs.filter(g => g.id !== goalId));
+      if (selected === goalId) setSelected(null);
+      toast.success('Goal deleted');
+    } catch { toast.error('Could not delete goal'); }
   }
 
-  function addMilestone(goalId) {
+  async function addMilestone(goalId) {
     const input = milestoneInputs[goalId] || { text: '', date: '' };
     if (!input.text.trim()) return;
-    setGoals(goals => goals.map(g => {
-      if (g.id !== goalId) return g;
-      const milestones = [...g.milestones, { text: input.text.trim(), date: input.date, done: false }];
-      const progress = Math.round((milestones.filter(m => m.done).length / milestones.length) * 100);
-      return { ...g, milestones, progress };
-    }));
+    const goal = goals.find(g => g.id === goalId);
+    const milestones = [...(goal.milestones || []), { text: input.text.trim(), date: input.date, done: false }];
+    const progress = Math.round((milestones.filter(m => m.done).length / milestones.length) * 100);
+    await updateGoal(goalId, { milestones, progress });
     setMilestoneInputs(s => ({ ...s, [goalId]: { text: '', date: '' } }));
   }
 
@@ -96,32 +93,27 @@ export default function Career() {
     setEditMilestoneForm({ text: m.text, date: m.date || '' });
   }
 
-  function saveEditMilestone(goalId, mIdx) {
+  async function saveEditMilestone(goalId, mIdx) {
     if (!editMilestoneForm.text.trim()) return;
-    setGoals(goals => goals.map(g => {
-      if (g.id !== goalId) return g;
-      const milestones = g.milestones.map((m, i) => i === mIdx ? { ...m, text: editMilestoneForm.text.trim(), date: editMilestoneForm.date } : m);
-      return { ...g, milestones };
-    }));
+    const goal = goals.find(g => g.id === goalId);
+    const milestones = goal.milestones.map((m, i) => i === mIdx ? { ...m, text: editMilestoneForm.text.trim(), date: editMilestoneForm.date } : m);
+    await updateGoal(goalId, { milestones });
     setEditingMilestone(null);
+    toast.success('Milestone updated');
   }
 
-  function deleteMilestone(goalId, mIdx) {
-    setGoals(goals => goals.map(g => {
-      if (g.id !== goalId) return g;
-      const milestones = g.milestones.filter((_, i) => i !== mIdx);
-      const progress = milestones.length ? Math.round((milestones.filter(m => m.done).length / milestones.length) * 100) : 0;
-      return { ...g, milestones, progress };
-    }));
+  async function deleteMilestone(goalId, mIdx) {
+    const goal = goals.find(g => g.id === goalId);
+    const milestones = goal.milestones.filter((_, i) => i !== mIdx);
+    const progress = milestones.length ? Math.round((milestones.filter(m => m.done).length / milestones.length) * 100) : 0;
+    await updateGoal(goalId, { milestones, progress });
   }
 
-  function toggleMilestone(goalId, mIdx) {
-    setGoals(goals => goals.map(g => {
-      if (g.id !== goalId) return g;
-      const milestones = g.milestones.map((m, i) => i === mIdx ? { ...m, done: !m.done } : m);
-      const progress = milestones.length ? Math.round((milestones.filter(m => m.done).length / milestones.length) * 100) : g.progress;
-      return { ...g, milestones, progress };
-    }));
+  async function toggleMilestone(goalId, mIdx) {
+    const goal = goals.find(g => g.id === goalId);
+    const milestones = goal.milestones.map((m, i) => i === mIdx ? { ...m, done: !m.done } : m);
+    const progress = milestones.length ? Math.round((milestones.filter(m => m.done).length / milestones.length) * 100) : 0;
+    await updateGoal(goalId, { milestones, progress });
   }
 
   const totalGoals = goals.length;
@@ -188,7 +180,7 @@ export default function Career() {
           return (
             <div key={goal.id} className="card" style={{ padding: '1.25rem' }}>
 
-              {/* ── Inline goal edit form ── */}
+              {/* Inline goal edit form */}
               {isEditingGoal ? (
                 <form onSubmit={saveEditGoal} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div style={{ gridColumn: '1/-1' }}>
@@ -217,7 +209,7 @@ export default function Career() {
                   </div>
                 </form>
               ) : (
-                /* ── Normal goal view ── */
+                /* Normal goal view */
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
@@ -233,7 +225,6 @@ export default function Career() {
                       <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#0d9488', minWidth: 36 }}>{goal.progress}%</span>
                     </div>
                   </div>
-                  {/* Action buttons */}
                   <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                     <button onClick={() => startEditGoal(goal)}
                       style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0f2044', background: 'none', border: '1px solid #cbd5e1', borderRadius: 8, padding: '0.3rem 0.75rem', cursor: 'pointer' }}>
@@ -245,26 +236,25 @@ export default function Career() {
                     </button>
                     <button onClick={() => setSelected(selected === goal.id ? null : goal.id)}
                       style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0d9488', background: 'none', border: '1px solid #0d9488', borderRadius: 8, padding: '0.3rem 0.75rem', cursor: 'pointer' }}>
-                      {selected === goal.id ? 'Collapse' : `${goal.milestones.length} Milestones`}
+                      {selected === goal.id ? 'Collapse' : `${(goal.milestones || []).length} Milestones`}
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* ── Milestone panel ── */}
+              {/* Milestone panel */}
               {!isEditingGoal && selected === goal.id && (
                 <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border)', paddingTop: '1rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {goal.milestones.length === 0 && (
+                  {(goal.milestones || []).length === 0 && (
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '0 0 4px', fontStyle: 'italic' }}>No milestones yet — add one below.</p>
                   )}
-                  {goal.milestones.map((m, i) => {
+                  {(goal.milestones || []).map((m, i) => {
                     const milestoneKey = `${goal.id}-${i}`;
                     const isEditingM = editingMilestone === milestoneKey;
 
                     return (
                       <div key={i}>
                         {isEditingM ? (
-                          /* Inline milestone edit */
                           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', padding: '6px 0' }}>
                             <input
                               className="input"
@@ -285,7 +275,6 @@ export default function Career() {
                             <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.35rem 0.8rem' }} onClick={() => setEditingMilestone(null)}>Cancel</button>
                           </div>
                         ) : (
-                          /* Normal milestone row */
                           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                             <button onClick={() => toggleMilestone(goal.id, i)}
                               style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: '0.25rem 0' }}>
@@ -296,7 +285,6 @@ export default function Career() {
                               {m.date && !m.done && <DateStatus date={m.date} />}
                               {m.date && m.done && <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{m.date}</span>}
                             </button>
-                            {/* Edit + Delete milestone */}
                             <button onClick={() => startEditMilestone(goal.id, i, m)}
                               style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '0.8rem', padding: '0 4px', flexShrink: 0 }} title="Edit milestone">✏️</button>
                             <button onClick={() => deleteMilestone(goal.id, i)}
