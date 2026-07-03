@@ -2,6 +2,7 @@ import { useState } from 'react';
 import PageHeader from '../components/PageHeader';
 
 const tips = [
+  { title: 'Two-Minute Rule (GTD)', desc: "From David Allen's Getting Things Done: if a task takes less than two minutes, do it immediately. The overhead of capturing, categorizing, scheduling, and revisiting it later costs more time and mental energy than just acting on the spot. Stop queuing small actions — close them now.", icon: '⏲️', type: 'individual' },
   { title: 'Set Clear Deadlines',    desc: 'Every task should have a specific, non-negotiable deadline. Vague timelines breed complacency.',                  icon: '📅', type: 'individual' },
   { title: 'Communicate the "Why"', desc: 'People move faster when they understand why urgency matters. Connect tasks to mission and impact.',                icon: '💬', type: 'team'       },
   { title: 'Remove Obstacles Fast', desc: 'Leaders who remove blockers within hours instead of days set the pace for urgency culture.',                     icon: '🚧', type: 'team'       },
@@ -12,7 +13,6 @@ const tips = [
   { title: 'Break Tasks Smaller',   desc: 'Smaller deliverables create more frequent "done" moments, sustaining urgency throughout the day.',               icon: '✂️', type: 'individual' },
   { title: 'Limit Meetings',        desc: 'Excessive meetings kill urgency. Move decision-making out of meeting rooms and into action.',                    icon: '🚫', type: 'team'       },
   { title: 'Time-Box Everything',   desc: 'Use time-boxing techniques (Pomodoro, sprints) to create artificial pressure and focused output.',              icon: '⏱', type: 'individual' },
-  { title: 'Two-Minute Rule (GTD)', desc: "From David Allen's Getting Things Done: if a task takes less than two minutes, do it immediately. The overhead of capturing, categorizing, scheduling, and revisiting it later costs more time and mental energy than just acting on the spot. Stop queuing small actions — close them now.", icon: '⏲️', type: 'individual' },
 ];
 
 const reflectionQuestions = [
