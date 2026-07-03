@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
 
 const tips = [
@@ -28,11 +31,36 @@ const reflectionQuestions = [
   "Which of my direct reports need more urgency coaching this week?",
 ];
 
+function fmtDate(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
 export default function Urgency() {
+  const { currentUser } = useAuth();
   const [filter, setFilter] = useState('all');
   const [reflectionIdx, setReflectionIdx] = useState(0);
   const [answers, setAnswers] = useState({});
   const [ratings, setRatings] = useState({});
+  const [records, setRecords] = useState([]);
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState('');
+
+  // Load saved data on mount
+  useEffect(() => {
+    async function load() {
+      if (!currentUser) return;
+      try {
+        const snap = await getDoc(doc(db, 'users', currentUser.uid));
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.urgencyRecords) setRecords(data.urgencyRecords);
+        }
+      } catch (e) { console.error(e); }
+    }
+    load();
+  }, [currentUser]);
 
   const filtered = filter === 'all' ? tips : tips.filter(t => t.type === filter);
 
@@ -57,9 +85,70 @@ export default function Urgency() {
   const avgBg    = avgScore >= 4 ? '#dcfce7' : avgScore >= 3 ? '#fef9c3' : avgScore > 0 ? '#fee2e2' : '#f1f5f9';
   const avgLabel = avgScore >= 4 ? '✅ Strong urgency culture' : avgScore >= 3 ? '🟡 Room to improve' : avgScore > 0 ? '⚠️ Needs attention' : 'Rate each tip below to see your score';
 
+  // Last saved date per type
+  const lastIndividual = [...records].reverse().find(r => r.type === 'individual' || r.type === 'all');
+  const lastTeam       = [...records].reverse().find(r => r.type === 'team'       || r.type === 'all');
+
+  async function saveRecord() {
+    if (!currentUser || ratedTips.length === 0) return;
+    setSaving(true);
+    const now = new Date().toISOString();
+    const individualRatings = {};
+    const teamRatings = {};
+    tips.forEach(t => {
+      if (ratings[t.title]) {
+        if (t.type === 'individual') individualRatings[t.title] = ratings[t.title];
+        else teamRatings[t.title] = ratings[t.title];
+      }
+    });
+    const indAvg = Object.keys(individualRatings).length
+      ? +(Object.values(individualRatings).reduce((a, b) => a + b, 0) / Object.keys(individualRatings).length).toFixed(1)
+      : null;
+    const teamAvg = Object.keys(teamRatings).length
+      ? +(Object.values(teamRatings).reduce((a, b) => a + b, 0) / Object.keys(teamRatings).length).toFixed(1)
+      : null;
+
+    const record = {
+      id: now,
+      savedAt: now,
+      type: 'all',
+      ratings: { ...ratings },
+      individualAvg: indAvg,
+      teamAvg: teamAvg,
+      overallAvg: avgScore,
+      ratedCount: ratedTips.length,
+    };
+
+    const updated = [record, ...records].slice(0, 20);
+    try {
+      await setDoc(doc(db, 'users', currentUser.uid), { urgencyRecords: updated }, { merge: true });
+      setRecords(updated);
+      setToast('Assessment saved!');
+      setTimeout(() => setToast(''), 3000);
+    } catch (e) {
+      console.error(e);
+      setToast('Save failed.');
+      setTimeout(() => setToast(''), 3000);
+    }
+    setSaving(false);
+  }
+
+  function loadRecord(rec) {
+    setRatings(rec.ratings || {});
+    setToast('Record loaded.');
+    setTimeout(() => setToast(''), 3000);
+  }
+
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
       <PageHeader icon="⚡" title="Sense of Urgency Guide" subtitle="Tools and reflection for individual and team urgency" />
+
+      {/* Toast */}
+      {toast && (
+        <div style={{ position: 'fixed', top: 20, right: 20, background: '#0f2044', color: 'white', padding: '0.625rem 1.25rem', borderRadius: 10, fontWeight: 700, fontSize: '0.85rem', zIndex: 9999, boxShadow: '0 4px 16px rgba(0,0,0,0.18)' }}>
+          {toast}
+        </div>
+      )}
 
       {/* Overall average summary */}
       <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
@@ -75,7 +164,64 @@ export default function Urgency() {
           </div>
           <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '6px 0 0' }}>{ratedTips.length} of {tips.length} tips rated</p>
         </div>
+        <button className="btn-primary" onClick={saveRecord} disabled={saving || ratedTips.length === 0}
+          style={{ alignSelf: 'center', padding: '0.5rem 1.25rem', opacity: ratedTips.length === 0 ? 0.5 : 1 }}>
+          {saving ? 'Saving…' : '💾 Save Assessment'}
+        </button>
       </div>
+
+      {/* Last saved dates + records */}
+      {records.length > 0 && (
+        <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
+          <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.9rem' }}>Assessment Records</h4>
+
+          {/* Last saved per type */}
+          <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 12 }}>
+            <div style={{ background: '#ede9fe', borderRadius: 10, padding: '0.5rem 0.875rem' }}>
+              <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Last Individual Save</div>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#5b21b6' }}>{lastIndividual ? fmtDate(lastIndividual.savedAt) : '—'}</div>
+              {lastIndividual?.individualAvg && <div style={{ fontSize: '0.72rem', color: '#7c3aed' }}>Avg: {lastIndividual.individualAvg} / 5</div>}
+            </div>
+            <div style={{ background: '#dbeafe', borderRadius: 10, padding: '0.5rem 0.875rem' }}>
+              <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Last Team Save</div>
+              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e40af' }}>{lastTeam ? fmtDate(lastTeam.savedAt) : '—'}</div>
+              {lastTeam?.teamAvg && <div style={{ fontSize: '0.72rem', color: '#1d4ed8' }}>Avg: {lastTeam.teamAvg} / 5</div>}
+            </div>
+          </div>
+
+          {/* Record history list */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {records.map((rec, i) => {
+              const indTips = tips.filter(t => t.type === 'individual' && rec.ratings?.[t.title] > 0);
+              const teamTipsRated = tips.filter(t => t.type === 'team' && rec.ratings?.[t.title] > 0);
+              return (
+                <div key={rec.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0.6rem 0.875rem', background: i === 0 ? '#f0f9ff' : '#f8fafc', borderRadius: 10, border: `1px solid ${i === 0 ? '#bae6fd' : '#e2e8f0'}` }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                      {i === 0 && <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#0284c7', color: 'white', padding: '1px 7px', borderRadius: 9999 }}>Latest</span>}
+                      <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{fmtDate(rec.savedAt)}</span>
+                    </div>
+                    <div style={{ display: 'flex', gap: 14, marginTop: 4, flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.72rem', color: '#7c3aed', fontWeight: 600 }}>
+                        Individual: {rec.individualAvg ?? '—'} / 5 ({indTips.length} rated)
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: '#1d4ed8', fontWeight: 600 }}>
+                        Team: {rec.teamAvg ?? '—'} / 5 ({teamTipsRated.length} rated)
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: '#475569', fontWeight: 600 }}>
+                        Overall: {rec.overallAvg} / 5
+                      </span>
+                    </div>
+                  </div>
+                  <button className="btn-secondary" onClick={() => loadRecord(rec)} style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem', flexShrink: 0 }}>
+                    Load
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {/* Tips */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: '1rem' }}>
