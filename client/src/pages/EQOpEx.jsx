@@ -99,6 +99,11 @@ export default function EQOpEx() {
   const [activeTab, setActiveTab] = useState('eq');
   const [eqScores, setEqScores] = useState({});
   const [opexChecks, setOpexChecks] = useState({});
+  const [opexFindings, setOpexFindings] = useState({});
+  const [opexArea, setOpexArea] = useState('');
+  const [opexExpandedItem, setOpexExpandedItem] = useState(null);
+  const [opexHistory, setOpexHistory] = useState([]);
+  const [opexExpandedAudit, setOpexExpandedAudit] = useState(null);
   const [saving, setSaving] = useState(false);
 
   // EQ history sidebar
@@ -117,7 +122,7 @@ export default function EQOpEx() {
           const data = userSnap.data();
           const history = (data.eqHistory || []).slice().reverse();
           setEqHistory(history);
-          if (data.opexChecks) setOpexChecks(data.opexChecks);
+          setOpexHistory(data.opexAudits || []);
         }
       } catch (e) { console.error(e); setLoadError(true); }
     }
@@ -164,14 +169,74 @@ export default function EQOpEx() {
     setSaving(false);
   }
 
-  async function saveOpex() {
+  async function saveOpexAudit() {
     if (!currentUser) return toast.error('Not logged in');
+    if (!opexArea.trim()) return toast.error('Please enter the area being audited');
+    if (checkedOpex === 0) return toast.error('Complete at least one checklist item before saving');
+    const dupName = opexArea.trim().toLowerCase();
+    if (opexHistory.some(a => a.area.toLowerCase() === dupName)) {
+      return toast.error(`An audit for "${opexArea.trim()}" already exists. Use a different name or delete the existing one first.`);
+    }
     setSaving(true);
     try {
-      await setDoc(doc(db, 'users', currentUser.uid), { opexChecks }, { merge: true });
-      toast.success('OpEx checklist saved!');
-    } catch (e) { toast.error('Save failed: ' + e.message, { duration: 6000 }); }
+      const findingsNoImages = Object.fromEntries(
+        Object.entries(opexFindings).filter(([, v]) => v.note).map(([k, v]) => [k, { note: v.note }])
+      );
+      const record = {
+        id: Date.now().toString(),
+        area: opexArea.trim(),
+        score: opexPct,
+        checked: checkedOpex,
+        total: totalOpex,
+        checks: { ...opexChecks },
+        findings: findingsNoImages,
+        date: new Date().toISOString(),
+      };
+      const updated = [record, ...opexHistory].slice(0, 50);
+      await setDoc(doc(db, 'users', currentUser.uid), { opexAudits: updated }, { merge: true });
+      setOpexHistory(updated);
+      toast.success(`Audit saved — ${opexPct}% for "${opexArea}"`);
+    } catch (e) { toast.error('Save failed: ' + e.message); }
     setSaving(false);
+  }
+
+  function loadOpexAudit(record) {
+    setOpexChecks(record.checks || {});
+    setOpexFindings(record.findings || {});
+    setOpexArea(record.area || '');
+    setOpexExpandedItem(null);
+    toast.success(`Loaded audit: ${record.area}`);
+  }
+
+  async function deleteOpexAudit(id) {
+    const updated = opexHistory.filter(a => a.id !== id);
+    await setDoc(doc(db, 'users', currentUser.uid), { opexAudits: updated }, { merge: true });
+    setOpexHistory(updated);
+    toast.success('Audit deleted');
+  }
+
+  function resetOpexAudit() {
+    setOpexChecks({});
+    setOpexFindings({});
+    setOpexArea('');
+    setOpexExpandedItem(null);
+  }
+
+  function setOpexFinding(key, field, value) {
+    setOpexFindings(f => ({ ...f, [key]: { ...(f[key] || {}), [field]: value } }));
+  }
+
+  function handleOpexImageUpload(key, e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5 MB'); return; }
+    const reader = new FileReader();
+    reader.onload = ev => setOpexFinding(key, 'image', ev.target.result);
+    reader.readAsDataURL(file);
+  }
+
+  function removeOpexImage(key) {
+    setOpexFindings(f => ({ ...f, [key]: { ...(f[key] || {}), image: null } }));
   }
 
   function setScore(dimId, qIdx, val) { setEqScores(s => ({ ...s, [`${dimId}-${qIdx}`]: val })); }
@@ -378,40 +443,154 @@ export default function EQOpEx() {
       )}
 
       {activeTab === 'opex' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div className="card" style={{ padding: '1.25rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>OpEx Compliance Score</span>
-              <span style={{ fontSize: '1.75rem', fontWeight: 900, color: opexPct >= 80 ? '#0d9488' : opexPct >= 60 ? '#f59e0b' : '#ef4444' }}>{opexPct}%</span>
+        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+
+          {/* ── Left: checklist ── */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+            {/* Area input + score card */}
+            <div className="card" style={{ padding: '1.25rem' }}>
+              <div style={{ marginBottom: 12 }}>
+                <label className="label">Area / Location Being Audited</label>
+                <input className="input" value={opexArea} onChange={e => setOpexArea(e.target.value)}
+                  placeholder="e.g. Production Floor, Warehouse, Office — Q3 2026…" />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>OpEx Compliance Score</span>
+                <span style={{ fontSize: '1.75rem', fontWeight: 900, color: opexPct >= 80 ? '#0d9488' : opexPct >= 60 ? '#f59e0b' : '#ef4444' }}>{opexPct}%</span>
+              </div>
+              <div style={{ background: '#e2e8f0', borderRadius: 9999, height: 10, marginBottom: 6 }}>
+                <div style={{ height: 10, borderRadius: 9999, background: opexPct >= 80 ? '#0d9488' : opexPct >= 60 ? '#f59e0b' : '#ef4444', width: `${opexPct}%`, transition: 'width 0.6s ease' }} />
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{checkedOpex} of {totalOpex} behaviors practiced</p>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button className="btn-secondary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem' }} onClick={resetOpexAudit}>↺ Reset</button>
+                  <button className="btn-primary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.875rem' }} onClick={saveOpexAudit} disabled={saving}>{saving ? 'Saving…' : '💾 Save Audit'}</button>
+                  {(opexArea.trim() || checkedOpex > 0) && (
+                    <button style={{ fontSize: '0.78rem', padding: '0.3rem 0.875rem', borderRadius: 9999, fontWeight: 700, border: '1.5px solid #0d9488', background: 'white', color: '#0d9488', cursor: 'pointer' }} onClick={resetOpexAudit}>＋ New Audit</button>
+                  )}
+                </div>
+              </div>
             </div>
-            <div style={{ background: '#e2e8f0', borderRadius: 9999, height: 10 }}>
-              <div style={{ height: 10, borderRadius: 9999, background: opexPct >= 80 ? '#0d9488' : opexPct >= 60 ? '#f59e0b' : '#ef4444', width: `${opexPct}%`, transition: 'width 0.6s ease' }} />
-            </div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: 6 }}>{checkedOpex} of {totalOpex} behaviors practiced</p>
+
+            {opexChecklist.map(cat => (
+              <div key={cat.category} className="card" style={{ overflow: 'hidden' }}>
+                <div style={{ padding: '0.75rem 1.25rem', background: '#0f2044' }}>
+                  <span style={{ color: 'white', fontWeight: 800, fontSize: '0.875rem' }}>{cat.category}</span>
+                </div>
+                {cat.items.map((item, i) => {
+                  const key = `${cat.category}-${i}`;
+                  const isExpanded = opexExpandedItem === key;
+                  const finding = opexFindings[key] || {};
+                  const hasFinding = finding.note || finding.image;
+                  return (
+                    <div key={i} style={{ borderBottom: i < cat.items.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.75rem 1.25rem' }}>
+                        <button onClick={() => toggleOpex(cat.category, i)}
+                          style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
+                          <div style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, border: `2px solid ${opexChecks[key] ? '#0d9488' : '#e2e8f0'}`, background: opexChecks[key] ? '#0d9488' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.75rem', fontWeight: 700, transition: 'all 0.2s' }}>
+                            {opexChecks[key] && '✓'}
+                          </div>
+                          <span style={{ fontSize: '0.875rem', color: opexChecks[key] ? '#94a3b8' : 'var(--text-secondary)', textDecoration: opexChecks[key] ? 'line-through' : 'none' }}>{item}</span>
+                        </button>
+                        {hasFinding && !isExpanded && (
+                          <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#fef9c3', color: '#b45309', border: '1px solid #fde68a', borderRadius: 9999, padding: '1px 7px', flexShrink: 0 }}>
+                            {finding.image ? '📎 Photo' : '📝 Note'}
+                          </span>
+                        )}
+                        <button onClick={() => setOpexExpandedItem(isExpanded ? null : key)}
+                          title={isExpanded ? 'Collapse' : 'Add finding / photo'}
+                          style={{ background: isExpanded ? '#f1f5f9' : 'none', border: '1px solid #e2e8f0', borderRadius: 7, padding: '3px 9px', fontSize: '0.72rem', fontWeight: 700, color: '#64748b', cursor: 'pointer', flexShrink: 0 }}>
+                          {isExpanded ? '▲' : '📎'}
+                        </button>
+                      </div>
+
+                      {isExpanded && (
+                        <div style={{ margin: '0 1.25rem 0.875rem', background: '#f8fafc', borderRadius: 10, border: '1px solid var(--border)', padding: '1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                          <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Finding Details</p>
+                          <div>
+                            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Description / Finding</label>
+                            <textarea className="input" rows={3} style={{ fontSize: '0.825rem', resize: 'vertical' }}
+                              placeholder="Describe what was observed, the gap, or the non-conformance…"
+                              value={finding.note || ''}
+                              onChange={e => setOpexFinding(key, 'note', e.target.value)} />
+                          </div>
+                          <div>
+                            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Photo Evidence (PNG, JPG, GIF — max 5 MB)</label>
+                            {finding.image ? (
+                              <div style={{ position: 'relative', display: 'inline-block' }}>
+                                <img src={finding.image} alt="Finding" style={{ maxWidth: '100%', maxHeight: 220, borderRadius: 8, border: '1px solid var(--border)', display: 'block' }} />
+                                <button onClick={() => removeOpexImage(key)}
+                                  style={{ position: 'absolute', top: 6, right: 6, background: '#ef4444', border: 'none', borderRadius: '50%', width: 24, height: 24, color: 'white', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                              </div>
+                            ) : (
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem 1rem', borderRadius: 8, border: '1.5px dashed #cbd5e1', cursor: 'pointer', background: 'white', fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                                📷 Click to attach photo
+                                <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleOpexImageUpload(key, e)} />
+                              </label>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
           </div>
 
-          {opexChecklist.map(cat => (
-            <div key={cat.category} className="card" style={{ overflow: 'hidden' }}>
-              <div style={{ padding: '0.75rem 1.25rem', background: '#0f2044' }}>
-                <span style={{ color: 'white', fontWeight: 800, fontSize: '0.875rem' }}>{cat.category}</span>
-              </div>
-              {cat.items.map((item, i) => {
-                const key = `${cat.category}-${i}`;
-                return (
-                  <button key={i} onClick={() => toggleOpex(cat.category, i)}
-                    style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0.75rem 1.25rem', width: '100%', textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', borderBottom: i < cat.items.length - 1 ? '1px solid var(--border)' : 'none', transition: 'background 0.15s' }}
-                    onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'none'}>
-                    <div style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, border: `2px solid ${opexChecks[key] ? '#0d9488' : '#e2e8f0'}`, background: opexChecks[key] ? '#0d9488' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.75rem', fontWeight: 700, transition: 'all 0.2s' }}>
-                      {opexChecks[key] && '✓'}
-                    </div>
-                    <span style={{ fontSize: '0.875rem', color: opexChecks[key] ? '#94a3b8' : 'var(--text-secondary)', textDecoration: opexChecks[key] ? 'line-through' : 'none' }}>{item}</span>
-                  </button>
-                );
-              })}
+          {/* ── Right: audit history ── */}
+          <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="card" style={{ padding: '1.125rem' }}>
+              <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px', fontSize: '0.9rem' }}>📋 Audit History</h4>
+              {opexHistory.length === 0 ? (
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', margin: '1.5rem 0' }}>No audits saved yet. Complete the checklist and click Save Audit.</p>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {opexHistory.map(record => {
+                    const scoreColor = record.score >= 80 ? '#0d9488' : record.score >= 60 ? '#f59e0b' : '#ef4444';
+                    const scoreBg    = record.score >= 80 ? '#f0fdfa' : record.score >= 60 ? '#fffbeb' : '#fef2f2';
+                    const isExp = opexExpandedAudit === record.id;
+                    const dateStr = new Date(record.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                    return (
+                      <div key={record.id} style={{ border: '1px solid var(--border)', borderRadius: 10, overflow: 'hidden' }}>
+                        <div style={{ padding: '0.75rem', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-primary)', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{record.area}</p>
+                            <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>{dateStr}</p>
+                          </div>
+                          <span style={{ background: scoreBg, color: scoreColor, fontWeight: 800, fontSize: '0.875rem', borderRadius: 8, padding: '2px 10px', border: `1px solid ${scoreColor}33`, flexShrink: 0 }}>{record.score}%</span>
+                        </div>
+                        <div style={{ display: 'flex', borderTop: '1px solid var(--border)' }}>
+                          <button onClick={() => loadOpexAudit(record)}
+                            style={{ flex: 1, padding: '0.4rem', fontSize: '0.72rem', fontWeight: 700, background: 'none', border: 'none', borderRight: '1px solid var(--border)', cursor: 'pointer', color: '#0d9488' }}>
+                            📂 Load
+                          </button>
+                          <button onClick={() => setOpexExpandedAudit(isExp ? null : record.id)}
+                            style={{ flex: 1, padding: '0.4rem', fontSize: '0.72rem', fontWeight: 700, background: 'none', border: 'none', borderRight: '1px solid var(--border)', cursor: 'pointer', color: '#64748b' }}>
+                            {isExp ? '▲' : '▼'} Details
+                          </button>
+                          <button onClick={() => deleteOpexAudit(record.id)}
+                            style={{ flex: 1, padding: '0.4rem', fontSize: '0.72rem', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
+                            🗑
+                          </button>
+                        </div>
+                        {isExp && (
+                          <div style={{ padding: '0.75rem', borderTop: '1px solid var(--border)', background: '#f8fafc', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                            <p style={{ margin: '0 0 4px', fontWeight: 700 }}>{record.checked} / {record.total} items completed</p>
+                            {Object.keys(record.findings || {}).length > 0 && (
+                              <p style={{ margin: 0, color: '#b45309' }}>📝 {Object.keys(record.findings).length} note(s) recorded</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
-          ))}
-          <button className="btn-primary" onClick={saveOpex} disabled={saving}>{saving ? 'Saving…' : 'Save Checklist'}</button>
+          </div>
         </div>
       )}
     </div>
