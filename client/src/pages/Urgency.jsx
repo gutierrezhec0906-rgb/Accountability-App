@@ -47,6 +47,9 @@ export default function Urgency() {
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
   const [confirm, setConfirm] = useState(null); // { missing: 'team'|'individual'|'both' }
+  const [reflectionRecords, setReflectionRecords] = useState([]);
+  const [savingReflection, setSavingReflection] = useState(false);
+  const [expandedReflection, setExpandedReflection] = useState(null);
 
   // Load saved data on mount
   useEffect(() => {
@@ -57,6 +60,7 @@ export default function Urgency() {
         if (snap.exists()) {
           const data = snap.data();
           if (data.urgencyRecords) setRecords(data.urgencyRecords);
+          if (data.urgencyReflections) setReflectionRecords(data.urgencyReflections);
         }
       } catch (e) { console.error(e); }
     }
@@ -150,6 +154,34 @@ export default function Urgency() {
       setTimeout(() => setToast(''), 3000);
     }
     setSaving(false);
+  }
+
+  const answeredCount = Object.values(answers).filter(a => a && a.trim().length > 0).length;
+  const allReflectionsComplete = answeredCount === reflectionQuestions.length;
+
+  async function saveReflection() {
+    if (!currentUser || !allReflectionsComplete) return;
+    setSavingReflection(true);
+    const now = new Date().toISOString();
+    const record = {
+      id: now,
+      savedAt: now,
+      answers: reflectionQuestions.map((q, i) => ({ question: q, answer: answers[i] || '' })),
+    };
+    const updated = [record, ...reflectionRecords].slice(0, 3);
+    try {
+      await setDoc(doc(db, 'users', currentUser.uid), { urgencyReflections: updated }, { merge: true });
+      setReflectionRecords(updated);
+      setAnswers({});
+      setReflectionIdx(0);
+      setToast('Reflection saved!');
+      setTimeout(() => setToast(''), 3000);
+    } catch (e) {
+      console.error(e);
+      setToast('Save failed.');
+      setTimeout(() => setToast(''), 3000);
+    }
+    setSavingReflection(false);
   }
 
   function loadRecord(rec) {
@@ -338,18 +370,88 @@ export default function Urgency() {
 
       {/* Reflection */}
       <div style={{ borderRadius: 16, padding: '1.5rem', background: 'linear-gradient(135deg,#f0fdfa,#ccfbf1)', border: '1px solid #bbf7d0' }}>
-        <h3 style={{ fontWeight: 800, color: '#166534', margin: '0 0 4px', fontSize: '1rem' }}>Daily Reflection Prompt</h3>
-        <p style={{ fontSize: '0.78rem', color: '#15803d', margin: '0 0 14px' }}>Take 2 minutes to reflect on urgency</p>
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 14 }}>
+          <div>
+            <h3 style={{ fontWeight: 800, color: '#166534', margin: '0 0 2px', fontSize: '1rem' }}>Daily Reflection Prompt</h3>
+            <p style={{ fontSize: '0.78rem', color: '#15803d', margin: 0 }}>Take 2 minutes to reflect on urgency</p>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: '0.75rem', color: '#15803d', fontWeight: 700 }}>
+              {answeredCount}/{reflectionQuestions.length} answered
+            </span>
+            <button onClick={saveReflection} disabled={savingReflection || !allReflectionsComplete}
+              style={{ padding: '0.4rem 1rem', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 700, border: 'none', cursor: allReflectionsComplete ? 'pointer' : 'not-allowed',
+                background: allReflectionsComplete ? '#166534' : '#a7f3d0', color: 'white', opacity: allReflectionsComplete ? 1 : 0.7, transition: 'all 0.15s' }}>
+              {savingReflection ? 'Saving…' : '💾 Save Reflection'}
+            </button>
+          </div>
+        </div>
+
+        {/* Progress dots */}
+        <div style={{ display: 'flex', gap: 5, marginBottom: 14, flexWrap: 'wrap' }}>
+          {reflectionQuestions.map((_, i) => {
+            const done = answers[i] && answers[i].trim().length > 0;
+            return (
+              <button key={i} onClick={() => setReflectionIdx(i)}
+                style={{ width: 26, height: 26, borderRadius: '50%', border: 'none', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 800, transition: 'all 0.15s',
+                  background: i === reflectionIdx ? '#166534' : done ? '#6ee7b7' : 'white',
+                  color: i === reflectionIdx ? 'white' : done ? '#065f46' : '#94a3b8',
+                  boxShadow: i === reflectionIdx ? '0 2px 6px rgba(22,101,52,0.35)' : 'none' }}>
+                {i + 1}
+              </button>
+            );
+          })}
+        </div>
+
         <div style={{ background: 'white', borderRadius: 12, padding: '1rem', marginBottom: '0.875rem', boxShadow: '0 1px 4px rgba(15,32,68,0.06)' }}>
           <p style={{ fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.6 }}>"{reflectionQuestions[reflectionIdx]}"</p>
         </div>
-        <textarea className="input" rows={3} placeholder="Write your reflection here..." value={answers[reflectionIdx] || ''} onChange={e => setAnswers(a => ({ ...a, [reflectionIdx]: e.target.value }))} style={{ marginBottom: '0.875rem', background: 'white' }} />
+        <textarea className="input" rows={3} placeholder="Write your reflection here..." value={answers[reflectionIdx] || ''}
+          onChange={e => setAnswers(a => ({ ...a, [reflectionIdx]: e.target.value }))}
+          style={{ marginBottom: '0.875rem', background: 'white' }} />
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button className="btn-secondary" onClick={() => setReflectionIdx(i => (i - 1 + reflectionQuestions.length) % reflectionQuestions.length)}>← Previous</button>
           <button className="btn-primary" onClick={() => setReflectionIdx(i => (i + 1) % reflectionQuestions.length)}>Next →</button>
           <span style={{ fontSize: '0.75rem', color: '#15803d', marginLeft: 'auto', fontWeight: 600 }}>{reflectionIdx + 1}/{reflectionQuestions.length}</span>
         </div>
+
+        {!allReflectionsComplete && answeredCount > 0 && (
+          <p style={{ fontSize: '0.72rem', color: '#6b7280', marginTop: 10, marginBottom: 0, textAlign: 'center' }}>
+            Answer all 8 questions to unlock Save
+          </p>
+        )}
       </div>
+
+      {/* Reflection history */}
+      {reflectionRecords.length > 0 && (
+        <div className="card" style={{ padding: '1rem 1.25rem', marginTop: '1.25rem' }}>
+          <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.9rem' }}>Reflection Records (last 3)</h4>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {reflectionRecords.map((rec, i) => (
+              <div key={rec.id} style={{ borderRadius: 10, border: `1px solid ${i === 0 ? '#bae6fd' : '#e2e8f0'}`, overflow: 'hidden' }}>
+                <button onClick={() => setExpandedReflection(expandedReflection === rec.id ? null : rec.id)}
+                  style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.65rem 0.875rem', background: i === 0 ? '#f0f9ff' : '#f8fafc', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {i === 0 && <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#0284c7', color: 'white', padding: '1px 7px', borderRadius: 9999 }}>Latest</span>}
+                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)' }}>{fmtDate(rec.savedAt)}</span>
+                  </div>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{expandedReflection === rec.id ? '▲ Hide' : '▼ View answers'}</span>
+                </button>
+                {expandedReflection === rec.id && (
+                  <div style={{ padding: '0.75rem 0.875rem', background: 'white', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {rec.answers.map((qa, j) => (
+                      <div key={j} style={{ borderLeft: '3px solid #6ee7b7', paddingLeft: '0.75rem' }}>
+                        <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#166534', margin: '0 0 3px' }}>Q{j + 1}: {qa.question}</p>
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>{qa.answer}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
