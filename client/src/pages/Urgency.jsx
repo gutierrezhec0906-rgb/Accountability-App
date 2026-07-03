@@ -234,12 +234,12 @@ export default function Urgency() {
             <div style={{ background: '#ede9fe', borderRadius: 10, padding: '0.5rem 0.875rem' }}>
               <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#7c3aed', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Last Individual Save</div>
               <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#5b21b6' }}>{lastIndividual ? fmtDate(lastIndividual.savedAt) : '—'}</div>
-              {lastIndividual?.individualAvg && <div style={{ fontSize: '0.72rem', color: '#7c3aed' }}>Avg: {lastIndividual.individualAvg} / 5</div>}
+              <div style={{ fontSize: '0.72rem', color: '#7c3aed' }}>Avg: {lastIndividual?.individualAvg ?? '—'} / 5</div>
             </div>
             <div style={{ background: '#dbeafe', borderRadius: 10, padding: '0.5rem 0.875rem' }}>
               <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#1d4ed8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Last Team Save</div>
               <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#1e40af' }}>{lastTeam ? fmtDate(lastTeam.savedAt) : '—'}</div>
-              {lastTeam?.teamAvg && <div style={{ fontSize: '0.72rem', color: '#1d4ed8' }}>Avg: {lastTeam.teamAvg} / 5</div>}
+              <div style={{ fontSize: '0.72rem', color: '#1d4ed8' }}>Avg: {lastTeam?.teamAvg ?? '—'} / 5</div>
             </div>
           </div>
 
