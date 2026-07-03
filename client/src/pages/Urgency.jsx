@@ -46,6 +46,7 @@ export default function Urgency() {
   const [records, setRecords] = useState([]);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState('');
+  const [confirm, setConfirm] = useState(null); // { missing: 'team'|'individual'|'both' }
 
   // Load saved data on mount
   useEffect(() => {
@@ -89,7 +90,25 @@ export default function Urgency() {
   const lastIndividual = [...records].reverse().find(r => r.type === 'individual' || r.type === 'all');
   const lastTeam       = [...records].reverse().find(r => r.type === 'team'       || r.type === 'all');
 
+  function handleSaveClick() {
+    if (!currentUser || ratedTips.length === 0) return;
+    const individualTips = tips.filter(t => t.type === 'individual');
+    const teamTips       = tips.filter(t => t.type === 'team');
+    const indComplete  = individualTips.every(t => ratings[t.title] > 0);
+    const teamComplete = teamTips.every(t => ratings[t.title] > 0);
+    if (!indComplete && !teamComplete) {
+      setConfirm({ missing: 'both' });
+    } else if (!teamComplete) {
+      setConfirm({ missing: 'team' });
+    } else if (!indComplete) {
+      setConfirm({ missing: 'individual' });
+    } else {
+      saveRecord();
+    }
+  }
+
   async function saveRecord() {
+    setConfirm(null);
     if (!currentUser || ratedTips.length === 0) return;
     setSaving(true);
     const now = new Date().toISOString();
@@ -150,6 +169,41 @@ export default function Urgency() {
         </div>
       )}
 
+      {/* Incomplete assessment confirmation modal */}
+      {confirm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div className="card" style={{ maxWidth: 400, width: '100%', padding: '1.5rem', borderRadius: 16 }}>
+            <div style={{ fontSize: '1.75rem', marginBottom: 8 }}>⚠️</div>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 8px', fontSize: '1rem' }}>
+              {confirm.missing === 'both'
+                ? 'Individual & Team assessments incomplete'
+                : confirm.missing === 'team'
+                ? 'Team assessment not complete'
+                : 'Individual assessment not complete'}
+            </h3>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 20px', lineHeight: 1.55 }}>
+              {confirm.missing === 'both'
+                ? 'You have not rated all individual or team tips. Would you like to save anyway, or go back and complete the assessment?'
+                : confirm.missing === 'team'
+                ? 'You have not rated all team tips. Would you like to save without the complete team assessment, or go back to finish it?'
+                : 'You have not rated all individual tips. Would you like to save without completing the individual assessment, or go back to finish it?'}
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button className="btn-primary" onClick={saveRecord} style={{ flex: 1 }}>
+                Yes, Save Anyway
+              </button>
+              <button className="btn-secondary" onClick={() => {
+                setConfirm(null);
+                setFilter(confirm.missing === 'team' ? 'team' : 'individual');
+                window.scrollTo({ top: 400, behavior: 'smooth' });
+              }} style={{ flex: 1 }}>
+                {confirm.missing === 'team' ? 'Go to Team' : confirm.missing === 'individual' ? 'Go to Individual' : 'Go to Assessment'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Overall average summary */}
       <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
         <div style={{ background: avgBg, borderRadius: 14, padding: '0.875rem 1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
@@ -164,7 +218,7 @@ export default function Urgency() {
           </div>
           <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '6px 0 0' }}>{ratedTips.length} of {tips.length} tips rated</p>
         </div>
-        <button className="btn-primary" onClick={saveRecord} disabled={saving || ratedTips.length === 0}
+        <button className="btn-primary" onClick={handleSaveClick} disabled={saving || ratedTips.length === 0}
           style={{ alignSelf: 'center', padding: '0.5rem 1.25rem', opacity: ratedTips.length === 0 ? 0.5 : 1 }}>
           {saving ? 'Saving…' : '💾 Save Assessment'}
         </button>
