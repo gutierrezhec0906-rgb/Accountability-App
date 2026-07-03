@@ -14,6 +14,7 @@ const tips = [
   { title: 'Break Tasks Smaller',   desc: 'Smaller deliverables create more frequent "done" moments, sustaining urgency throughout the day.',               icon: '✂️', type: 'individual' },
   { title: 'Limit Meetings',        desc: 'Excessive meetings kill urgency. Move decision-making out of meeting rooms and into action.',                    icon: '🚫', type: 'team'       },
   { title: 'Time-Box Everything',   desc: 'Use time-boxing techniques (Pomodoro, sprints) to create artificial pressure and focused output.',              icon: '⏱', type: 'individual' },
+  { title: 'Follow Up on Delegated Tasks', desc: "Delegation without follow-up is just hope. Once you hand off a task, your job isn't done — it shifts to ensuring the work lands. Set a clear check-in point at the moment of delegation, not after. A brief \"Where are we on this?\" keeps accountability alive, surfaces blockers early, and signals that you take the commitment seriously. Leaders who follow up consistently build teams that deliver consistently.", icon: '🔁', type: 'team' },
 ];
 
 const reflectionQuestions = [
