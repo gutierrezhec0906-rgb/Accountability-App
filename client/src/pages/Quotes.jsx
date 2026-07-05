@@ -1,8 +1,7 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { logPointEvent } from '../utils/scoring';
 import PageHeader from '../components/PageHeader';
 
 const quotes = [
@@ -95,13 +94,7 @@ export default function Quotes() {
     const updated = [record, ...reflections].slice(0, 20);
     try {
       await setDoc(doc(db, 'users', currentUser.uid), { quoteReflections: updated }, { merge: true });
-      await logPointEvent(currentUser.uid, {
-        points: 5,
-        tool: 'quotes',
-        toolLabel: 'Leadership Quotes',
-        reason: `Quote reflection completed: "${quotes[selectedQuoteIdx].author}" — action committed`,
-        date: today,
-      });
+      await updateDoc(doc(db, 'users', currentUser.uid), { bonusPoints: increment(5) });
       setReflections(updated);
       setConnection('');
       setAction('');

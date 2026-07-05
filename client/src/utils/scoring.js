@@ -72,6 +72,7 @@ export async function calculateScore(uid) {
   const sessions   = sessionsSnap.docs.map(d => d.data());
   const goals      = goalsSnap.docs.map(d => d.data());
   const penaltyPts = userSnap.data()?.penaltyPoints || 0;
+  const bonusPts   = userSnap.data()?.bonusPoints   || 0;
 
   // --- Breadth (0-20) ---
   const uniqueTools = new Set(sessions.map(s => s.tool));
@@ -104,7 +105,7 @@ export async function calculateScore(uid) {
   const completedGoals = goals.filter(g => g.status === 'completed').length;
   const smartScore = Math.min(activeGoals * 2 + completedGoals * 4, 10);
 
-  const total = Math.round(Math.max(0, Math.min(100, breadth + frequency + depth + quality + evidence + smartScore - penaltyPts)));
+  const total = Math.round(Math.max(0, Math.min(100, breadth + frequency + depth + quality + evidence + smartScore + bonusPts - penaltyPts)));
 
   const breakdown = {
     breadth:   Math.round(breadth),
