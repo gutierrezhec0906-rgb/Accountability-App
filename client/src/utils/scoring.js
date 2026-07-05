@@ -1,5 +1,9 @@
-import { collection, query, where, getDocs, getDoc, setDoc, addDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
+import { getDoc, setDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
+
+// Kept for import compatibility — standalone collections are blocked by Firestore rules,
+// so this is a no-op. Points are tracked via users/{uid}.bonusPoints instead.
+export async function logPointEvent() {}
 
 export const TOOL_WEIGHTS = {
   'coaching':        3,
@@ -23,23 +27,6 @@ export const TOOL_WEIGHTS = {
 
 const TOTAL_TOOLS = Object.keys(TOOL_WEIGHTS).length;
 
-const CATEGORY_META = {
-  breadth:   { label: 'Tool Diversity',  tool: 'App Usage',     gainReason: 'You used more tools across the app',            lossReason: 'Fewer distinct tools used recently' },
-  frequency: { label: 'Consistency',     tool: 'App Usage',     gainReason: 'More sessions logged in the last 30 days',      lossReason: 'Fewer sessions in the last 30 days' },
-  depth:     { label: 'Session Depth',   tool: 'App Usage',     gainReason: 'Spending more quality time per session',        lossReason: 'Sessions are shorter on average' },
-  quality:   { label: 'Entry Quality',   tool: 'SMART Goals',   gainReason: 'SMART goal entries are more detailed',          lossReason: 'SMART goal entries are less complete' },
-  smart:     { label: 'SMART Goals',     tool: 'SMART Goals',   gainReason: 'More active or completed SMART goals',          lossReason: 'Fewer active or completed SMART goals' },
-  evidence:  { label: 'Evidence & AI',   tool: 'Evidence',      gainReason: 'Evidence attachments improved',                 lossReason: 'Evidence score decreased' },
-};
-
-function depthMultiplier(seconds) {
-  if (seconds < 60)   return 0;
-  if (seconds < 180)  return 0.2;
-  if (seconds < 600)  return 0.6;
-  if (seconds < 1800) return 1.0;
-  return 1.2;
-}
-
 function fieldQuality(text = '') {
   const words = text.trim().split(/\s+/).filter(Boolean).length;
   if (words === 0)  return 0;
@@ -49,46 +36,38 @@ function fieldQuality(text = '') {
   return 1.0;
 }
 
-export async function logPointEvent(uid, { points, tool, toolLabel, reason, date }) {
-  const today = date || new Date().toISOString().split('T')[0];
-  await addDoc(collection(db, 'pointsLog'), {
-    uid,
-    points,
-    tool,
-    toolLabel,
-    reason,
-    date: today,
-    createdAt: serverTimestamp(),
-  });
-}
-
 export async function calculateScore(uid) {
-  const [sessionsSnap, goalsSnap, userSnap] = await Promise.all([
-    getDocs(query(collection(db, 'toolSessions'), where('uid', '==', uid))),
-    getDocs(query(collection(db, 'smartGoals'),   where('uid', '==', uid))),
-    getDoc(doc(db, 'users', uid)),
-  ]);
+  const userSnap = await getDoc(doc(db, 'users', uid));
+  if (!userSnap.exists()) throw new Error('User not found');
+  const data = userSnap.data();
 
-  const sessions   = sessionsSnap.docs.map(d => d.data());
-  const goals      = goalsSnap.docs.map(d => d.data());
-  const penaltyPts = userSnap.data()?.penaltyPoints || 0;
-  const bonusPts   = userSnap.data()?.bonusPoints   || 0;
+  const penaltyPts = data.penaltyPoints || 0;
+  const bonusPts   = data.bonusPoints   || 0;
 
-  // --- Breadth (0-20) ---
-  const uniqueTools = new Set(sessions.map(s => s.tool));
+  // --- Breadth (0-20): distinct tools used, stored in toolSessions array on user doc ---
+  const toolSessions = data.toolSessions || [];
+  const uniqueTools  = new Set(toolSessions.map(s => s.tool));
   const breadth = Math.min((uniqueTools.size / TOTAL_TOOLS) * 20 * 1.5, 20);
 
-  // --- Frequency (0-20) ---
-  const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const recentSessions = sessions.filter(s => s.openedAt >= thirtyDaysAgo);
+  // --- Frequency (0-20): sessions in last 30 days ---
+  const thirtyDaysAgo   = Date.now() - 30 * 24 * 60 * 60 * 1000;
+  const recentSessions  = toolSessions.filter(s => (s.openedAt || 0) >= thirtyDaysAgo);
   const frequency = Math.min((recentSessions.length / 20) * 20, 20);
 
-  // --- Depth (0-15) ---
-  const depthScores = sessions.map(s => depthMultiplier(s.durationSeconds || 0));
+  // --- Depth (0-15): avg time per session ---
+  function depthMult(sec) {
+    if (sec < 60)   return 0;
+    if (sec < 180)  return 0.2;
+    if (sec < 600)  return 0.6;
+    if (sec < 1800) return 1.0;
+    return 1.2;
+  }
+  const depthScores = toolSessions.map(s => depthMult(s.durationSeconds || 0));
   const avgDepth = depthScores.length ? depthScores.reduce((a, b) => a + b, 0) / depthScores.length : 0;
   const depth = avgDepth * 15;
 
-  // --- Quality (0-25) ---
+  // --- Quality (0-25): SMART goal entry completeness ---
+  const goals = data.smartGoals || [];
   const SMART_FIELDS = ['specific', 'measurable', 'achievable', 'relevant', 'timeBound'];
   const goalQualities = goals.map(g => {
     const scores = SMART_FIELDS.map(f => fieldQuality(g[f] || ''));
@@ -97,15 +76,17 @@ export async function calculateScore(uid) {
   const avgQuality = goalQualities.length ? goalQualities.reduce((a, b) => a + b, 0) / goalQualities.length : 0;
   const quality = avgQuality * 25;
 
-  // --- Evidence (0-10) ---
+  // --- Evidence (0-10) — placeholder ---
   const evidence = 0;
 
-  // --- SMART Goals (0-10) ---
+  // --- SMART Goals (0-10): active + completed counts ---
   const activeGoals    = goals.filter(g => g.status === 'active').length;
   const completedGoals = goals.filter(g => g.status === 'completed').length;
   const smartScore = Math.min(activeGoals * 2 + completedGoals * 4, 10);
 
-  const total = Math.round(Math.max(0, Math.min(100, breadth + frequency + depth + quality + evidence + smartScore + bonusPts - penaltyPts)));
+  const total = Math.round(Math.max(0, Math.min(100,
+    breadth + frequency + depth + quality + evidence + smartScore + bonusPts - penaltyPts
+  )));
 
   const breakdown = {
     breadth:   Math.round(breadth),
@@ -114,41 +95,22 @@ export async function calculateScore(uid) {
     quality:   Math.round(quality),
     evidence:  Math.round(evidence),
     smart:     Math.round(smartScore),
+    bonus:     Math.round(bonusPts),
   };
 
-  // Persist to user doc
+  // Persist score to user doc
   await updateDoc(doc(db, 'users', uid), {
     calculatedScore: total,
-    scoreBreakdown: breakdown,
-    scoreUpdatedAt: serverTimestamp(),
+    scoreBreakdown:  breakdown,
+    scoreUpdatedAt:  serverTimestamp(),
   });
 
-  // Daily snapshot (upsert — one per day)
+  // Daily snapshot stored inside users/{uid}.scoreHistory array (max 90 entries)
   const today = new Date().toISOString().split('T')[0];
-  const snapRef = doc(db, 'scoreHistory', `${uid}_${today}`);
-  const prevSnap = await getDoc(snapRef);
-  const prevBreakdown = prevSnap.exists() ? prevSnap.data().breakdown : null;
-
-  await setDoc(snapRef, { uid, score: total, breakdown, date: today, savedAt: serverTimestamp() }, { merge: true });
-
-  // Log individual point events by comparing to previous breakdown
-  if (prevBreakdown) {
-    const logPromises = [];
-    for (const key of Object.keys(breakdown)) {
-      const delta = breakdown[key] - (prevBreakdown[key] || 0);
-      if (delta !== 0) {
-        const meta = CATEGORY_META[key];
-        logPromises.push(logPointEvent(uid, {
-          points: delta,
-          tool: meta.tool,
-          toolLabel: meta.label,
-          reason: delta > 0 ? meta.gainReason : meta.lossReason,
-          date: today,
-        }));
-      }
-    }
-    await Promise.all(logPromises);
-  }
+  const existingHistory = data.scoreHistory || [];
+  const filtered = existingHistory.filter(h => h.date !== today);
+  const updatedHistory = [{ date: today, score: total, breakdown }, ...filtered].slice(0, 90);
+  await setDoc(doc(db, 'users', uid), { scoreHistory: updatedHistory }, { merge: true });
 
   return { total, breakdown };
 }

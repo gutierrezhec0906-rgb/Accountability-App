@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { calculateScore } from '../utils/scoring';
@@ -13,6 +13,7 @@ const BREAKDOWN_CONFIG = [
   { key: 'quality',   label: 'Entry Quality',    max: 25, icon: '✍️', desc: 'Completeness and depth of your entries' },
   { key: 'smart',     label: 'SMART Goals',      max: 10, icon: '🎯',  desc: 'Active and completed SMART goals' },
   { key: 'evidence',  label: 'Evidence & AI',    max: 10, icon: '🤖',  desc: 'Attachments and AI-assessed purposefulness (coming soon)' },
+  { key: 'bonus',     label: 'Bonus Points',     max: 20, icon: '🏆',  desc: 'Extra points from quote reflections and other daily actions' },
 ];
 
 function ScoreGauge({ score }) {
@@ -246,20 +247,12 @@ export default function Scores() {
     if (!currentUser) return;
     async function fetchHistory() {
       try {
-        const [histSnap, logSnap] = await Promise.all([
-          getDocs(query(collection(db, 'scoreHistory'), where('uid', '==', currentUser.uid))),
-          getDocs(query(collection(db, 'pointsLog'),    where('uid', '==', currentUser.uid))),
-        ]);
-        const entries = histSnap.docs.map(d => d.data());
-        entries.sort((a, b) => a.date.localeCompare(b.date));
-        setHistory(entries);
-
-        const logs = logSnap.docs.map(d => d.data());
-        logs.sort((a, b) => {
-          if (a.date !== b.date) return b.date.localeCompare(a.date);
-          return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
-        });
-        setPointsLog(logs);
+        const snap = await getDoc(doc(db, 'users', currentUser.uid));
+        if (snap.exists()) {
+          const data = snap.data();
+          const entries = (data.scoreHistory || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+          setHistory(entries);
+        }
       } catch (e) {
         console.error('history fetch error:', e);
       }
@@ -272,11 +265,11 @@ export default function Scores() {
     async function fetchTeam() {
       setLoadingTeam(true);
       try {
-        const snap = await getDocs(collection(db, 'users'));
-        const members = snap.docs
-          .map(d => ({ uid: d.id, ...d.data() }))
-          .filter(m => m.uid !== currentUser.uid && m.status === 'approved')
-          .sort((a, b) => (b.calculatedScore || 0) - (a.calculatedScore || 0));
+        const snap = await getDoc(doc(db, 'users', currentUser.uid));
+        const myTeam = snap.exists() ? (snap.data().myTeam || []) : [];
+        const members = myTeam
+          .filter(m => m.uid !== currentUser.uid)
+          .sort((a, b) => (b.score || 0) - (a.score || 0));
         setTeamScores(members);
       } catch {}
       setLoadingTeam(false);
