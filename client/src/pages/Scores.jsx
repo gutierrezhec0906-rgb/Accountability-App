@@ -220,7 +220,7 @@ function DailyMovementFeed({ logs }) {
 }
 
 export default function Scores() {
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser, userProfile, fetchProfile } = useAuth();
   const [score, setScore]           = useState(null);
   const [breakdown, setBreakdown]   = useState(null);
   const [calculating, setCalculating] = useState(false);
@@ -232,16 +232,27 @@ export default function Scores() {
 
   const canSeeTeam = userProfile?.isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager';
 
+  // Always read the latest score directly from Firestore on mount — never trust the stale userProfile cache
   useEffect(() => {
-    if (userProfile?.calculatedScore !== undefined) {
-      setScore(userProfile.calculatedScore);
-      setBreakdown(userProfile.scoreBreakdown || null);
-      if (userProfile.scoreUpdatedAt) {
-        const d = userProfile.scoreUpdatedAt.toDate?.();
-        if (d) setLastUpdated(d.toLocaleString());
-      }
+    if (!currentUser) return;
+    async function loadFreshScore() {
+      try {
+        const snap = await getDoc(doc(db, 'users', currentUser.uid));
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.calculatedScore !== undefined) {
+            setScore(data.calculatedScore);
+            setBreakdown(data.scoreBreakdown || null);
+            if (data.scoreUpdatedAt) {
+              const d = data.scoreUpdatedAt.toDate?.();
+              if (d) setLastUpdated(d.toLocaleString());
+            }
+          }
+        }
+      } catch (e) { console.error(e); }
     }
-  }, [userProfile]);
+    loadFreshScore();
+  }, [currentUser]);
 
   useEffect(() => {
     if (!currentUser) return;
@@ -284,8 +295,11 @@ export default function Scores() {
       setScore(result.total);
       setBreakdown(result.breakdown);
       setLastUpdated(new Date().toLocaleString());
+      // Refresh userProfile in context so the new score persists across navigation
+      await fetchProfile(currentUser.uid);
       toast.success('Score updated!');
     } catch (e) {
+      console.error(e);
       toast.error('Could not calculate score. Try again.');
     }
     setCalculating(false);
