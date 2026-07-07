@@ -1,126 +1,352 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 
-const WEEKS = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6', 'W7', 'W8'];
+const NUM_COLS = 8;
 
-const sampleTasks = [
-  { id: 1, name: 'Material Prep',      owner: 'Team A', weeks: { W1:100,W2:100,W3:85, W4:90, W5:0, W6:0, W7:0, W8:0 } },
-  { id: 2, name: 'Frame Assembly',     owner: 'Team B', weeks: { W1:100,W2:100,W3:100,W4:75, W5:50,W6:0, W7:0, W8:0 } },
-  { id: 3, name: 'Electrical Install', owner: 'Team C', weeks: { W1:0,  W2:100,W3:100,W4:100,W5:80,W6:60,W7:0, W8:0 } },
-  { id: 4, name: 'Quality Inspection', owner: 'Team D', weeks: { W1:0,  W2:0,  W3:100,W4:100,W5:100,W6:100,W7:50,W8:0 } },
-  { id: 5, name: 'Final Delivery',     owner: 'Team E', weeks: { W1:0,  W2:0,  W3:0,  W4:0,  W5:100,W6:100,W7:100,W8:80} },
-];
+function blankLOB(name) {
+  return {
+    id: Date.now(),
+    name: name || 'New Line of Balance',
+    createdAt: new Date().toISOString(),
+    dates: Array(NUM_COLS).fill(''),
+    tasks: [],
+  };
+}
 
-function cellColor(val) {
-  if (val === 0) return { bg: '#f1f5f9', text: '#94a3b8' };
-  if (val >= 90) return { bg: '#dcfce7', text: '#15803d' };
-  if (val >= 60) return { bg: '#fef9c3', text: '#b45309' };
-  return { bg: '#fee2e2', text: '#dc2626' };
+function blankTask() {
+  return { id: Date.now(), name: '', owner: '', cells: Array(NUM_COLS).fill('') };
+}
+
+function dateCellStyle(dateStr, cellVal) {
+  if (!dateStr || cellVal === '') return { bg: '#f1f5f9', text: '#94a3b8' };
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const due = new Date(dateStr); due.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return { bg: '#fee2e2', text: '#dc2626' };
+  if (diffDays <= 4) return { bg: '#fef9c3', text: '#b45309' };
+  return { bg: '#dcfce7', text: '#15803d' };
+}
+
+function colHeaderStyle(dateStr) {
+  if (!dateStr) return { bg: '#1e3a6e', text: 'rgba(255,255,255,0.6)' };
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const due = new Date(dateStr); due.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((due - today) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return { bg: '#dc2626', text: 'white' };
+  if (diffDays <= 4) return { bg: '#b45309', text: 'white' };
+  return { bg: '#15803d', text: 'white' };
+}
+
+function fmt(dateStr) {
+  if (!dateStr) return 'Set date';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 export default function LOB() {
-  const [tasks, setTasks] = useState(sampleTasks);
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ name: '', owner: '' });
-  const [editing, setEditing] = useState(null);
+  const { currentUser } = useAuth();
+  const [lobs, setLobs] = useState([]);
+  const [activeLobId, setActiveLobId] = useState(null);
+  const [showNewForm, setShowNewForm] = useState(false);
+  const [newLobName, setNewLobName] = useState('');
+  const [showTaskForm, setShowTaskForm] = useState(false);
+  const [taskForm, setTaskForm] = useState({ name: '', owner: '' });
+  const [editing, setEditing] = useState(null); // 'task-col' or 'date-col'
+  const [editingName, setEditingName] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  // Load from Firestore
+  useEffect(() => {
+    if (!currentUser) return;
+    (async () => {
+      const snap = await getDoc(doc(db, 'users', currentUser.uid));
+      const data = snap.data() || {};
+      const saved = data.lobRecords || [];
+      if (saved.length) {
+        setLobs(saved);
+        setActiveLobId(saved[0].id);
+      } else {
+        const first = blankLOB('My First LOB');
+        setLobs([first]);
+        setActiveLobId(first.id);
+      }
+    })();
+  }, [currentUser]);
+
+  async function persist(updatedLobs) {
+    if (!currentUser) return;
+    setSaving(true);
+    try {
+      await setDoc(doc(db, 'users', currentUser.uid), { lobRecords: updatedLobs }, { merge: true });
+    } catch {
+      toast.error('Could not save');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function updateLobs(updater) {
+    setLobs(prev => {
+      const next = updater(prev);
+      persist(next);
+      return next;
+    });
+  }
+
+  const activeLob = lobs.find(l => l.id === activeLobId) || lobs[0];
+
+  function patchActive(patch) {
+    updateLobs(prev => prev.map(l => l.id === activeLob.id ? { ...l, ...patch } : l));
+  }
+
+  function createLOB(e) {
+    e.preventDefault();
+    const lob = blankLOB(newLobName.trim() || 'New Line of Balance');
+    updateLobs(prev => [lob, ...prev]);
+    setActiveLobId(lob.id);
+    setNewLobName('');
+    setShowNewForm(false);
+    toast.success('Line of Balance created');
+  }
 
   function addTask(e) {
     e.preventDefault();
-    const weeks = Object.fromEntries(WEEKS.map(w => [w, 0]));
-    setTasks(t => [...t, { ...form, id: Date.now(), weeks }]);
-    setForm({ name: '', owner: '' });
-    setShowForm(false);
+    const task = { ...blankTask(), name: taskForm.name, owner: taskForm.owner };
+    patchActive({ tasks: [...(activeLob.tasks || []), task] });
+    setTaskForm({ name: '', owner: '' });
+    setShowTaskForm(false);
     toast.success('Task row added');
   }
 
-  function updateCell(taskId, week, val) {
-    const num = Math.min(100, Math.max(0, parseInt(val) || 0));
-    setTasks(t => t.map(task => task.id !== taskId ? task : { ...task, weeks: { ...task.weeks, [week]: num } }));
+  function updateCell(taskId, col, val) {
+    const tasks = activeLob.tasks.map(t =>
+      t.id !== taskId ? t : {
+        ...t,
+        cells: t.cells.map((c, i) => i === col ? val : c),
+      }
+    );
+    patchActive({ tasks });
   }
 
+  function updateDate(col, val) {
+    const dates = activeLob.dates.map((d, i) => i === col ? val : d);
+    patchActive({ dates });
+  }
+
+  function deleteTask(taskId) {
+    patchActive({ tasks: activeLob.tasks.filter(t => t.id !== taskId) });
+  }
+
+  if (!activeLob) return null;
+
   return (
-    <div style={{ maxWidth: 1000, margin: '0 auto' }}>
-      <PageHeader icon="📈" title="Line of Balance" subtitle="Visual production planning and schedule tracking"
-        action={<button className="btn-primary" onClick={() => setShowForm(s => !s)}>+ Add Task Row</button>} />
+    <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+      <PageHeader
+        icon="📈"
+        title="Line of Balance"
+        subtitle="Visual production planning and schedule tracking"
+        action={
+          <button className="btn-primary" onClick={() => setShowNewForm(s => !s)}>
+            + New Line of Balance
+          </button>
+        }
+      />
 
-      {/* Legend */}
-      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-        {[['≥90% On Track','#dcfce7','#15803d'],['60–89% At Risk','#fef9c3','#b45309'],['<60% Behind','#fee2e2','#dc2626'],['Not Started','#f1f5f9','#94a3b8']].map(([label,bg,text]) => (
-          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-            <div style={{ width: 14, height: 14, borderRadius: 4, background: bg, border: `1px solid ${text}30` }} />
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>{label}</span>
-          </div>
-        ))}
-      </div>
-
-      {showForm && (
+      {/* New LOB form */}
+      {showNewForm && (
         <div className="card" style={{ padding: '1.25rem', marginBottom: '1.25rem' }}>
-          <form onSubmit={addTask} style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: 160 }}>
-              <label className="label">Task Name</label>
-              <input className="input" required value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Painting" />
-            </div>
-            <div style={{ flex: 1, minWidth: 160 }}>
-              <label className="label">Owner / Team</label>
-              <input className="input" value={form.owner} onChange={e => setForm(f => ({ ...f, owner: e.target.value }))} placeholder="e.g. Team F" />
+          <form onSubmit={createLOB} style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <label className="label">Line of Balance Name</label>
+              <input className="input" autoFocus value={newLobName}
+                onChange={e => setNewLobName(e.target.value)}
+                placeholder="e.g. Building A — Phase 2" />
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn-primary" type="submit">Add</button>
-              <button className="btn-secondary" type="button" onClick={() => setShowForm(false)}>Cancel</button>
+              <button className="btn-primary" type="submit">Create</button>
+              <button className="btn-secondary" type="button" onClick={() => setShowNewForm(false)}>Cancel</button>
             </div>
           </form>
         </div>
       )}
 
-      <div className="card" style={{ overflow: 'hidden' }}>
+      {/* LOB Selector */}
+      {lobs.length > 1 && (
+        <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
+          <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.6rem' }}>
+            Records — {lobs.length} Lines of Balance
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {lobs.map(lob => (
+              <button key={lob.id} onClick={() => setActiveLobId(lob.id)}
+                style={{
+                  padding: '0.4rem 1rem', borderRadius: 9999, border: 'none', cursor: 'pointer', fontWeight: 600,
+                  fontSize: '0.82rem', transition: 'all 0.15s',
+                  background: lob.id === activeLobId ? '#0f2044' : '#f1f5f9',
+                  color: lob.id === activeLobId ? 'white' : 'var(--text-secondary)',
+                }}>
+                {lob.name}
+                <span style={{ marginLeft: 6, opacity: 0.55, fontWeight: 400, fontSize: '0.72rem' }}>
+                  {new Date(lob.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Active LOB header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '1rem' }}>
+        {editingName ? (
+          <input autoFocus className="input" value={activeLob.name}
+            style={{ fontWeight: 700, fontSize: '1rem', maxWidth: 380 }}
+            onChange={e => patchActive({ name: e.target.value })}
+            onBlur={() => setEditingName(false)}
+            onKeyDown={e => e.key === 'Enter' && setEditingName(false)} />
+        ) : (
+          <h2 onClick={() => setEditingName(true)} style={{
+            fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)', margin: 0,
+            cursor: 'pointer', borderBottom: '1px dashed var(--border)', paddingBottom: 2,
+          }} title="Click to rename">{activeLob.name}</h2>
+        )}
+        {saving && <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Saving…</span>}
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
+        {[
+          ['Past Due', '#fee2e2', '#dc2626'],
+          ['Due < 5 days', '#fef9c3', '#b45309'],
+          ['Due > 6 days', '#dcfce7', '#15803d'],
+          ['No date set', '#f1f5f9', '#94a3b8'],
+        ].map(([label, bg, text]) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <div style={{ width: 14, height: 14, borderRadius: 4, background: bg, border: `1px solid ${text}40` }} />
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 500 }}>{label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* Table */}
+      <div className="card" style={{ overflow: 'hidden', marginBottom: '1rem' }}>
         <div style={{ overflowX: 'auto' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
             <thead>
               <tr style={{ background: 'linear-gradient(90deg,#0f2044,#1e3a6e)' }}>
                 <th style={{ textAlign: 'left', padding: '0.875rem 1.25rem', color: 'white', fontWeight: 700, fontSize: '0.8rem', minWidth: 180 }}>Task / Activity</th>
                 <th style={{ textAlign: 'left', padding: '0.875rem 1rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.75rem', minWidth: 110 }}>Owner</th>
-                {WEEKS.map(w => <th key={w} style={{ padding: '0.875rem 0.5rem', textAlign: 'center', color: 'white', fontWeight: 700, fontSize: '0.8rem', minWidth: 72 }}>{w}</th>)}
-                <th style={{ padding: '0.875rem 0.75rem', textAlign: 'center', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.75rem', minWidth: 56 }}>Avg</th>
+                {activeLob.dates.map((d, i) => {
+                  const s = colHeaderStyle(d);
+                  return (
+                    <th key={i} style={{ padding: '0.5rem 0.25rem', textAlign: 'center', minWidth: 90 }}>
+                      {editing === `date-${i}` ? (
+                        <input type="date" autoFocus defaultValue={d}
+                          style={{ fontSize: '0.7rem', border: 'none', borderRadius: 6, padding: '3px 4px', outline: 'none', width: 82, background: 'white', color: '#0f172a' }}
+                          onBlur={e => { updateDate(i, e.target.value); setEditing(null); }}
+                          onKeyDown={e => e.key === 'Enter' && e.target.blur()} />
+                      ) : (
+                        <button onClick={() => setEditing(`date-${i}`)}
+                          style={{
+                            background: s.bg, color: s.text, border: 'none', borderRadius: 7,
+                            padding: '4px 6px', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer',
+                            width: 80, transition: 'all 0.15s',
+                          }}>
+                          📅 {fmt(d)}
+                        </button>
+                      )}
+                    </th>
+                  );
+                })}
+                <th style={{ padding: '0.875rem 0.75rem', textAlign: 'center', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.75rem', minWidth: 56 }}>Notes</th>
+                <th style={{ padding: '0.875rem 0.5rem', minWidth: 36 }}></th>
               </tr>
             </thead>
             <tbody>
-              {tasks.map((task, ti) => {
-                const vals = WEEKS.map(w => task.weeks[w]);
-                const active = vals.filter(v => v > 0);
-                const avg = active.length ? Math.round(active.reduce((a, b) => a + b, 0) / active.length) : 0;
-                const avgC = cellColor(avg);
-                return (
-                  <tr key={task.id} style={{ borderBottom: '1px solid var(--border)', background: ti % 2 === 0 ? '#fff' : '#fafbfd' }}>
-                    <td style={{ padding: '0.75rem 1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>{task.name}</td>
-                    <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>{task.owner}</td>
-                    {WEEKS.map(w => {
-                      const c = cellColor(task.weeks[w]);
-                      return (
-                        <td key={w} style={{ padding: '0.5rem', textAlign: 'center' }}>
-                          {editing === `${task.id}-${w}` ? (
-                            <input autoFocus type="number" min={0} max={100} defaultValue={task.weeks[w]}
-                              style={{ width: 54, textAlign: 'center', border: '2px solid #0d9488', borderRadius: 7, padding: '4px', fontSize: '0.8rem', outline: 'none' }}
-                              onBlur={e => { updateCell(task.id, w, e.target.value); setEditing(null); }}
-                              onKeyDown={e => e.key === 'Enter' && e.target.blur()} />
-                          ) : (
-                            <button onClick={() => setEditing(`${task.id}-${w}`)}
-                              style={{ width: 54, height: 30, borderRadius: 8, border: 'none', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer', background: c.bg, color: c.text, transition: 'all 0.15s' }}>
-                              {task.weeks[w] > 0 ? `${task.weeks[w]}%` : '—'}
-                            </button>
-                          )}
-                        </td>
-                      );
-                    })}
-                    <td style={{ padding: '0.75rem', textAlign: 'center', fontWeight: 800, fontSize: '0.82rem', color: avgC.text }}>{avg > 0 ? `${avg}%` : '—'}</td>
-                  </tr>
-                );
-              })}
+              {(activeLob.tasks || []).map((task, ti) => (
+                <tr key={task.id} style={{ borderBottom: '1px solid var(--border)', background: ti % 2 === 0 ? '#fff' : '#fafbfd' }}>
+                  <td style={{ padding: '0.75rem 1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>{task.name}</td>
+                  <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>{task.owner}</td>
+                  {task.cells.map((cell, ci) => {
+                    const s = dateCellStyle(activeLob.dates[ci], cell);
+                    const key = `${task.id}-${ci}`;
+                    return (
+                      <td key={ci} style={{ padding: '0.4rem 0.25rem', textAlign: 'center' }}>
+                        {editing === key ? (
+                          <input autoFocus defaultValue={cell}
+                            style={{ width: 72, textAlign: 'center', border: '2px solid #0d9488', borderRadius: 7, padding: '4px', fontSize: '0.78rem', outline: 'none' }}
+                            onBlur={e => { updateCell(task.id, ci, e.target.value); setEditing(null); }}
+                            onKeyDown={e => e.key === 'Enter' && e.target.blur()} />
+                        ) : (
+                          <button onClick={() => setEditing(key)}
+                            style={{
+                              width: 72, minHeight: 30, borderRadius: 8, border: 'none', fontWeight: 600,
+                              fontSize: '0.72rem', cursor: 'pointer', transition: 'all 0.15s',
+                              background: cell !== '' ? s.bg : '#f1f5f9',
+                              color: cell !== '' ? s.text : '#94a3b8',
+                              padding: '3px 4px', wordBreak: 'break-word', lineHeight: 1.2,
+                            }}>
+                            {cell !== '' ? cell : '—'}
+                          </button>
+                        )}
+                      </td>
+                    );
+                  })}
+                  <td style={{ padding: '0.75rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.75rem' }}>—</td>
+                  <td style={{ padding: '0.5rem', textAlign: 'center' }}>
+                    <button onClick={() => deleteTask(task.id)}
+                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem', opacity: 0.7 }}
+                      title="Remove row">✕</button>
+                  </td>
+                </tr>
+              ))}
+              {(activeLob.tasks || []).length === 0 && (
+                <tr>
+                  <td colSpan={NUM_COLS + 4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                    No tasks yet — click "+ Add Task Row" below to get started.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
-      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: '0.75rem' }}>Click any cell to edit the completion percentage (0–100%)</p>
+
+      {/* Add task row */}
+      {showTaskForm ? (
+        <div className="card" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
+          <form onSubmit={addTask} style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <label className="label">Task Name</label>
+              <input className="input" required autoFocus value={taskForm.name}
+                onChange={e => setTaskForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="e.g. Painting" />
+            </div>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <label className="label">Owner / Team</label>
+              <input className="input" value={taskForm.owner}
+                onChange={e => setTaskForm(f => ({ ...f, owner: e.target.value }))}
+                placeholder="e.g. Team F" />
+            </div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button className="btn-primary" type="submit">Add Row</button>
+              <button className="btn-secondary" type="button" onClick={() => setShowTaskForm(false)}>Cancel</button>
+            </div>
+          </form>
+        </div>
+      ) : (
+        <button className="btn-secondary" onClick={() => setShowTaskForm(true)}
+          style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+          + Add Task Row
+        </button>
+      )}
+
+      <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+        Click any date header to set a due date · Click any cell to enter status · Click the LOB name above to rename
+      </p>
     </div>
   );
 }
