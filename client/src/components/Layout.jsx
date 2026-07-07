@@ -7,28 +7,78 @@ import toast from 'react-hot-toast';
 import WelcomeModal from './WelcomeModal';
 import ToolVideoModal from './ToolVideoModal';
 
+// Top-level items (always visible, not in a category)
+const topNavItems = [
+  { id: 'dashboard', label: 'Dashboard',     icon: '📊', path: '/dashboard' },
+  { id: 'team',      label: 'Team',           icon: '👥', path: '/team' },
+  { id: 'approvals', label: 'Team Approvals', icon: '✅', path: '/approvals', adminOnly: true },
+];
+
+const navCategories = [
+  {
+    id: 'model',
+    label: 'Model the Way',
+    icon: '🧭',
+    color: '#60a5fa',
+    items: [
+      { id: 'visual-board', label: 'Visual Mgmt Board', icon: '🔴', path: '/visual-board' },
+      { id: 'lob',          label: 'Line of Balance',   icon: '📈', path: '/lob' },
+      { id: 'urgency',      label: 'Sense of Urgency',  icon: '⚡', path: '/urgency' },
+      { id: 'eq-opex',      label: 'EQ & OpEx Tools',   icon: '💡', path: '/eq-opex' },
+    ],
+  },
+  {
+    id: 'inspire',
+    label: 'Inspire the Vision',
+    icon: '🔭',
+    color: '#34d399',
+    items: [
+      { id: 'vision',      label: 'Vision Builder', icon: '🔭', path: '/vision' },
+      { id: 'smart-goals', label: 'SMART Goals',    icon: '🎯', path: '/smart-goals' },
+      { id: 'mindfulness', label: 'Mindfulness',    icon: '🧘', path: '/mindfulness' },
+    ],
+  },
+  {
+    id: 'challenge',
+    label: 'Challenge the Process',
+    icon: '⚙️',
+    color: '#fbbf24',
+    items: [
+      { id: 'lean',          label: 'Lean Toolkit',    icon: '🏭', path: '/lean' },
+      { id: 'problem-solving',label: 'Problem Solving', icon: '🔍', path: '/problem-solving' },
+      { id: 'disc',          label: 'DISC Assessment', icon: '🎯', path: '/disc' },
+    ],
+  },
+  {
+    id: 'enable',
+    label: 'Enable Others to Act',
+    icon: '🤝',
+    color: '#a78bfa',
+    items: [
+      { id: 'skills',   label: 'Skills Development', icon: '⭐', path: '/skills' },
+      { id: 'training', label: 'Training Center',    icon: '🎓', path: '/training' },
+      { id: 'mentoring',label: 'Mentoring Tracker',  icon: '🫂', path: '/mentoring' },
+      { id: 'career',   label: 'Career Development', icon: '🚀', path: '/career' },
+    ],
+  },
+  {
+    id: 'encourage',
+    label: 'Encourage the Heart',
+    icon: '❤️',
+    color: '#fb7185',
+    items: [
+      { id: 'feedback', label: 'Feedback Box',     icon: '📬', path: '/feedback' },
+      { id: 'coaching', label: 'Coaching Log',     icon: '📝', path: '/coaching' },
+      { id: 'quotes',   label: 'Leadership Quotes',icon: '💬', path: '/quotes' },
+    ],
+  },
+];
+
+// Flat list for lookup (tool video, header title, etc.)
 const navItems = [
-  { id: 'dashboard',       label: 'Dashboard',           icon: '📊', path: '/dashboard' },
-  { id: 'team',            label: 'Team',                 icon: '👥', path: '/team' },
-  { id: 'approvals',       label: 'Team Approvals',       icon: '✅', path: '/approvals', adminOnly: true },
-  { id: 'visual-board',    label: 'Visual Mgmt Board',    icon: '🔴', path: '/visual-board' },
-  { id: 'quotes',          label: 'Leadership Quotes',    icon: '💬', path: '/quotes' },
-  { id: 'training',        label: 'Training Center',      icon: '🎓', path: '/training' },
-  { id: 'coaching',        label: 'Coaching Log',         icon: '📝', path: '/coaching' },
-  { id: 'smart-goals',     label: 'SMART Goals',          icon: '🎯', path: '/smart-goals' },
-  { id: 'mentoring',       label: 'Mentoring Tracker',    icon: '🤝', path: '/mentoring' },
-  { id: 'skills',          label: 'Skills Development',   icon: '⭐', path: '/skills' },
-  { id: 'lob',             label: 'Line of Balance',      icon: '📈', path: '/lob' },
-  { id: 'urgency',         label: 'Sense of Urgency',     icon: '⚡', path: '/urgency' },
-  { id: 'feedback',        label: 'Feedback Box',         icon: '📬', path: '/feedback' },
-  { id: 'problem-solving', label: 'Problem Solving',      icon: '🔍', path: '/problem-solving' },
-  { id: 'vision',          label: 'Vision Builder',       icon: '🔭', path: '/vision' },
-  { id: 'lean',            label: 'Lean Toolkit',         icon: '🏭', path: '/lean' },
-  { id: 'mindfulness',     label: 'Mindfulness',          icon: '🧘', path: '/mindfulness' },
-  { id: 'career',          label: 'Career Development',   icon: '🚀', path: '/career' },
-  { id: 'disc',            label: 'DISC Assessment',      icon: '🎯', path: '/disc' },
-  { id: 'eq-opex',         label: 'EQ & OpEx Tools',      icon: '💡', path: '/eq-opex' },
-  { id: 'scores',          label: 'Score Dashboard',      icon: '🏆', path: '/scores' },
+  ...topNavItems,
+  ...navCategories.flatMap(c => c.items),
+  { id: 'scores', label: 'Score Dashboard', icon: '🏆', path: '/scores' },
 ];
 
 const VIDEO_TOOL_IDS = new Set([
@@ -41,6 +91,9 @@ const VIDEO_TOOL_IDS = new Set([
 export default function Layout({ children }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Start all categories expanded
+  const [openCategories, setOpenCategories] = useState(() => Object.fromEntries(navCategories.map(c => [c.id, true])));
+  function toggleCategory(id) { setOpenCategories(prev => ({ ...prev, [id]: !prev[id] })); }
   const [pendingCount, setPendingCount] = useState(0);
   const [toolVideoOpen, setToolVideoOpen] = useState(false);
   const navigate = useNavigate();
@@ -108,7 +161,6 @@ export default function Layout({ children }) {
     ? currentUser.displayName.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
     : currentUser?.email?.[0]?.toUpperCase() || 'U';
 
-  const visibleNavItems = navItems.filter(item => !item.adminOnly || canApprove);
   const currentToolId = location.pathname.replace('/', '') || 'dashboard';
   const currentNavItem = navItems.find(n => n.path === location.pathname);
   const hasToolVideo = VIDEO_TOOL_IDS.has(currentToolId);
@@ -159,28 +211,83 @@ export default function Layout({ children }) {
         </div>
 
         {/* Nav */}
-        <nav style={{ flex: 1, overflowY: 'auto', padding: '0.75rem 0.625rem' }}>
-          {!collapsed && (
-            <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.65rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0.5rem 0.375rem 0.375rem', margin: 0 }}>Navigation</p>
-          )}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-            {visibleNavItems.map(item => (
-              <button
-                key={item.id}
+        <nav style={{ flex: 1, overflowY: 'auto', padding: '0.625rem 0.5rem' }}>
+
+          {/* Top items: Dashboard, Team, Approvals */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 6 }}>
+            {topNavItems.filter(item => !item.adminOnly || canApprove).map(item => (
+              <button key={item.id}
                 className={`sidebar-link ${location.pathname === item.path ? 'active' : ''}`}
                 onClick={() => { navigate(item.path); setMobileOpen(false); }}
-                title={collapsed ? item.label : ''}
-              >
+                title={collapsed ? item.label : ''}>
                 <span style={{ fontSize: '1rem', flexShrink: 0 }}>{item.icon}</span>
                 {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>}
                 {item.id === 'approvals' && pendingCount > 0 && (
-                  <span style={{ background: '#ef4444', color: 'white', borderRadius: 9999, fontSize: '0.6rem', fontWeight: 700, padding: '1px 5px', minWidth: 16, textAlign: 'center', flexShrink: 0 }}>
-                    {pendingCount}
-                  </span>
+                  <span style={{ background: '#ef4444', color: 'white', borderRadius: 9999, fontSize: '0.6rem', fontWeight: 700, padding: '1px 5px', minWidth: 16, textAlign: 'center', flexShrink: 0 }}>{pendingCount}</span>
                 )}
               </button>
             ))}
           </div>
+
+          {/* Divider */}
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '4px 0 8px' }} />
+
+          {/* Category groups */}
+          {navCategories.map(cat => {
+            const isOpen = openCategories[cat.id];
+            const hasActive = cat.items.some(i => location.pathname === i.path);
+            return (
+              <div key={cat.id} style={{ marginBottom: 4 }}>
+                {/* Category header */}
+                <button
+                  onClick={() => !collapsed && toggleCategory(cat.id)}
+                  title={collapsed ? cat.label : ''}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: 8,
+                    background: hasActive ? `${cat.color}22` : 'transparent',
+                    border: 'none', borderRadius: 8, padding: collapsed ? '0.45rem 0' : '0.45rem 0.5rem',
+                    cursor: 'pointer', justifyContent: collapsed ? 'center' : 'flex-start',
+                    transition: 'background 0.15s',
+                  }}>
+                  <span style={{ fontSize: '0.85rem', flexShrink: 0, filter: 'none' }}>{cat.icon}</span>
+                  {!collapsed && (
+                    <>
+                      <span style={{ flex: 1, fontSize: '0.7rem', fontWeight: 800, color: cat.color, textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {cat.label}
+                      </span>
+                      <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', flexShrink: 0, transition: 'transform 0.2s', transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', display: 'inline-block' }}>▼</span>
+                    </>
+                  )}
+                </button>
+
+                {/* Category items */}
+                {(isOpen || collapsed) && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 1, paddingLeft: collapsed ? 0 : 8, marginTop: 2 }}>
+                    {cat.items.map(item => (
+                      <button key={item.id}
+                        className={`sidebar-link ${location.pathname === item.path ? 'active' : ''}`}
+                        onClick={() => { navigate(item.path); setMobileOpen(false); }}
+                        title={collapsed ? item.label : ''}
+                        style={{ fontSize: '0.8rem' }}>
+                        <span style={{ fontSize: '0.875rem', flexShrink: 0 }}>{item.icon}</span>
+                        {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.8rem' }}>{item.label}</span>}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+
+          {/* Divider + Score Dashboard pinned at bottom */}
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '8px 0 6px' }} />
+          <button
+            className={`sidebar-link ${location.pathname === '/scores' ? 'active' : ''}`}
+            onClick={() => { navigate('/scores'); setMobileOpen(false); }}
+            title={collapsed ? 'Score Dashboard' : ''}>
+            <span style={{ fontSize: '1rem', flexShrink: 0 }}>🏆</span>
+            {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Score Dashboard</span>}
+          </button>
         </nav>
 
         {/* User footer */}
