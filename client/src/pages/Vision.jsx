@@ -5,6 +5,67 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
+function printVision(entry, prompts) {
+  const dateStr = entry.createdAt
+    ? new Date(entry.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+    : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+  const typeLabel = entry.mode === 'team' ? 'Team Vision Statement' : 'Personal Vision Statement';
+
+  const qaRows = prompts
+    .filter(p => entry.answers?.[p.step])
+    .map(p => `
+      <div class="qa">
+        <div class="q-label">Q${p.step} — ${p.question}</div>
+        <div class="a-text">${entry.answers[p.step]}</div>
+      </div>`)
+    .join('');
+
+  const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>${typeLabel}</title>
+  <style>
+    @page { margin: 2cm; }
+    body { font-family: Georgia, 'Times New Roman', serif; color: #1e293b; margin: 0; }
+    .header { border-bottom: 3px solid #0f2044; padding-bottom: 18px; margin-bottom: 28px; }
+    .app-name { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #64748b; margin: 0 0 6px; font-family: Helvetica, Arial, sans-serif; }
+    .type-label { font-size: 13px; font-weight: bold; color: #0d9488; letter-spacing: .08em; text-transform: uppercase; font-family: Helvetica, Arial, sans-serif; margin: 0 0 4px; }
+    .date { font-size: 12px; color: #94a3b8; font-family: Helvetica, Arial, sans-serif; margin: 0; }
+    .vision-box { background: #f0fdf4; border-left: 5px solid #0d9488; padding: 20px 24px; margin-bottom: 32px; border-radius: 4px; }
+    .open-quote { font-size: 64px; color: #0d9488; line-height: .6; display: block; margin-bottom: 8px; font-family: Georgia, serif; }
+    .vision-text { font-size: 16px; line-height: 1.75; color: #0f2044; font-style: italic; margin: 0; }
+    .qa-section-title { font-size: 12px; font-weight: bold; letter-spacing: .1em; text-transform: uppercase; color: #475569; font-family: Helvetica, Arial, sans-serif; margin: 0 0 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+    .qa { margin-bottom: 18px; padding-left: 14px; border-left: 3px solid #e2e8f0; }
+    .q-label { font-size: 11px; font-weight: bold; color: #0d9488; text-transform: uppercase; letter-spacing: .06em; font-family: Helvetica, Arial, sans-serif; margin-bottom: 4px; }
+    .a-text { font-size: 13px; color: #334155; line-height: 1.6; }
+    .footer { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 12px; font-size: 11px; color: #94a3b8; font-family: Helvetica, Arial, sans-serif; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <p class="app-name">Accountability App</p>
+    <p class="type-label">${typeLabel}</p>
+    <p class="date">Created: ${dateStr}</p>
+  </div>
+
+  <div class="vision-box">
+    <span class="open-quote">"</span>
+    <p class="vision-text">${entry.vision}"</p>
+  </div>
+
+  ${qaRows ? `<p class="qa-section-title">Reflection Questions & Answers</p>${qaRows}` : ''}
+
+  <div class="footer">Accountability App &nbsp;·&nbsp; Vision Builder &nbsp;·&nbsp; Confidential</div>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank', 'width=800,height=700');
+  win.document.write(html);
+  win.document.close();
+  win.onload = () => { win.focus(); win.print(); };
+}
+
 const personalPrompts = [
   { step: 1, question: "What kind of leader do I want to be known as in 5 years?",     placeholder: "Describe your ideal leadership identity..." },
   { step: 2, question: "What impact do I want to have on my team and organization?",    placeholder: "What change or legacy do you want to leave?" },
@@ -75,7 +136,7 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, activeTab, setActiveTab
                     </div>
                   )}
 
-                  <div style={{ display: 'flex', gap: 6 }}>
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <button onClick={() => onLoad(e)}
                       style={{ flex: 1, padding: '0.25rem 0', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #0d9488', background: 'white', color: '#0d9488', cursor: 'pointer' }}>
                       Load
@@ -83,6 +144,10 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, activeTab, setActiveTab
                     <button onClick={() => onEdit(e)}
                       style={{ flex: 1, padding: '0.25rem 0', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #0f2044', background: 'white', color: '#0f2044', cursor: 'pointer' }}>
                       ✏️ Edit
+                    </button>
+                    <button onClick={() => printVision(e, prompts)}
+                      style={{ flex: 1, padding: '0.25rem 0', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #6366f1', background: 'white', color: '#6366f1', cursor: 'pointer' }}>
+                      🖨️ Print
                     </button>
                     <button onClick={() => onDelete(e.id)}
                       style={{ padding: '0.25rem 0.5rem', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #fca5a5', background: 'white', color: '#ef4444', cursor: 'pointer' }}>
@@ -321,6 +386,10 @@ export default function Vision() {
                       <button onClick={handleSave}
                         style={{ background: '#0d9488', border: 'none', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>
                         💾 {loadedId ? 'Update Vision' : 'Save Vision'}
+                      </button>
+                      <button onClick={() => printVision({ vision, answers, mode, createdAt: new Date().toISOString() }, prompts)}
+                        style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>
+                        🖨️ Print
                       </button>
                     </div>
                   </>
