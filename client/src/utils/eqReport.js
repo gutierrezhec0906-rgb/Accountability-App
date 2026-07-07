@@ -331,7 +331,7 @@ export function generateEQReport(record) {
     pdf.setFontSize(12);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(255, 255, 255);
-    pdf.text(`${rec.icon}  ${rec.label}`, MARGIN + 12, y + 21);
+    pdf.text(rec.label, MARGIN + 12, y + 21);
 
     // Score badge in header
     const badgeLabel = `${d.avg}/5  ${getBandLabel(d.avg)}`;
