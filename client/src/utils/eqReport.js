@@ -208,7 +208,7 @@ function getBandLabel(avg) {
 
 // ─── PDF builder ────────────────────────────────────────────────────────────
 
-export function generateEQReport(record) {
+export function generateEQReport(record, personName = '', personRole = '') {
   const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
   const PAGE_W = 595;
   const MARGIN = 48;
@@ -272,7 +272,29 @@ export function generateEQReport(record) {
   pdf.setTextColor(255, 255, 255);
   pdf.text(`Overall: ${record.overall}/5`, MARGIN + 12, 159);
 
-  y = 200;
+  // Name + Role block (white card below header band)
+  y = 192;
+  if (personName || personRole) {
+    rect(MARGIN, y, CONTENT_W, 44, 8, [255, 255, 255]);
+    // thin left accent bar
+    rect(MARGIN, y, 4, 44, 2, overallColor);
+
+    if (personName) {
+      pdf.setFontSize(13);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(15, 32, 68);
+      pdf.text(personName, MARGIN + 16, y + 17);
+    }
+    if (personRole) {
+      pdf.setFontSize(10);
+      pdf.setFont('helvetica', 'normal');
+      pdf.setTextColor(100, 116, 139);
+      pdf.text(personRole, MARGIN + 16, y + 33);
+    }
+    y += 58;
+  } else {
+    y = 210;
+  }
 
   // ── SUMMARY ROW ──
   const dims = record.dimResults || [];
