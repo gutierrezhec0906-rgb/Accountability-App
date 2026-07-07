@@ -353,7 +353,7 @@ export default function LOB() {
                               color: cell !== '' ? s.text : '#94a3b8',
                               padding: '3px 4px', wordBreak: 'break-word', lineHeight: 1.2,
                             }}>
-                            {cell !== '' ? cell : '—'}
+                            {cell !== '' ? `${cell}%` : '—'}
                           </button>
                         )}
                       </td>
