@@ -95,22 +95,9 @@ function ScoreBar({ value, max = 5 }) {
   );
 }
 
-const ROLE_OPTIONS = [
-  'Team Leader',
-  'Manager',
-  'Senior Manager',
-  'Director',
-  'Individual Contributor',
-  'Team Member',
-  'Coach / Mentor',
-  'Executive',
-];
-
 export default function EQOpEx() {
   const { currentUser, userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('eq');
-  // PDF report modal
-  const [reportModal, setReportModal] = useState(null); // { rec } when open
   const [eqScores, setEqScores] = useState({});
   const [opexChecks, setOpexChecks] = useState({});
   const [opexFindings, setOpexFindings] = useState({});
@@ -381,7 +368,7 @@ export default function EQOpEx() {
                       </div>
                       {/* PDF Report button */}
                       <button
-                        onClick={() => setReportModal({ rec })}
+                        onClick={() => generateEQReport(rec, userProfile?.displayName || currentUser?.displayName || '', userProfile?.role || '')}
                         style={{ width: '100%', padding: '0.4rem', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', border: '1.5px solid #0f2044', background: '#0f2044', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.15s' }}>
                         📄 Download Recommendations Report
                       </button>
@@ -614,62 +601,6 @@ export default function EQOpEx() {
         </div>
       )}
 
-      {/* ── PDF Report Name/Role Modal ── */}
-      {reportModal && (
-        <ReportModal
-          rec={reportModal.rec}
-          defaultName={userProfile?.displayName || currentUser?.displayName || ''}
-          defaultRole={userProfile?.role || ''}
-          onClose={() => setReportModal(null)}
-          onDownload={(name, role) => {
-            generateEQReport(reportModal.rec, name, role);
-            setReportModal(null);
-          }}
-        />
-      )}
-    </div>
-  );
-}
-
-function ReportModal({ rec, defaultName, defaultRole, onClose, onDownload }) {
-  const [name, setName] = useState(defaultName);
-  const [role, setRole] = useState(ROLE_OPTIONS.includes(defaultRole) ? defaultRole : defaultRole ? '__custom__' : ROLE_OPTIONS[0]);
-  const [customRole, setCustomRole] = useState(ROLE_OPTIONS.includes(defaultRole) ? '' : defaultRole);
-
-  const effectiveRole = role === '__custom__' ? customRole : role;
-
-  return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 2000, background: 'rgba(0,0,0,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-      <div className="card" style={{ width: '100%', maxWidth: 420, padding: '2rem' }}>
-        <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '1.05rem' }}>📄 Personalize Your Report</h3>
-        <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0 0 1.5rem' }}>Your name and role will appear on the cover page of the PDF.</p>
-
-        <div style={{ marginBottom: '1rem' }}>
-          <label className="label">Full Name</label>
-          <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Maria González" autoFocus />
-        </div>
-
-        <div style={{ marginBottom: '1.5rem' }}>
-          <label className="label">Team Role</label>
-          <select className="input" value={role} onChange={e => { setRole(e.target.value); }} style={{ appearance: 'auto' }}>
-            {ROLE_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
-            <option value="__custom__">Other (type below)</option>
-          </select>
-          {role === '__custom__' && (
-            <input className="input" style={{ marginTop: 8 }} value={customRole}
-              onChange={e => setCustomRole(e.target.value)}
-              placeholder="Enter your role…" />
-          )}
-        </div>
-
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-          <button className="btn-secondary" onClick={onClose}>Cancel</button>
-          <button className="btn-primary" onClick={() => onDownload(name.trim(), effectiveRole.trim())}
-            disabled={!name.trim() || !effectiveRole.trim()}>
-            Download PDF
-          </button>
-        </div>
-      </div>
     </div>
   );
 }
