@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -215,6 +215,7 @@ export default function Feedback() {
   const [received, setReceived] = useState([]);
   const [requests, setRequests] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [bonusDates, setBonusDates] = useState({ given: null, requested: null });
 
   const myName = userProfile?.displayName || currentUser?.displayName || currentUser?.email || '';
 
@@ -228,11 +229,22 @@ export default function Feedback() {
           setTeamMembers((data.myTeam || []).filter(m => m.uid !== currentUser.uid));
           setGiven(data.feedbackEntries || []);
           setRequests(data.feedbackRequests || []);
+          setBonusDates({ given: data.feedbackBonusGivenDate || null, requested: data.feedbackBonusRequestedDate || null });
         }
       } catch (e) { console.error(e); }
     }
     fetchAll();
   }, [currentUser]);
+
+  async function awardBonusIfNew(type) {
+    const today = new Date().toISOString().split('T')[0];
+    const field = type === 'given' ? 'feedbackBonusGivenDate' : 'feedbackBonusRequestedDate';
+    const already = type === 'given' ? bonusDates.given : bonusDates.requested;
+    if (already === today) return false;
+    await updateDoc(doc(db, 'users', currentUser.uid), { [field]: today, bonusPoints: increment(5) });
+    setBonusDates(d => ({ ...d, [type]: today }));
+    return true;
+  }
 
   async function persist(entries, reqs) {
     const update = {};
@@ -262,7 +274,8 @@ export default function Feedback() {
         createdAt: { seconds: Math.floor(Date.now() / 1000) },
       };
       await persist([newEntry, ...given], undefined);
-      toast.success('Feedback submitted!');
+      const earned = await awardBonusIfNew('given');
+      toast.success(earned ? 'Feedback submitted! +5 points earned 🏆' : 'Feedback submitted!');
       setForm({ type: 'Peer', from: '', to: '', anonymous: false, category: 'Leadership', rating: 5, text: '' });
       setShowForm(false);
     } catch (e) { toast.error('Submit failed: ' + (e?.message || e)); }
@@ -294,7 +307,9 @@ export default function Feedback() {
     });
     try {
       await persist(undefined, [...newReqs, ...requests]);
-      toast.success(`Feedback request${newReqs.length > 1 ? 's' : ''} sent to ${newReqs.map(r => r.to).join(', ')}`);
+      const earned = await awardBonusIfNew('requested');
+      const names = newReqs.map(r => r.to).join(', ');
+      toast.success(`Request${newReqs.length > 1 ? 's' : ''} sent to ${names}${earned ? ' · +5 points 🏆' : ''}`);
     } catch { toast.error('Could not save requests'); }
   }
 
