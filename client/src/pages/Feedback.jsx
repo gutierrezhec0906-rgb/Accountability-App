@@ -16,37 +16,73 @@ function StarRow({ rating }) {
   );
 }
 
-function FeedbackPanel({ given, received, onDelete }) {
+function Avatar({ name }) {
+  const initials = name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
+  const colors = ['#0d9488', '#0f2044', '#7c3aed', '#be185d', '#b45309', '#065f46'];
+  const bg = colors[(name?.charCodeAt(0) || 0) % colors.length];
+  return (
+    <div style={{ width: 36, height: 36, borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: '0.78rem', flexShrink: 0 }}>
+      {initials}
+    </div>
+  );
+}
+
+function FeedbackPanel({ given, received, requests, onDelete, onDismissRequest }) {
   const [tab, setTab] = useState('given');
-  const entries = tab === 'given' ? given : received;
 
   return (
     <div style={{ width: 270, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
-      {/* Header */}
       <div style={{ background: '#0f2044', borderRadius: '12px 12px 0 0', padding: '0.75rem 1rem' }}>
         <p style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem', margin: '0 0 8px' }}>📋 Feedback History</p>
-        <div style={{ display: 'flex', gap: 6 }}>
-          {['given', 'received'].map(t => (
+        <div style={{ display: 'flex', gap: 4 }}>
+          {['given', 'received', 'requests'].map(t => (
             <button key={t} onClick={() => setTab(t)}
-              style={{ flex: 1, fontSize: '0.7rem', fontWeight: 700, padding: '3px 0', borderRadius: 6, border: 'none', cursor: 'pointer', background: tab === t ? '#0d9488' : 'rgba(255,255,255,0.12)', color: 'white' }}>
-              {t === 'given' ? `Given (${given.length})` : `Received (${received.length})`}
+              style={{ flex: 1, fontSize: '0.62rem', fontWeight: 700, padding: '3px 0', borderRadius: 6, border: 'none', cursor: 'pointer',
+                background: tab === t ? '#0d9488' : 'rgba(255,255,255,0.12)', color: 'white' }}>
+              {t === 'given' ? `Given (${given.length})` : t === 'received' ? `Rcvd (${received.length})` : `Req (${requests.filter(r=>r.status==='pending').length})`}
             </button>
           ))}
         </div>
       </div>
 
-      {/* Entries */}
       <div style={{ flex: 1, border: '1px solid #e8edf5', borderTop: 'none', borderRadius: '0 0 12px 12px', background: '#fafbfc', overflow: 'hidden' }}>
-        {entries.length === 0 ? (
-          <div style={{ padding: '1.5rem 1rem', textAlign: 'center' }}>
-            <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: 0, fontStyle: 'italic' }}>
-              No {tab} feedback yet.
-            </p>
+        {tab === 'requests' ? (
+          <div style={{ display: 'flex', flexDirection: 'column' }}>
+            {requests.length === 0 ? (
+              <div style={{ padding: '1.5rem 1rem', textAlign: 'center' }}>
+                <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: 0, fontStyle: 'italic' }}>No pending requests.</p>
+              </div>
+            ) : requests.map((r, i) => (
+              <div key={r.id} style={{ padding: '0.75rem 1rem', borderBottom: i < requests.length - 1 ? '1px solid #e8edf5' : 'none', background: 'white' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 700, fontSize: '0.78rem', color: '#1e293b', margin: '0 0 2px' }}>To: {r.to}</p>
+                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 3 }}>
+                      <span style={{ background: '#fef3c7', color: '#b45309', borderRadius: 9999, padding: '1px 6px', fontSize: '0.62rem', fontWeight: 700 }}>{r.category}</span>
+                      <span style={{ background: r.status === 'pending' ? '#fef9c3' : '#dcfce7', color: r.status === 'pending' ? '#b45309' : '#15803d', borderRadius: 9999, padding: '1px 6px', fontSize: '0.62rem', fontWeight: 700 }}>
+                        {r.status === 'pending' ? '⏳ Pending' : '✅ Done'}
+                      </span>
+                    </div>
+                    {r.note && <p style={{ fontSize: '0.68rem', color: '#64748b', margin: '3px 0 0', lineHeight: 1.4 }}>{r.note}</p>}
+                    <p style={{ fontSize: '0.65rem', color: '#94a3b8', margin: '3px 0 0' }}>{r.date}</p>
+                  </div>
+                  {r.status === 'pending' && (
+                    <button onClick={() => onDismissRequest(r.id)}
+                      title="Mark as fulfilled"
+                      style={{ background: 'none', border: 'none', color: '#0d9488', cursor: 'pointer', fontSize: '0.75rem', padding: '0 2px', flexShrink: 0 }}>✓</button>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {entries.map((f, i) => (
-              <div key={f.id} style={{ padding: '0.75rem 1rem', borderBottom: i < entries.length - 1 ? '1px solid #e8edf5' : 'none', background: 'white' }}>
+            {(tab === 'given' ? given : received).length === 0 ? (
+              <div style={{ padding: '1.5rem 1rem', textAlign: 'center' }}>
+                <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: 0, fontStyle: 'italic' }}>No {tab} feedback yet.</p>
+              </div>
+            ) : (tab === 'given' ? given : received).map((f, i) => (
+              <div key={f.id} style={{ padding: '0.75rem 1rem', borderBottom: i < given.length - 1 ? '1px solid #e8edf5' : 'none', background: 'white' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
                   <div>
                     <p style={{ fontWeight: 700, fontSize: '0.78rem', color: '#1e293b', margin: '0 0 1px' }}>
@@ -72,48 +108,140 @@ function FeedbackPanel({ given, received, onDelete }) {
   );
 }
 
+// ── Request Feedback Modal ──
+function RequestModal({ teamMembers, onClose, onSave }) {
+  const [selected, setSelected] = useState([]);
+  const [category, setCategory] = useState('General');
+  const [note, setNote] = useState('');
+
+  function toggleMember(uid) {
+    setSelected(s => s.includes(uid) ? s.filter(id => id !== uid) : [...s, uid]);
+  }
+
+  function handleSend() {
+    if (selected.length === 0) return toast.error('Select at least one person');
+    onSave(selected, category, note.trim());
+    onClose();
+  }
+
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+      <div className="card" style={{ maxWidth: 500, width: '100%', padding: '1.5rem', borderRadius: 18, maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
+        {/* Header */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <div>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1.05rem' }}>📨 Request Feedback</h3>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '3px 0 0' }}>Select who you want feedback from</p>
+          </div>
+          <button onClick={onClose} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, padding: '0.3rem 0.75rem', cursor: 'pointer', fontWeight: 700, color: '#475569' }}>✕</button>
+        </div>
+
+        <div style={{ overflowY: 'auto', flex: 1, display: 'flex', flexDirection: 'column', gap: 16 }}>
+          {/* Team member picker */}
+          <div>
+            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 8 }}>
+              Team Members ({selected.length} selected)
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 10, padding: '0.5rem' }}>
+              {teamMembers.length === 0 ? (
+                <p style={{ color: '#94a3b8', fontSize: '0.8rem', padding: '0.5rem', margin: 0 }}>No team members found.</p>
+              ) : teamMembers.map(m => {
+                const checked = selected.includes(m.uid);
+                return (
+                  <label key={m.uid}
+                    style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.5rem 0.625rem', borderRadius: 8, cursor: 'pointer', background: checked ? '#f0fdfa' : 'transparent', border: `1px solid ${checked ? '#0d9488' : 'transparent'}`, transition: 'all 0.15s' }}>
+                    <input type="checkbox" checked={checked} onChange={() => toggleMember(m.uid)} style={{ width: 16, height: 16, accentColor: '#0d9488', flexShrink: 0 }} />
+                    <Avatar name={m.displayName} />
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)', margin: 0 }}>{m.displayName || m.email}</p>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>{m.role || 'Team Member'}</p>
+                    </div>
+                    {checked && <span style={{ fontSize: '0.8rem', color: '#0d9488', fontWeight: 700 }}>✓</span>}
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Category */}
+          <div>
+            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
+              Feedback Topic
+            </label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {categories.map(c => (
+                <button key={c} onClick={() => setCategory(c)}
+                  style={{ padding: '0.3rem 0.75rem', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                    background: category === c ? '#0f2044' : '#f1f5f9', color: category === c ? 'white' : '#475569' }}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Optional note */}
+          <div>
+            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
+              Add a note <span style={{ fontWeight: 400, textTransform: 'none' }}>(optional)</span>
+            </label>
+            <textarea className="input" rows={3}
+              placeholder="e.g. I'd appreciate your feedback on my communication style during last week's project..."
+              value={note} onChange={e => setNote(e.target.value)}
+              style={{ resize: 'vertical' }} />
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+          <button className="btn-primary" onClick={handleSend} style={{ flex: 1 }}
+            disabled={selected.length === 0}>
+            📨 Send Request{selected.length > 1 ? `s (${selected.length})` : ''}
+          </button>
+          <button className="btn-secondary" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Feedback() {
   const { currentUser, userProfile } = useAuth();
-  const [showForm, setShowForm] = useState(false);
-  const [filterType, setFilterType] = useState('All');
+  const [showForm, setShowForm]       = useState(false);
+  const [showRequest, setShowRequest] = useState(false);
+  const [filterType, setFilterType]   = useState('All');
   const [form, setForm] = useState({ type: 'Peer', from: '', to: '', anonymous: false, category: 'Leadership', rating: 5, text: '' });
   const [teamMembers, setTeamMembers] = useState([]);
   const [given,    setGiven]    = useState([]);
   const [received, setReceived] = useState([]);
+  const [requests, setRequests] = useState([]);
   const [submitting, setSubmitting] = useState(false);
 
   const myName = userProfile?.displayName || currentUser?.displayName || currentUser?.email || '';
 
-  // Fetch team members from users/{uid}.myTeam
   useEffect(() => {
-    async function fetchTeam() {
+    async function fetchAll() {
       if (!currentUser) return;
       try {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
-        const stored = snap.exists() ? (snap.data().myTeam || []) : [];
-        setTeamMembers(stored.filter(m => m.uid !== currentUser.uid));
-      } catch {}
+        if (snap.exists()) {
+          const data = snap.data();
+          setTeamMembers((data.myTeam || []).filter(m => m.uid !== currentUser.uid));
+          setGiven(data.feedbackEntries || []);
+          setRequests(data.feedbackRequests || []);
+        }
+      } catch (e) { console.error(e); }
     }
-    fetchTeam();
+    fetchAll();
   }, [currentUser]);
 
-  // Fetch feedback given and received
-  async function fetchFeedback() {
-    if (!currentUser) return;
-    try {
-      const snap = await getDoc(doc(db, 'users', currentUser.uid));
-      const entries = snap.exists() ? (snap.data().feedbackEntries || []) : [];
-      setGiven(entries);
-      setReceived([]);
-    } catch (e) { console.error('fetchFeedback:', e); }
+  async function persist(entries, reqs) {
+    const update = {};
+    if (entries !== undefined) update.feedbackEntries  = entries;
+    if (reqs    !== undefined) update.feedbackRequests = reqs;
+    await setDoc(doc(db, 'users', currentUser.uid), update, { merge: true });
+    if (entries !== undefined) setGiven(entries);
+    if (reqs    !== undefined) setRequests(reqs);
   }
-
-  async function persist(updated) {
-    await setDoc(doc(db, 'users', currentUser.uid), { feedbackEntries: updated }, { merge: true });
-    setGiven(updated);
-  }
-
-  useEffect(() => { fetchFeedback(); }, [currentUser]);
 
   async function submitFeedback(e) {
     e.preventDefault();
@@ -133,7 +261,7 @@ export default function Feedback() {
         date: new Date().toISOString().split('T')[0],
         createdAt: { seconds: Math.floor(Date.now() / 1000) },
       };
-      await persist([newEntry, ...given]);
+      await persist([newEntry, ...given], undefined);
       toast.success('Feedback submitted!');
       setForm({ type: 'Peer', from: '', to: '', anonymous: false, category: 'Leadership', rating: 5, text: '' });
       setShowForm(false);
@@ -144,27 +272,77 @@ export default function Feedback() {
   async function handleDelete(id) {
     if (!confirm('Delete this feedback?')) return;
     try {
-      await persist(given.filter(f => f.id !== id));
+      await persist(given.filter(f => f.id !== id), undefined);
       toast.success('Deleted');
     } catch { toast.error('Delete failed'); }
   }
 
-  // Combine given + received for the main feed display (deduplicated)
+  async function handleSendRequests(selectedUids, category, note) {
+    const now = new Date().toISOString().split('T')[0];
+    const newReqs = selectedUids.map(uid => {
+      const member = teamMembers.find(m => m.uid === uid);
+      return {
+        id: `${Date.now()}-${uid}`,
+        to: member?.displayName || member?.email || uid,
+        toUid: uid,
+        toRole: member?.role || '',
+        category,
+        note,
+        date: now,
+        status: 'pending',
+      };
+    });
+    try {
+      await persist(undefined, [...newReqs, ...requests]);
+      toast.success(`Feedback request${newReqs.length > 1 ? 's' : ''} sent to ${newReqs.map(r => r.to).join(', ')}`);
+    } catch { toast.error('Could not save requests'); }
+  }
+
+  async function handleDismissRequest(id) {
+    try {
+      await persist(undefined, requests.map(r => r.id === id ? { ...r, status: 'fulfilled' } : r));
+      toast.success('Marked as fulfilled');
+    } catch { toast.error('Update failed'); }
+  }
+
   const allFeedback = [...given, ...received.filter(r => !given.find(g => g.id === r.id))];
-  const filtered = filterType === 'All' ? allFeedback : allFeedback.filter(f => f.type === filterType);
+  const filtered    = filterType === 'All' ? allFeedback : allFeedback.filter(f => f.type === filterType);
   const avg = allFeedback.length ? (allFeedback.reduce((a, f) => a + f.rating, 0) / allFeedback.length).toFixed(1) : '—';
+  const pendingRequests = requests.filter(r => r.status === 'pending').length;
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       <PageHeader icon="📬" title="Feedback Box" subtitle="Anonymous or named feedback from peers, supervisors, and leaders"
-        action={<button className="btn-primary" onClick={() => setShowForm(s => !s)}>+ Give Feedback</button>} />
+        action={
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-secondary" onClick={() => setShowRequest(true)} style={{ position: 'relative' }}>
+              📨 Request Feedback
+              {pendingRequests > 0 && (
+                <span style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: 'white', borderRadius: '50%', width: 18, height: 18, fontSize: '0.65rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {pendingRequests}
+                </span>
+              )}
+            </button>
+            <button className="btn-primary" onClick={() => setShowForm(s => !s)}>+ Give Feedback</button>
+          </div>
+        }
+      />
+
+      {/* Request modal */}
+      {showRequest && (
+        <RequestModal
+          teamMembers={teamMembers}
+          onClose={() => setShowRequest(false)}
+          onSave={handleSendRequests}
+        />
+      )}
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: '1.5rem' }}>
         {[
-          { label: 'Avg Rating',      value: avg,                                               color: '#0d9488' },
-          { label: 'Total Feedback',  value: allFeedback.length,                                color: '#0f2044' },
-          { label: 'Needs Attention', value: allFeedback.filter(f => f.rating <= 3).length,     color: '#f59e0b' },
+          { label: 'Avg Rating',        value: avg,                                           color: '#0d9488' },
+          { label: 'Total Feedback',    value: allFeedback.length,                            color: '#0f2044' },
+          { label: 'Pending Requests',  value: pendingRequests,                               color: '#f59e0b' },
         ].map(s => (
           <div key={s.label} className="stat-tile" style={{ textAlign: 'center' }}>
             <p style={{ fontSize: '2rem', fontWeight: 900, color: s.color, margin: 0, lineHeight: 1 }}>{s.value}</p>
@@ -173,7 +351,20 @@ export default function Feedback() {
         ))}
       </div>
 
-      {/* Main layout: feed + right panel */}
+      {/* Pending requests banner */}
+      {pendingRequests > 0 && (
+        <div style={{ background: '#fef9c3', border: '1px solid #fde68a', borderRadius: 12, padding: '0.75rem 1.1rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '1rem' }}>⏳</span>
+          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#92400e' }}>
+            You have {pendingRequests} pending feedback request{pendingRequests > 1 ? 's' : ''}.
+          </span>
+          <button onClick={() => setShowRequest(true)} style={{ marginLeft: 'auto', background: '#0f2044', color: 'white', border: 'none', borderRadius: 8, padding: '0.3rem 0.875rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
+            View Requests
+          </button>
+        </div>
+      )}
+
+      {/* Main layout */}
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
 
@@ -278,7 +469,7 @@ export default function Feedback() {
         </div>
 
         {/* Right panel */}
-        <FeedbackPanel given={given} received={received} onDelete={handleDelete} />
+        <FeedbackPanel given={given} received={received} requests={requests} onDelete={handleDelete} onDismissRequest={handleDismissRequest} />
       </div>
     </div>
   );
