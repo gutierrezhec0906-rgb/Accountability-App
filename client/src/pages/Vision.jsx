@@ -27,16 +27,17 @@ function printVision(entry, prompts) {
   <title>${typeLabel}</title>
   <style>
     @page { margin: 2cm; }
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
     body { font-family: Georgia, 'Times New Roman', serif; color: #1e293b; margin: 0; }
     .header { border-bottom: 3px solid #0f2044; padding-bottom: 18px; margin-bottom: 28px; }
     .app-name { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: #64748b; margin: 0 0 6px; font-family: Helvetica, Arial, sans-serif; }
     .type-label { font-size: 13px; font-weight: bold; color: #0d9488; letter-spacing: .08em; text-transform: uppercase; font-family: Helvetica, Arial, sans-serif; margin: 0 0 4px; }
     .date { font-size: 12px; color: #94a3b8; font-family: Helvetica, Arial, sans-serif; margin: 0; }
-    .vision-box { background: #f0fdf4; border-left: 5px solid #0d9488; padding: 20px 24px; margin-bottom: 32px; border-radius: 4px; }
+    .vision-box { background: #f0fdf4 !important; border-left: 5px solid #0d9488; padding: 20px 24px; margin-bottom: 32px; border-radius: 4px; }
     .open-quote { font-size: 64px; color: #0d9488; line-height: .6; display: block; margin-bottom: 8px; font-family: Georgia, serif; }
     .vision-text { font-size: 16px; line-height: 1.75; color: #0f2044; font-style: italic; margin: 0; }
     .qa-section-title { font-size: 12px; font-weight: bold; letter-spacing: .1em; text-transform: uppercase; color: #475569; font-family: Helvetica, Arial, sans-serif; margin: 0 0 16px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
-    .qa { margin-bottom: 18px; padding-left: 14px; border-left: 3px solid #e2e8f0; }
+    .qa { margin-bottom: 18px; padding-left: 14px; border-left: 3px solid #0d9488; }
     .q-label { font-size: 11px; font-weight: bold; color: #0d9488; text-transform: uppercase; letter-spacing: .06em; font-family: Helvetica, Arial, sans-serif; margin-bottom: 4px; }
     .a-text { font-size: 13px; color: #334155; line-height: 1.6; }
     .footer { margin-top: 40px; border-top: 1px solid #e2e8f0; padding-top: 12px; font-size: 11px; color: #94a3b8; font-family: Helvetica, Arial, sans-serif; }
