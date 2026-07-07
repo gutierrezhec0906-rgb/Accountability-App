@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import { collection, addDoc, getDocs, updateDoc, arrayUnion, query, where, doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { arrayUnion, doc, getDoc, setDoc } from 'firebase/firestore';
+import { generateEQReport } from '../utils/eqReport';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -353,7 +354,7 @@ export default function EQOpEx() {
                         </div>
                       )}
                       {/* Load + Delete buttons */}
-                      <div style={{ display: 'flex', gap: 6 }}>
+                      <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
                         <button onClick={() => loadRecord(rec)}
                           style={{ flex: 1, padding: '0.35rem', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${isSelected ? '#0d9488' : '#e2e8f0'}`, background: isSelected ? '#0d9488' : 'white', color: isSelected ? 'white' : '#64748b', transition: 'all 0.15s' }}>
                           {isSelected ? '✓ Loaded' : 'Load'}
@@ -365,6 +366,12 @@ export default function EQOpEx() {
                           🗑 Delete
                         </button>
                       </div>
+                      {/* PDF Report button */}
+                      <button
+                        onClick={() => generateEQReport(rec)}
+                        style={{ width: '100%', padding: '0.4rem', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', border: '1.5px solid #0f2044', background: '#0f2044', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.15s' }}>
+                        📄 Download Recommendations Report
+                      </button>
                     </div>
                   );
                 })}
