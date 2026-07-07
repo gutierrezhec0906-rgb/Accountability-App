@@ -306,10 +306,17 @@ export default function Scores() {
     setCalculating(false);
   }
 
-  // Today's delta vs yesterday
-  const todayEntry = history[history.length - 1];
-  const prevEntry  = history[history.length - 2];
-  const todayDelta = todayEntry && prevEntry ? todayEntry.score - prevEntry.score : null;
+  // Derive daily movements from score history diffs, merged with pointEvents
+  const historyMovements = history.slice(1).map((h, i) => {
+    const delta = h.score - history[i].score;
+    if (delta === 0) return null;
+    return { date: h.date, points: delta, toolLabel: 'Score Calculation', reason: `Score moved from ${history[i].score} to ${h.score}` };
+  }).filter(Boolean);
+
+  // Merge: prefer pointEvents when present, supplement with scoreHistory movements
+  const movementLog = pointsLog.length > 0
+    ? pointsLog
+    : historyMovements;
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }} className="space-y-6">
@@ -429,7 +436,7 @@ export default function Scores() {
               <p style={{ fontWeight: 800, color: '#1e293b', margin: 0, fontSize: '0.9rem' }}>Daily Movement</p>
               {(() => {
                 const today = new Date().toISOString().split('T')[0];
-                const net = pointsLog.filter(e => e.date === today).reduce((s, e) => s + e.points, 0);
+                const net = movementLog.filter(e => e.date === today).reduce((s, e) => s + e.points, 0);
                 if (net === 0) return null;
                 return (
                   <span style={{
@@ -443,7 +450,7 @@ export default function Scores() {
               })()}
             </div>
             <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '0 0 12px' }}>Points gained or lost each day</p>
-            <DailyMovementFeed logs={pointsLog} />
+            <DailyMovementFeed logs={movementLog} />
           </div>
         </div>
       </div>
