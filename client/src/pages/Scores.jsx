@@ -329,14 +329,6 @@ export default function Scores() {
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.875rem', margin: '0 0 16px', lineHeight: 1.6 }}>
                 Your score grows as you use the app with purpose — more tools, deeper entries, consistent habits, and completed SMART goals.
               </p>
-              {todayDelta !== null && (
-                <div style={{ marginBottom: 14, display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255,255,255,0.1)', borderRadius: 10, padding: '0.4rem 0.875rem' }}>
-                  <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)' }}>Today's movement:</span>
-                  <span style={{ fontWeight: 900, fontSize: '1rem', color: todayDelta > 0 ? '#86efac' : todayDelta < 0 ? '#fca5a5' : 'rgba(255,255,255,0.6)' }}>
-                    {todayDelta > 0 ? `+${todayDelta}` : todayDelta === 0 ? '—' : todayDelta} pts
-                  </span>
-                </div>
-              )}
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                 <button onClick={handleCalculate} disabled={calculating}
                   style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 8, padding: '0.6rem 1.25rem', fontWeight: 700, fontSize: '0.875rem', cursor: calculating ? 'not-allowed' : 'pointer' }}>
@@ -433,7 +425,23 @@ export default function Scores() {
 
           {/* Daily movement feed */}
           <div className="card" style={{ padding: '1.25rem' }}>
-            <p style={{ fontWeight: 800, color: '#1e293b', margin: '0 0 4px', fontSize: '0.9rem' }}>Daily Movement</p>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <p style={{ fontWeight: 800, color: '#1e293b', margin: 0, fontSize: '0.9rem' }}>Daily Movement</p>
+              {(() => {
+                const today = new Date().toISOString().split('T')[0];
+                const net = pointsLog.filter(e => e.date === today).reduce((s, e) => s + e.points, 0);
+                if (net === 0) return null;
+                return (
+                  <span style={{
+                    padding: '2px 10px', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 800,
+                    background: net > 0 ? '#dcfce7' : '#fee2e2',
+                    color: net > 0 ? '#15803d' : '#dc2626',
+                  }}>
+                    {net > 0 ? `+${net}` : net} pts today
+                  </span>
+                );
+              })()}
+            </div>
             <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '0 0 12px' }}>Points gained or lost each day</p>
             <DailyMovementFeed logs={pointsLog} />
           </div>
