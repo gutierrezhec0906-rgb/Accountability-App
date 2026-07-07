@@ -2,24 +2,77 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
-const modules = [
-  { id: 'visual-board',    label: 'Visual Mgmt Board',  icon: '🔴', path: '/visual-board',    color: '#fee2e2', iconBg: 'linear-gradient(135deg,#fca5a5,#f87171)' },
-  { id: 'training',        label: 'Training Center',    icon: '🎓', path: '/training',         color: '#dbeafe', iconBg: 'linear-gradient(135deg,#93c5fd,#60a5fa)' },
-  { id: 'coaching',        label: 'Coaching Log',       icon: '📝', path: '/coaching',         color: '#fef9c3', iconBg: 'linear-gradient(135deg,#fde68a,#fbbf24)' },
-  { id: 'mentoring',       label: 'Mentoring Tracker',  icon: '🤝', path: '/mentoring',        color: '#dcfce7', iconBg: 'linear-gradient(135deg,#86efac,#4ade80)' },
-  { id: 'skills',          label: 'Skills Development', icon: '⭐', path: '/skills',           color: '#fef3c7', iconBg: 'linear-gradient(135deg,#fcd34d,#f59e0b)' },
-  { id: 'lob',             label: 'Line of Balance',    icon: '📈', path: '/lob',              color: '#e0e7ff', iconBg: 'linear-gradient(135deg,#a5b4fc,#818cf8)' },
-  { id: 'feedback',        label: 'Feedback Box',       icon: '📬', path: '/feedback',         color: '#f0fdf4', iconBg: 'linear-gradient(135deg,#6ee7b7,#34d399)' },
-  { id: 'problem-solving', label: 'Problem Solving',    icon: '🔍', path: '/problem-solving',  color: '#fdf4ff', iconBg: 'linear-gradient(135deg,#e879f9,#c026d3)' },
-  { id: 'vision',          label: 'Vision Builder',     icon: '🔭', path: '/vision',           color: '#eff6ff', iconBg: 'linear-gradient(135deg,#60a5fa,#2563eb)' },
-  { id: 'lean',            label: 'Lean Toolkit',       icon: '🏭', path: '/lean',             color: '#fff7ed', iconBg: 'linear-gradient(135deg,#fdba74,#f97316)' },
-  { id: 'mindfulness',     label: 'Mindfulness',        icon: '🧘', path: '/mindfulness',      color: '#f0fdf4', iconBg: 'linear-gradient(135deg,#0d9488,#0f766e)' },
-  { id: 'career',          label: 'Career Development', icon: '🚀', path: '/career',           color: '#eff6ff', iconBg: 'linear-gradient(135deg,#7dd3fc,#0ea5e9)' },
-  { id: 'disc',            label: 'DISC Assessment',    icon: '🎯', path: '/disc',             color: '#fff1f2', iconBg: 'linear-gradient(135deg,#fda4af,#fb7185)' },
-  { id: 'eq-opex',         label: 'EQ & OpEx Tools',   icon: '💡', path: '/eq-opex',          color: '#fefce8', iconBg: 'linear-gradient(135deg,#fef08a,#facc15)' },
-  { id: 'scores',          label: 'Score Dashboard',    icon: '🏆', path: '/scores',           color: '#fdf4ff', iconBg: 'linear-gradient(135deg,#c084fc,#a855f7)' },
-  { id: 'urgency',         label: 'Sense of Urgency',   icon: '⚡', path: '/urgency',          color: '#fff7ed', iconBg: 'linear-gradient(135deg,#fb923c,#ea580c)' },
+const categories = [
+  {
+    id: 'model',
+    label: 'Model the Way',
+    icon: '🧭',
+    accent: '#3b82f6',
+    bg: 'linear-gradient(135deg,#1e3a8a,#2563eb)',
+    desc: 'Set the standard. Lead by example.',
+    modules: [
+      { id: 'visual-board',  label: 'Visual Mgmt Board', icon: '🔴', path: '/visual-board',   iconBg: 'linear-gradient(135deg,#fca5a5,#f87171)' },
+      { id: 'lob',           label: 'Line of Balance',   icon: '📈', path: '/lob',             iconBg: 'linear-gradient(135deg,#a5b4fc,#818cf8)' },
+      { id: 'urgency',       label: 'Sense of Urgency',  icon: '⚡', path: '/urgency',         iconBg: 'linear-gradient(135deg,#fb923c,#ea580c)' },
+      { id: 'eq-opex',       label: 'EQ & OpEx Tools',   icon: '💡', path: '/eq-opex',         iconBg: 'linear-gradient(135deg,#fef08a,#facc15)' },
+    ],
+  },
+  {
+    id: 'inspire',
+    label: 'Inspire & Share the Vision',
+    icon: '🔭',
+    accent: '#0d9488',
+    bg: 'linear-gradient(135deg,#134e4a,#0d9488)',
+    desc: 'Paint the picture. Unite around purpose.',
+    modules: [
+      { id: 'vision',      label: 'Vision Builder', icon: '🔭', path: '/vision',      iconBg: 'linear-gradient(135deg,#60a5fa,#2563eb)' },
+      { id: 'smart-goals', label: 'SMART Goals',    icon: '🎯', path: '/smart-goals', iconBg: 'linear-gradient(135deg,#fde68a,#fbbf24)' },
+      { id: 'mindfulness', label: 'Mindfulness',    icon: '🧘', path: '/mindfulness', iconBg: 'linear-gradient(135deg,#0d9488,#0f766e)' },
+    ],
+  },
+  {
+    id: 'challenge',
+    label: 'Challenge the Process',
+    icon: '⚙️',
+    accent: '#d97706',
+    bg: 'linear-gradient(135deg,#78350f,#d97706)',
+    desc: 'Question the status quo. Drive improvement.',
+    modules: [
+      { id: 'lean',           label: 'Lean Toolkit',    icon: '🏭', path: '/lean',           iconBg: 'linear-gradient(135deg,#fdba74,#f97316)' },
+      { id: 'problem-solving',label: 'Problem Solving', icon: '🔍', path: '/problem-solving', iconBg: 'linear-gradient(135deg,#e879f9,#c026d3)' },
+      { id: 'disc',           label: 'DISC Assessment', icon: '🎯', path: '/disc',           iconBg: 'linear-gradient(135deg,#fda4af,#fb7185)' },
+    ],
+  },
+  {
+    id: 'enable',
+    label: 'Enable Others to Act',
+    icon: '🤝',
+    accent: '#7c3aed',
+    bg: 'linear-gradient(135deg,#4c1d95,#7c3aed)',
+    desc: 'Build capacity. Foster collaboration.',
+    modules: [
+      { id: 'skills',   label: 'Skills Development', icon: '⭐', path: '/skills',   iconBg: 'linear-gradient(135deg,#fcd34d,#f59e0b)' },
+      { id: 'training', label: 'Training Center',    icon: '🎓', path: '/training', iconBg: 'linear-gradient(135deg,#93c5fd,#60a5fa)' },
+      { id: 'mentoring',label: 'Mentoring Tracker',  icon: '🫂', path: '/mentoring',iconBg: 'linear-gradient(135deg,#86efac,#4ade80)' },
+      { id: 'career',   label: 'Career Development', icon: '🚀', path: '/career',   iconBg: 'linear-gradient(135deg,#7dd3fc,#0ea5e9)' },
+    ],
+  },
+  {
+    id: 'encourage',
+    label: 'Encourage the Heart',
+    icon: '❤️',
+    accent: '#e11d48',
+    bg: 'linear-gradient(135deg,#881337,#e11d48)',
+    desc: 'Recognize contributions. Celebrate wins.',
+    modules: [
+      { id: 'feedback', label: 'Feedback Box',      icon: '📬', path: '/feedback', iconBg: 'linear-gradient(135deg,#6ee7b7,#34d399)' },
+      { id: 'coaching', label: 'Coaching Log',      icon: '📝', path: '/coaching', iconBg: 'linear-gradient(135deg,#fde68a,#fbbf24)' },
+      { id: 'quotes',   label: 'Leadership Quotes', icon: '💬', path: '/quotes',   iconBg: 'linear-gradient(135deg,#c084fc,#a855f7)' },
+    ],
+  },
 ];
+
+const allModules = categories.flatMap(c => c.modules);
 
 const quickActions = [
   { label: 'Log Coaching Session', icon: '📝', path: '/coaching' },
@@ -103,7 +156,7 @@ export default function Dashboard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         {[
           { label: 'Accountability Score', value: score ?? '—', sub: 'calculated by the app', accent: '#0d9488', icon: '🏆' },
-          { label: 'Active Modules',        value: modules.length, sub: 'tools available',      accent: '#1e3a6e', icon: '🗂' },
+          { label: 'Active Modules',        value: allModules.length, sub: 'tools available',      accent: '#1e3a6e', icon: '🗂' },
           { label: 'Role',                  value: userProfile?.role || 'Leader', sub: 'your position', accent: '#7c3aed', icon: '👤' },
           { label: 'Today',                 value: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), sub: new Date().toLocaleDateString('en-US', { weekday: 'long' }), accent: '#0891b2', icon: '📅' },
         ].map(s => (
@@ -118,31 +171,59 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* ── Modules + Quick Actions ── */}
+      {/* ── Categories + Quick Actions ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px', gap: '1.5rem', alignItems: 'start' }}>
-        {/* Module grid */}
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.875rem' }}>
-            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1rem' }}>Your Tools</h3>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>{modules.length} modules</span>
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(155px, 1fr))', gap: '0.75rem' }}>
-            {modules.map(m => (
-              <button
-                key={m.id}
-                className="module-card"
-                onClick={() => navigate(m.path)}
-              >
-                <div style={{ width: 38, height: 38, borderRadius: 10, background: m.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.125rem' }}>
-                  {m.icon}
+        {/* Category sections */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+          {categories.map(cat => (
+            <div key={cat.id}>
+              {/* Category header */}
+              <div style={{
+                borderRadius: '12px 12px 0 0',
+                background: cat.bg,
+                padding: '0.75rem 1rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ fontSize: '1.125rem' }}>{cat.icon}</span>
+                  <div>
+                    <p style={{ color: 'white', fontWeight: 800, fontSize: '0.875rem', margin: 0, lineHeight: 1.2 }}>{cat.label}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem', margin: 0 }}>{cat.desc}</p>
+                  </div>
                 </div>
-                <p style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.35 }}>{m.label}</p>
-                <div style={{ height: 3, borderRadius: 9999, background: '#e2e8f0', overflow: 'hidden' }}>
-                  <div style={{ height: '100%', borderRadius: 9999, background: 'linear-gradient(90deg,#0d9488,#0f766e)', width: '40%' }} />
-                </div>
-              </button>
-            ))}
-          </div>
+                <span style={{ background: 'rgba(255,255,255,0.15)', color: 'white', fontSize: '0.7rem', fontWeight: 700, borderRadius: 99, padding: '2px 8px' }}>
+                  {cat.modules.length} tools
+                </span>
+              </div>
+              {/* Module cards for this category */}
+              <div style={{
+                border: `1px solid ${cat.accent}33`,
+                borderTop: 'none',
+                borderRadius: '0 0 12px 12px',
+                padding: '0.75rem',
+                background: 'var(--card-bg)',
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))',
+                gap: '0.625rem',
+              }}>
+                {cat.modules.map(m => (
+                  <button
+                    key={m.id}
+                    className="module-card"
+                    onClick={() => navigate(m.path)}
+                  >
+                    <div style={{ width: 38, height: 38, borderRadius: 10, background: m.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.125rem' }}>
+                      {m.icon}
+                    </div>
+                    <p style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.35 }}>{m.label}</p>
+                    <div style={{ height: 3, borderRadius: 9999, background: '#e2e8f0', overflow: 'hidden' }}>
+                      <div style={{ height: '100%', borderRadius: 9999, background: cat.bg, width: '40%' }} />
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* Quick Actions */}
