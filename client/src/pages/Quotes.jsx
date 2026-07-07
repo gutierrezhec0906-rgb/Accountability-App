@@ -3,6 +3,7 @@ import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
+import { logPointEvent } from '../utils/scoring';
 
 const quotes = [
   { text: "Leadership is not about being in charge. It is about taking care of those in your charge.", author: "Simon Sinek" },
@@ -95,6 +96,11 @@ export default function Quotes() {
     try {
       await setDoc(doc(db, 'users', currentUser.uid), { quoteReflections: updated }, { merge: true });
       await updateDoc(doc(db, 'users', currentUser.uid), { bonusPoints: increment(5) });
+      await logPointEvent(currentUser.uid, {
+        points: 5,
+        toolLabel: 'Leadership Quotes',
+        reason: `Reflection on: "${quotes[selectedQuoteIdx].author}"`,
+      });
       setReflections(updated);
       setConnection('');
       setAction('');

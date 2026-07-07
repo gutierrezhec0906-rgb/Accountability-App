@@ -263,6 +263,7 @@ export default function Scores() {
           const data = snap.data();
           const entries = (data.scoreHistory || []).slice().sort((a, b) => a.date.localeCompare(b.date));
           setHistory(entries);
+          setPointsLog(data.pointEvents || []);
         }
       } catch (e) {
         console.error('history fetch error:', e);

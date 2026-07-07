@@ -1,9 +1,19 @@
 import { getDoc, setDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
-// Kept for import compatibility — standalone collections are blocked by Firestore rules,
-// so this is a no-op. Points are tracked via users/{uid}.bonusPoints instead.
-export async function logPointEvent() {}
+// Appends a point event to users/{uid}.pointEvents (max 200 entries).
+// { date, points, toolLabel, reason }
+export async function logPointEvent(uid, { points, toolLabel, reason }) {
+  if (!uid) return;
+  const today = new Date().toISOString().split('T')[0];
+  const event = { date: today, points, toolLabel, reason };
+  try {
+    const snap = await getDoc(doc(db, 'users', uid));
+    const existing = snap.exists() ? (snap.data().pointEvents || []) : [];
+    const updated = [event, ...existing].slice(0, 200);
+    await setDoc(doc(db, 'users', uid), { pointEvents: updated }, { merge: true });
+  } catch {}
+}
 
 export const TOOL_WEIGHTS = {
   'coaching':        3,

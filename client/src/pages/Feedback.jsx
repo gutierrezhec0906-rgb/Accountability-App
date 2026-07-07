@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
+import { logPointEvent } from '../utils/scoring';
 
 const categories = ['Leadership', 'Performance', 'Communication', 'Coaching', 'Teamwork', 'Technical', 'General'];
 const types = ['All', 'Peer', 'Supervisor', 'Direct Report', 'Self'];
@@ -243,6 +244,8 @@ export default function Feedback() {
     if (already === today) return false;
     await updateDoc(doc(db, 'users', currentUser.uid), { [field]: today, bonusPoints: increment(5) });
     setBonusDates(d => ({ ...d, [type]: today }));
+    const reason = type === 'given' ? 'Gave feedback to a team member' : 'Requested feedback from team member(s)';
+    await logPointEvent(currentUser.uid, { points: 5, toolLabel: 'Feedback Box', reason });
     return true;
   }
 
