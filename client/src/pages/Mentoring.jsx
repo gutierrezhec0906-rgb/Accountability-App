@@ -35,7 +35,7 @@ export default function Mentoring() {
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }}>
       <PageHeader icon="🤝" title="Mentoring Tracker" subtitle="Manage mentor/mentee relationships and milestones"
-        action={<button className="btn-primary" onClick={() => setShowForm(s => !s)}>+ Add Relationship</button>} />
+        action={<button className="btn-primary" onClick={() => setShowForm(s => !s)}>+ Add Session</button>} />
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: '1.5rem' }}>
@@ -60,7 +60,7 @@ export default function Mentoring() {
             <div><label className="label">Focus Area</label><input className="input" value={form.focus} onChange={e => setForm(f => ({ ...f, focus: e.target.value }))} placeholder="e.g. Technical Leadership" /></div>
             <div><label className="label">Start Date</label><input className="input" type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} /></div>
             <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10 }}>
-              <button className="btn-primary" type="submit">Add Relationship</button>
+              <button className="btn-primary" type="submit">Add Session</button>
               <button className="btn-secondary" type="button" onClick={() => setShowForm(false)}>Cancel</button>
             </div>
           </form>
