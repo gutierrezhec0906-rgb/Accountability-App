@@ -5,20 +5,18 @@ import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 
-const NUM_COLS = 8;
-
 function blankLOB(name) {
   return {
     id: Date.now(),
     name: name || 'New Line of Balance',
     createdAt: new Date().toISOString(),
-    dates: Array(NUM_COLS).fill(''),
+    dates: Array(8).fill(''),
     tasks: [],
   };
 }
 
-function blankTask() {
-  return { id: Date.now(), name: '', owner: '', cells: Array(NUM_COLS).fill('') };
+function blankTask(numCols) {
+  return { id: Date.now(), name: '', owner: '', cells: Array(numCols).fill('') };
 }
 
 function dateCellStyle(dateStr, cellVal) {
@@ -55,11 +53,11 @@ export default function LOB() {
   const [newLobName, setNewLobName] = useState('');
   const [showTaskForm, setShowTaskForm] = useState(false);
   const [taskForm, setTaskForm] = useState({ name: '', owner: '' });
-  const [editing, setEditing] = useState(null); // 'task-col' or 'date-col'
+  const [editing, setEditing] = useState(null);
   const [editingName, setEditingName] = useState(false);
+  const [editingTask, setEditingTask] = useState(null); // { id, name, owner }
   const [saving, setSaving] = useState(false);
 
-  // Load from Firestore
   useEffect(() => {
     if (!currentUser) return;
     (async () => {
@@ -115,19 +113,27 @@ export default function LOB() {
 
   function addTask(e) {
     e.preventDefault();
-    const task = { ...blankTask(), name: taskForm.name, owner: taskForm.owner };
+    const numCols = activeLob.dates.length;
+    const task = { ...blankTask(numCols), name: taskForm.name, owner: taskForm.owner };
     patchActive({ tasks: [...(activeLob.tasks || []), task] });
     setTaskForm({ name: '', owner: '' });
     setShowTaskForm(false);
     toast.success('Task row added');
   }
 
+  function saveTaskEdit() {
+    if (!editingTask) return;
+    const tasks = activeLob.tasks.map(t =>
+      t.id !== editingTask.id ? t : { ...t, name: editingTask.name, owner: editingTask.owner }
+    );
+    patchActive({ tasks });
+    setEditingTask(null);
+    toast.success('Task updated');
+  }
+
   function updateCell(taskId, col, val) {
     const tasks = activeLob.tasks.map(t =>
-      t.id !== taskId ? t : {
-        ...t,
-        cells: t.cells.map((c, i) => i === col ? val : c),
-      }
+      t.id !== taskId ? t : { ...t, cells: t.cells.map((c, i) => i === col ? val : c) }
     );
     patchActive({ tasks });
   }
@@ -137,11 +143,26 @@ export default function LOB() {
     patchActive({ dates });
   }
 
+  function addDateColumn() {
+    const dates = [...activeLob.dates, ''];
+    const tasks = activeLob.tasks.map(t => ({ ...t, cells: [...t.cells, ''] }));
+    patchActive({ dates, tasks });
+  }
+
+  function removeDateColumn(col) {
+    if (activeLob.dates.length <= 1) return;
+    const dates = activeLob.dates.filter((_, i) => i !== col);
+    const tasks = activeLob.tasks.map(t => ({ ...t, cells: t.cells.filter((_, i) => i !== col) }));
+    patchActive({ dates, tasks });
+  }
+
   function deleteTask(taskId) {
     patchActive({ tasks: activeLob.tasks.filter(t => t.id !== taskId) });
   }
 
   if (!activeLob) return null;
+
+  const numCols = activeLob.dates.length;
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
@@ -231,6 +252,34 @@ export default function LOB() {
         ))}
       </div>
 
+      {/* Edit Task Modal */}
+      {editingTask && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: 440, padding: '1.75rem' }}>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 1.25rem' }}>Edit Task</h3>
+            <div style={{ marginBottom: '1rem' }}>
+              <label className="label">Task Name</label>
+              <input className="input" autoFocus value={editingTask.name}
+                onChange={e => setEditingTask(t => ({ ...t, name: e.target.value }))}
+                onKeyDown={e => e.key === 'Enter' && saveTaskEdit()} />
+            </div>
+            <div style={{ marginBottom: '1.5rem' }}>
+              <label className="label">Owner / Team</label>
+              <input className="input" value={editingTask.owner}
+                onChange={e => setEditingTask(t => ({ ...t, owner: e.target.value }))}
+                onKeyDown={e => e.key === 'Enter' && saveTaskEdit()} />
+            </div>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+              <button className="btn-secondary" onClick={() => setEditingTask(null)}>Cancel</button>
+              <button className="btn-primary" onClick={saveTaskEdit}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
       <div className="card" style={{ overflow: 'hidden', marginBottom: '1rem' }}>
         <div style={{ overflowX: 'auto' }}>
@@ -243,26 +292,41 @@ export default function LOB() {
                   const s = colHeaderStyle(d);
                   return (
                     <th key={i} style={{ padding: '0.5rem 0.25rem', textAlign: 'center', minWidth: 90 }}>
-                      {editing === `date-${i}` ? (
-                        <input type="date" autoFocus defaultValue={d}
-                          style={{ fontSize: '0.7rem', border: 'none', borderRadius: 6, padding: '3px 4px', outline: 'none', width: 82, background: 'white', color: '#0f172a' }}
-                          onBlur={e => { updateDate(i, e.target.value); setEditing(null); }}
-                          onKeyDown={e => e.key === 'Enter' && e.target.blur()} />
-                      ) : (
-                        <button onClick={() => setEditing(`date-${i}`)}
-                          style={{
-                            background: s.bg, color: s.text, border: 'none', borderRadius: 7,
-                            padding: '4px 6px', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer',
-                            width: 80, transition: 'all 0.15s',
-                          }}>
-                          📅 {fmt(d)}
-                        </button>
-                      )}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                        {editing === `date-${i}` ? (
+                          <input type="date" autoFocus defaultValue={d}
+                            style={{ fontSize: '0.7rem', border: 'none', borderRadius: 6, padding: '3px 4px', outline: 'none', width: 82, background: 'white', color: '#0f172a' }}
+                            onBlur={e => { updateDate(i, e.target.value); setEditing(null); }}
+                            onKeyDown={e => e.key === 'Enter' && e.target.blur()} />
+                        ) : (
+                          <button onClick={() => setEditing(`date-${i}`)}
+                            style={{
+                              background: s.bg, color: s.text, border: 'none', borderRadius: 7,
+                              padding: '4px 6px', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer',
+                              width: 80, transition: 'all 0.15s',
+                            }}>
+                            📅 {fmt(d)}
+                          </button>
+                        )}
+                        {numCols > 1 && (
+                          <button onClick={() => removeDateColumn(i)}
+                            title="Remove this column"
+                            style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '0.65rem', lineHeight: 1, padding: '1px 4px' }}>
+                            ✕
+                          </button>
+                        )}
+                      </div>
                     </th>
                   );
                 })}
-                <th style={{ padding: '0.875rem 0.75rem', textAlign: 'center', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.75rem', minWidth: 56 }}>Notes</th>
-                <th style={{ padding: '0.875rem 0.5rem', minWidth: 36 }}></th>
+                {/* Add column button */}
+                <th style={{ padding: '0.5rem 0.5rem', textAlign: 'center', minWidth: 48 }}>
+                  <button onClick={addDateColumn} title="Add date column"
+                    style={{ background: 'rgba(255,255,255,0.12)', border: '1px dashed rgba(255,255,255,0.35)', color: 'white', borderRadius: 7, padding: '4px 8px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 700 }}>
+                    + Col
+                  </button>
+                </th>
+                <th style={{ padding: '0.875rem 0.5rem', minWidth: 64 }}></th>
               </tr>
             </thead>
             <tbody>
@@ -295,17 +359,26 @@ export default function LOB() {
                       </td>
                     );
                   })}
-                  <td style={{ padding: '0.75rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.75rem' }}>—</td>
-                  <td style={{ padding: '0.5rem', textAlign: 'center' }}>
-                    <button onClick={() => deleteTask(task.id)}
-                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem', opacity: 0.7 }}
-                      title="Remove row">✕</button>
+                  {/* Empty cell for + Col column */}
+                  <td></td>
+                  {/* Edit + Delete */}
+                  <td style={{ padding: '0.5rem 0.75rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    <button
+                      onClick={() => setEditingTask({ id: task.id, name: task.name, owner: task.owner })}
+                      title="Edit task"
+                      style={{ background: 'none', border: 'none', color: '#0d9488', cursor: 'pointer', fontSize: '0.8rem', marginRight: 6 }}>
+                      ✏️
+                    </button>
+                    <button onClick={() => deleteTask(task.id)} title="Remove row"
+                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem', opacity: 0.7 }}>
+                      ✕
+                    </button>
                   </td>
                 </tr>
               ))}
               {(activeLob.tasks || []).length === 0 && (
                 <tr>
-                  <td colSpan={NUM_COLS + 4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                  <td colSpan={numCols + 4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                     No tasks yet — click "+ Add Task Row" below to get started.
                   </td>
                 </tr>
@@ -345,7 +418,7 @@ export default function LOB() {
       )}
 
       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-        Click any date header to set a due date · Click any cell to enter status · Click the LOB name above to rename
+        Click any date header to set a due date · Click "+ Col" to add more date columns · Click ✏️ to edit a task · Click the LOB name above to rename
       </p>
     </div>
   );
