@@ -6,6 +6,7 @@ import { db } from '../firebase';
 import toast from 'react-hot-toast';
 import WelcomeModal from './WelcomeModal';
 import ToolVideoModal from './ToolVideoModal';
+import { isLocked, TIER_ICONS, TIER_LABELS } from '../utils/subscription';
 
 // Top-level items (always visible, not in a category)
 const topNavItems = [
@@ -101,6 +102,7 @@ export default function Layout({ children }) {
   const { currentUser, userProfile, logout } = useAuth();
 
   const canApprove = userProfile?.isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager';
+  const userTier = userProfile?.subscriptionTier || 'free';
   const sessionRef = useRef({ tool: null, startTime: null });
 
   useEffect(() => {
@@ -263,16 +265,22 @@ export default function Layout({ children }) {
                 {/* Category items */}
                 {(isOpen || collapsed) && (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 1, paddingLeft: collapsed ? 0 : 8, marginTop: 2 }}>
-                    {cat.items.map(item => (
-                      <button key={item.id}
-                        className={`sidebar-link ${location.pathname === item.path ? 'active' : ''}`}
-                        onClick={() => { navigate(item.path); setMobileOpen(false); }}
-                        title={collapsed ? item.label : ''}
-                        style={{ fontSize: '0.8rem' }}>
-                        <span style={{ fontSize: '0.875rem', flexShrink: 0 }}>{item.icon}</span>
-                        {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.8rem' }}>{item.label}</span>}
-                      </button>
-                    ))}
+                    {cat.items.map(item => {
+                      const locked = isLocked(item.id, userTier);
+                      return (
+                        <button key={item.id}
+                          className={`sidebar-link ${location.pathname === item.path ? 'active' : ''}`}
+                          onClick={() => { navigate(locked ? '/pricing' : item.path); setMobileOpen(false); }}
+                          title={collapsed ? item.label : ''}
+                          style={{ fontSize: '0.8rem', opacity: locked ? 0.65 : 1 }}>
+                          <span style={{ fontSize: '0.875rem', flexShrink: 0 }}>{locked ? '🔒' : item.icon}</span>
+                          {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.8rem' }}>{item.label}</span>}
+                          {!collapsed && locked && (
+                            <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#f59e0b', letterSpacing: '0.04em', flexShrink: 0 }}>PRO</span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -287,6 +295,27 @@ export default function Layout({ children }) {
             title={collapsed ? 'Score Dashboard' : ''}>
             <span style={{ fontSize: '1rem', flexShrink: 0 }}>🏆</span>
             {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Score Dashboard</span>}
+          </button>
+
+          {/* Pricing / upgrade link */}
+          <button
+            className={`sidebar-link ${location.pathname === '/pricing' ? 'active' : ''}`}
+            onClick={() => { navigate('/pricing'); setMobileOpen(false); }}
+            title={collapsed ? 'Plans & Pricing' : ''}
+            style={{ marginTop: 4 }}>
+            <span style={{ fontSize: '1rem', flexShrink: 0 }}>💎</span>
+            {!collapsed && (
+              <>
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Plans & Pricing</span>
+                <span style={{
+                  fontSize: '0.55rem', fontWeight: 800, letterSpacing: '0.05em',
+                  background: userTier === 'free' ? '#f59e0b' : userTier === 'premium' ? '#2563eb' : '#7c3aed',
+                  color: 'white', borderRadius: 99, padding: '1px 6px', flexShrink: 0,
+                }}>
+                  {TIER_ICONS[userTier]}
+                </span>
+              </>
+            )}
           </button>
         </nav>
 

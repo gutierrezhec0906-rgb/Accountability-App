@@ -3,6 +3,9 @@ import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+import { TIER_ICONS, TIER_LABELS, TIER_COLORS } from '../utils/subscription';
+
+const TIER_OPTIONS = ['free', 'premium', 'all-inclusive'];
 
 const roleColors = {
   Leader: { bg: '#eff6ff', text: '#1d4ed8' },
@@ -65,6 +68,16 @@ export default function Approvals() {
       toast.success(!current ? 'Admin access granted' : 'Admin access removed');
     } catch (e) {
       toast.error('Failed to update admin status');
+    }
+  }
+
+  async function setTier(uid, tier) {
+    try {
+      await updateDoc(doc(db, 'users', uid), { subscriptionTier: tier });
+      setUsers(u => u.map(x => x.uid === uid ? { ...x, subscriptionTier: tier } : x));
+      toast.success(`Plan set to ${TIER_LABELS[tier]}`);
+    } catch (e) {
+      toast.error('Failed to update plan');
     }
   }
 
@@ -172,6 +185,28 @@ export default function Approvals() {
                       {user.isAdmin ? '★ Remove Admin' : '☆ Make Admin'}
                     </button>
                   )}
+                  {/* Tier selector */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    {TIER_OPTIONS.map(tier => {
+                      const tc = TIER_COLORS[tier];
+                      const active = (user.subscriptionTier || 'free') === tier;
+                      return (
+                        <button
+                          key={tier}
+                          onClick={() => setTier(user.uid, tier)}
+                          style={{
+                            padding: '3px 10px', borderRadius: 99, fontSize: '0.68rem', fontWeight: 800,
+                            border: `1px solid ${active ? tc.border : '#e2e8f0'}`,
+                            background: active ? tc.bg : '#f8fafc',
+                            color: active ? tc.text : '#94a3b8',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          {TIER_ICONS[tier]} {TIER_LABELS[tier]}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             </div>

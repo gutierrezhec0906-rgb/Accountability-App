@@ -27,6 +27,7 @@ import EQOpEx from './pages/EQOpEx';
 import Scores from './pages/Scores';
 import Profile from './pages/Profile';
 import SmartGoals from './pages/SmartGoals';
+import Pricing from './pages/Pricing';
 
 function PrivateLayout({ children }) {
   return (
@@ -66,6 +67,7 @@ export default function App() {
           <Route path="/scores" element={<PrivateLayout><Scores /></PrivateLayout>} />
           <Route path="/smart-goals" element={<PrivateLayout><SmartGoals /></PrivateLayout>} />
           <Route path="/profile" element={<PrivateLayout><Profile /></PrivateLayout>} />
+          <Route path="/pricing" element={<PrivateLayout><Pricing /></PrivateLayout>} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </AuthProvider>

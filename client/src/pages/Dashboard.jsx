@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { isLocked, TIER_LABELS, TIER_ICONS } from '../utils/subscription';
 
 const categories = [
   {
@@ -93,6 +94,7 @@ export default function Dashboard() {
   const firstName = currentUser?.displayName?.split(' ')[0] || 'Leader';
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const userTier = userProfile?.subscriptionTier || 'free';
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
@@ -131,6 +133,12 @@ export default function Dashboard() {
               style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '0.5rem 1.25rem', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}
             >
               My SMART Goals
+            </button>
+            <button
+              onClick={() => navigate('/pricing')}
+              style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '0.5rem 1rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}
+            >
+              {TIER_ICONS[userTier]} {TIER_LABELS[userTier]} Plan
             </button>
           </div>
         </div>
@@ -206,21 +214,30 @@ export default function Dashboard() {
                 gridTemplateColumns: 'repeat(auto-fill, minmax(148px, 1fr))',
                 gap: '0.625rem',
               }}>
-                {cat.modules.map(m => (
-                  <button
-                    key={m.id}
-                    className="module-card"
-                    onClick={() => navigate(m.path)}
-                  >
-                    <div style={{ width: 38, height: 38, borderRadius: 10, background: m.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.125rem' }}>
-                      {m.icon}
-                    </div>
-                    <p style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.35 }}>{m.label}</p>
-                    <div style={{ height: 3, borderRadius: 9999, background: '#e2e8f0', overflow: 'hidden' }}>
-                      <div style={{ height: '100%', borderRadius: 9999, background: cat.bg, width: '40%' }} />
-                    </div>
-                  </button>
-                ))}
+                {cat.modules.map(m => {
+                  const locked = isLocked(m.id, userTier);
+                  return (
+                    <button
+                      key={m.id}
+                      className="module-card"
+                      onClick={() => locked ? navigate('/pricing') : navigate(m.path)}
+                      style={{ position: 'relative', opacity: locked ? 0.72 : 1 }}
+                    >
+                      {locked && (
+                        <div style={{ position: 'absolute', top: 6, right: 6, background: '#f59e0b', borderRadius: 99, padding: '1px 7px', fontSize: '0.6rem', fontWeight: 800, color: 'white', letterSpacing: '0.04em' }}>
+                          ⭐ PREMIUM
+                        </div>
+                      )}
+                      <div style={{ width: 38, height: 38, borderRadius: 10, background: m.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.125rem', filter: locked ? 'grayscale(40%)' : 'none' }}>
+                        {locked ? '🔒' : m.icon}
+                      </div>
+                      <p style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.35 }}>{m.label}</p>
+                      <div style={{ height: 3, borderRadius: 9999, background: '#e2e8f0', overflow: 'hidden' }}>
+                        <div style={{ height: '100%', borderRadius: 9999, background: locked ? '#e2e8f0' : cat.bg, width: '40%' }} />
+                      </div>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           ))}
