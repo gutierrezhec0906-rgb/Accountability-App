@@ -560,11 +560,11 @@ export default function SelfAssessment() {
         )}
         <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
           <div style={{ fontSize: '3rem', marginBottom: 12 }}>📋</div>
-          <h2 style={{ fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 8px', fontSize: '1.25rem' }}>Leadership Practices Inventory</h2>
+          <h2 style={{ fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 8px', fontSize: '1.25rem' }}>Accountability Practice Inventory</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', maxWidth: 480, margin: '0 auto 24px', lineHeight: 1.7 }}>
-            Rate yourself honestly on 30 leadership behavior statements across the 5 core practices. Each question includes a <strong>Scoring Guide</strong> with concrete examples to help you calibrate your answer accurately — based on real actions, not intentions.
+            Rate yourself honestly on 30 accountability behavior statements across the 5 core practices. Each question includes a <strong>Scoring Guide</strong> with concrete examples to help you calibrate your answer accurately — based on real actions, not intentions.
           </p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 24, textAlign: 'left' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 20, textAlign: 'left' }}>
             {CATEGORIES.map(c => (
               <div key={c.id} style={{ borderRadius: 10, border: `1px solid ${c.border}`, background: c.light, padding: '0.75rem' }}>
                 <p style={{ fontSize: '1.125rem', margin: '0 0 4px' }}>{c.icon}</p>
@@ -573,13 +573,24 @@ export default function SelfAssessment() {
               </div>
             ))}
           </div>
-          {/* Guide level legend */}
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
-            {GUIDE_LEVELS.map(lvl => (
-              <span key={lvl.key} style={{ fontSize: '0.68rem', fontWeight: 700, color: lvl.color, background: lvl.bg, border: `1px solid ${lvl.border}`, borderRadius: 99, padding: '3px 10px' }}>
-                {lvl.label}
-              </span>
-            ))}
+
+          {/* Score scale out of 300 */}
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: 20, textAlign: 'left' }}>
+            <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.8rem', textAlign: 'center' }}>Accountability Leader Score Scale · out of 300 points</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+              {[
+                { key: 'emerging',   label: 'Emerging',   range: '0 – 120',   sub: 'Avg 1–4 per question',   color: '#ef4444', bg: '#fef2f2', border: '#fecaca' },
+                { key: 'developing', label: 'Developing', range: '121 – 180', sub: 'Avg 5–6 per question',   color: '#f59e0b', bg: '#fffbeb', border: '#fcd34d' },
+                { key: 'strong',     label: 'Strong',     range: '181 – 270', sub: 'Avg 7–9 per question',   color: '#0d9488', bg: '#f0fdfa', border: '#99f6e4' },
+                { key: 'exemplary',  label: 'Exemplary',  range: '271 – 300', sub: 'Avg 10 per question',    color: '#7c3aed', bg: '#fdf4ff', border: '#e9d5ff' },
+              ].map(lvl => (
+                <div key={lvl.key} style={{ borderRadius: 10, border: `1px solid ${lvl.border}`, background: lvl.bg, padding: '0.625rem 0.75rem' }}>
+                  <p style={{ fontWeight: 800, color: lvl.color, margin: '0 0 2px', fontSize: '0.75rem' }}>{lvl.label}</p>
+                  <p style={{ fontWeight: 900, color: lvl.color, margin: '0 0 3px', fontSize: '1rem', lineHeight: 1 }}>{lvl.range}</p>
+                  <p style={{ color: lvl.color, margin: 0, fontSize: '0.62rem', opacity: 0.75 }}>{lvl.sub}</p>
+                </div>
+              ))}
+            </div>
           </div>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
             <div style={{ background: '#f8fafc', borderRadius: 10, padding: '0.625rem 1rem', fontSize: '0.78rem', color: '#64748b' }}>⏱ ~10–15 minutes</div>
