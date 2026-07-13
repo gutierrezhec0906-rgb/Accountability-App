@@ -4,6 +4,7 @@ import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import toast from 'react-hot-toast';
+import { GUIDE_LEVELS, QUESTIONS as SHARED_QUESTIONS } from '../utils/assessmentQuestions';
 
 const CATEGORIES = [
   { id: 'model',     label: 'Model the Way',            icon: '🧭', color: '#2563eb', light: '#eff6ff', border: '#bfdbfe' },
@@ -56,7 +57,9 @@ const QUESTIONS = [
 ];
 
 const RELATIONSHIPS = ['Peer', 'Direct Report', 'Manager', 'Cross-functional Partner', 'Other'];
-const LEVEL_LABELS = { 1:'', 2:'', 3:'', 4:'', 5:'', 6:'', 7:'', 8:'', 9:'', 10:'' };
+
+// Build guide lookup from shared questions data
+const GUIDE_MAP = Object.fromEntries(SHARED_QUESTIONS.map(q => [q.id, q.guide]));
 
 function scoreLabel(v) {
   if (v >= 9) return { label: 'Exemplary', color: '#7c3aed' };
@@ -77,6 +80,8 @@ export default function Survey360() {
   const [answers, setAnswers]     = useState({});
   const [step, setStep]           = useState(-1); // -1 = intro
   const [saving, setSaving]       = useState(false);
+  const [openGuides, setOpenGuides] = useState({});
+  function toggleGuide(qid) { setOpenGuides(g => ({ ...g, [qid]: !g[qid] })); }
 
   useEffect(() => { loadSurvey(); }, [surveyId]);
 
@@ -248,7 +253,7 @@ export default function Survey360() {
                   <div style={{ minWidth: 28, height: 28, borderRadius: '50%', background: currentCat.light, color: currentCat.color, fontWeight: 800, fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `1px solid ${currentCat.border}` }}>{q.id}</div>
                   <p style={{ fontWeight: 600, color: '#0f172a', margin: 0, lineHeight: 1.5, fontSize: '0.9rem' }}>{q.text}</p>
                 </div>
-                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
                   {[1,2,3,4,5,6,7,8,9,10].map(n => (
                     <button key={n} onClick={() => setAnswers(a => ({ ...a, [q.id]: n }))}
                       style={{ width: 36, height: 36, borderRadius: 8, fontWeight: 700, fontSize: '0.85rem', border: `2px solid ${val === n ? currentCat.color : '#e2e8f0'}`, background: val === n ? currentCat.color : '#f8fafc', color: val === n ? 'white' : '#475569', cursor: 'pointer', transition: 'all 0.15s' }}>
@@ -257,6 +262,21 @@ export default function Survey360() {
                   ))}
                   {lvl && <span style={{ fontSize: '0.72rem', fontWeight: 700, color: lvl.color, marginLeft: 4 }}>{lvl.label}</span>}
                 </div>
+                {/* Scoring guide toggle */}
+                <button onClick={() => toggleGuide(q.id)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '0.75rem', fontWeight: 600, padding: '2px 0', display: 'flex', alignItems: 'center', gap: 4 }}>
+                  {openGuides[q.id] ? '▲' : '▼'} View Scoring Guide
+                </button>
+                {openGuides[q.id] && GUIDE_MAP[q.id] && (
+                  <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+                    {GUIDE_LEVELS.map(lvlDef => (
+                      <div key={lvlDef.key} style={{ background: lvlDef.bg, border: `1px solid ${lvlDef.border}`, borderRadius: 10, padding: '0.625rem 0.75rem' }}>
+                        <p style={{ fontWeight: 800, color: lvlDef.color, margin: '0 0 4px', fontSize: '0.72rem' }}>{lvlDef.label}</p>
+                        <p style={{ color: '#374151', margin: 0, fontSize: '0.72rem', lineHeight: 1.5 }}>{GUIDE_MAP[q.id][lvlDef.key]}</p>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             );
           })}
