@@ -673,6 +673,27 @@ export default function SelfAssessment() {
           })}
         </div>
 
+        {/* Unanswered questions warning on last step */}
+        {step === 4 && !allAnswered && (() => {
+          const unanswered = QUESTIONS.filter(q => !answers[q.id]);
+          const byStep = CATEGORIES.map((cat, idx) => ({
+            idx, cat, missing: unanswered.filter(q => q.cat === cat.id),
+          })).filter(g => g.missing.length > 0);
+          return (
+            <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: 4 }}>
+              <p style={{ fontWeight: 700, color: '#92400e', fontSize: '0.8rem', margin: '0 0 6px' }}>⚠️ {unanswered.length} question{unanswered.length > 1 ? 's' : ''} still need{unanswered.length === 1 ? 's' : ''} an answer:</p>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {byStep.map(({ idx, cat, missing }) => (
+                  <button key={cat.id} onClick={() => setStep(idx)}
+                    style={{ background: '#fef9c3', border: '1px solid #fcd34d', borderRadius: 99, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 700, color: '#92400e', cursor: 'pointer' }}>
+                    {cat.icon} {cat.label}: Q{missing.map(q => q.id).join(', Q')}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Navigation */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1rem' }}>
           <button onClick={() => step > 0 ? setStep(s => s - 1) : setView('intro')}
