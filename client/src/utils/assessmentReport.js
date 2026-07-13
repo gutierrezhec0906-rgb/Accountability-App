@@ -230,9 +230,9 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
   pdf.text('Score per leadership practice (out of 60)', PAGE_W / 2, y, { align: 'center' }); y += 18;
 
   // Draw radar in remaining page space
-  const radarR  = 100;              // outer ring radius in pts
+  const radarR  = 85;               // outer ring radius in pts
   const radarCX = PAGE_W / 2;
-  const radarCY = y + radarR + 14;
+  const radarCY = y + radarR + 32;  // extra top padding so top label clears the title
   const n = CATEGORIES.length;
   const ang = i => (Math.PI * 2 * i) / n - Math.PI / 2;
   const pt  = (i, frac) => ({
