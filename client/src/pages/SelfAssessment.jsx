@@ -389,8 +389,8 @@ function ScoringGuide({ question, catColor }) {
 }
 
 // ── Radar/Spider chart ───────────────────────────────────────────
-function RadarChart({ scores, size = 260 }) {
-  const cx = size / 2, cy = size / 2, r = size * 0.38;
+function RadarChart({ scores, size = 300 }) {
+  const cx = size / 2, cy = size / 2, r = size * 0.34;
   const n = CATEGORIES.length;
   const angle = i => (Math.PI * 2 * i) / n - Math.PI / 2;
   const pt = (i, frac) => ({ x: cx + r * frac * Math.cos(angle(i)), y: cy + r * frac * Math.sin(angle(i)) });
@@ -399,6 +399,20 @@ function RadarChart({ scores, size = 260 }) {
   const dataPoints = CATEGORIES.map((c, i) => pt(i, (scores[c.id] || 0) / 60));
   const dataPath = dataPoints.map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + 'Z';
   const ringPath = frac => CATEGORIES.map((_, i) => pt(i, frac)).map((p, i) => `${i === 0 ? 'M' : 'L'}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ') + 'Z';
+
+  // Split label into up to 3 lines of ~12 chars each
+  function labelLines(label) {
+    const words = label.split(' ');
+    const lines = [];
+    let current = '';
+    for (const w of words) {
+      if (current && (current + ' ' + w).length > 12) { lines.push(current); current = w; }
+      else { current = current ? current + ' ' + w : w; }
+    }
+    if (current) lines.push(current);
+    return lines;
+  }
+
   return (
     <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} style={{ overflow: 'visible' }}>
       {rings.map(f => <path key={f} d={ringPath(f)} fill="none" stroke="#e2e8f0" strokeWidth="1" />)}
@@ -406,8 +420,16 @@ function RadarChart({ scores, size = 260 }) {
       <path d={dataPath} fill="rgba(13,148,136,0.15)" stroke="#0d9488" strokeWidth="2" strokeLinejoin="round" />
       {dataPoints.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="4" fill="#0d9488" stroke="white" strokeWidth="1.5" />)}
       {CATEGORIES.map((c, i) => {
-        const lp = pt(i, 1.22);
-        return <text key={i} x={lp.x} y={lp.y} textAnchor="middle" dominantBaseline="middle" fontSize="10" fontWeight="700" fill={c.color}>{c.icon} {c.label.split(' ').slice(0, 2).join(' ')}</text>;
+        const lp = pt(i, 1.32);
+        const lines = labelLines(c.label);
+        const lineH = 13;
+        const totalH = lines.length * lineH;
+        return (
+          <text key={i} x={lp.x} y={lp.y - totalH / 2} textAnchor="middle" fontSize="10" fontWeight="700" fill={c.color}>
+            <tspan x={lp.x} dy="0">{c.icon}</tspan>
+            {lines.map((ln, li) => <tspan key={li} x={lp.x} dy={lineH}>{ln}</tspan>)}
+          </text>
+        );
       })}
       {[20, 40, 60].map(v => <text key={v} x={cx + 4} y={cy - r * (v / 60) + 4} fontSize="8" fill="#94a3b8">{v}</text>)}
     </svg>
