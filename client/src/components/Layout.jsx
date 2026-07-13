@@ -305,6 +305,14 @@ export default function Layout({ children }) {
             {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Self-Assessment</span>}
           </button>
 
+          <button
+            className={`sidebar-link ${location.pathname === '/360-feedback' ? 'active' : ''}`}
+            onClick={() => { navigate('/360-feedback'); setMobileOpen(false); }}
+            title={collapsed ? '360° Feedback' : ''}>
+            <span style={{ fontSize: '1rem', flexShrink: 0 }}>🔄</span>
+            {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>360° Feedback</span>}
+          </button>
+
           {/* Pricing / upgrade link */}
           <button
             className={`sidebar-link ${location.pathname === '/pricing' ? 'active' : ''}`}
