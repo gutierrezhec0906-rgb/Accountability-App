@@ -793,17 +793,35 @@ export default function SelfAssessment() {
                 );
               })}
             </div>
-            {/* Strength / Growth */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div style={{ borderRadius: 12, background: '#f0fdf4', border: '1px solid #bbf7d0', padding: '1rem' }}>
-                <p style={{ fontWeight: 800, color: '#15803d', margin: '0 0 8px', fontSize: '0.8rem' }}>💪 Top Strength</p>
-                {(() => { const top = CATEGORIES.reduce((a, b) => (scores[a.id]||0) >= (scores[b.id]||0) ? a : b); return <p style={{ color: '#166534', fontSize: '0.8rem', margin: 0 }}>{top.icon} {top.label} — {scores[top.id]}/60</p>; })()}
-              </div>
-              <div style={{ borderRadius: 12, background: '#fff7ed', border: '1px solid #fed7aa', padding: '1rem' }}>
-                <p style={{ fontWeight: 800, color: '#c2410c', margin: '0 0 8px', fontSize: '0.8rem' }}>🎯 Growth Area</p>
-                {(() => { const low = CATEGORIES.reduce((a, b) => (scores[a.id]||0) <= (scores[b.id]||0) ? a : b); return <p style={{ color: '#9a3412', fontSize: '0.8rem', margin: 0 }}>{low.icon} {low.label} — {scores[low.id]}/60</p>; })()}
-              </div>
-            </div>
+            {/* Top 5 Strengths & Opportunities */}
+            {(() => {
+              const scored = QUESTIONS.map(q => ({ ...q, score: latest.answers?.[q.id] || 0, cat: CATEGORIES.find(c => c.id === q.cat) }))
+                .sort((a, b) => b.score - a.score);
+              const top5 = scored.slice(0, 5);
+              const bottom5 = [...scored].sort((a, b) => a.score - b.score).slice(0, 5);
+              const renderRow = (q, rank, accent) => (
+                <div key={q.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
+                  <div style={{ minWidth: 24, height: 24, borderRadius: '50%', background: accent.bg, color: accent.text, fontWeight: 800, fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{rank}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-primary)', fontWeight: 600, lineHeight: 1.35 }}>{q.text}</p>
+                    <p style={{ margin: '3px 0 0', fontSize: '0.68rem', color: q.cat?.color || '#94a3b8', fontWeight: 700 }}>{q.cat?.icon} {q.cat?.label}</p>
+                  </div>
+                  <div style={{ fontWeight: 900, fontSize: '1rem', color: accent.text, flexShrink: 0 }}>{q.score}<span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 400 }}>/10</span></div>
+                </div>
+              );
+              return (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div className="card" style={{ padding: '1.25rem' }}>
+                    <p style={{ fontWeight: 800, color: '#15803d', margin: '0 0 12px', fontSize: '0.9rem' }}>💪 Top 5 Strengths</p>
+                    {top5.map((q, i) => renderRow(q, i + 1, { bg: '#dcfce7', text: '#15803d' }))}
+                  </div>
+                  <div className="card" style={{ padding: '1.25rem' }}>
+                    <p style={{ fontWeight: 800, color: '#c2410c', margin: '0 0 12px', fontSize: '0.9rem' }}>🎯 Top 5 Opportunities</p>
+                    {bottom5.map((q, i) => renderRow(q, i + 1, { bg: '#fee2e2', text: '#dc2626' }))}
+                  </div>
+                </div>
+              );
+            })()}
           </div>
           {/* Radar chart */}
           <div className="card" style={{ padding: '1.25rem', textAlign: 'center' }}>
