@@ -404,19 +404,21 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
     const guideKey = q.score >= 9 ? 'exemplary' : q.score >= 7 ? 'strong' : q.score >= 5 ? 'developing' : 'emerging';
     const guide    = q.guide || {};
 
-    // Opportunity header row
-    drawRect(MARGIN, y, CW, 22, 5, [248, 250, 252]);
-    drawRect(MARGIN, y, 3, 22, 1, [220, 38, 38]);
+    // Opportunity header row — question text full width, meta below
+    const headerLines = pdf.splitTextToSize(`${i + 1}. ${q.text || ''}`, CW - 14);
+    const headerH = Math.max(26, headerLines.length * 11 + 18);
+    checkSpace(headerH + 4);
+    drawRect(MARGIN, y, CW, headerH, 5, [248, 250, 252]);
+    drawRect(MARGIN, y, 3, headerH, 1, [220, 38, 38]);
     pdf.setFontSize(8.5);
     pdf.setFont('helvetica', 'bold');
     pdf.setTextColor(15, 32, 68);
-    const headerLines = pdf.splitTextToSize(`${i + 1}. ${q.text || ''}`, CW - 80);
-    pdf.text(headerLines, MARGIN + 10, y + 14);
+    pdf.text(headerLines, MARGIN + 10, y + 12);
     pdf.setFontSize(8);
     pdf.setFont('helvetica', 'normal');
     pdf.setTextColor(...(cat ? cat.color : [100, 116, 139]));
-    pdf.text(`${cat ? cat.label : ''}  ·  Score: ${q.score}/10  ·  ${lbl}`, MARGIN + CW - 145, y + 14);
-    y += 26;
+    pdf.text(`${cat ? cat.label : ''}  ·  Score: ${q.score}/10  ·  ${lbl}`, MARGIN + 10, y + headerH - 6);
+    y += headerH + 4;
 
     // Current behavior description
     if (guide[guideKey]) {
