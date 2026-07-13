@@ -51,7 +51,7 @@ function catScoreLabel(score60) {
   return scoreLabel(avg);
 }
 
-export function generateAssessmentReport(latest, personName = '', personRole = '') {
+export function generateAssessmentReport(latest, personName = '', personRole = '', allQuestions = []) {
   const pdf = new jsPDF({ unit: 'pt', format: 'a4' });
   const PAGE_W = 595;
   const MARGIN = 44;
@@ -97,10 +97,7 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
   const levelColor  = total >= 240 ? [13,148,136] : total >= 180 ? [37,99,235] : total >= 120 ? [217,119,6] : [220,38,38];
 
   // ─── Scored questions sorted ─────────────────────────────────────────────
-  // We need QUESTIONS array — import-friendly: embed minimal info
-  // (tools + text already available on the latest.answers keys, but we need
-  //  question text + tools. We'll rely on the caller passing them via `latest.questions`.)
-  const questions = latest.questions || [];
+  const questions = allQuestions.length > 0 ? allQuestions : (latest.questions || []);
   const scoredQs  = questions
     .map(q => ({ ...q, score: answers[q.id] || 0 }))
     .sort((a, b) => b.score - a.score);
@@ -111,7 +108,7 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
   const moduleCount = {};
   scoredQs.slice(-10).forEach(q => {
     extractModules(q.tools || '').forEach(m => {
-      moduleCount[m.label] = (moduleCount[m.label] || { ...m, count: 0 });
+      if (!moduleCount[m.label]) moduleCount[m.label] = { ...m, count: 0 };
       moduleCount[m.label].count += 1;
     });
   });
@@ -376,28 +373,27 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
     pdf.text('No specific modules recommended — all areas are strong.', MARGIN, y); y += 20;
   } else {
     const modColW = CW / 2;
-    recommendedModules.forEach((mod, i) => {
-      const col = i % 2;
-      const row = Math.floor(i / 2);
-      if (col === 0) { if (i > 0) y += 0; checkSpace(36); }
-      const mx = MARGIN + col * modColW;
-      const my = col === 0 ? y : y - (i % 2 === 1 ? 0 : 36);
-
-      drawRect(mx + 2, my, modColW - 6, 30, 6, [239, 246, 255]);
-      drawRect(mx + 2, my, 3, 30, 2, [37, 99, 235]);
-
-      pdf.setFontSize(9.5);
-      pdf.setFont('helvetica', 'bold');
-      pdf.setTextColor(15, 32, 68);
-      pdf.text(mod.label, mx + 12, my + 12);
-
-      pdf.setFontSize(8);
-      pdf.setFont('helvetica', 'normal');
-      pdf.setTextColor(100, 116, 139);
-      pdf.text(`Priority: #${i + 1}`, mx + 12, my + 24);
-
-      if (col === 1 || i === recommendedModules.length - 1) y += 36;
-    });
+    const rows = Math.ceil(recommendedModules.length / 2);
+    for (let row = 0; row < rows; row++) {
+      checkSpace(36);
+      for (let col = 0; col < 2; col++) {
+        const idx = row * 2 + col;
+        if (idx >= recommendedModules.length) break;
+        const mod = recommendedModules[idx];
+        const mx = MARGIN + col * modColW;
+        drawRect(mx + 2, y, modColW - 6, 30, 6, [239, 246, 255]);
+        drawRect(mx + 2, y, 3, 30, 2, [37, 99, 235]);
+        pdf.setFontSize(9.5);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(15, 32, 68);
+        pdf.text(mod.label, mx + 12, y + 13);
+        pdf.setFontSize(8);
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(100, 116, 139);
+        pdf.text(`Priority: #${idx + 1}`, mx + 12, y + 24);
+      }
+      y += 36;
+    }
   }
 
   y += 16;

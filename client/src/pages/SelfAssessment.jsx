@@ -750,7 +750,7 @@ export default function SelfAssessment() {
         <PageHeader icon="📊" title="Assessment Results" subtitle={`Completed ${date} · ${history.length} assessment${history.length !== 1 ? 's' : ''} total`}
           action={<div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => setView('history')} style={{ background: 'var(--card-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>📈 Progress</button>
-            <button onClick={() => generateAssessmentReport(latest, userProfile?.displayName || '', userProfile?.role || '')}
+            <button onClick={() => generateAssessmentReport(latest, userProfile?.displayName || '', userProfile?.role || '', QUESTIONS)}
               style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>📄 Download PDF</button>
             <button onClick={startNew} style={{ background: '#0f2044', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>Retake</button>
           </div>}
