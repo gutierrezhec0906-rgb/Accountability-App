@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
 import toast from 'react-hot-toast';
+import { generateAssessmentReport } from '../utils/assessmentReport';
 
 // ── Assessment data ──────────────────────────────────────────────
 const CATEGORIES = [
@@ -487,7 +488,7 @@ function scoreLevel(s) {
 
 // ── Main component ───────────────────────────────────────────────
 export default function SelfAssessment() {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const [view, setView]       = useState('intro');
   const [step, setStep]       = useState(0);
   const [answers, setAnswers] = useState({});
@@ -519,7 +520,7 @@ export default function SelfAssessment() {
     setSaving(true);
     try {
       const scores = computeScores(answers);
-      const entry = { date: new Date().toISOString().split('T')[0], scores, total: totalScore(scores), answers };
+      const entry = { date: new Date().toISOString().split('T')[0], scores, total: totalScore(scores), answers, questions: QUESTIONS };
       const snap = await getDoc(doc(db, 'users', currentUser.uid));
       const existing = snap.exists() ? (snap.data().selfAssessments || []) : [];
       await setDoc(doc(db, 'users', currentUser.uid), { selfAssessments: [...existing, entry] }, { merge: true });
@@ -749,6 +750,8 @@ export default function SelfAssessment() {
         <PageHeader icon="📊" title="Assessment Results" subtitle={`Completed ${date} · ${history.length} assessment${history.length !== 1 ? 's' : ''} total`}
           action={<div style={{ display: 'flex', gap: 8 }}>
             <button onClick={() => setView('history')} style={{ background: 'var(--card-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>📈 Progress</button>
+            <button onClick={() => generateAssessmentReport(latest, userProfile?.displayName || '', userProfile?.role || '')}
+              style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>📄 Download PDF</button>
             <button onClick={startNew} style={{ background: '#0f2044', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>Retake</button>
           </div>}
         />
