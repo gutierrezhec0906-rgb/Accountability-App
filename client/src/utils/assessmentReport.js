@@ -215,7 +215,115 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
   const intro = `This report summarizes ${personName ? personName + "'s" : 'your'} self-assessment results across the five leadership practices of the Accountability Leadership Framework. It highlights demonstrated strengths, priority development opportunities, a tailored set of recommended app modules, and a personal development timeline for the next 12 months.`;
   const introLines = pdf.splitTextToSize(intro, CW);
   pdf.text(introLines, MARGIN, y);
-  y += introLines.length * 13.5 + 10;
+  y += introLines.length * 13.5 + 16;
+
+  // ── Practice Profile radar chart ──────────────────────────────────────────
+  drawLine(MARGIN, y, MARGIN + CW, y); y += 14;
+
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(15, 32, 68);
+  pdf.text('Practice Profile', PAGE_W / 2, y, { align: 'center' }); y += 14;
+  pdf.setFontSize(8.5);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(100, 116, 139);
+  pdf.text('Score per leadership practice (out of 60)', PAGE_W / 2, y, { align: 'center' }); y += 18;
+
+  // Draw radar in remaining page space
+  const radarR  = 100;              // outer ring radius in pts
+  const radarCX = PAGE_W / 2;
+  const radarCY = y + radarR + 14;
+  const n = CATEGORIES.length;
+  const ang = i => (Math.PI * 2 * i) / n - Math.PI / 2;
+  const pt  = (i, frac) => ({
+    x: radarCX + radarR * frac * Math.cos(ang(i)),
+    y: radarCY + radarR * frac * Math.sin(ang(i)),
+  });
+
+  // Draw rings
+  [0.2, 0.4, 0.6, 0.8, 1.0].forEach(frac => {
+    const pts = CATEGORIES.map((_, i) => pt(i, frac));
+    pdf.setDrawColor(220, 232, 240);
+    pdf.setLineWidth(0.5);
+    pts.forEach((p, i) => {
+      const next = pts[(i + 1) % n];
+      pdf.line(p.x, p.y, next.x, next.y);
+    });
+  });
+
+  // Ring labels (20, 40, 60)
+  [20, 40, 60].forEach(v => {
+    const p = { x: radarCX + 3, y: radarCY - radarR * (v / 60) + 3 };
+    pdf.setFontSize(6.5);
+    pdf.setTextColor(180, 190, 210);
+    pdf.setFont('helvetica', 'normal');
+    pdf.text(String(v), p.x, p.y);
+  });
+
+  // Draw axes
+  CATEGORIES.forEach((_, i) => {
+    const outer = pt(i, 1);
+    pdf.setDrawColor(210, 220, 235);
+    pdf.setLineWidth(0.5);
+    pdf.line(radarCX, radarCY, outer.x, outer.y);
+  });
+
+  // Draw data polygon using lines()
+  const dataPoints = CATEGORIES.map((c, i) => pt(i, (scores[c.id] || 0) / 60));
+  pdf.setFillColor(179, 235, 227);
+  pdf.setDrawColor(13, 148, 136);
+  pdf.setLineWidth(1.8);
+  // Build lines array: each segment as [dx, dy, bezier_x1, bezier_y1, bezier_x2, bezier_y2] — for straight lines use dx/dy only
+  const lineSegments = dataPoints.map((p, i) => {
+    const next = dataPoints[(i + 1) % dataPoints.length];
+    return [next.x - p.x, next.y - p.y];
+  });
+  pdf.lines(lineSegments, dataPoints[0].x, dataPoints[0].y, [1, 1], 'FD', true);
+
+  // Dots
+  dataPoints.forEach((p, i) => {
+    pdf.setFillColor(...CATEGORIES[i].color);
+    pdf.circle(p.x, p.y, 3.5, 'F');
+    pdf.setFillColor(255, 255, 255);
+    pdf.circle(p.x, p.y, 1.8, 'F');
+  });
+
+  // Labels
+  CATEGORIES.forEach((cat, i) => {
+    const lp   = pt(i, 1.28);
+    const words = cat.label.split(' ');
+    // split into lines of max 2 words
+    const lblLines = [];
+    for (let w = 0; w < words.length; w += 2) lblLines.push(words.slice(w, w + 2).join(' '));
+
+    pdf.setFontSize(8);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(...cat.color);
+    const lineH = 9;
+    const startY = lp.y - ((lblLines.length - 1) * lineH) / 2;
+    lblLines.forEach((ln, li) => {
+      pdf.text(ln, lp.x, startY + li * lineH, { align: 'center' });
+    });
+  });
+
+  // Legend row below chart
+  const legendY = radarCY + radarR + 50;
+  const legendColW = CW / CATEGORIES.length;
+  CATEGORIES.forEach((cat, i) => {
+    const lx = MARGIN + i * legendColW;
+    pdf.setFillColor(...cat.color);
+    pdf.circle(lx + 5, legendY - 3, 4, 'F');
+    pdf.setFontSize(7.5);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(71, 85, 105);
+    const linesL = pdf.splitTextToSize(cat.label, legendColW - 16);
+    pdf.text(linesL, lx + 13, legendY);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(...cat.color);
+    pdf.text(String(scores[cat.id] || 0), lx + legendColW - 14, legendY);
+  });
+
+  y = legendY + 18;
 
   // ═══════════════════════════════════════════════════════════════════════════
   // PAGE 2 — TOP 5 STRENGTHS & TOP 5 OPPORTUNITIES
