@@ -28,6 +28,7 @@ import Scores from './pages/Scores';
 import Profile from './pages/Profile';
 import SmartGoals from './pages/SmartGoals';
 import Pricing from './pages/Pricing';
+import SelfAssessment from './pages/SelfAssessment';
 
 function PrivateLayout({ children }) {
   return (
@@ -68,6 +69,7 @@ export default function App() {
           <Route path="/smart-goals" element={<PrivateLayout><SmartGoals /></PrivateLayout>} />
           <Route path="/profile" element={<PrivateLayout><Profile /></PrivateLayout>} />
           <Route path="/pricing" element={<PrivateLayout><Pricing /></PrivateLayout>} />
+          <Route path="/self-assessment" element={<PrivateLayout><SelfAssessment /></PrivateLayout>} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </AuthProvider>

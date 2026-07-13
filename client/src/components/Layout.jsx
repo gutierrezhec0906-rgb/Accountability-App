@@ -297,6 +297,14 @@ export default function Layout({ children }) {
             {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Score Dashboard</span>}
           </button>
 
+          <button
+            className={`sidebar-link ${location.pathname === '/self-assessment' ? 'active' : ''}`}
+            onClick={() => { navigate('/self-assessment'); setMobileOpen(false); }}
+            title={collapsed ? 'Self-Assessment' : ''}>
+            <span style={{ fontSize: '1rem', flexShrink: 0 }}>📋</span>
+            {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Self-Assessment</span>}
+          </button>
+
           {/* Pricing / upgrade link */}
           <button
             className={`sidebar-link ${location.pathname === '/pricing' ? 'active' : ''}`}

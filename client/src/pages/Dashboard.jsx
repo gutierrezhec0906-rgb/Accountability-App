@@ -135,6 +135,12 @@ export default function Dashboard() {
               My SMART Goals
             </button>
             <button
+              onClick={() => navigate('/self-assessment')}
+              style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '0.5rem 1rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}
+            >
+              📋 Self-Assessment
+            </button>
+            <button
               onClick={() => navigate('/pricing')}
               style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '0.5rem 1rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}
             >
