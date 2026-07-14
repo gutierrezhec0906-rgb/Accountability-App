@@ -399,21 +399,22 @@ export function generate360Report(surveyData, selfLatest = null) {
 
       pdf.setFontSize(9); pdf.setFont('helvetica','bold'); pdf.setTextColor(15,32,68);
       pdf.text(qLines, MARGIN+28, y+14);
-      y += Math.max(24, qLines.length*11+6);
+      // Advance enough to clear both the 22pt badge and the question text
+      y += Math.max(28, qLines.length*11+10);
 
       if (curLines.length) {
         pdf.setFontSize(7.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(...lc);
-        pdf.text(`Peer sees (${lbl}):`, MARGIN+6, y); y += 10;
+        pdf.text(`Peer sees (${lbl}):`, MARGIN+28, y); y += 10;
         pdf.setFont('helvetica','normal'); pdf.setTextColor(71,85,105);
-        pdf.text(curLines, MARGIN+6, y); y += curLines.length*10+4;
+        pdf.text(curLines, MARGIN+28, y); y += curLines.length*10+4;
       }
 
       if (tgtLines.length) {
         const nextLbl = nextKey.charAt(0).toUpperCase()+nextKey.slice(1);
         pdf.setFontSize(7.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(13,148,136);
-        pdf.text(`To reach ${nextLbl}:`, MARGIN+6, y); y += 10;
+        pdf.text(`To reach ${nextLbl}:`, MARGIN+28, y); y += 10;
         pdf.setFont('helvetica','normal'); pdf.setTextColor(71,85,105);
-        pdf.text(tgtLines, MARGIN+6, y); y += tgtLines.length*10+4;
+        pdf.text(tgtLines, MARGIN+28, y); y += tgtLines.length*10+4;
       }
 
       drawLine(MARGIN, y+4, MARGIN+CW, y+4, [241,245,249]);

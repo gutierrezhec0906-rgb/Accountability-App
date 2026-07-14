@@ -455,17 +455,18 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(15, 32, 68);
       pdf.text(qLines, MARGIN + 28, y + 14);
-      y += Math.max(24, qLines.length * 11 + 6);
+      // Advance enough to clear the 22pt badge before drawing description text
+      y += Math.max(28, qLines.length * 11 + 10);
 
       // Current level description
       if (currentLines.length) {
         pdf.setFontSize(7.5);
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(...lvlColor);
-        pdf.text(`Current (${lbl}):`, MARGIN + 6, y); y += 10;
+        pdf.text(`Current (${lbl}):`, MARGIN + 28, y); y += 10;
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(71, 85, 105);
-        pdf.text(currentLines, MARGIN + 6, y);
+        pdf.text(currentLines, MARGIN + 28, y);
         y += currentLines.length * 10 + 4;
       }
 
@@ -475,10 +476,10 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
         pdf.setFont('helvetica', 'bold');
         pdf.setTextColor(13, 148, 136);
         const nextLbl = nextKey.charAt(0).toUpperCase() + nextKey.slice(1);
-        pdf.text(`To reach ${nextLbl}:`, MARGIN + 6, y); y += 10;
+        pdf.text(`To reach ${nextLbl}:`, MARGIN + 28, y); y += 10;
         pdf.setFont('helvetica', 'normal');
         pdf.setTextColor(71, 85, 105);
-        pdf.text(targetLines, MARGIN + 6, y);
+        pdf.text(targetLines, MARGIN + 28, y);
         y += targetLines.length * 10 + 4;
       }
 
@@ -532,11 +533,11 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
       pdf.setFontSize(8.5);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(220, 38, 38);
-      pdf.text('Current Behavior:', MARGIN + 6, y); y += 11;
+      pdf.text('Current Behavior:', MARGIN + 10, y); y += 11;
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(71, 85, 105);
-      const descLines = pdf.splitTextToSize(guide[guideKey], CW - 10);
-      pdf.text(descLines, MARGIN + 6, y);
+      const descLines = pdf.splitTextToSize(guide[guideKey], CW - 18);
+      pdf.text(descLines, MARGIN + 10, y);
       y += descLines.length * 11 + 6;
     }
 
@@ -546,11 +547,11 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
       pdf.setFontSize(8.5);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(13, 148, 136);
-      pdf.text('Target Behavior (next level):', MARGIN + 6, y); y += 11;
+      pdf.text('Target Behavior (next level):', MARGIN + 10, y); y += 11;
       pdf.setFont('helvetica', 'normal');
       pdf.setTextColor(71, 85, 105);
-      const targetLines = pdf.splitTextToSize(guide[nextKey], CW - 10);
-      pdf.text(targetLines, MARGIN + 6, y);
+      const targetLines = pdf.splitTextToSize(guide[nextKey], CW - 18);
+      pdf.text(targetLines, MARGIN + 10, y);
       y += targetLines.length * 11 + 6;
     }
 
@@ -559,7 +560,7 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
       pdf.setFontSize(8);
       pdf.setFont('helvetica', 'bold');
       pdf.setTextColor(100, 116, 139);
-      pdf.text(`Related App Tools: ${q.tools}`, MARGIN + 6, y);
+      pdf.text(`Related App Tools: ${q.tools}`, MARGIN + 10, y);
       y += 12;
     }
 
