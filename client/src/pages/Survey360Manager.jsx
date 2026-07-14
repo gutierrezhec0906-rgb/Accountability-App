@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
 import toast from 'react-hot-toast';
+import { generate360Report } from '../utils/survey360Report';
 
 const CATEGORIES = [
   { id: 'model',     label: 'Model the Way',            icon: '🧭', color: '#2563eb', bg: '#eff6ff', border: '#bfdbfe' },
@@ -240,11 +241,23 @@ export default function Survey360Manager() {
                 {responses.length} response{responses.length !== 1 ? 's' : ''} received
               </p>
             </div>
-            {selfLatest && (
-              <div style={{ background: '#f8fafc', borderRadius: 8, padding: '6px 12px', fontSize: '0.72rem', color: '#64748b' }}>
-                Dark line on bars = your self-score
-              </div>
-            )}
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              {selfLatest && (
+                <div style={{ background: '#f8fafc', borderRadius: 8, padding: '6px 12px', fontSize: '0.72rem', color: '#64748b' }}>
+                  Dark line on bars = your self-score
+                </div>
+              )}
+              {responses.length > 0 && (
+                <button
+                  onClick={() => generate360Report(
+                    { ...selected, leaderName: userProfile?.displayName || '', leaderRole: userProfile?.role || '' },
+                    selfLatest
+                  )}
+                  style={{ background: 'linear-gradient(135deg,#0f2044,#0d9488)', color: 'white', border: 'none', borderRadius: 10, padding: '0.5rem 1.25rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}>
+                  📄 Download PDF Report
+                </button>
+              )}
+            </div>
           </div>
 
           {responses.length === 0 ? (
