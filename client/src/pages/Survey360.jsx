@@ -105,40 +105,50 @@ export default function Survey360() {
     if (!relationship) { toast.error('Please select your relationship.'); return; }
     if (!allAnswered) { toast.error('Please answer all 30 questions.'); return; }
     setSaving(true);
+
+    const response = {
+      name: name.trim(),
+      relationship,
+      answers,
+      submittedAt: new Date().toISOString(),
+      scores: Object.fromEntries(
+        CATEGORIES.map(c => [c.id, QUESTIONS.filter(q => q.cat === c.id).reduce((s, q) => s + (answers[q.id] || 0), 0)])
+      ),
+    };
+
+    // Step 1: sign in anonymously so we have an auth token for Firestore writes
+    let anonUid = null;
     try {
-      // Anonymous sign-in is optional — proceed even if it fails
-      try { await signInAnonymously(auth); } catch (_) {}
-
-      const response = {
-        name: name.trim(),
-        relationship,
-        answers,
-        submittedAt: new Date().toISOString(),
-        scores: Object.fromEntries(
-          CATEGORIES.map(c => [c.id, QUESTIONS.filter(q => q.cat === c.id).reduce((s, q) => s + (answers[q.id] || 0), 0)])
-        ),
-      };
-
-      // Primary: write to leader's user doc (always works — same pattern as all other app data)
-      const leaderUid = survey?.leaderUid;
-      if (leaderUid) {
-        const userSnap = await getDoc(doc(db, 'users', leaderUid));
-        const existing = userSnap.exists() ? (userSnap.data()[`surveyResponses_${surveyId}`] || []) : [];
-        await setDoc(doc(db, 'users', leaderUid), {
-          [`surveyResponses_${surveyId}`]: [...existing, response],
-        }, { merge: true });
-      }
-
-      // Secondary: also try updating surveys360 collection (works if rules allow it)
-      try {
-        await updateDoc(doc(db, 'surveys360', surveyId), { responses: arrayUnion(response) });
-      } catch (_) {}
-
-      setSubmitted(true);
-    } catch (e) {
-      console.error(e);
-      toast.error('Could not submit. Please try again.');
+      const cred = await signInAnonymously(auth);
+      anonUid = cred.user.uid;
+    } catch (authErr) {
+      console.error('Anonymous auth failed:', authErr.code, authErr.message);
+      toast.error(`Auth error: ${authErr.code || authErr.message}. Enable Anonymous sign-in in Firebase console.`);
+      setSaving(false);
+      return;
     }
+
+    // Step 2: write response under anonymous user's own doc (rules allow auth.uid == uid)
+    try {
+      await setDoc(doc(db, 'users', anonUid), {
+        [`surveyResponse_${surveyId}`]: response,
+        surveyId,
+        leaderUid: survey?.leaderUid || '',
+        isAnonResponse: true,
+      }, { merge: true });
+    } catch (writeErr) {
+      console.error('Write failed:', writeErr.code, writeErr.message);
+      toast.error(`Save error: ${writeErr.code || writeErr.message}`);
+      setSaving(false);
+      return;
+    }
+
+    // Step 3: also try updating surveys360 (works if rules have allow update: if true)
+    try {
+      await updateDoc(doc(db, 'surveys360', surveyId), { responses: arrayUnion(response) });
+    } catch (_) {}
+
+    setSubmitted(true);
     setSaving(false);
   }
 

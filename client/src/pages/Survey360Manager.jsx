@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
@@ -116,31 +116,32 @@ export default function Survey360Manager() {
 
   async function loadSurveyDetail(surveyId) {
     try {
-      // Primary: read responses from user's own doc (reliable, no Firestore rules issue)
-      const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
-      const responsesFromUserDoc = userSnap.exists()
-        ? (userSnap.data()[`surveyResponses_${surveyId}`] || [])
-        : [];
-
-      // Secondary: also try the surveys360 collection and merge
-      let responsesFromCollection = [];
+      // Collect from surveys360 collection first (direct updateDoc path)
+      let responses = [];
       try {
         const colSnap = await getDoc(doc(db, 'surveys360', surveyId));
-        if (colSnap.exists()) responsesFromCollection = colSnap.data().responses || [];
+        if (colSnap.exists()) responses = colSnap.data().responses || [];
       } catch (_) {}
 
-      // Merge deduped by submittedAt
-      const seen = new Set(responsesFromUserDoc.map(r => r.submittedAt));
-      const merged = [...responsesFromUserDoc, ...responsesFromCollection.filter(r => !seen.has(r.submittedAt))];
+      // Also query anonymous user docs that submitted for this surveyId
+      try {
+        const q = query(collection(db, 'users'), where('surveyId', '==', surveyId), where('isAnonResponse', '==', true));
+        const snap = await getDocs(q);
+        const seen = new Set(responses.map(r => r.submittedAt));
+        snap.forEach(d => {
+          const data = d.data();
+          const r = data[`surveyResponse_${surveyId}`];
+          if (r && !seen.has(r.submittedAt)) { responses.push(r); seen.add(r.submittedAt); }
+        });
+      } catch (_) {}
 
-      // Find survey metadata
       const meta = surveys.find(s => s.surveyId === surveyId) || {};
       setSelected({
         surveyId,
         leaderName: userProfile?.displayName || '',
         leaderRole: userProfile?.role || '',
         ...meta,
-        responses: merged,
+        responses,
       });
     } catch (e) {
       console.error(e);
