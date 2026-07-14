@@ -72,7 +72,7 @@ export default function Survey360Manager() {
   const [copyMsg, setCopyMsg]   = useState('');
   const [confirmDelete, setConfirmDelete] = useState(null); // surveyId pending delete
 
-  const baseUrl = window.location.origin;
+  const baseUrl = 'https://www.accountability-app.com';
 
   useEffect(() => { if (currentUser) load(); }, [currentUser]);
 
