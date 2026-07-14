@@ -383,7 +383,114 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
   bottom5.forEach((q, i) => questionRow(q, i + 1, [220, 38, 38]));
 
   // ═══════════════════════════════════════════════════════════════════════════
-  // PAGE 3 — TAILORED ACTION PLAN
+  // PAGES 3+ — DETAILED QUESTION BREAKDOWN (all 30 questions by practice)
+  // ═══════════════════════════════════════════════════════════════════════════
+  newPage();
+
+  pdf.setFontSize(14);
+  pdf.setFont('helvetica', 'bold');
+  pdf.setTextColor(15, 32, 68);
+  pdf.text('Detailed Question Breakdown', MARGIN, y); y += 8;
+  pdf.setFontSize(9);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(100, 116, 139);
+  pdf.text('All 30 behaviors scored individually — current level and improvement target for each', MARGIN, y); y += 18;
+  drawLine(MARGIN, y, MARGIN + CW, y); y += 14;
+
+  const levelColors = {
+    Emerging:   [220, 38,  38 ],
+    Developing: [217,119,   6 ],
+    Strong:     [ 13,148, 136 ],
+    Exemplary:  [124, 58, 237 ],
+  };
+
+  CATEGORIES.forEach(cat => {
+    // Practice header
+    checkSpace(50);
+    drawRect(MARGIN, y, CW, 28, 6, cat.color);
+    pdf.setFontSize(11);
+    pdf.setFont('helvetica', 'bold');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text(`${cat.label}`, MARGIN + 10, y + 19);
+    const catScore = scores[cat.id] || 0;
+    pdf.setFontSize(9);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(255, 255, 255);
+    pdf.text(`Score: ${catScore}/60  ·  ${catScoreLabel(catScore)}`, MARGIN + CW - 120, y + 19);
+    y += 36;
+
+    const catQsList = scoredQs.filter(q => q.cat === cat.id).sort((a, b) => a.id - b.id);
+    catQsList.forEach((q, qi) => {
+      const lbl = scoreLabel(q.score);
+      const guide = q.guide || {};
+      const guideKey = q.score >= 9 ? 'exemplary' : q.score >= 7 ? 'strong' : q.score >= 5 ? 'developing' : 'emerging';
+      const nextKey  = guideKey === 'emerging' ? 'developing' : guideKey === 'developing' ? 'strong' : 'exemplary';
+      const lvlColor = levelColors[lbl] || [100,116,139];
+
+      const qLines       = pdf.splitTextToSize(q.text || '', CW - 56);
+      const currentLines = guide[guideKey] ? pdf.splitTextToSize(guide[guideKey], CW - 14) : [];
+      const targetLines  = (guide[nextKey] && nextKey !== guideKey) ? pdf.splitTextToSize(guide[nextKey], CW - 14) : [];
+
+      const blockH = qLines.length * 11 + currentLines.length * 10 + targetLines.length * 10 +
+        (currentLines.length ? 24 : 0) + (targetLines.length ? 20 : 0) + 22;
+      checkSpace(blockH + 8);
+
+      // Question row: number badge + text + score badge
+      drawRect(MARGIN, y, 22, 22, 4, cat.color);
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(255, 255, 255);
+      pdf.text(String(q.id), MARGIN + (q.id < 10 ? 7 : 4), y + 15);
+
+      // Score badge
+      drawRect(MARGIN + CW - 44, y, 44, 22, 4, lvlColor);
+      pdf.setFontSize(8.5);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(255, 255, 255);
+      pdf.text(`${q.score}/10`, MARGIN + CW - 39, y + 10);
+      pdf.setFontSize(7);
+      pdf.text(lbl, MARGIN + CW - 39, y + 19);
+
+      pdf.setFontSize(9);
+      pdf.setFont('helvetica', 'bold');
+      pdf.setTextColor(15, 32, 68);
+      pdf.text(qLines, MARGIN + 28, y + 14);
+      y += Math.max(24, qLines.length * 11 + 6);
+
+      // Current level description
+      if (currentLines.length) {
+        pdf.setFontSize(7.5);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(...lvlColor);
+        pdf.text(`Current (${lbl}):`, MARGIN + 6, y); y += 10;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(71, 85, 105);
+        pdf.text(currentLines, MARGIN + 6, y);
+        y += currentLines.length * 10 + 4;
+      }
+
+      // Next level target
+      if (targetLines.length) {
+        pdf.setFontSize(7.5);
+        pdf.setFont('helvetica', 'bold');
+        pdf.setTextColor(13, 148, 136);
+        const nextLbl = nextKey.charAt(0).toUpperCase() + nextKey.slice(1);
+        pdf.text(`To reach ${nextLbl}:`, MARGIN + 6, y); y += 10;
+        pdf.setFont('helvetica', 'normal');
+        pdf.setTextColor(71, 85, 105);
+        pdf.text(targetLines, MARGIN + 6, y);
+        y += targetLines.length * 10 + 4;
+      }
+
+      drawLine(MARGIN, y + 4, MARGIN + CW, y + 4, [241, 245, 249]);
+      y += 14;
+    });
+
+    y += 6;
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // TAILORED ACTION PLAN (bottom 5 opportunities)
   // ═══════════════════════════════════════════════════════════════════════════
   newPage();
 
