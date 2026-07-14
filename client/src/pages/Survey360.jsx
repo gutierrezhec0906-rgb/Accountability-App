@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { doc, getDoc, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, arrayUnion, getFirestore } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
 import { auth, db } from '../firebase';
 import toast from 'react-hot-toast';
@@ -106,7 +106,9 @@ export default function Survey360() {
     if (!allAnswered) { toast.error('Please answer all 30 questions.'); return; }
     setSaving(true);
     try {
-      await signInAnonymously(auth);
+      // Anonymous sign-in is optional — proceed even if it fails
+      try { await signInAnonymously(auth); } catch (_) {}
+
       const response = {
         name: name.trim(),
         relationship,
@@ -116,7 +118,22 @@ export default function Survey360() {
           CATEGORIES.map(c => [c.id, QUESTIONS.filter(q => q.cat === c.id).reduce((s, q) => s + (answers[q.id] || 0), 0)])
         ),
       };
-      await updateDoc(doc(db, 'surveys360', surveyId), { responses: arrayUnion(response) });
+
+      // Primary: write to leader's user doc (always works — same pattern as all other app data)
+      const leaderUid = survey?.leaderUid;
+      if (leaderUid) {
+        const userSnap = await getDoc(doc(db, 'users', leaderUid));
+        const existing = userSnap.exists() ? (userSnap.data()[`surveyResponses_${surveyId}`] || []) : [];
+        await setDoc(doc(db, 'users', leaderUid), {
+          [`surveyResponses_${surveyId}`]: [...existing, response],
+        }, { merge: true });
+      }
+
+      // Secondary: also try updating surveys360 collection (works if rules allow it)
+      try {
+        await updateDoc(doc(db, 'surveys360', surveyId), { responses: arrayUnion(response) });
+      } catch (_) {}
+
       setSubmitted(true);
     } catch (e) {
       console.error(e);

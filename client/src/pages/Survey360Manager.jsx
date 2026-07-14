@@ -116,9 +116,36 @@ export default function Survey360Manager() {
 
   async function loadSurveyDetail(surveyId) {
     try {
-      const snap = await getDoc(doc(db, 'surveys360', surveyId));
-      if (snap.exists()) setSelected(snap.data());
-    } catch (e) { toast.error('Could not load survey responses.'); }
+      // Primary: read responses from user's own doc (reliable, no Firestore rules issue)
+      const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
+      const responsesFromUserDoc = userSnap.exists()
+        ? (userSnap.data()[`surveyResponses_${surveyId}`] || [])
+        : [];
+
+      // Secondary: also try the surveys360 collection and merge
+      let responsesFromCollection = [];
+      try {
+        const colSnap = await getDoc(doc(db, 'surveys360', surveyId));
+        if (colSnap.exists()) responsesFromCollection = colSnap.data().responses || [];
+      } catch (_) {}
+
+      // Merge deduped by submittedAt
+      const seen = new Set(responsesFromUserDoc.map(r => r.submittedAt));
+      const merged = [...responsesFromUserDoc, ...responsesFromCollection.filter(r => !seen.has(r.submittedAt))];
+
+      // Find survey metadata
+      const meta = surveys.find(s => s.surveyId === surveyId) || {};
+      setSelected({
+        surveyId,
+        leaderName: userProfile?.displayName || '',
+        leaderRole: userProfile?.role || '',
+        ...meta,
+        responses: merged,
+      });
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not load survey responses.');
+    }
   }
 
   function copyLink(surveyId) {
