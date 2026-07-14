@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, collection, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
@@ -70,6 +70,7 @@ export default function Survey360Manager() {
   const [selected, setSelected] = useState(null);
   const [selfLatest, setSelfLatest] = useState(null);
   const [copyMsg, setCopyMsg]   = useState('');
+  const [confirmDelete, setConfirmDelete] = useState(null); // surveyId pending delete
 
   const baseUrl = window.location.origin;
 
@@ -150,6 +151,23 @@ export default function Survey360Manager() {
     }
   }
 
+  async function deleteSurvey(surveyId) {
+    try {
+      // Remove from surveys360 collection
+      try { await deleteDoc(doc(db, 'surveys360', surveyId)); } catch (_) {}
+      // Remove from user's surveys list
+      const updated = surveys.filter(s => s.surveyId !== surveyId);
+      await setDoc(doc(db, 'users', currentUser.uid), { surveys360: updated }, { merge: true });
+      setSurveys(updated);
+      if (selected?.surveyId === surveyId) setSelected(null);
+      toast.success('Survey deleted.');
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not delete survey.');
+    }
+    setConfirmDelete(null);
+  }
+
   function copyLink(surveyId) {
     const url = `${baseUrl}/survey/${surveyId}`;
     navigator.clipboard.writeText(url).then(() => {
@@ -201,7 +219,7 @@ export default function Survey360Manager() {
                         Created {new Date(s.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                       </p>
                     </div>
-                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                       <button onClick={() => copyLink(s.surveyId)}
                         style={{ background: copyMsg === s.surveyId ? '#0d9488' : '#f1f5f9', color: copyMsg === s.surveyId ? 'white' : '#475569', border: 'none', borderRadius: 8, padding: '5px 14px', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>
                         {copyMsg === s.surveyId ? '✓ Copied!' : '📋 Copy Link'}
@@ -210,6 +228,24 @@ export default function Survey360Manager() {
                         style={{ background: isSelected ? '#0f2044' : 'transparent', color: isSelected ? 'white' : '#0d9488', border: `1px solid ${isSelected ? '#0f2044' : '#0d9488'}`, borderRadius: 8, padding: '5px 14px', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>
                         {isSelected ? 'Close' : 'View Results'}
                       </button>
+                      {confirmDelete === s.surveyId ? (
+                        <>
+                          <span style={{ fontSize: '0.72rem', color: '#dc2626', fontWeight: 700 }}>Delete?</span>
+                          <button onClick={() => deleteSurvey(s.surveyId)}
+                            style={{ background: '#dc2626', color: 'white', border: 'none', borderRadius: 8, padding: '5px 12px', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>
+                            Yes, delete
+                          </button>
+                          <button onClick={() => setConfirmDelete(null)}
+                            style={{ background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 8, padding: '5px 10px', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>
+                            Cancel
+                          </button>
+                        </>
+                      ) : (
+                        <button onClick={() => setConfirmDelete(s.surveyId)}
+                          style={{ background: 'transparent', color: '#dc2626', border: '1px solid #fecaca', borderRadius: 8, padding: '5px 10px', fontWeight: 700, fontSize: '0.75rem', cursor: 'pointer' }}>
+                          🗑 Delete
+                        </button>
+                      )}
                     </div>
                   </div>
                   {/* URL display */}
