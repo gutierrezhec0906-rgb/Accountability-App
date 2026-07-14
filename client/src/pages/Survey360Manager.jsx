@@ -302,6 +302,42 @@ export default function Survey360Manager() {
                 ))}
               </div>
 
+              {/* Open-ended answers */}
+              {(() => {
+                const OPEN_QS = [
+                  { id: 'leaderStop',     label: 'What should this person STOP doing?'     },
+                  { id: 'leaderStart',    label: 'What should this person START doing?'    },
+                  { id: 'leaderContinue', label: 'What should this person CONTINUE doing?' },
+                  { id: 'teamStop',       label: 'What should the team STOP doing?'        },
+                  { id: 'teamStart',      label: 'What should the team START doing?'       },
+                  { id: 'teamContinue',   label: 'What should the team CONTINUE doing?'    },
+                  { id: 'additionalComments', label: 'Additional comments'                 },
+                ];
+                const hasOpen = responses.some(r => r.openAnswers && Object.values(r.openAnswers).some(v => v?.trim()));
+                if (!hasOpen) return null;
+                return (
+                  <div className="card" style={{ padding: '1.25rem', marginBottom: 16 }}>
+                    <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 14px', fontSize: '0.9rem' }}>Open-Ended Feedback</p>
+                    {OPEN_QS.map(oq => {
+                      const answers = responses.map(r => (r.openAnswers || {})[oq.id]).filter(a => a?.trim());
+                      if (!answers.length) return null;
+                      return (
+                        <div key={oq.id} style={{ marginBottom: 16 }}>
+                          <p style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.82rem', margin: '0 0 8px' }}>{oq.label}</p>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                            {answers.map((ans, i) => (
+                              <div key={i} style={{ background: '#f8fafc', borderLeft: '3px solid #0d9488', borderRadius: '0 8px 8px 0', padding: '8px 12px', fontSize: '0.82rem', color: '#334155', lineHeight: 1.5 }}>
+                                "{ans}"
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+
               {/* Respondent breakdown */}
               <div className="card" style={{ padding: '1.25rem' }}>
                 <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 14px', fontSize: '0.9rem' }}>Who responded</p>

@@ -424,6 +424,62 @@ export function generate360Report(surveyData, selfLatest = null) {
   });
 
   // ═══════════════════════════════════════════════════════════════════════════
+  // OPEN-ENDED RESPONSES PAGE
+  // ═══════════════════════════════════════════════════════════════════════════
+  newPage();
+
+  pdf.setFontSize(14); pdf.setFont('helvetica','bold'); pdf.setTextColor(15,32,68);
+  pdf.text('Open-Ended Feedback', MARGIN, y); y += 8;
+  pdf.setFontSize(9); pdf.setFont('helvetica','normal'); pdf.setTextColor(100,116,139);
+  pdf.text('Written responses from all respondents, grouped by question', MARGIN, y); y += 18;
+  drawLine(MARGIN, y, MARGIN+CW, y); y += 14;
+
+  const OPEN_QS = [
+    { id: 'leaderStop',     section: 'As a Leader', label: 'What should this person STOP doing?'     },
+    { id: 'leaderStart',    section: 'As a Leader', label: 'What should this person START doing?'    },
+    { id: 'leaderContinue', section: 'As a Leader', label: 'What should this person CONTINUE doing?' },
+    { id: 'teamStop',       section: 'As a Team',   label: 'What should the team STOP doing?'        },
+    { id: 'teamStart',      section: 'As a Team',   label: 'What should the team START doing?'       },
+    { id: 'teamContinue',   section: 'As a Team',   label: 'What should the team CONTINUE doing?'    },
+    { id: 'additionalComments', section: 'Additional', label: 'Additional comments'                  },
+  ];
+
+  const sectionColors = { 'As a Leader': [37,99,235], 'As a Team': [13,148,136], 'Additional': [124,58,237] };
+  let lastSection = '';
+
+  OPEN_QS.forEach(oq => {
+    const answers = responses
+      .map(r => (r.openAnswers || {})[oq.id])
+      .filter(a => a && a.trim());
+    if (!answers.length) return;
+
+    // Section header
+    if (oq.section !== lastSection) {
+      checkSpace(30);
+      const sc = sectionColors[oq.section] || [100,116,139];
+      drawRect(MARGIN, y, CW, 22, 5, sc);
+      pdf.setFontSize(10); pdf.setFont('helvetica','bold'); pdf.setTextColor(255,255,255);
+      pdf.text(oq.section, MARGIN+10, y+15); y += 30;
+      lastSection = oq.section;
+    }
+
+    checkSpace(28);
+    pdf.setFontSize(9.5); pdf.setFont('helvetica','bold'); pdf.setTextColor(15,32,68);
+    pdf.text(oq.label, MARGIN, y); y += 14;
+
+    answers.forEach((ans, ai) => {
+      const lines = pdf.splitTextToSize(`"${ans}"`, CW - 20);
+      checkSpace(lines.length * 11 + 12);
+      drawRect(MARGIN, y-2, CW, lines.length*11+10, 5, [248,250,252]);
+      drawRect(MARGIN, y-2, 3, lines.length*11+10, 2, [203,213,225]);
+      pdf.setFontSize(9); pdf.setFont('helvetica','normal'); pdf.setTextColor(51,65,85);
+      pdf.text(lines, MARGIN+10, y+8);
+      y += lines.length*11+14;
+    });
+    y += 6;
+  });
+
+  // ═══════════════════════════════════════════════════════════════════════════
   // LAST PAGE — INDIVIDUAL RESPONDENT SCORES
   // ═══════════════════════════════════════════════════════════════════════════
   newPage();

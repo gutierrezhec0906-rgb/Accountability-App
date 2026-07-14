@@ -61,6 +61,16 @@ const RELATIONSHIPS = ['Peer', 'Direct Report', 'Manager', 'Cross-functional Par
 // Build guide lookup from shared questions data
 const GUIDE_MAP = Object.fromEntries(SHARED_QUESTIONS.map(q => [q.id, q.guide]));
 
+const OPEN_QUESTIONS = [
+  { id: 'leaderStop',    section: 'As a Leader',  label: 'What should this person STOP doing?' },
+  { id: 'leaderStart',   section: 'As a Leader',  label: 'What should this person START doing?' },
+  { id: 'leaderContinue',section: 'As a Leader',  label: 'What should this person CONTINUE doing?' },
+  { id: 'teamStop',      section: 'As a Team',    label: 'What should the team STOP doing?' },
+  { id: 'teamStart',     section: 'As a Team',    label: 'What should the team START doing?' },
+  { id: 'teamContinue',  section: 'As a Team',    label: 'What should the team CONTINUE doing?' },
+  { id: 'additionalComments', section: 'Additional', label: 'Any additional comments or feedback for this person?' },
+];
+
 function scoreLabel(v) {
   if (v >= 9) return { label: 'Exemplary', color: '#7c3aed' };
   if (v >= 7) return { label: 'Strong',    color: '#0d9488' };
@@ -78,7 +88,8 @@ export default function Survey360() {
   const [name, setName]           = useState('');
   const [relationship, setRelationship] = useState('');
   const [answers, setAnswers]     = useState({});
-  const [step, setStep]           = useState(-1); // -1 = intro
+  const [openAnswers, setOpenAnswers] = useState({}); // text answers for open questions
+  const [step, setStep]           = useState(-1); // -1=intro, 0-4=practices, 5=open questions
   const [saving, setSaving]       = useState(false);
   const [openGuides, setOpenGuides] = useState({});
   function toggleGuide(qid) { setOpenGuides(g => ({ ...g, [qid]: !g[qid] })); }
@@ -99,6 +110,7 @@ export default function Survey360() {
   const catQs      = currentCat ? QUESTIONS.filter(q => q.cat === currentCat.id) : [];
   const totalAnswered = Object.keys(answers).length;
   const allAnswered   = totalAnswered === 30;
+  const isOpenStep    = step === 5;
 
   async function handleSubmit() {
     if (!name.trim()) { toast.error('Please enter your name.'); return; }
@@ -110,6 +122,7 @@ export default function Survey360() {
       name: name.trim(),
       relationship,
       answers,
+      openAnswers,
       submittedAt: new Date().toISOString(),
       scores: Object.fromEntries(
         CATEGORIES.map(c => [c.id, QUESTIONS.filter(q => q.cat === c.id).reduce((s, q) => s + (answers[q.id] || 0), 0)])
@@ -203,7 +216,7 @@ export default function Survey360() {
             You've been invited to provide honest, constructive feedback on <strong>{survey?.leaderName || 'your leader'}</strong>'s accountability behaviors. Your responses are <strong>completely anonymous</strong> and will only be seen as part of an aggregated report.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-            {[['30 questions', '⏱ ~10 minutes'],['Scale of 1–10','📊 Per behavior'],['Anonymous','🔒 Confidential'],['5 practices','🧭 Full picture']].map(([a,b]) => (
+            {[['37 questions', '⏱ ~12 minutes'],['Scale of 1–10','📊 Per behavior'],['Anonymous','🔒 Confidential'],['+ Open feedback','✍️ 7 written']].map(([a,b]) => (
               <div key={a} style={{ background: '#f8fafc', borderRadius: 10, padding: '0.625rem 0.875rem', display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span style={{ fontSize: '1rem' }}>{b.split(' ')[0]}</span>
                 <div>
@@ -253,7 +266,73 @@ export default function Survey360() {
   );
 
   // ── Question steps ────────────────────────────────────────────────────────
-  const progress = Math.round(((step * 6 + catQs.filter(q => answers[q.id]).length) / 30) * 100);
+  const progress = isOpenStep
+    ? 100
+    : Math.round(((step * 6 + catQs.filter(q => answers[q.id]).length) / 30) * 100);
+
+  // ── Open questions step ───────────────────────────────────────────────────
+  if (isOpenStep) {
+    const sections = [...new Set(OPEN_QUESTIONS.map(q => q.section))];
+    return (
+      <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '1rem' }}>
+        <div style={{ maxWidth: 680, margin: '0 auto' }}>
+          {/* Progress */}
+          <div style={{ background: 'white', borderRadius: 12, padding: '0.875rem 1.25rem', marginBottom: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span style={{ fontWeight: 700, color: '#0f2044', fontSize: '0.82rem' }}>Step 6 of 6 · ✍️ Open Feedback</span>
+              <span style={{ color: '#64748b', fontSize: '0.78rem' }}>30/30 rated questions done</span>
+            </div>
+            <div style={{ background: '#e2e8f0', borderRadius: 99, height: 7 }}>
+              <div style={{ height: 7, borderRadius: 99, background: 'linear-gradient(90deg,#0f2044,#0d9488)', width: '100%' }} />
+            </div>
+          </div>
+
+          <div style={{ background: 'white', borderRadius: 14, padding: '1.25rem', marginBottom: 16, boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}>
+            <p style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 6px' }}>Open-Ended Feedback</p>
+            <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0 }}>These questions are optional but very valuable. Share as much or as little as you like.</p>
+          </div>
+
+          {sections.map(section => (
+            <div key={section} style={{ marginBottom: 20 }}>
+              <div style={{ background: 'linear-gradient(135deg,#0f2044,#1e40af)', borderRadius: 10, padding: '0.5rem 1rem', marginBottom: 12 }}>
+                <p style={{ color: 'white', fontWeight: 800, margin: 0, fontSize: '0.85rem' }}>{section}</p>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {OPEN_QUESTIONS.filter(q => q.section === section).map((q, qi) => {
+                  const globalIdx = OPEN_QUESTIONS.indexOf(q) + 1;
+                  return (
+                    <div key={q.id} style={{ background: 'white', borderRadius: 12, padding: '1rem 1.25rem', boxShadow: '0 1px 4px rgba(0,0,0,0.05)', border: openAnswers[q.id] ? '1px solid #0d9488' : '1px solid #f1f5f9' }}>
+                      <label style={{ display: 'block', fontWeight: 700, color: '#0f172a', fontSize: '0.88rem', marginBottom: 8 }}>
+                        <span style={{ color: '#0d9488', marginRight: 6 }}>{globalIdx}.</span>{q.label}
+                      </label>
+                      <textarea
+                        value={openAnswers[q.id] || ''}
+                        onChange={e => setOpenAnswers(a => ({ ...a, [q.id]: e.target.value }))}
+                        placeholder="Share your thoughts here… (optional)"
+                        rows={3}
+                        style={{ width: '100%', boxSizing: 'border-box', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.625rem 0.875rem', fontSize: '0.875rem', resize: 'vertical', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}
+                      />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '2rem' }}>
+            <button onClick={() => setStep(4)}
+              style={{ background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 10, padding: '0.625rem 1.25rem', fontWeight: 700, cursor: 'pointer' }}>
+              ← Previous
+            </button>
+            <button onClick={handleSubmit} disabled={saving}
+              style={{ background: 'linear-gradient(135deg,#0f2044,#0d9488)', color: 'white', border: 'none', borderRadius: 10, padding: '0.625rem 1.75rem', fontWeight: 800, cursor: saving ? 'not-allowed' : 'pointer' }}>
+              {saving ? '⏳ Submitting…' : '✓ Submit Feedback'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', padding: '1rem' }}>
@@ -261,7 +340,7 @@ export default function Survey360() {
         {/* Progress bar */}
         <div style={{ background: 'white', borderRadius: 12, padding: '0.875rem 1.25rem', marginBottom: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ fontWeight: 700, color: '#0f2044', fontSize: '0.82rem' }}>Practice {step + 1} of 5 · {currentCat.icon} {currentCat.label}</span>
+            <span style={{ fontWeight: 700, color: '#0f2044', fontSize: '0.82rem' }}>Step {step + 1} of 6 · {currentCat.icon} {currentCat.label}</span>
             <span style={{ color: '#64748b', fontSize: '0.78rem' }}>{totalAnswered}/30 answered</span>
           </div>
           <div style={{ background: '#e2e8f0', borderRadius: 99, height: 7 }}>
@@ -310,11 +389,6 @@ export default function Survey360() {
         </div>
 
         {/* Navigation */}
-        {step < 4 && !allAnswered && (
-          <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 10, padding: '0.6rem 1rem', marginBottom: 12, fontSize: '0.78rem', color: '#92400e', fontWeight: 600 }}>
-            ⚠️ Answer all questions in this section before continuing
-          </div>
-        )}
         <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '2rem' }}>
           <button onClick={() => setStep(s => s - 1)}
             style={{ background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 10, padding: '0.625rem 1.25rem', fontWeight: 700, cursor: 'pointer' }}>
@@ -326,9 +400,9 @@ export default function Survey360() {
               Next Practice →
             </button>
           ) : (
-            <button onClick={handleSubmit} disabled={saving || !allAnswered}
-              style={{ background: allAnswered ? 'linear-gradient(135deg,#0f2044,#0d9488)' : '#e2e8f0', color: allAnswered ? 'white' : '#94a3b8', border: 'none', borderRadius: 10, padding: '0.625rem 1.5rem', fontWeight: 800, cursor: allAnswered ? 'pointer' : 'not-allowed' }}>
-              {saving ? '⏳ Submitting…' : `✓ Submit Feedback (${totalAnswered}/30)`}
+            <button onClick={() => { if (!allAnswered) { toast.error('Please answer all 30 rated questions first.'); return; } setStep(5); }}
+              style={{ background: 'linear-gradient(135deg,#0f2044,#0d9488)', color: 'white', border: 'none', borderRadius: 10, padding: '0.625rem 1.5rem', fontWeight: 700, cursor: 'pointer' }}>
+              Next: Open Feedback →
             </button>
           )}
         </div>
