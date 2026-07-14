@@ -373,9 +373,9 @@ export function generate360Report(surveyData, selfLatest = null) {
       const nextKey  = guideKey === 'emerging' ? 'developing' : guideKey === 'developing' ? 'strong' : 'exemplary';
 
       const qText    = PEER_TEXTS[q.id] || q.text || '';
-      const qLines   = pdf.splitTextToSize(qText, CW-56);
-      const curLines = guide[guideKey] ? pdf.splitTextToSize(guide[guideKey], CW-14) : [];
-      const tgtLines = (guide[nextKey] && nextKey !== guideKey) ? pdf.splitTextToSize(guide[nextKey], CW-14) : [];
+      const qLines   = pdf.splitTextToSize(qText, CW-92); // badge is 56pt wide, text starts at +28, leave 8pt gap
+      const curLines = guide[guideKey] ? pdf.splitTextToSize(guide[guideKey], CW-36) : [];
+      const tgtLines = (guide[nextKey] && nextKey !== guideKey) ? pdf.splitTextToSize(guide[nextKey], CW-36) : [];
       const blockH   = qLines.length*11 + curLines.length*10 + tgtLines.length*10 + (curLines.length?24:0) + (tgtLines.length?20:0) + 22;
       checkSpace(blockH+8);
 

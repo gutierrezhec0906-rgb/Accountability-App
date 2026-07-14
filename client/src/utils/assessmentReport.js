@@ -427,9 +427,9 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
       const nextKey  = guideKey === 'emerging' ? 'developing' : guideKey === 'developing' ? 'strong' : 'exemplary';
       const lvlColor = levelColors[lbl] || [100,116,139];
 
-      const qLines       = pdf.splitTextToSize(q.text || '', CW - 56);
-      const currentLines = guide[guideKey] ? pdf.splitTextToSize(guide[guideKey], CW - 14) : [];
-      const targetLines  = (guide[nextKey] && nextKey !== guideKey) ? pdf.splitTextToSize(guide[nextKey], CW - 14) : [];
+      const qLines       = pdf.splitTextToSize(q.text || '', CW - 92); // badge 56pt wide + 28pt left indent + 8pt gap
+      const currentLines = guide[guideKey] ? pdf.splitTextToSize(guide[guideKey], CW - 36) : [];
+      const targetLines  = (guide[nextKey] && nextKey !== guideKey) ? pdf.splitTextToSize(guide[nextKey], CW - 36) : [];
 
       const blockH = qLines.length * 11 + currentLines.length * 10 + targetLines.length * 10 +
         (currentLines.length ? 24 : 0) + (targetLines.length ? 20 : 0) + 22;
