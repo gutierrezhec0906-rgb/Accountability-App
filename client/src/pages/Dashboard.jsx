@@ -6,7 +6,7 @@ import { isLocked, TIER_LABELS, TIER_ICONS } from '../utils/subscription';
 const categories = [
   {
     id: 'model',
-    label: 'Model the Way',
+    label: 'Set the Bar',
     icon: '🧭',
     accent: '#3b82f6',
     bg: 'linear-gradient(135deg,#1e3a8a,#2563eb)',
@@ -20,7 +20,7 @@ const categories = [
   },
   {
     id: 'inspire',
-    label: 'Inspire & Share the Vision',
+    label: 'Spark the Vision',
     icon: '🔭',
     accent: '#0d9488',
     bg: 'linear-gradient(135deg,#134e4a,#0d9488)',
@@ -33,7 +33,7 @@ const categories = [
   },
   {
     id: 'challenge',
-    label: 'Challenge the Process',
+    label: 'Improve the Flow',
     icon: '⚙️',
     accent: '#d97706',
     bg: 'linear-gradient(135deg,#78350f,#d97706)',
@@ -46,7 +46,7 @@ const categories = [
   },
   {
     id: 'enable',
-    label: 'Enable Others to Act',
+    label: 'Enable the Team',
     icon: '🤝',
     accent: '#7c3aed',
     bg: 'linear-gradient(135deg,#4c1d95,#7c3aed)',
@@ -60,7 +60,7 @@ const categories = [
   },
   {
     id: 'encourage',
-    label: 'Encourage the Heart',
+    label: 'Winning with Compassion',
     icon: '❤️',
     accent: '#e11d48',
     bg: 'linear-gradient(135deg,#881337,#e11d48)',

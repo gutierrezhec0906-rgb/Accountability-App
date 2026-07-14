@@ -7,11 +7,11 @@ import toast from 'react-hot-toast';
 import { GUIDE_LEVELS, QUESTIONS as SHARED_QUESTIONS } from '../utils/assessmentQuestions';
 
 const CATEGORIES = [
-  { id: 'model',     label: 'Model the Way',            icon: '🧭', color: '#2563eb', light: '#eff6ff', border: '#bfdbfe' },
-  { id: 'inspire',   label: 'Inspire a Shared Vision',  icon: '🔭', color: '#0d9488', light: '#f0fdfa', border: '#99f6e4' },
-  { id: 'challenge', label: 'Challenge the Process',    icon: '⚙️', color: '#d97706', light: '#fffbeb', border: '#fcd34d' },
-  { id: 'enable',    label: 'Enable Others to Act',     icon: '🤝', color: '#7c3aed', light: '#fdf4ff', border: '#e9d5ff' },
-  { id: 'encourage', label: 'Encourage the Heart',      icon: '❤️', color: '#e11d48', light: '#fff1f2', border: '#fecdd3' },
+  { id: 'model',     label: 'Set the Bar',            icon: '🧭', color: '#2563eb', light: '#eff6ff', border: '#bfdbfe' },
+  { id: 'inspire',   label: 'Spark the Vision',  icon: '🔭', color: '#0d9488', light: '#f0fdfa', border: '#99f6e4' },
+  { id: 'challenge', label: 'Improve the Flow',    icon: '⚙️', color: '#d97706', light: '#fffbeb', border: '#fcd34d' },
+  { id: 'enable',    label: 'Enable the Team',     icon: '🤝', color: '#7c3aed', light: '#fdf4ff', border: '#e9d5ff' },
+  { id: 'encourage', label: 'Winning with Compassion',      icon: '❤️', color: '#e11d48', light: '#fff1f2', border: '#fecdd3' },
 ];
 
 const CAT_QUESTIONS = {

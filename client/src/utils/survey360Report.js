@@ -2,11 +2,11 @@ import { jsPDF } from 'jspdf';
 import { QUESTIONS } from './assessmentQuestions';
 
 const CATEGORIES = [
-  { id: 'model',     label: 'Model the Way',           color: [37,  99, 235] },
-  { id: 'inspire',   label: 'Inspire a Shared Vision', color: [13, 148, 136] },
-  { id: 'challenge', label: 'Challenge the Process',   color: [217,119,   6] },
-  { id: 'enable',    label: 'Enable Others to Act',    color: [124, 58, 237] },
-  { id: 'encourage', label: 'Encourage the Heart',     color: [225, 29,  72] },
+  { id: 'model',     label: 'Set the Bar',           color: [37,  99, 235] },
+  { id: 'inspire',   label: 'Spark the Vision', color: [13, 148, 136] },
+  { id: 'challenge', label: 'Improve the Flow',   color: [217,119,   6] },
+  { id: 'enable',    label: 'Enable the Team',    color: [124, 58, 237] },
+  { id: 'encourage', label: 'Winning with Compassion',     color: [225, 29,  72] },
 ];
 
 const REL_COLORS = {

@@ -8,11 +8,11 @@ import { generateAssessmentReport } from '../utils/assessmentReport';
 
 // ── Assessment data ──────────────────────────────────────────────
 const CATEGORIES = [
-  { id: 'model',    label: 'Model the Way',            icon: '🧭', color: '#2563eb', bg: 'linear-gradient(135deg,#1e3a8a,#2563eb)', light: '#eff6ff', border: '#bfdbfe', desc: 'Setting personal example and upholding shared values.' },
-  { id: 'inspire',  label: 'Inspire a Shared Vision',  icon: '🔭', color: '#0d9488', bg: 'linear-gradient(135deg,#134e4a,#0d9488)', light: '#f0fdfa', border: '#99f6e4', desc: 'Painting the future and enlisting others in the dream.' },
-  { id: 'challenge',label: 'Challenge the Process',    icon: '⚙️', color: '#d97706', bg: 'linear-gradient(135deg,#78350f,#d97706)', light: '#fffbeb', border: '#fcd34d', desc: 'Seeking innovation and learning from setbacks.' },
-  { id: 'enable',   label: 'Enable Others to Act',     icon: '🤝', color: '#7c3aed', bg: 'linear-gradient(135deg,#4c1d95,#7c3aed)', light: '#fdf4ff', border: '#e9d5ff', desc: 'Fostering collaboration and building capability.' },
-  { id: 'encourage',label: 'Encourage the Heart',      icon: '❤️', color: '#e11d48', bg: 'linear-gradient(135deg,#881337,#e11d48)', light: '#fff1f2', border: '#fecdd3', desc: 'Recognizing contributions and celebrating victories.' },
+  { id: 'model',    label: 'Set the Bar',            icon: '🧭', color: '#2563eb', bg: 'linear-gradient(135deg,#1e3a8a,#2563eb)', light: '#eff6ff', border: '#bfdbfe', desc: 'Setting personal example and upholding shared values.' },
+  { id: 'inspire',  label: 'Spark the Vision',  icon: '🔭', color: '#0d9488', bg: 'linear-gradient(135deg,#134e4a,#0d9488)', light: '#f0fdfa', border: '#99f6e4', desc: 'Painting the future and enlisting others in the dream.' },
+  { id: 'challenge',label: 'Improve the Flow',    icon: '⚙️', color: '#d97706', bg: 'linear-gradient(135deg,#78350f,#d97706)', light: '#fffbeb', border: '#fcd34d', desc: 'Seeking innovation and learning from setbacks.' },
+  { id: 'enable',   label: 'Enable the Team',     icon: '🤝', color: '#7c3aed', bg: 'linear-gradient(135deg,#4c1d95,#7c3aed)', light: '#fdf4ff', border: '#e9d5ff', desc: 'Fostering collaboration and building capability.' },
+  { id: 'encourage',label: 'Winning with Compassion',      icon: '❤️', color: '#e11d48', bg: 'linear-gradient(135deg,#881337,#e11d48)', light: '#fff1f2', border: '#fecdd3', desc: 'Recognizing contributions and celebrating victories.' },
 ];
 
 const QUESTIONS = [

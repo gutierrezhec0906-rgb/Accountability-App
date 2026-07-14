@@ -18,7 +18,7 @@ const topNavItems = [
 const navCategories = [
   {
     id: 'model',
-    label: 'Model the Way',
+    label: 'Set the Bar',
     icon: '🧭',
     color: '#60a5fa',
     items: [
@@ -30,7 +30,7 @@ const navCategories = [
   },
   {
     id: 'inspire',
-    label: 'Inspire the Vision',
+    label: 'Spark the Vision',
     icon: '🔭',
     color: '#34d399',
     items: [
@@ -41,7 +41,7 @@ const navCategories = [
   },
   {
     id: 'challenge',
-    label: 'Challenge the Process',
+    label: 'Improve the Flow',
     icon: '⚙️',
     color: '#fbbf24',
     items: [
@@ -52,7 +52,7 @@ const navCategories = [
   },
   {
     id: 'enable',
-    label: 'Enable Others to Act',
+    label: 'Enable the Team',
     icon: '🤝',
     color: '#a78bfa',
     items: [
@@ -64,7 +64,7 @@ const navCategories = [
   },
   {
     id: 'encourage',
-    label: 'Encourage the Heart',
+    label: 'Winning with Compassion',
     icon: '❤️',
     color: '#fb7185',
     items: [
