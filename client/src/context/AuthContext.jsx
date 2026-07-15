@@ -47,6 +47,7 @@ export function AuthProvider({ children }) {
 
     // Send welcome email via EmailJS (non-blocking — failure won't break signup)
     if (EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY) {
+      emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
       emailjs.send(
         EMAILJS_SERVICE_ID,
         EMAILJS_TEMPLATE_ID,
@@ -57,11 +58,7 @@ export function AuthProvider({ children }) {
           status: isFirst ? 'full access' : 'pending approval',
           is_first: isFirst ? 'true' : 'false',
         },
-        EMAILJS_PUBLIC_KEY,
-      ).then(() => console.log('EmailJS: welcome email sent'))
-       .catch((err) => console.error('EmailJS error:', err));
-    } else {
-      console.warn('EmailJS: missing env vars', { EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY });
+      ).catch(() => {});
     }
 
     return cred;
