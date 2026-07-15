@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -171,7 +172,90 @@ function fiveWhysPrintHTML(entry) {
 const WHY_COLORS = ['#0d9488', '#0d9488', '#f59e0b', '#f59e0b', '#ef4444'];
 const WHY_LABELS = ['Why #1', 'Why #2', 'Why #3', 'Why #4', 'Why #5'];
 
-function FiveWhys({ onSave, savedEntries, onDelete }) {
+// ─── Next Step Recommendation ────────────────────────────────────────────────
+function NextStepRecommendation({ title, problem, rootCause, onGoToA3 }) {
+  const navigate = useNavigate();
+  const [choice, setChoice] = useState(null); // 'action' | 'project'
+
+  return (
+    <div style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1e3a6e 100%)', borderRadius: 14, padding: '1.25rem', color: 'white' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+        <span style={{ fontSize: '1.1rem' }}>🧭</span>
+        <p style={{ fontWeight: 800, fontSize: '0.95rem', margin: 0 }}>What's your next step?</p>
+      </div>
+      <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', margin: '0 0 14px', lineHeight: 1.6 }}>
+        You've identified a root cause. Now choose how complex the fix is — that determines which tool to use next.
+      </p>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: choice ? 14 : 0 }}>
+        {/* Option A — simple action */}
+        <button onClick={() => setChoice('action')}
+          style={{ background: choice === 'action' ? '#0d9488' : 'rgba(255,255,255,0.08)', border: `2px solid ${choice === 'action' ? '#0d9488' : 'rgba(255,255,255,0.18)'}`, borderRadius: 12, padding: '14px 12px', cursor: 'pointer', textAlign: 'left', color: 'white', transition: 'all 0.15s' }}>
+          <p style={{ fontSize: '1.3rem', margin: '0 0 6px' }}>⚡</p>
+          <p style={{ fontWeight: 800, fontSize: '0.85rem', margin: '0 0 4px' }}>Quick Action</p>
+          <p style={{ fontSize: '0.73rem', color: 'rgba(255,255,255,0.75)', margin: 0, lineHeight: 1.5 }}>
+            The fix is a single, clear task — one owner, one step, done in days or weeks.
+          </p>
+        </button>
+
+        {/* Option B — complex project */}
+        <button onClick={() => setChoice('project')}
+          style={{ background: choice === 'project' ? '#7c3aed' : 'rgba(255,255,255,0.08)', border: `2px solid ${choice === 'project' ? '#7c3aed' : 'rgba(255,255,255,0.18)'}`, borderRadius: 12, padding: '14px 12px', cursor: 'pointer', textAlign: 'left', color: 'white', transition: 'all 0.15s' }}>
+          <p style={{ fontSize: '1.3rem', margin: '0 0 6px' }}>🗂️</p>
+          <p style={{ fontWeight: 800, fontSize: '0.85rem', margin: '0 0 4px' }}>Complex Project</p>
+          <p style={{ fontSize: '0.73rem', color: 'rgba(255,255,255,0.75)', margin: 0, lineHeight: 1.5 }}>
+            The fix involves multiple people, phases, or unknowns — needs structured planning.
+          </p>
+        </button>
+      </div>
+
+      {/* Action path */}
+      {choice === 'action' && (
+        <div style={{ background: 'rgba(13,148,136,0.15)', border: '1.5px solid #0d9488', borderRadius: 12, padding: '1rem' }}>
+          <p style={{ fontWeight: 700, color: '#5eead4', fontSize: '0.85rem', margin: '0 0 6px' }}>Go to Visual Management Board</p>
+          <p style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.8)', margin: '0 0 12px', lineHeight: 1.6 }}>
+            Create a new action card directly tied to your root cause. Set an owner, due date, and track it to completion on your board.
+          </p>
+          <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: '8px 12px', fontSize: '0.74rem', color: 'rgba(255,255,255,0.65)', marginBottom: 12, lineHeight: 1.6 }}>
+            <span style={{ fontWeight: 700, color: '#5eead4' }}>Root cause to fix: </span>{rootCause}
+          </div>
+          <button onClick={() => navigate('/visual-board')}
+            style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 9, padding: '0.55rem 1.25rem', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', width: '100%' }}>
+            Open Visual Management Board →
+          </button>
+        </div>
+      )}
+
+      {/* Project path */}
+      {choice === 'project' && (
+        <div style={{ background: 'rgba(124,58,237,0.15)', border: '1.5px solid #7c3aed', borderRadius: 12, padding: '1rem' }}>
+          <p style={{ fontWeight: 700, color: '#c4b5fd', fontSize: '0.85rem', margin: '0 0 6px' }}>Go to A3 Problem-Solving Template</p>
+          <p style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.8)', margin: '0 0 10px', lineHeight: 1.6 }}>
+            The A3 is built for complex fixes. Your 5 Whys answers will pre-fill three sections automatically — you just complete the rest.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 12 }}>
+            {[
+              { label: 'Title', value: title },
+              { label: '1. Background & Context', value: problem },
+              { label: '4. Root Cause Analysis', value: rootCause },
+            ].map(row => (
+              <div key={row.label} style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 7, padding: '6px 10px', fontSize: '0.73rem', lineHeight: 1.5 }}>
+                <span style={{ fontWeight: 700, color: '#c4b5fd' }}>{row.label}: </span>
+                <span style={{ color: 'rgba(255,255,255,0.75)', fontStyle: 'italic' }}>{row.value || '—'}</span>
+              </div>
+            ))}
+          </div>
+          <button onClick={() => onGoToA3({ title, background: problem, rootCause })}
+            style={{ background: '#7c3aed', color: 'white', border: 'none', borderRadius: 9, padding: '0.55rem 1.25rem', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', width: '100%' }}>
+            Open A3 Template with my data pre-filled →
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
   const [title,     setTitle]     = useState('');
   const [problem,   setProblem]   = useState('');
   const [whys,      setWhys]      = useState(['', '', '', '', '']);
@@ -321,6 +405,16 @@ function FiveWhys({ onSave, savedEntries, onDelete }) {
             🖨️ Print / Save PDF
           </button>
         </div>
+
+        {/* Next Step Recommendation */}
+        {rootCause.trim().length > 0 && (
+          <NextStepRecommendation
+            title={title || problem || 'Untitled 5 Whys'}
+            problem={problem}
+            rootCause={rootCause}
+            onGoToA3={onGoToA3}
+          />
+        )}
       </div>
       <SavedPanel entries={savedEntries} onDelete={onDelete} onLoad={loadEntry} printEntry={printEntry} />
     </div>
@@ -525,11 +619,19 @@ function a3PrintHTML(entry) {
   </div>`;
 }
 
-function A3Template({ onSave, savedEntries, onDelete }) {
+function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed }) {
   const [title, setTitle] = useState('');
   const [owner, setOwner] = useState('');
   const [date,  setDate]  = useState('');
   const [form,  setForm]  = useState(EMPTY_A3);
+
+  useEffect(() => {
+    if (!prefill) return;
+    setTitle(prefill.title || '');
+    setForm(f => ({ ...f, background: prefill.background || '', rootCause: prefill.rootCause || '' }));
+    onPrefillConsumed?.();
+    toast.success('A3 pre-filled from your 5 Whys analysis');
+  }, [prefill]);
 
   function loadEntry(e) {
     setTitle(e.title || '');
@@ -587,7 +689,8 @@ function A3Template({ onSave, savedEntries, onDelete }) {
 export default function ProblemSolving() {
   const { currentUser } = useAuth();
   const [activeTool, setActiveTool] = useState('5 Whys');
-  const [saved, setSaved] = useState({ '5whys': [], fishbone: [], a3: [] });
+  const [saved, setSaved]           = useState({ '5whys': [], fishbone: [], a3: [] });
+  const [a3Prefill, setA3Prefill]   = useState(null);
 
   async function fetchSaved() {
     if (!currentUser) return;
@@ -663,9 +766,28 @@ export default function ProblemSolving() {
 
       <div className="card" style={{ padding: '1.75rem' }}>
         <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '1.05rem', margin: '0 0 1.25rem' }}>{activeTool}</h3>
-        {activeTool === '5 Whys'          && <FiveWhys   onSave={handleSave} savedEntries={saved['5whys']}  onDelete={handleDelete} />}
+        {activeTool === '5 Whys' && (
+          <FiveWhys
+            onSave={handleSave}
+            savedEntries={saved['5whys']}
+            onDelete={handleDelete}
+            onGoToA3={({ title, background, rootCause }) => {
+              setA3Prefill({ title, background, rootCause });
+              setActiveTool('A3 Template');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+          />
+        )}
         {activeTool === 'Fishbone Diagram' && <Fishbone   onSave={handleSave} savedEntries={saved.fishbone} onDelete={handleDelete} />}
-        {activeTool === 'A3 Template'      && <A3Template onSave={handleSave} savedEntries={saved.a3}       onDelete={handleDelete} />}
+        {activeTool === 'A3 Template'      && (
+          <A3Template
+            onSave={handleSave}
+            savedEntries={saved.a3}
+            onDelete={handleDelete}
+            prefill={a3Prefill}
+            onPrefillConsumed={() => setA3Prefill(null)}
+          />
+        )}
       </div>
     </div>
   );
