@@ -58,7 +58,10 @@ export function AuthProvider({ children }) {
           is_first: isFirst ? 'true' : 'false',
         },
         EMAILJS_PUBLIC_KEY,
-      ).catch(() => {});
+      ).then(() => console.log('EmailJS: welcome email sent'))
+       .catch((err) => console.error('EmailJS error:', err));
+    } else {
+      console.warn('EmailJS: missing env vars', { EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY });
     }
 
     return cred;
