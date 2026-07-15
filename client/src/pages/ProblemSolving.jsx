@@ -51,6 +51,98 @@ function SavedPanel({ entries, onDelete, onLoad, printEntry }) {
 }
 
 // ─── 5 Whys ──────────────────────────────────────────────────────────────────
+
+const WHY_GUIDE = [
+  {
+    goal: 'Identify the immediate, visible cause — the thing you would see if you watched the problem happen.',
+    prompts: [
+      'What happened right before this problem occurred?',
+      'What broke, was skipped, or was different than normal?',
+      'If you were standing there when it happened, what would you have seen?',
+    ],
+    watchFor: 'Avoid restating the problem. "Why did the part fail inspection?" → "Because it didn\'t meet spec" is circular, not a cause.',
+  },
+  {
+    goal: 'Move one layer back — from the event to the condition that made the event possible.',
+    prompts: [
+      'Why did that condition exist in the first place?',
+      'Was this a one-time slip, or does it happen this way regularly?',
+      'Was there a step, check, or barrier that should have caught this?',
+    ],
+    watchFor: 'Don\'t stop at "human error." If the answer is "the operator made a mistake," ask what allowed that mistake — training, fatigue, unclear instructions, no error-proofing.',
+  },
+  {
+    goal: 'Start separating people from process. This is where the conversation shifts from what someone did to how the system is set up.',
+    prompts: [
+      'Is this caused by a missing procedure, an unclear one, or one that isn\'t followed?',
+      'Was this condition designed in, or did it drift over time?',
+      'Would a new person in this role make the same mistake? If yes, it\'s systemic.',
+    ],
+    watchFor: 'People often feel they\'ve found the root cause here because it feels satisfying. Push once more — ask "why does that condition exist" before stopping.',
+  },
+  {
+    goal: 'Get to the organizational or design-level factor — training systems, resource allocation, priorities, or how work is actually managed.',
+    prompts: [
+      'Was this a resourcing issue (time, people, tools, budget)?',
+      'Was there a decision made upstream that created this condition?',
+      'Is this a gap in a standard, or a standard that exists but isn\'t enforced?',
+    ],
+    watchFor: 'Watch for blame language ("management doesn\'t prioritize this"). Reframe: what specific decision-making process led to that priority?',
+  },
+  {
+    goal: 'Land on something specific enough that a fix is obvious, and structural enough that fixing it prevents recurrence — not just this one instance.',
+    prompts: [
+      'If we fixed only this, would the problem stop happening across the board — not just this one case?',
+      'Is this something we can actually act on (a process, a standard, a design)?',
+      'Have we reached a cause, or "that\'s just how it is here"? (The second usually means one more Why is needed.)',
+    ],
+    watchFor: 'Stop when the answer points to a process or standard you can act on. Keep going if the answer is still an event ("it broke") rather than a condition.',
+  },
+];
+
+const BLAME_WORDS = /\b(human error|operator error|employee error|worker error|staff error|person|mistake by|negligence)\b/i;
+
+function humanErrorNudge(text) {
+  if (!text) return null;
+  if (BLAME_WORDS.test(text)) return 'What allowed this to happen? Consider: training gaps, unclear instructions, no error-proofing, or time pressure.';
+  return null;
+}
+
+function problemStatementWarning(text) {
+  if (!text || text.trim().length < 10) return null;
+  const hasMetric = /\d/.test(text);
+  const hasBlame = /\b(don't care|doesn't care|won't|refuse|lazy|bad attitude)\b/i.test(text);
+  if (hasBlame) return 'Try removing blame language. Restate as an observable fact: what happened, how often, where.';
+  if (!hasMetric) return 'Tip: add a number to make this measurable — e.g. "12% of units failed" or "3 incidents in 30 days."';
+  return null;
+}
+
+function GuidePanel({ whyIndex }) {
+  const [open, setOpen] = useState(false);
+  const g = WHY_GUIDE[whyIndex];
+  return (
+    <div style={{ marginTop: 6 }}>
+      <button onClick={() => setOpen(o => !o)}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.72rem', color: '#64748b', fontWeight: 600, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+        {open ? '▾' : '▸'} {open ? 'Hide guide' : 'Show guide for this step'}
+      </button>
+      {open && (
+        <div style={{ marginTop: 8, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px', fontSize: '0.76rem', color: '#475569', lineHeight: 1.6 }}>
+          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 6px' }}>Goal</p>
+          <p style={{ margin: '0 0 10px' }}>{g.goal}</p>
+          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 6px' }}>Ask yourself</p>
+          <ul style={{ margin: '0 0 10px', paddingLeft: 18 }}>
+            {g.prompts.map((p, i) => <li key={i} style={{ marginBottom: 3 }}>{p}</li>)}
+          </ul>
+          <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 7, padding: '6px 10px', color: '#713f12' }}>
+            <span style={{ fontWeight: 700 }}>Watch for: </span>{g.watchFor}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function fiveWhysPrintHTML(entry) {
   const { problem, whys, rootCause } = entry.data;
   const date = entry.createdAt ? new Date(entry.createdAt.seconds * 1000).toLocaleDateString() : new Date().toLocaleDateString();
@@ -76,12 +168,17 @@ function fiveWhysPrintHTML(entry) {
   </div>`;
 }
 
+const WHY_COLORS = ['#0d9488', '#0d9488', '#f59e0b', '#f59e0b', '#ef4444'];
+const WHY_LABELS = ['Why #1', 'Why #2', 'Why #3', 'Why #4', 'Why #5'];
+
 function FiveWhys({ onSave, savedEntries, onDelete }) {
   const [title,     setTitle]     = useState('');
   const [problem,   setProblem]   = useState('');
   const [whys,      setWhys]      = useState(['', '', '', '', '']);
   const [rootCause, setRootCause] = useState('');
-  const stepColors = ['#0d9488', '#0d9488', '#f59e0b', '#f59e0b', '#ef4444'];
+
+  const problemReady = problem.trim().length >= 15;
+  const problemWarn  = problemStatementWarning(problem);
 
   function loadEntry(e) {
     setTitle(e.title || '');
@@ -103,30 +200,117 @@ function FiveWhys({ onSave, savedEntries, onDelete }) {
     printEntry(fakeEntry);
   }
 
+  // Build the context label shown above each Why input
+  function chainContext(i) {
+    if (i === 0) return problem.trim() || null;
+    return whys[i - 1].trim() || null;
+  }
+
   return (
     <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+        {/* Title */}
         <div>
           <label className="label">Analysis Title *</label>
           <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Line 2 Downtime — June 2026" />
         </div>
-        <div>
-          <label className="label">Problem Statement</label>
-          <textarea className="input" rows={2} value={problem} onChange={e => setProblem(e.target.value)} placeholder="Describe the problem clearly and specifically..." />
-        </div>
-        {whys.map((w, i) => (
-          <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-            <div style={{ width: 34, height: 34, borderRadius: '50%', background: stepColors[i], color: 'white', fontWeight: 900, fontSize: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 20 }}>{i + 1}</div>
-            <div style={{ flex: 1 }}>
-              <label className="label">Why #{i + 1}</label>
-              <textarea className="input" rows={2} value={w} onChange={e => setWhys(ws => ws.map((x, j) => j === i ? e.target.value : x))} placeholder={i === 0 ? 'Why does this problem occur?' : 'Why does that happen?'} />
-            </div>
+
+        {/* Problem Statement Gate */}
+        <div style={{ background: '#f8fafc', border: `2px solid ${problemReady ? '#0d9488' : '#e2e8f0'}`, borderRadius: 12, padding: '1rem', transition: 'border-color 0.2s' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: '1rem' }}>🎯</span>
+            <label className="label" style={{ margin: 0, color: '#0f2044' }}>Problem Statement</label>
+            {problemReady && <span style={{ fontSize: '0.7rem', background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>Ready</span>}
           </div>
-        ))}
+          <p style={{ fontSize: '0.74rem', color: '#64748b', margin: '0 0 8px', lineHeight: 1.5 }}>
+            Be specific, factual, and observable. No blame, no assumptions.<br />
+            <span style={{ color: '#ef4444' }}>✗</span> "Operators don't care about quality" &nbsp;→&nbsp;
+            <span style={{ color: '#0d9488' }}>✓</span> "12% of Unit X failed final inspection in the last 30 days"
+          </p>
+          <textarea className="input" rows={2} value={problem}
+            onChange={e => setProblem(e.target.value)}
+            placeholder="What happened? How often? Where? Include a number if possible." />
+          {problemWarn && (
+            <div style={{ marginTop: 6, fontSize: '0.73rem', color: '#92400e', background: '#fef9c3', border: '1px solid #fde047', borderRadius: 7, padding: '5px 10px' }}>
+              💡 {problemWarn}
+            </div>
+          )}
+          {!problemReady && problem.trim().length > 0 && (
+            <p style={{ marginTop: 6, fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic' }}>Keep going — add more detail to unlock the Why chain below.</p>
+          )}
+        </div>
+
+        {/* Why Chain */}
+        {problemReady ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {whys.map((w, i) => {
+              const ctx = chainContext(i);
+              const nudge = humanErrorNudge(w);
+              const color = WHY_COLORS[i];
+              return (
+                <div key={i} style={{ display: 'flex', gap: 0, alignItems: 'stretch' }}>
+                  {/* Left connector line + badge */}
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 44, flexShrink: 0 }}>
+                    {i > 0 && <div style={{ width: 2, flex: '0 0 16px', background: '#e2e8f0' }} />}
+                    <div style={{ width: 34, height: 34, borderRadius: '50%', background: color, color: 'white', fontWeight: 900, fontSize: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, zIndex: 1 }}>{i + 1}</div>
+                    {i < 4 && <div style={{ width: 2, flex: 1, minHeight: 16, background: '#e2e8f0' }} />}
+                  </div>
+
+                  {/* Card */}
+                  <div style={{ flex: 1, marginLeft: 10, marginBottom: i < 4 ? 0 : 0, paddingBottom: i < 4 ? 12 : 0 }}>
+                    <div style={{ background: 'white', border: `1.5px solid ${color}22`, borderLeft: `3px solid ${color}`, borderRadius: '0 10px 10px 0', padding: '10px 14px', marginTop: i === 0 ? 0 : 0 }}>
+                      <p style={{ fontWeight: 700, color, fontSize: '0.8rem', margin: '0 0 4px' }}>{WHY_LABELS[i]}</p>
+
+                      {/* Chain context — shows what this Why is answering */}
+                      {ctx && (
+                        <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 7, padding: '5px 10px', fontSize: '0.73rem', color: '#64748b', marginBottom: 8, lineHeight: 1.4 }}>
+                          <span style={{ fontWeight: 700, color: '#94a3b8', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                            {i === 0 ? 'Why did this happen?' : 'Why did that happen?'}
+                          </span><br />
+                          <span style={{ color: '#1e293b', fontStyle: 'italic' }}>"{ctx}"</span>
+                        </div>
+                      )}
+
+                      <textarea className="input" rows={2} value={w}
+                        onChange={e => setWhys(ws => ws.map((x, j) => j === i ? e.target.value : x))}
+                        placeholder={i === 0 ? 'What directly caused this? What would you have seen?' : 'What allowed that to happen?'}
+                        style={{ marginBottom: nudge ? 6 : 0 }} />
+
+                      {/* Human error nudge */}
+                      {nudge && (
+                        <div style={{ fontSize: '0.73rem', color: '#92400e', background: '#fef9c3', border: '1px solid #fde047', borderRadius: 7, padding: '5px 10px' }}>
+                          ⚠️ {nudge}
+                        </div>
+                      )}
+
+                      <GuidePanel whyIndex={i} />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div style={{ border: '2px dashed #e2e8f0', borderRadius: 12, padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem' }}>
+            <p style={{ margin: 0, fontSize: '1.5rem', marginBottom: 8 }}>🔒</p>
+            <p style={{ margin: 0, fontWeight: 600 }}>Fill in the Problem Statement above to unlock the Why chain</p>
+            <p style={{ margin: '4px 0 0', fontSize: '0.74rem' }}>A specific, measurable problem statement prevents drift in every Why that follows.</p>
+          </div>
+        )}
+
+        {/* Root Cause */}
         <div style={{ background: '#f0fdfa', border: '1.5px solid #0d9488', borderRadius: 12, padding: '1rem' }}>
-          <label className="label" style={{ color: '#0f766e' }}>Root Cause Identified</label>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+            <span>🎯</span>
+            <label className="label" style={{ color: '#0f766e', margin: 0 }}>Root Cause Identified</label>
+          </div>
+          <p style={{ fontSize: '0.73rem', color: '#0f766e', margin: '0 0 8px', lineHeight: 1.5 }}>
+            Stop here when the answer points to a process, standard, or system — something you can actually act on. If fixing this would prevent recurrence (not just patch this instance), you've found it.
+          </p>
           <textarea className="input" rows={2} value={rootCause} onChange={e => setRootCause(e.target.value)} placeholder="State the root cause and proposed countermeasure..." />
         </div>
+
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn-primary" style={{ flex: 1 }}
             onClick={() => onSave({ type: '5whys', title: title || problem || 'Untitled 5 Whys', data: { problem, whys, rootCause }, onSaved: () => { setTitle(''); setProblem(''); setWhys(['','','','','']); setRootCause(''); } })}>
