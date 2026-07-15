@@ -865,7 +865,7 @@ function A3GuidePanel({ fieldKey }) {
 }
 
 const EMPTY_IMPL_ROW = () => ({ id: Date.now() + Math.random(), action: '', owner: '', dueDate: '' });
-const EMPTY_A3 = { background: '', currentState: '', targetState: '', rootCause: '', countermeasures: '', implementationPlan: [EMPTY_IMPL_ROW()], followUp: '' };
+const EMPTY_A3 = { background: '', currentState: '', targetState: '', rootCause: '', countermeasures: '', implementationPlan: [EMPTY_IMPL_ROW()], followUp: '', followUpDate: '', followUpVerification: '' };
 const A3_PRINT_FIELDS = [
   { key: 'background',         label: '2. Background' },
   { key: 'currentState',       label: '3. Current Condition' },
@@ -942,11 +942,18 @@ function a3PrintHTML(entry) {
     { num: '03', label: 'Goal / Target',      key: 'targetState'  },
     { num: '04', label: 'Root Cause Analysis',key: 'rootCause'    },
   ];
+  const followUpContent = d.followUp || '';
+  const followUpExtra = (d.followUpDate || d.followUpVerification)
+    ? `\n\n📅 Follow-up scheduled: ${d.followUpDate ? new Date(d.followUpDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' }) : '—'}` +
+      (d.followUpVerification ? `\nVerification: ${d.followUpVerification}` : '')
+    : '';
+
   const rightSections = [
     { num: '05', label: 'Countermeasures',    key: 'countermeasures'    },
     { num: '06', label: 'Implementation Plan',key: 'implementationPlan' },
-    { num: '07', label: 'Follow-up / Results',key: 'followUp'           },
+    { num: '07', label: 'Follow-up / Results',key: '_followUp'          },
   ];
+  d._followUp = followUpContent + followUpExtra;
 
   return `<!doctype html><html><head><meta charset="utf-8">
   <title>A3 — ${entry.title || 'Untitled'}</title>
@@ -1026,7 +1033,7 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
     const impl = Array.isArray(rawImpl)
       ? rawImpl
       : (rawImpl ? [{ id: Date.now(), action: rawImpl, owner: '', dueDate: '' }] : [EMPTY_IMPL_ROW()]);
-    setForm({ ...EMPTY_A3, ...e.data, implementationPlan: impl });
+    setForm({ ...EMPTY_A3, ...e.data, implementationPlan: impl, followUpDate: e.data.followUpDate || '', followUpVerification: e.data.followUpVerification || '' });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -1109,7 +1116,74 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
                 )}
               </div>
 
-              {isImpl ? (
+              {key === 'followUp' ? (
+                /* ── Follow-up / Results section ── */
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  <textarea
+                    className="input"
+                    rows={3}
+                    value={form.followUp}
+                    onChange={e => setForm(f => ({ ...f, followUp: e.target.value }))}
+                    placeholder={g.placeholder}
+                  />
+
+                  {/* Follow-up notification scheduler */}
+                  <div style={{ background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: 10, padding: '0.85rem 1rem' }}>
+                    <p style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.8rem', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      🔔 Schedule a Follow-up Verification
+                    </p>
+                    <p style={{ fontSize: '0.72rem', color: '#0c4a6e', margin: '0 0 10px', lineHeight: 1.5 }}>
+                      Set a reminder to verify the fix is holding. Choose a preset or pick a custom date.
+                    </p>
+
+                    {/* Quick-select buttons */}
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 10 }}>
+                      {[30, 60, 90].map(days => {
+                        const d = new Date(); d.setDate(d.getDate() + days);
+                        const iso = d.toISOString().slice(0, 10);
+                        const active = form.followUpDate === iso;
+                        return (
+                          <button key={days}
+                            onClick={() => setForm(f => ({ ...f, followUpDate: iso }))}
+                            style={{ padding: '0.4rem 1rem', borderRadius: 8, border: `1.5px solid ${active ? '#0369a1' : '#bae6fd'}`, background: active ? '#0369a1' : 'white', color: active ? 'white' : '#0369a1', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.15s' }}>
+                            {days} Days
+                          </button>
+                        );
+                      })}
+                      <span style={{ display: 'flex', alignItems: 'center', fontSize: '0.75rem', color: '#64748b', margin: '0 4px' }}>or pick a date:</span>
+                      <input
+                        type="date"
+                        className="input"
+                        value={form.followUpDate}
+                        onChange={e => setForm(f => ({ ...f, followUpDate: e.target.value }))}
+                        style={{ margin: 0, width: 'auto', flex: '0 0 160px' }}
+                      />
+                      {form.followUpDate && (
+                        <button onClick={() => setForm(f => ({ ...f, followUpDate: '' }))}
+                          style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.8rem', padding: '0 4px' }} title="Clear date">✕</button>
+                      )}
+                    </div>
+
+                    {/* Verification action */}
+                    <label className="label" style={{ marginBottom: 4 }}>Verification Action</label>
+                    <input
+                      className="input"
+                      value={form.followUpVerification}
+                      onChange={e => setForm(f => ({ ...f, followUpVerification: e.target.value }))}
+                      placeholder="e.g. Review weekly defect rate for 3 consecutive weeks below 2.5%"
+                      style={{ margin: 0 }}
+                    />
+
+                    {/* Confirmation chip if date is set */}
+                    {form.followUpDate && (
+                      <div style={{ marginTop: 10, background: '#e0f2fe', border: '1px solid #7dd3fc', borderRadius: 7, padding: '6px 10px', fontSize: '0.75rem', color: '#0369a1', fontWeight: 600 }}>
+                        📅 Follow-up scheduled for {new Date(form.followUpDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}
+                        {form.followUpVerification && <> — <em style={{ fontWeight: 400 }}>{form.followUpVerification}</em></>}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ) : isImpl ? (
                 /* ── Implementation Plan grid ── */
                 <div>
                   {/* Column headers */}
