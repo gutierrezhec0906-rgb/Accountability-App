@@ -45,6 +45,194 @@ function fmt(dateStr) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+// ─── LOB Guide ────────────────────────────────────────────────────────────────
+
+const LOB_STEPS = [
+  {
+    id: 'before',
+    icon: '📋',
+    title: 'Before You Start',
+    color: '#0f2044',
+    content: `LOB is a planning tool for work that repeats across multiple units — houses in a development, floors in a building, aircraft in a production line, stations on an assembly line. It shows whether each activity is keeping pace with the others, so you can spot a bottleneck before it happens.`,
+    checks: [
+      'The repeating unit — what\'s being repeated (house, floor, aircraft, station)',
+      'The activity sequence — the fixed order of operations on every unit',
+      'The production rate — how many units per time period you need to deliver to hit the deadline',
+    ],
+    prompts: [
+      'What is the unit of repetition, and how many units are there total?',
+      'What is the required delivery rate (units/week, units/day)?',
+      'Is the sequence of activities truly identical unit to unit, or does it vary?',
+    ],
+    watchFor: 'If the work isn\'t actually repetitive (each unit is different), LOB isn\'t the right tool.',
+  },
+  {
+    id: 'sequence',
+    icon: '1️⃣',
+    title: 'Step 1 — Confirm the Activity Sequence',
+    color: '#0d9488',
+    content: 'Lock in the fixed order every unit goes through. Each row in your LOB table is one activity — enter them top-to-bottom in the order they happen on a single unit.',
+    prompts: [
+      'What are the major activities/trades in order?',
+      'Is there a hard dependency between each (can\'t start B until A finishes on that unit), or can they overlap?',
+      'Are there any activities that only apply to some units (exceptions)?',
+    ],
+  },
+  {
+    id: 'rate',
+    icon: '2️⃣',
+    title: 'Step 2 — Set the Required Delivery Rate',
+    color: '#0d9488',
+    content: 'Establish the "master" slope everything else has to match or beat. Your date columns represent checkpoints in time — the spacing between columns should reflect your planned production rate.',
+    prompts: [
+      'What\'s the contractual or business deadline for the last unit?',
+      'Working backward, how many units per week/day does that require?',
+      'Is there a required handover rate too (e.g. 2 units/week to the customer), separate from the production rate?',
+    ],
+  },
+  {
+    id: 'rates',
+    icon: '3️⃣',
+    title: 'Step 3 — Determine Each Activity\'s Rate & Duration',
+    color: '#f59e0b',
+    content: 'Find out how fast each trade/activity can actually go, based on crew size and real productivity — not wishful thinking. Enter this as a % complete per date column.',
+    prompts: [
+      'How long does this activity take on one unit, with the planned crew size?',
+      'How many crews are available, and does adding a crew actually speed up the rate?',
+      'Is this rate based on real historical data, or an estimate?',
+    ],
+    watchFor: 'Estimates are fine to start — but flag them. An overconfident rate assumption is the most common cause of LOB collisions.',
+  },
+  {
+    id: 'collisions',
+    icon: '4️⃣',
+    title: 'Step 4 — Check for Collisions',
+    color: '#dc2626',
+    content: 'Identify where a faster activity behind will catch up to a slower one ahead. In this table: if a later row\'s % completion is reaching or exceeding an earlier row\'s at the same date column, you have a collision.',
+    prompts: [
+      'Does any activity\'s progress reach the activity before it at the same date?',
+      'If two activities are converging, which needs a buffer, a faster rate, or a later start?',
+      'Is the gap ("buffer") between activities big enough to absorb normal variation (weather, material delay, rework)?',
+    ],
+    watchFor: 'Converging lines are a warning — not a failure yet. Act on convergence before the lines cross.',
+  },
+  {
+    id: 'track',
+    icon: '5️⃣',
+    title: 'Step 5 — Track Actual vs. Planned',
+    color: '#7c3aed',
+    content: 'Update your % complete cells as actual progress comes in. LOB is a living tracking tool — not a one-time plan. Red cells mean that activity is past its planned date and needs attention.',
+    prompts: [
+      'Where is each activity\'s actual progress diverging from planned?',
+      'Is the gap between activities shrinking — heading toward a future collision — even if no collision has happened yet?',
+      'What\'s the corrective action if an activity is falling behind its planned rate?',
+    ],
+    watchFor: 'Teams that build the chart once and never update it lose all the value. Schedule a weekly update — 10 minutes is enough.',
+  },
+];
+
+function LOBGuide() {
+  const [open, setOpen] = useState(false);
+  const [expandedStep, setExpandedStep] = useState(null);
+
+  return (
+    <div style={{ marginBottom: '1.25rem' }}>
+      {/* Header toggle */}
+      <div
+        onClick={() => setOpen(o => !o)}
+        style={{ background: 'linear-gradient(90deg,#0f2044,#1e3a6e)', borderRadius: open ? '12px 12px 0 0' : 12, padding: '0.85rem 1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: '1.1rem' }}>📘</span>
+          <div>
+            <p style={{ color: 'white', fontWeight: 700, fontSize: '0.875rem', margin: 0 }}>LOB Guide — How to Build a Line of Balance</p>
+            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.72rem', margin: '2px 0 0' }}>
+              What it's for · 5 steps · Prompt questions · What to watch for
+            </p>
+          </div>
+        </div>
+        <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', transition: 'transform 0.2s', display: 'inline-block', transform: open ? 'rotate(90deg)' : 'none' }}>›</span>
+      </div>
+
+      {open && (
+        <div style={{ border: '1px solid #dde3ec', borderTop: 'none', borderRadius: '0 0 12px 12px', background: '#fafbfc', overflow: 'hidden' }}>
+
+          {/* What LOB is for */}
+          <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e8edf5', background: 'white' }}>
+            <p style={{ fontWeight: 700, color: '#0f2044', fontSize: '0.82rem', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ background: '#0f2044', color: 'white', padding: '2px 7px', borderRadius: 5, fontSize: '0.7rem', letterSpacing: '0.05em' }}>WHAT IT IS</span>
+            </p>
+            <p style={{ fontSize: '0.8rem', color: '#475569', margin: '0 0 8px', lineHeight: 1.65 }}>
+              Line of Balance is a <strong>planning and scheduling tool</strong> — used when the <em>same sequence of work repeats</em> across multiple units (houses, floors, aircraft, stations). It shows whether each activity is keeping pace with the others, so you can spot where one will bottleneck the whole schedule before it happens.
+            </p>
+            <div style={{ background: '#f8fafc', borderRadius: 8, padding: '0.6rem 0.85rem', fontFamily: 'monospace', fontSize: '0.72rem', color: '#0f2044', lineHeight: 1.8, overflowX: 'auto', whiteSpace: 'pre' }}>{`Units
+ 20 |                    /──Finishes
+    |                 /──/──Electrical
+ 15 |              /──/──/──Framing
+    |           /──/──/──/──Foundation
+ 10 |        /──/──/──/
+    |     /──/──/──/
+  5 |  /──/──/──/
+    |/──/──/──/
+  0 +──────────────────────────── Time
+    Wk1  Wk4  Wk8  Wk12  Wk16`}</div>
+            <p style={{ fontSize: '0.73rem', color: '#64748b', margin: '8px 0 0', lineHeight: 1.5 }}>
+              Each activity is a diagonal line — its slope is the production rate. <strong>Parallel lines = smooth flow. Converging lines = collision ahead.</strong>
+            </p>
+          </div>
+
+          {/* Steps */}
+          {LOB_STEPS.map((step, si) => {
+            const isEx = expandedStep === step.id;
+            return (
+              <div key={step.id} style={{ borderBottom: si < LOB_STEPS.length - 1 ? '1px solid #e8edf5' : 'none' }}>
+                <button
+                  onClick={() => setExpandedStep(isEx ? null : step.id)}
+                  style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: '1rem', flexShrink: 0 }}>{step.icon}</span>
+                  <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.82rem', flex: 1 }}>{step.title}</span>
+                  <span style={{ color: '#94a3b8', fontSize: '0.75rem', transition: 'transform 0.15s', display: 'inline-block', transform: isEx ? 'rotate(90deg)' : 'none' }}>›</span>
+                </button>
+
+                {isEx && (
+                  <div style={{ padding: '0 1.25rem 1rem 2.75rem', background: 'white' }}>
+                    <p style={{ fontSize: '0.8rem', color: '#475569', margin: '0 0 10px', lineHeight: 1.65 }}>{step.content}</p>
+
+                    {step.checks && (
+                      <div style={{ marginBottom: 10 }}>
+                        <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0f2044', margin: '0 0 5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>You need these 3 things before starting:</p>
+                        <ul style={{ margin: 0, paddingLeft: 18 }}>
+                          {step.checks.map((c, i) => (
+                            <li key={i} style={{ fontSize: '0.78rem', color: '#1e293b', marginBottom: 3, lineHeight: 1.5 }}>{c}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    <div style={{ marginBottom: step.watchFor ? 10 : 0 }}>
+                      <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0f2044', margin: '0 0 5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ask yourself</p>
+                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                        {step.prompts.map((p, i) => (
+                          <li key={i} style={{ fontSize: '0.78rem', color: '#475569', marginBottom: 3, lineHeight: 1.5 }}>{p}</li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {step.watchFor && (
+                      <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 7, padding: '6px 10px', fontSize: '0.75rem', color: '#713f12', lineHeight: 1.5 }}>
+                        <span style={{ fontWeight: 700 }}>⚠️ Watch for: </span>{step.watchFor}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function LOB() {
   const { currentUser } = useAuth();
   const [lobs, setLobs] = useState([]);
@@ -218,6 +406,8 @@ export default function LOB() {
           </button>
         }
       />
+
+      <LOBGuide />
 
       {/* New LOB form */}
       {showNewForm && (
@@ -514,6 +704,31 @@ export default function LOB() {
       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
         Click any date header to set a due date · Click "+ Col" to add more date columns · Click ✏️ to edit a task · Click the LOB name above to rename
       </p>
+      {(activeLob.tasks || []).length > 1 && (() => {
+        // Collision detector: warn if any row's latest filled % >= the row above it at the same column
+        const tasks = activeLob.tasks;
+        let collisionWarning = false;
+        for (let ci = 0; ci < activeLob.dates.length; ci++) {
+          for (let ti = 1; ti < tasks.length; ti++) {
+            const above = parseFloat(tasks[ti - 1].cells[ci]);
+            const below = parseFloat(tasks[ti].cells[ci]);
+            if (!isNaN(above) && !isNaN(below) && below >= above && above > 0) {
+              collisionWarning = true;
+            }
+          }
+        }
+        return collisionWarning ? (
+          <div style={{ marginTop: '0.75rem', background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 10, padding: '0.75rem 1rem', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>⚠️</span>
+            <div>
+              <p style={{ fontWeight: 700, color: '#b91c1c', fontSize: '0.82rem', margin: '0 0 3px' }}>Possible Collision Detected</p>
+              <p style={{ fontSize: '0.75rem', color: '#7f1d1d', margin: 0, lineHeight: 1.55 }}>
+                At least one activity's % complete is reaching or exceeding the activity above it at the same date column — a sign that a faster activity is catching up to a slower one. Consider adding buffer, adjusting the start date, or increasing the upstream activity's rate.
+              </p>
+            </div>
+          </div>
+        ) : null;
+      })()}
     </div>
   );
 }
