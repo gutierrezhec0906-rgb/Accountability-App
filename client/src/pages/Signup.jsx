@@ -32,8 +32,8 @@ export default function Signup() {
     <div className="min-h-screen flex items-center justify-center py-8" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1e3a6e 50%, #0d9488 100%)' }}>
       <div className="w-full max-w-md px-4">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4" style={{ background: 'rgba(255,255,255,0.15)' }}>
-            <svg width="32" height="32" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" stroke="white" strokeWidth="2"/><path d="M10 16l4 4 8-8" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          <div className="inline-flex items-center justify-center mb-4">
+            <img src="/LFT_logo_square_300x300.png" alt="Leadership Flow" style={{ width: 72, height: 72, borderRadius: 18, objectFit: 'cover' }} />
           </div>
           <h1 className="text-3xl font-bold text-white">Accountability App</h1>
           <p className="mt-1 text-sm" style={{ color: '#99f6e4' }}>High-Performance Leadership Platform</p>
