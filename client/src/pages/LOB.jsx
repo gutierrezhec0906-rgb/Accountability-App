@@ -57,6 +57,7 @@ export default function LOB() {
   const [editingName, setEditingName] = useState(false);
   const [editingTask, setEditingTask] = useState(null); // { id, name, owner }
   const [saving, setSaving] = useState(false);
+  const [pastDueConfirm, setPastDueConfirm] = useState(null); // { col, val }
 
   useEffect(() => {
     if (!currentUser) return;
@@ -138,9 +139,50 @@ export default function LOB() {
     patchActive({ tasks });
   }
 
-  function updateDate(col, val) {
+  function applyDate(col, val) {
     const dates = activeLob.dates.map((d, i) => i === col ? val : d);
     patchActive({ dates });
+  }
+
+  function updateDate(col, val) {
+    if (!val) { applyDate(col, val); return; }
+
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const chosen = new Date(val + 'T00:00:00');
+
+    // For any column, date must be after all previous set dates
+    const prevDate = activeLob.dates.slice(0, col).filter(Boolean).slice(-1)[0];
+    if (prevDate) {
+      const prev = new Date(prevDate + 'T00:00:00');
+      if (chosen <= prev) {
+        toast.error(`Date must be after ${fmt(prevDate)} — LOB columns must be in ascending order.`);
+        return;
+      }
+    }
+
+    // For any column, date must be before all subsequent set dates
+    const nextDate = activeLob.dates.slice(col + 1).filter(Boolean)[0];
+    if (nextDate) {
+      const next = new Date(nextDate + 'T00:00:00');
+      if (chosen >= next) {
+        toast.error(`Date must be before ${fmt(nextDate)} — LOB columns must be in ascending order.`);
+        return;
+      }
+    }
+
+    // First column: allow past date but confirm with user
+    if (col === 0 && chosen < today) {
+      setPastDueConfirm({ col, val });
+      return;
+    }
+
+    // Non-first columns: block past dates
+    if (col > 0 && chosen < today) {
+      toast.error('Only the first column can be set to a past date.');
+      return;
+    }
+
+    applyDate(col, val);
   }
 
   function addDateColumn() {
@@ -275,6 +317,32 @@ export default function LOB() {
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
               <button className="btn-secondary" onClick={() => setEditingTask(null)}>Cancel</button>
               <button className="btn-primary" onClick={saveTaskEdit}>Save Changes</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Past-due confirmation dialog */}
+      {pastDueConfirm && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 1100, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
+        }}>
+          <div className="card" style={{ width: '100%', maxWidth: 400, padding: '1.75rem' }}>
+            <div style={{ fontSize: '2rem', textAlign: 'center', marginBottom: '0.75rem' }}>⚠️</div>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 0.75rem', textAlign: 'center' }}>
+              Past Due Date
+            </h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', textAlign: 'center', marginBottom: '1.5rem' }}>
+              You selected <strong>{fmt(pastDueConfirm.val)}</strong>, which is in the past.
+              Are you sure you want to use this as the start date?
+            </p>
+            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+              <button className="btn-secondary" onClick={() => setPastDueConfirm(null)}>Cancel</button>
+              <button className="btn-primary" style={{ background: '#dc2626' }} onClick={() => {
+                applyDate(pastDueConfirm.col, pastDueConfirm.val);
+                setPastDueConfirm(null);
+              }}>OK, Use This Date</button>
             </div>
           </div>
         </div>
