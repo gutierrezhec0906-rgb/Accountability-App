@@ -14,6 +14,8 @@ const EMAILJS_SERVICE_ID = import.meta.env.VITE_EMAILJS_SERVICE_ID;
 const EMAILJS_TEMPLATE_ID = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
 const EMAILJS_PUBLIC_KEY = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
 
+if (EMAILJS_PUBLIC_KEY) emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+
 const AuthContext = createContext();
 
 export function useAuth() {
@@ -47,7 +49,6 @@ export function AuthProvider({ children }) {
 
     // Send welcome email via EmailJS (non-blocking — failure won't break signup)
     if (EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY) {
-      emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
       emailjs.send(
         EMAILJS_SERVICE_ID,
         EMAILJS_TEMPLATE_ID,
