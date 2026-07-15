@@ -43,8 +43,7 @@ export function requiredTier(moduleId) {
 }
 
 export function canAccess(userTier, moduleId) {
-  const needed = requiredTier(moduleId);
-  return TIERS.indexOf(userTier || 'free') >= TIERS.indexOf(needed);
+  return true; // all modules free during launch period
 }
 
 export function isLocked(moduleId, userTier) {
