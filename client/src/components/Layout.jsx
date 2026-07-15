@@ -205,17 +205,11 @@ export default function Layout({ children }) {
         {/* Logo */}
         <div style={{ padding: '1.25rem 1rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 36, height: 36, borderRadius: 10, flexShrink: 0,
-              background: 'linear-gradient(135deg, #0d9488, #0f766e)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(13,148,136,0.4)',
-            }}>
-              <svg width="18" height="18" viewBox="0 0 32 32" fill="none">
-                <circle cx="16" cy="16" r="14" stroke="white" strokeWidth="2"/>
-                <path d="M10 16l4 4 8-8" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-            </div>
+            <img
+              src="/LFT_logo_square_300x300.png"
+              alt="Leadership Flow"
+              style={{ width: 36, height: 36, borderRadius: 10, flexShrink: 0, objectFit: 'cover' }}
+            />
             {!collapsed && (
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p style={{ color: 'white', fontWeight: 800, fontSize: '0.875rem', margin: 0, lineHeight: 1.2 }}>Leadership Flow</p>
