@@ -245,18 +245,44 @@ export default function LOB() {
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {lobs.map(lob => (
-              <button key={lob.id} onClick={() => setActiveLobId(lob.id)}
-                style={{
-                  padding: '0.4rem 1rem', borderRadius: 9999, border: 'none', cursor: 'pointer', fontWeight: 600,
-                  fontSize: '0.82rem', transition: 'all 0.15s',
-                  background: lob.id === activeLobId ? '#0f2044' : '#f1f5f9',
-                  color: lob.id === activeLobId ? 'white' : 'var(--text-secondary)',
-                }}>
-                {lob.name}
-                <span style={{ marginLeft: 6, opacity: 0.55, fontWeight: 400, fontSize: '0.72rem' }}>
-                  {new Date(lob.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
-                </span>
-              </button>
+              <div key={lob.id} style={{ display: 'flex', alignItems: 'center', borderRadius: 9999, overflow: 'hidden',
+                background: lob.id === activeLobId ? '#0f2044' : '#f1f5f9', transition: 'all 0.15s' }}>
+                <button onClick={() => setActiveLobId(lob.id)}
+                  style={{
+                    padding: '0.4rem 0.75rem 0.4rem 1rem', border: 'none', cursor: 'pointer', fontWeight: 600,
+                    fontSize: '0.82rem', background: 'transparent',
+                    color: lob.id === activeLobId ? 'white' : 'var(--text-secondary)',
+                  }}>
+                  {lob.name}
+                  <span style={{ marginLeft: 6, opacity: 0.55, fontWeight: 400, fontSize: '0.72rem' }}>
+                    {new Date(lob.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: '2-digit' })}
+                  </span>
+                </button>
+                <button
+                  title="Delete this record"
+                  onClick={() => {
+                    if (!window.confirm(`Delete "${lob.name}"? This cannot be undone.`)) return;
+                    const next = lobs.filter(l => l.id !== lob.id);
+                    if (next.length === 0) {
+                      const fresh = blankLOB('My First LOB');
+                      updateLobs(() => [fresh]);
+                      setActiveLobId(fresh.id);
+                    } else {
+                      updateLobs(() => next);
+                      if (activeLobId === lob.id) setActiveLobId(next[0].id);
+                    }
+                    toast.success('Record deleted');
+                  }}
+                  style={{
+                    border: 'none', cursor: 'pointer', padding: '0.4rem 0.6rem',
+                    background: 'transparent', fontSize: '0.65rem', lineHeight: 1,
+                    color: lob.id === activeLobId ? 'rgba(255,255,255,0.5)' : '#94a3b8',
+                    transition: 'color 0.15s',
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                  onMouseLeave={e => e.currentTarget.style.color = lob.id === activeLobId ? 'rgba(255,255,255,0.5)' : '#94a3b8'}
+                >✕</button>
+              </div>
             ))}
           </div>
         </div>
