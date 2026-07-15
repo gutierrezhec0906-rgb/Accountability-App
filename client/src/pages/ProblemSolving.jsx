@@ -875,21 +875,92 @@ const A3_PRINT_FIELDS = [
   { key: 'followUp',           label: '8. Follow-up / Results' },
 ];
 
+function nl2br(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
+}
+
+function a3SectionHTML(num, label, content, accentColor) {
+  const filled = content && content.trim().length > 0;
+  return `
+    <div style="border-bottom:1px solid #dde3ec;">
+      <div style="background:${accentColor || '#0f2044'};padding:5px 14px;display:flex;align-items:center;gap:8px;">
+        <span style="font-family:Georgia,serif;font-size:10px;color:#0d9488;font-weight:700;min-width:16px;">${num}</span>
+        <span style="font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:white;">${label}</span>
+      </div>
+      <div style="padding:12px 14px;font-size:12.5px;line-height:1.65;color:${filled ? '#1e293b' : '#94a3b8'};font-style:${filled ? 'normal' : 'italic'};min-height:52px;white-space:pre-wrap;">${filled ? nl2br(content) : 'Not filled in'}</div>
+    </div>`;
+}
+
 function a3PrintHTML(entry) {
   const d = entry.data;
-  const date = entry.createdAt ? new Date(entry.createdAt.seconds * 1000).toLocaleDateString() : new Date().toLocaleDateString();
-  const rows = A3_PRINT_FIELDS.map(f => `
-    <div style="margin-bottom:12px">
-      <p style="font-weight:700;color:#0f2044;margin:0 0 4px;font-size:0.82rem">${f.label}</p>
-      <div style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:0.8rem;color:${d[f.key] ? '#1e293b' : '#cbd5e1'};font-style:${d[f.key] ? 'normal' : 'italic'};min-height:40px">${d[f.key] || 'Not filled in'}</div>
-    </div>`).join('');
-  return `<div style="font-family:sans-serif;padding:24px;background:white">
-    <div style="margin-bottom:14px;border-bottom:2px solid #0f2044;padding-bottom:10px">
-      <h2 style="margin:0 0 4px;color:#0f2044;font-size:1.1rem;font-weight:900">A3 Problem-Solving Template</h2>
-      <p style="margin:0;font-size:0.8rem;color:#64748b"><strong>Title:</strong> ${entry.title || '—'} &nbsp;|&nbsp; <strong>Owner:</strong> ${d.owner || '—'} &nbsp;|&nbsp; <strong>Date:</strong> ${d.date || date}</p>
+  const dateStr = entry.createdAt
+    ? new Date(entry.createdAt.seconds * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+
+  const leftSections = [
+    { num: '01', label: 'Background',         key: 'background'   },
+    { num: '02', label: 'Current Condition',  key: 'currentState' },
+    { num: '03', label: 'Goal / Target',      key: 'targetState'  },
+    { num: '04', label: 'Root Cause Analysis',key: 'rootCause'    },
+  ];
+  const rightSections = [
+    { num: '05', label: 'Countermeasures',    key: 'countermeasures'    },
+    { num: '06', label: 'Implementation Plan',key: 'implementationPlan' },
+    { num: '07', label: 'Follow-up / Results',key: 'followUp'           },
+  ];
+
+  return `<!doctype html><html><head><meta charset="utf-8">
+  <title>A3 — ${entry.title || 'Untitled'}</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:13px;background:#f8f9fb;padding:2rem;}
+    .doc{max-width:1020px;margin:0 auto;background:#fff;border:1px solid #dde3ec;border-radius:4px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.09);}
+    .hdr{background:#0f2044;color:white;}
+    .hdr-top{display:flex;align-items:stretch;border-bottom:1px solid rgba(255,255,255,0.12);}
+    .a3-badge{font-family:Georgia,serif;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(255,255,255,0.45);writing-mode:vertical-rl;text-orientation:mixed;transform:rotate(180deg);padding:1rem 0.6rem;border-right:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.15);flex-shrink:0;}
+    .hdr-body{flex:1;padding:1.25rem 1.5rem 1rem;}
+    .doc-title{font-family:Georgia,serif;font-size:20px;font-weight:700;color:#fff;line-height:1.2;margin-bottom:0.5rem;}
+    .teal-bar{width:36px;height:3px;background:#0d9488;border-radius:2px;margin-bottom:0.75rem;}
+    .meta-row{display:flex;flex-wrap:wrap;gap:1.5rem;}
+    .meta-item{display:flex;flex-direction:column;gap:2px;}
+    .meta-label{font-size:9px;letter-spacing:0.1em;text-transform:uppercase;color:rgba(255,255,255,0.45);font-weight:600;}
+    .meta-value{font-size:12px;color:rgba(255,255,255,0.9);font-weight:500;}
+    .hdr-team{padding:0.6rem 1.5rem 0.6rem 2.8rem;font-size:11.5px;color:rgba(255,255,255,0.55);border-top:1px solid rgba(255,255,255,0.07);}
+    .hdr-team strong{color:rgba(255,255,255,0.75);}
+    .body{display:grid;grid-template-columns:1fr 1fr;border-top:3px solid #0d9488;}
+    .col-l{border-right:1px solid #dde3ec;}
+    .footer{background:#f1f5f9;border-top:1px solid #dde3ec;padding:0.55rem 1.5rem;display:flex;justify-content:space-between;font-size:10px;color:#64748b;}
+    @media print{body{background:white;padding:0}.doc{box-shadow:none;border:none;border-radius:0;max-width:100%}@page{margin:0.45in;size:letter}}
+  </style>
+  </head><body>
+  <div class="doc">
+    <div class="hdr">
+      <div class="hdr-top">
+        <div class="a3-badge">A3 Report</div>
+        <div class="hdr-body">
+          <div class="doc-title">${nl2br(entry.title || 'Untitled A3')}</div>
+          <div class="teal-bar"></div>
+          <div class="meta-row">
+            <div class="meta-item"><span class="meta-label">Owner</span><span class="meta-value">${d.owner || '—'}</span></div>
+            <div class="meta-item"><span class="meta-label">Date Started</span><span class="meta-value">${d.date ? new Date(d.date + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : dateStr}</span></div>
+            <div class="meta-item"><span class="meta-label">Printed</span><span class="meta-value">${dateStr}</span></div>
+          </div>
+        </div>
+      </div>
+      ${d.team ? `<div class="hdr-team"><strong>Team:</strong> ${nl2br(d.team)}</div>` : ''}
     </div>
-    ${rows}
-  </div>`;
+    <div class="body">
+      <div class="col-l">${leftSections.map(s => a3SectionHTML(s.num, s.label, d[s.key])).join('')}</div>
+      <div>${rightSections.map(s => a3SectionHTML(s.num, s.label, d[s.key])).join('')}</div>
+    </div>
+    <div class="footer">
+      <span>Accountability App · A3 Problem-Solving Report</span>
+      <span>accountability-app.com</span>
+    </div>
+  </div>
+  <script>setTimeout(()=>{window.print();},400);<\/script>
+  </body></html>`;
 }
 
 function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed }) {
@@ -917,19 +988,35 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
   }
 
   function printEntry(e) {
-    const win = window.open('', '_blank', 'width=900,height=800');
-    win.document.write(`<html><head><title>${e.title}</title><style>body{margin:0}@media print{@page{margin:15mm}}</style></head><body>${a3PrintHTML(e)}</body></html>`);
-    win.document.close(); win.focus();
-    setTimeout(() => { win.print(); win.close(); }, 400);
+    const win = window.open('', '_blank', 'width=1060,height=860');
+    win.document.write(a3PrintHTML(e));
+    win.document.close();
+    win.focus();
   }
 
   function handlePrintCurrent() {
     printEntry({ id: 'cur', title: title || 'Untitled A3', data: { ...form, owner, team, date }, createdAt: null });
   }
 
+  function openExample() {
+    window.open('/a3-example.html', '_blank', 'width=1100,height=860');
+  }
+
   return (
     <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+
+        {/* Example guide banner */}
+        <div style={{ background: 'linear-gradient(90deg,#0f2044,#1e3a6e)', borderRadius: 12, padding: '0.85rem 1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+          <div>
+            <p style={{ color: 'white', fontWeight: 700, fontSize: '0.85rem', margin: '0 0 2px' }}>📋 New to A3? See a completed example.</p>
+            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.75rem', margin: 0 }}>A filled-in A3 showing a real manufacturing defect reduction project — same format, same sections.</p>
+          </div>
+          <button onClick={openExample}
+            style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 9, padding: '0.5rem 1.1rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+            View Worked Example →
+          </button>
+        </div>
 
         {/* Section 1 — Title, Owner, Team, Date */}
         <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '1rem' }}>
@@ -1003,7 +1090,7 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
           </button>
           <button onClick={handlePrintCurrent}
             style={{ flex: 1, background: '#0f2044', color: 'white', border: 'none', borderRadius: 10, padding: '0.6rem 1.25rem', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer' }}>
-            🖨️ Print / Save PDF
+            🖨️ Print / Export PDF
           </button>
         </div>
       </div>

@@ -1,0 +1,632 @@
+<title>A3 Report — Bracket Assembly Defect Rate</title>
+<style>
+  /* ── Tokens ── */
+  :root {
+    --navy:   #0f2044;
+    --teal:   #0d9488;
+    --amber:  #d97706;
+    --page:   #f8f9fb;
+    --card:   #ffffff;
+    --border: #dde3ec;
+    --text:   #1e293b;
+    --muted:  #64748b;
+    --light:  #f1f5f9;
+    --red:    #dc2626;
+    --green:  #15803d;
+    --section-head: var(--navy);
+    --section-head-text: #ffffff;
+    --accent: var(--teal);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --page:   #111827;
+      --card:   #1e293b;
+      --border: #2d3a4f;
+      --text:   #e2e8f0;
+      --muted:  #94a3b8;
+      --light:  #1e293b;
+      --section-head: #1e3a6e;
+    }
+  }
+  :root[data-theme="light"] {
+    --page: #f8f9fb; --card: #ffffff; --border: #dde3ec;
+    --text: #1e293b; --muted: #64748b; --light: #f1f5f9;
+    --section-head: #0f2044; --section-head-text: #ffffff;
+  }
+  :root[data-theme="dark"] {
+    --page: #111827; --card: #1e293b; --border: #2d3a4f;
+    --text: #e2e8f0; --muted: #94a3b8; --light: #1e293b;
+    --section-head: #1e3a6e; --section-head-text: #e2e8f0;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    line-height: 1.55;
+    color: var(--text);
+    background: var(--page);
+    padding: 0;
+  }
+
+  /* ── Document wrapper ── */
+  .doc {
+    max-width: 1060px;
+    margin: 2rem auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.09);
+  }
+
+  /* ── Header band ── */
+  .doc-header {
+    background: var(--navy);
+    color: white;
+    padding: 0;
+  }
+  .doc-header-top {
+    display: flex;
+    align-items: stretch;
+    border-bottom: 1px solid rgba(255,255,255,0.12);
+  }
+  .a3-label {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 11px;
+    font-weight: 400;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    transform: rotate(180deg);
+    padding: 1rem 0.6rem;
+    border-right: 1px solid rgba(255,255,255,0.1);
+    flex-shrink: 0;
+    background: rgba(0,0,0,0.15);
+  }
+  .doc-title-block {
+    flex: 1;
+    padding: 1.25rem 1.5rem 1rem;
+  }
+  .doc-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffffff;
+    line-height: 1.2;
+    text-wrap: balance;
+    margin-bottom: 0.5rem;
+  }
+  .teal-bar {
+    width: 40px;
+    height: 3px;
+    background: var(--teal);
+    border-radius: 2px;
+    margin-bottom: 0.75rem;
+  }
+  .doc-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+  }
+  .meta-field { display: flex; flex-direction: column; gap: 2px; }
+  .meta-label {
+    font-size: 9px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    font-weight: 600;
+  }
+  .meta-value {
+    font-size: 12px;
+    color: rgba(255,255,255,0.9);
+    font-weight: 500;
+  }
+  .doc-header-team {
+    padding: 0.65rem 1.5rem 0.65rem 2.8rem;
+    font-size: 11.5px;
+    color: rgba(255,255,255,0.55);
+    border-top: 1px solid rgba(255,255,255,0.07);
+  }
+  .doc-header-team strong { color: rgba(255,255,255,0.75); font-weight: 600; }
+
+  /* ── Two-column body ── */
+  .doc-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    border-top: 3px solid var(--teal);
+  }
+  .col-left  { border-right: 1px solid var(--border); }
+  .col-left, .col-right { display: flex; flex-direction: column; }
+
+  /* ── Section ── */
+  .section {
+    border-bottom: 1px solid var(--border);
+  }
+  .section:last-child { border-bottom: none; flex: 1; }
+
+  .section-head {
+    background: var(--section-head);
+    color: var(--section-head-text);
+    padding: 0.45rem 1rem 0.45rem 0.85rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .section-num {
+    font-family: Georgia, serif;
+    font-size: 10px;
+    color: var(--teal);
+    font-weight: 700;
+    min-width: 16px;
+    opacity: 0.9;
+  }
+  .section-title {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .section-body { padding: 0.85rem 1rem; }
+
+  p { margin-bottom: 0.5rem; }
+  p:last-child { margin-bottom: 0; }
+
+  /* ── Data table ── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    margin: 0.5rem 0;
+  }
+  .data-table th {
+    background: var(--light);
+    color: var(--muted);
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    padding: 0.4rem 0.6rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .data-table td {
+    padding: 0.4rem 0.6rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+    font-variant-numeric: tabular-nums;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:nth-child(even) td { background: var(--light); }
+
+  /* trend cells */
+  .trend-up   { color: var(--red);   font-weight: 700; }
+  .trend-down { color: var(--green); font-weight: 700; }
+  .trend-ok   { color: var(--muted); }
+
+  /* ── Pareto ── */
+  .pareto { margin: 0.6rem 0; }
+  .pareto-row {
+    display: grid;
+    grid-template-columns: 120px 1fr 38px;
+    align-items: center;
+    gap: 6px;
+    margin-bottom: 5px;
+    font-size: 11px;
+  }
+  .pareto-label { color: var(--text); font-weight: 500; }
+  .pareto-bar-wrap { height: 14px; background: var(--light); border-radius: 3px; overflow: hidden; }
+  .pareto-bar { height: 100%; border-radius: 3px; }
+  .pareto-pct { font-size: 10.5px; font-weight: 700; color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+
+  /* ── 5 Whys chain ── */
+  .whys { margin: 0.5rem 0; }
+  .why-row {
+    display: flex;
+    gap: 0;
+    margin-bottom: 2px;
+  }
+  .why-q {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--teal);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    min-width: 34px;
+    padding-top: 1px;
+    flex-shrink: 0;
+  }
+  .why-a {
+    font-size: 12px;
+    color: var(--text);
+    padding: 0 0 6px 6px;
+    border-left: 2px solid var(--border);
+    margin-left: 4px;
+    flex: 1;
+  }
+  .why-row:last-child .why-a { border-left-color: var(--teal); color: var(--teal); font-weight: 600; }
+
+  .root-cause-box {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 5px;
+    padding: 0.6rem 0.8rem;
+    margin-top: 0.6rem;
+    font-size: 11.5px;
+    color: var(--green);
+  }
+  :root[data-theme="dark"] .root-cause-box { background: #14532d33; border-color: #166534; color: #86efac; }
+  @media (prefers-color-scheme: dark) { .root-cause-box { background: #14532d33; border-color: #166534; color: #86efac; } }
+  .root-cause-box strong { display: block; margin-bottom: 2px; color: var(--green); font-size: 9.5px; letter-spacing: 0.08em; text-transform: uppercase; }
+
+  .fishbone-note {
+    background: var(--light);
+    border-left: 3px solid var(--muted);
+    padding: 0.45rem 0.65rem;
+    border-radius: 0 4px 4px 0;
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 0.5rem;
+    font-style: italic;
+  }
+
+  /* ── Countermeasure type pill ── */
+  .pill {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 9999px;
+    font-size: 9.5px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+  }
+  .pill-permanent { background: #dbeafe; color: #1d4ed8; }
+  .pill-contain   { background: #fef3c7; color: var(--amber); }
+  :root[data-theme="dark"] .pill-permanent { background: #1e3a5f; color: #93c5fd; }
+  :root[data-theme="dark"] .pill-contain   { background: #3f2c05; color: #fcd34d; }
+  @media (prefers-color-scheme: dark) {
+    .pill-permanent { background: #1e3a5f; color: #93c5fd; }
+    .pill-contain   { background: #3f2c05; color: #fcd34d; }
+  }
+
+  /* ── Results outcome box ── */
+  .outcome-box {
+    background: #f0fdf4;
+    border: 1px solid #bbf7d0;
+    border-radius: 5px;
+    padding: 0.65rem 0.8rem;
+    font-size: 11.5px;
+    color: #14532d;
+    margin-top: 0.65rem;
+    line-height: 1.5;
+  }
+  :root[data-theme="dark"] .outcome-box { background: #14532d33; border-color: #166534; color: #86efac; }
+  @media (prefers-color-scheme: dark) { .outcome-box { background: #14532d33; border-color: #166534; color: #86efac; } }
+  .outcome-box .outcome-label {
+    font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--green); margin-bottom: 4px; display: block;
+  }
+
+  /* ── Footer ── */
+  .doc-footer {
+    background: var(--light);
+    border-top: 1px solid var(--border);
+    padding: 0.6rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 10px;
+    color: var(--muted);
+  }
+  .doc-footer a { color: var(--teal); text-decoration: none; }
+
+  /* ── Print ── */
+  @media print {
+    body { background: white; padding: 0; }
+    .doc { margin: 0; box-shadow: none; border: none; border-radius: 0; max-width: 100%; }
+    .doc-body { break-inside: avoid; }
+    .section { break-inside: avoid; }
+    @page { margin: 0.5in; size: letter; }
+  }
+
+  /* ── Print button ── */
+  .print-btn {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: var(--teal);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.6rem 1.1rem;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 14px rgba(13,148,136,0.35);
+    transition: transform 0.15s, box-shadow 0.15s;
+    z-index: 100;
+  }
+  .print-btn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(13,148,136,0.4); }
+  @media print { .print-btn { display: none; } }
+</style>
+
+<button class="print-btn" onclick="window.print()">⬇ Export PDF</button>
+
+<div class="doc">
+
+  <!-- ── HEADER ── -->
+  <div class="doc-header">
+    <div class="doc-header-top">
+      <div class="a3-label">A3 Report</div>
+      <div class="doc-title-block">
+        <div class="doc-title">Reduce Bracket Assembly Defect Rate — Line 3</div>
+        <div class="teal-bar"></div>
+        <div class="doc-meta">
+          <div class="meta-field">
+            <span class="meta-label">Owner</span>
+            <span class="meta-value">Sandra Lopez, Production Supervisor</span>
+          </div>
+          <div class="meta-field">
+            <span class="meta-label">Date Started</span>
+            <span class="meta-value">June 2, 2026</span>
+          </div>
+          <div class="meta-field">
+            <span class="meta-label">Target Date</span>
+            <span class="meta-value">July 15, 2026</span>
+          </div>
+          <div class="meta-field">
+            <span class="meta-label">Status</span>
+            <span class="meta-value" style="color:#4ade80;font-weight:700;">✓ Target Met</span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="doc-header-team">
+      <strong>Team:</strong> Sandra Lopez (Owner) · Mike Chen (Quality Engineer) · Ana Ruiz (2nd Shift Lead) · Dave Okafor (Maintenance)
+    </div>
+  </div>
+
+  <!-- ── BODY ── -->
+  <div class="doc-body">
+
+    <!-- LEFT COLUMN -->
+    <div class="col-left">
+
+      <!-- 1. Background -->
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">01</span>
+          <span class="section-title">Background</span>
+        </div>
+        <div class="section-body">
+          <p>Line 3 produces titanium brackets for a Tier 1 aerospace customer. The customer flagged an increase in receiving inspection rejections in their May quality report.</p>
+          <p>Continued non-conformance risks a supplier corrective action request (SCAR) and impacts our on-time delivery score.</p>
+        </div>
+      </div>
+
+      <!-- 2. Current Condition -->
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">02</span>
+          <span class="section-title">Current Condition</span>
+        </div>
+        <div class="section-body">
+          <table class="data-table">
+            <thead><tr><th>Week</th><th>Defect Rate</th><th>Trend</th></tr></thead>
+            <tbody>
+              <tr><td>Wk 1 — May 4</td><td class="trend-ok">2.1%</td><td>—</td></tr>
+              <tr><td>Wk 2 — May 11</td><td class="trend-up">3.4%</td><td class="trend-up">↑</td></tr>
+              <tr><td>Wk 3 — May 18</td><td class="trend-up">6.8%</td><td class="trend-up">↑↑</td></tr>
+              <tr><td>Wk 4 — May 25</td><td class="trend-up">9.2%</td><td class="trend-up">↑↑</td></tr>
+            </tbody>
+          </table>
+
+          <p style="margin-top:0.75rem;font-size:11px;font-weight:700;color:var(--muted);letter-spacing:0.06em;text-transform:uppercase;">Pareto — Wk 4 Defect Types (n = 184)</p>
+          <div class="pareto">
+            <div class="pareto-row">
+              <span class="pareto-label">Hole misalignment</span>
+              <div class="pareto-bar-wrap"><div class="pareto-bar" style="width:62%;background:#0f2044;"></div></div>
+              <span class="pareto-pct">62%</span>
+            </div>
+            <div class="pareto-row">
+              <span class="pareto-label">Surface scratches</span>
+              <div class="pareto-bar-wrap"><div class="pareto-bar" style="width:18%;background:#0d9488;"></div></div>
+              <span class="pareto-pct">18%</span>
+            </div>
+            <div class="pareto-row">
+              <span class="pareto-label">Dim. oversize</span>
+              <div class="pareto-bar-wrap"><div class="pareto-bar" style="width:12%;background:#d97706;"></div></div>
+              <span class="pareto-pct">12%</span>
+            </div>
+            <div class="pareto-row">
+              <span class="pareto-label">Other</span>
+              <div class="pareto-bar-wrap"><div class="pareto-bar" style="width:8%;background:#94a3b8;"></div></div>
+              <span class="pareto-pct">8%</span>
+            </div>
+          </div>
+          <p style="font-size:11px;color:var(--muted);">Defects concentrated on 2nd shift, specifically Machine 7. First shift on the same machine runs at 2.3% — near baseline.</p>
+        </div>
+      </div>
+
+      <!-- 3. Goal -->
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">03</span>
+          <span class="section-title">Goal / Target</span>
+        </div>
+        <div class="section-body">
+          <p>Reduce defect rate to <strong>≤ 2.5%</strong> by <strong>July 15, 2026</strong>, sustained for <strong>3 consecutive weeks</strong>.</p>
+        </div>
+      </div>
+
+      <!-- 4. Root Cause Analysis -->
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">04</span>
+          <span class="section-title">Root Cause Analysis</span>
+        </div>
+        <div class="section-body">
+          <p style="font-size:11px;color:var(--muted);margin-bottom:0.6rem;">5 Whys applied to: <em>Hole alignment off on 2nd shift, Machine 7.</em></p>
+          <div class="whys">
+            <div class="why-row">
+              <span class="why-q">Why 1</span>
+              <span class="why-a">Fixture position drifts during the shift.</span>
+            </div>
+            <div class="why-row">
+              <span class="why-q">Why 2</span>
+              <span class="why-a">Locking pin isn't fully engaging.</span>
+            </div>
+            <div class="why-row">
+              <span class="why-q">Why 3</span>
+              <span class="why-a">Pin wear exceeds spec, not caught in PM checks.</span>
+            </div>
+            <div class="why-row">
+              <span class="why-q">Why 4</span>
+              <span class="why-a">PM checklist doesn't include pin wear measurement — only visual check.</span>
+            </div>
+            <div class="why-row">
+              <span class="why-q">Root</span>
+              <span class="why-a">Checklist was copied from an older machine model that used a different fixture design.</span>
+            </div>
+          </div>
+          <div class="root-cause-box">
+            <strong>Root Cause</strong>
+            PM checklist for Machine 7 was never updated for the current fixture design, so pin wear is not being measured — only visually inspected.
+          </div>
+          <div class="fishbone-note">
+            Fishbone confirmed no other contributing factors. Manpower, Material, and Measurement categories were reviewed and ruled out. Machine and Method were the only verified contributors.
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /col-left -->
+
+    <!-- RIGHT COLUMN -->
+    <div class="col-right">
+
+      <!-- 5. Countermeasures -->
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">05</span>
+          <span class="section-title">Countermeasures</span>
+        </div>
+        <div class="section-body">
+          <table class="data-table">
+            <thead><tr><th>Action</th><th>Type</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Add pin-wear measurement (go/no-go gauge) to PM checklist for Machine 7</td>
+                <td><span class="pill pill-permanent">Permanent</span></td>
+              </tr>
+              <tr>
+                <td>Replace worn locking pin immediately</td>
+                <td><span class="pill pill-contain">Containment</span></td>
+              </tr>
+              <tr>
+                <td>Add 100% inspection on Machine 7 output until fix verified</td>
+                <td><span class="pill pill-contain">Containment</span></td>
+              </tr>
+              <tr>
+                <td>Audit PM checklists on all machines using this fixture design (3 total)</td>
+                <td><span class="pill pill-permanent">Permanent</span></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 6. Implementation Plan -->
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">06</span>
+          <span class="section-title">Implementation Plan</span>
+        </div>
+        <div class="section-body">
+          <table class="data-table">
+            <thead><tr><th>Action</th><th>Owner</th><th>Due</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Replace pin; begin 100% inspection</td>
+                <td>Dave Okafor</td>
+                <td style="white-space:nowrap;">Jun 3</td>
+              </tr>
+              <tr>
+                <td>Update PM checklist with gauge check</td>
+                <td>Mike Chen</td>
+                <td style="white-space:nowrap;">Jun 6</td>
+              </tr>
+              <tr>
+                <td>Train 2nd shift PM tech on new checklist</td>
+                <td>Ana Ruiz</td>
+                <td style="white-space:nowrap;">Jun 9</td>
+              </tr>
+              <tr>
+                <td>Audit remaining 2 machines with same fixture</td>
+                <td>Dave Okafor</td>
+                <td style="white-space:nowrap;">Jun 13</td>
+              </tr>
+              <tr>
+                <td>Remove 100% inspection once 2 weeks stable</td>
+                <td>Sandra Lopez</td>
+                <td style="white-space:nowrap;">Jun 27</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 7. Follow-up / Results -->
+      <div class="section">
+        <div class="section-head">
+          <span class="section-num">07</span>
+          <span class="section-title">Follow-up / Results</span>
+        </div>
+        <div class="section-body">
+          <table class="data-table">
+            <thead><tr><th>Week</th><th>Defect Rate</th><th>Note</th></tr></thead>
+            <tbody>
+              <tr>
+                <td>Wk 5 — Jun 1</td>
+                <td class="trend-up">5.1%</td>
+                <td style="font-size:10.5px;color:var(--muted);">Containment in place</td>
+              </tr>
+              <tr>
+                <td>Wk 6 — Jun 8</td>
+                <td class="trend-down">2.0%</td>
+                <td style="font-size:10.5px;color:var(--green);">Below target ✓</td>
+              </tr>
+              <tr>
+                <td>Wk 7 — Jun 15</td>
+                <td class="trend-down">1.8%</td>
+                <td style="font-size:10.5px;color:var(--green);">Below target ✓</td>
+              </tr>
+              <tr>
+                <td>Wk 8 — Jun 22</td>
+                <td class="trend-down">1.6%</td>
+                <td style="font-size:10.5px;color:var(--green);">3 wks sustained ✓</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div class="outcome-box">
+            <span class="outcome-label">✓ Target Met — Ahead of Schedule</span>
+            Three consecutive weeks ≤ 2.5% achieved by June 22, three weeks before the July 15 deadline. 100% inspection removed June 29.
+            <br><br>
+            Updated PM checklist rolled into standard work for all machines using this fixture. Added to new-machine PM template to prevent recurrence on future equipment.
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /col-right -->
+
+  </div><!-- /doc-body -->
+
+  <!-- ── FOOTER ── -->
+  <div class="doc-footer">
+    <span>Accountability App · A3 Problem-Solving Report · Example Guide</span>
+    <span>Generated June 2026 · <strong>accountability-app.com</strong></span>
+  </div>
+
+</div>
