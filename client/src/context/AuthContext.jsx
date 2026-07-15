@@ -48,6 +48,7 @@ export function AuthProvider({ children }) {
     await setDoc(doc(db, 'users', cred.user.uid), profile);
 
     // Send welcome email via EmailJS (non-blocking — failure won't break signup)
+    console.log('EmailJS vars:', { EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, EMAILJS_PUBLIC_KEY });
     if (EMAILJS_SERVICE_ID && EMAILJS_TEMPLATE_ID && EMAILJS_PUBLIC_KEY) {
       emailjs.send(
         EMAILJS_SERVICE_ID,
@@ -59,7 +60,8 @@ export function AuthProvider({ children }) {
           status: isFirst ? 'full access' : 'pending approval',
           is_first: isFirst ? 'true' : 'false',
         },
-      ).catch(() => {});
+      ).then(() => console.log('EmailJS: sent OK'))
+       .catch((err) => console.error('EmailJS error:', JSON.stringify(err)));
     }
 
     return cred;
