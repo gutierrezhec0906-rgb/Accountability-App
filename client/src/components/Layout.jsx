@@ -180,8 +180,28 @@ export default function Layout({ children }) {
           background: 'linear-gradient(180deg, #0b1a38 0%, #0f2044 40%, #122550 100%)',
           minWidth: collapsed ? '4rem' : '16rem',
           borderRight: '1px solid rgba(255,255,255,0.06)',
+          position: 'relative',
         }}
       >
+        {/* Edge expand tab — visible only when collapsed */}
+        {collapsed && (
+          <button
+            onClick={() => setCollapsed(false)}
+            title="Expand menu"
+            className="hidden lg:flex"
+            style={{
+              position: 'absolute', right: -14, top: '50%', transform: 'translateY(-50%)',
+              zIndex: 40, width: 28, height: 48, background: '#0f2044',
+              border: '1px solid rgba(255,255,255,0.15)', borderLeft: 'none',
+              borderRadius: '0 8px 8px 0', color: 'white', cursor: 'pointer',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              fontSize: '0.9rem', fontWeight: 700, boxShadow: '3px 0 8px rgba(0,0,0,0.3)',
+            }}
+          >
+            ›
+          </button>
+        )}
+
         {/* Logo */}
         <div style={{ padding: '1.25rem 1rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -205,7 +225,8 @@ export default function Layout({ children }) {
             <button
               onClick={() => setCollapsed(c => !c)}
               className="ml-auto lg:flex hidden"
-              style={{ background: 'rgba(255,255,255,0.07)', border: 'none', color: 'rgba(255,255,255,0.5)', borderRadius: 6, width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}
+              title={collapsed ? 'Expand menu' : 'Collapse menu'}
+              style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', borderRadius: 6, width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.85rem', flexShrink: 0, fontWeight: 700 }}
             >
               {collapsed ? '›' : '‹'}
             </button>
