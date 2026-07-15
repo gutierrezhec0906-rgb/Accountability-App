@@ -754,21 +754,131 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
 }
 
 // ─── A3 Template ─────────────────────────────────────────────────────────────
+
+const A3_GUIDE = {
+  background: {
+    label: '2. Background',
+    goal: 'Give enough context that someone outside the team understands why this matters — business impact, not just technical detail.',
+    prompts: [
+      'Why does this problem matter to the business or customer?',
+      'What\'s the cost of not solving it (cost, delivery, safety, quality)?',
+      'What triggered this A3 — a complaint, an internal metric, an audit finding?',
+    ],
+    watchFor: null,
+    placeholder: 'What is the business context? Why does this matter?',
+  },
+  currentState: {
+    label: '3. Current Condition',
+    goal: 'Show the facts as they are today — with data, not opinion.',
+    prompts: [
+      'What does the data show over time (trend, Pareto, run chart)?',
+      'Where exactly does this happen (which line, shift, part, customer)?',
+      'What is the gap between current performance and the target?',
+    ],
+    watchFor: 'Write facts, not conclusions. "The process is broken" is not a current condition — "Defect rate is 9%, up from 2%, concentrated on 2nd shift" is.',
+    placeholder: 'Describe current performance with data. Numbers, location, trend.',
+  },
+  targetState: {
+    label: '4. Goal / Target',
+    goal: 'A specific, measurable, time-bound target — not "improve" or "reduce."',
+    prompts: [
+      'What number, by what date?',
+      'Is this target realistic given the current condition, or is it aspirational?',
+      'How will you know you\'ve hit it — what\'s the measurement?',
+    ],
+    watchFor: 'Vague targets ("improve quality") make it impossible to know if you succeeded. Every target needs a number and a date.',
+    placeholder: 'e.g. Reduce defect rate from 9% to 2% by Sept 30, measured weekly.',
+  },
+  rootCause: {
+    label: '5. Root Cause Analysis',
+    goal: 'This is where 5 Whys and/or Fishbone live. The A3 just needs the summary of that work.',
+    prompts: [
+      'What tool did you use (5 Whys, Fishbone, both)?',
+      'What\'s the root cause, in one sentence?',
+      'Is this root cause verified by data, or still a hypothesis?',
+    ],
+    watchFor: null,
+    placeholder: 'Summarize your root cause analysis. Reference your 5 Whys or Fishbone if completed.',
+  },
+  countermeasures: {
+    label: '6. Countermeasures',
+    goal: 'Actions that address the root cause — not the symptom.',
+    prompts: [
+      'Does each countermeasure map directly to a root cause identified above?',
+      'Is this a permanent fix or a temporary containment? (Label it either way.)',
+      'What\'s the smallest test of this countermeasure before rolling it out fully?',
+    ],
+    watchFor: 'Countermeasures that don\'t connect to the root cause are just workarounds — they\'ll need to be repeated.',
+    placeholder: 'List each countermeasure. Note whether each is permanent (P) or containment (C).',
+  },
+  implementationPlan: {
+    label: '7. Implementation Plan',
+    goal: 'Who does what, by when — turn countermeasures into a real plan.',
+    prompts: [
+      'Who owns each action?',
+      'What\'s the due date for each one?',
+      'What could block this plan, and who removes that blocker?',
+    ],
+    watchFor: null,
+    placeholder: 'Action | Owner | Due Date — one per line.',
+  },
+  followUp: {
+    label: '8. Follow-up / Results',
+    goal: 'Close the loop — did it work, and how do you know?',
+    prompts: [
+      'What does the data show after the countermeasure, compared to before?',
+      'Did you hit the target from step 4?',
+      'What\'s the plan to sustain this (standard work, audit, visual control)?',
+    ],
+    watchFor: null,
+    placeholder: 'What happened after implementation? Did the data move? What sustains the fix?',
+  },
+};
+
+function A3GuidePanel({ fieldKey }) {
+  const [open, setOpen] = useState(false);
+  const g = A3_GUIDE[fieldKey];
+  if (!g) return null;
+  return (
+    <div style={{ marginTop: 6 }}>
+      <button onClick={() => setOpen(o => !o)}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.72rem', color: '#64748b', fontWeight: 600, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+        {open ? '▾' : '▸'} {open ? 'Hide guide' : 'Show guide for this section'}
+      </button>
+      {open && (
+        <div style={{ marginTop: 8, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px', fontSize: '0.76rem', color: '#475569', lineHeight: 1.6 }}>
+          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 4px' }}>Goal</p>
+          <p style={{ margin: '0 0 10px' }}>{g.goal}</p>
+          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 4px' }}>Ask yourself</p>
+          <ul style={{ margin: '0 0 10px', paddingLeft: 18 }}>
+            {g.prompts.map((p, i) => <li key={i} style={{ marginBottom: 3 }}>{p}</li>)}
+          </ul>
+          {g.watchFor && (
+            <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 7, padding: '6px 10px', color: '#713f12' }}>
+              <span style={{ fontWeight: 700 }}>Watch for: </span>{g.watchFor}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 const EMPTY_A3 = { background: '', currentState: '', targetState: '', rootCause: '', countermeasures: '', implementationPlan: '', followUp: '' };
-const A3_FIELDS = [
-  { key: 'background',         label: '1. Background & Context',                   rows: 3 },
-  { key: 'currentState',       label: '2. Current State (What is happening now?)', rows: 3 },
-  { key: 'targetState',        label: '3. Target State (What should happen?)',      rows: 3 },
-  { key: 'rootCause',          label: '4. Root Cause Analysis',                    rows: 3 },
-  { key: 'countermeasures',    label: '5. Countermeasures / Solutions',            rows: 3 },
-  { key: 'implementationPlan', label: '6. Implementation Plan (Who, What, When)',  rows: 3 },
-  { key: 'followUp',           label: '7. Follow-up & Results Verification',       rows: 3 },
+const A3_PRINT_FIELDS = [
+  { key: 'background',         label: '2. Background' },
+  { key: 'currentState',       label: '3. Current Condition' },
+  { key: 'targetState',        label: '4. Goal / Target' },
+  { key: 'rootCause',          label: '5. Root Cause Analysis' },
+  { key: 'countermeasures',    label: '6. Countermeasures' },
+  { key: 'implementationPlan', label: '7. Implementation Plan' },
+  { key: 'followUp',           label: '8. Follow-up / Results' },
 ];
 
 function a3PrintHTML(entry) {
   const d = entry.data;
   const date = entry.createdAt ? new Date(entry.createdAt.seconds * 1000).toLocaleDateString() : new Date().toLocaleDateString();
-  const rows = A3_FIELDS.map(f => `
+  const rows = A3_PRINT_FIELDS.map(f => `
     <div style="margin-bottom:12px">
       <p style="font-weight:700;color:#0f2044;margin:0 0 4px;font-size:0.82rem">${f.label}</p>
       <div style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:0.8rem;color:${d[f.key] ? '#1e293b' : '#cbd5e1'};font-style:${d[f.key] ? 'normal' : 'italic'};min-height:40px">${d[f.key] || 'Not filled in'}</div>
@@ -785,6 +895,7 @@ function a3PrintHTML(entry) {
 function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed }) {
   const [title, setTitle] = useState('');
   const [owner, setOwner] = useState('');
+  const [team,  setTeam]  = useState('');
   const [date,  setDate]  = useState('');
   const [form,  setForm]  = useState(EMPTY_A3);
 
@@ -799,6 +910,7 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
   function loadEntry(e) {
     setTitle(e.title || '');
     setOwner(e.data.owner || '');
+    setTeam(e.data.team || '');
     setDate(e.data.date || '');
     setForm({ ...EMPTY_A3, ...e.data });
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -812,29 +924,81 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
   }
 
   function handlePrintCurrent() {
-    printEntry({ id: 'cur', title: title || 'Untitled A3', data: { ...form, owner, date }, createdAt: null });
+    printEntry({ id: 'cur', title: title || 'Untitled A3', data: { ...form, owner, team, date }, createdAt: null });
   }
 
   return (
     <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div>
-          <label className="label">A3 Title *</label>
-          <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Defect Reduction Project — Q3 2026" />
+
+        {/* Section 1 — Title, Owner, Team, Date */}
+        <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '1rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
+            <span style={{ background: '#0f2044', color: 'white', fontWeight: 800, fontSize: '0.72rem', borderRadius: 6, padding: '2px 8px' }}>1</span>
+            <p style={{ fontWeight: 700, color: '#0f2044', fontSize: '0.85rem', margin: 0 }}>Title, Owner, Team & Date</p>
+          </div>
+          <p style={{ fontSize: '0.73rem', color: '#64748b', margin: '0 0 10px', lineHeight: 1.5 }}>
+            Frame accountability before anything else — who owns this, who's involved, and when it started.<br />
+            Use the shortest possible title that describes the <em>problem</em>, not the solution.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div>
+              <label className="label">Title *</label>
+              <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Line 3 Defect Rate Increase — July 2026" />
+            </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+              <div>
+                <label className="label">Owner (single accountable person)</label>
+                <input className="input" value={owner} onChange={e => setOwner(e.target.value)} placeholder="Name" />
+              </div>
+              <div>
+                <label className="label">Team / Others involved</label>
+                <input className="input" value={team} onChange={e => setTeam(e.target.value)} placeholder="Names or roles" />
+              </div>
+              <div>
+                <label className="label">Date started</label>
+                <input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} />
+              </div>
+            </div>
+          </div>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          <div><label className="label">Owner</label><input className="input" value={owner} onChange={e => setOwner(e.target.value)} placeholder="Name" /></div>
-          <div><label className="label">Date</label><input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} /></div>
-        </div>
-        {A3_FIELDS.map(field => (
-          <div key={field.key}>
-            <label className="label">{field.label}</label>
-            <textarea className="input" rows={field.rows} value={form[field.key]} onChange={e => setForm(f => ({ ...f, [field.key]: e.target.value }))} />
+
+        {/* Sections 2–8 */}
+        {Object.entries(A3_GUIDE).map(([key, g], idx) => (
+          <div key={key} style={{ background: 'white', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '1rem', boxShadow: '0 1px 4px rgba(15,32,68,0.05)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
+              <span style={{ background: '#0f2044', color: 'white', fontWeight: 800, fontSize: '0.72rem', borderRadius: 6, padding: '2px 8px', flexShrink: 0 }}>{idx + 2}</span>
+              <label className="label" style={{ margin: 0, color: '#0f2044', fontSize: '0.85rem' }}>{g.label.replace(/^\d+\.\s/, '')}</label>
+              {form[key]?.trim().length > 0 && (
+                <span style={{ marginLeft: 'auto', fontSize: '0.68rem', background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '2px 7px', borderRadius: 99 }}>✓ Filled</span>
+              )}
+            </div>
+            <textarea
+              className="input"
+              rows={3}
+              value={form[key]}
+              onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+              placeholder={g.placeholder}
+            />
+            <A3GuidePanel fieldKey={key} />
           </div>
         ))}
+
+        {/* Self-check */}
+        <div style={{ background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: 12, padding: '0.9rem' }}>
+          <p style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.8rem', margin: '0 0 6px' }}>✅ Before you save — quick self-check</p>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: '0.74rem', color: '#0c4a6e', lineHeight: 1.8 }}>
+            <li>Current condition has data, not just opinion</li>
+            <li>Target has a number and a date — not just "improve"</li>
+            <li>Each countermeasure maps to a root cause (not a symptom)</li>
+            <li>Implementation plan names one owner per action with a due date</li>
+            <li>Follow-up section will be completed after implementation — not left blank forever</li>
+          </ul>
+        </div>
+
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn-primary" style={{ flex: 1 }}
-            onClick={() => onSave({ type: 'a3', title: title || 'Untitled A3', data: { ...form, owner, date }, onSaved: () => { setTitle(''); setOwner(''); setDate(''); setForm(EMPTY_A3); } })}>
+            onClick={() => onSave({ type: 'a3', title: title || 'Untitled A3', data: { ...form, owner, team, date }, onSaved: () => { setTitle(''); setOwner(''); setTeam(''); setDate(''); setForm(EMPTY_A3); } })}>
             💾 Save A3
           </button>
           <button onClick={handlePrintCurrent}
