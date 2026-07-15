@@ -864,7 +864,8 @@ function A3GuidePanel({ fieldKey }) {
   );
 }
 
-const EMPTY_A3 = { background: '', currentState: '', targetState: '', rootCause: '', countermeasures: '', implementationPlan: '', followUp: '' };
+const EMPTY_IMPL_ROW = () => ({ id: Date.now() + Math.random(), action: '', owner: '', dueDate: '' });
+const EMPTY_A3 = { background: '', currentState: '', targetState: '', rootCause: '', countermeasures: '', implementationPlan: [EMPTY_IMPL_ROW()], followUp: '' };
 const A3_PRINT_FIELDS = [
   { key: 'background',         label: '2. Background' },
   { key: 'currentState',       label: '3. Current Condition' },
@@ -880,11 +881,48 @@ function nl2br(str) {
   return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>');
 }
 
-function a3SectionHTML(num, label, content, accentColor) {
+function fmtPrintDate(d) {
+  if (!d) return '—';
+  try { return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch { return d; }
+}
+
+function a3SectionHTML(num, label, content) {
+  // Implementation plan — array of rows
+  if (Array.isArray(content)) {
+    const hasRows = content.some(r => r.action || r.owner || r.dueDate);
+    const rowsHTML = hasRows
+      ? content.filter(r => r.action || r.owner || r.dueDate).map((r, i) => `
+          <tr style="background:${i % 2 === 0 ? '#fff' : '#f8fafc'};">
+            <td style="padding:6px 10px;border-bottom:1px solid #e8edf5;font-size:12px;color:#1e293b;">${nl2br(r.action) || '—'}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid #e8edf5;font-size:12px;color:#475569;">${nl2br(r.owner) || '—'}</td>
+            <td style="padding:6px 10px;border-bottom:1px solid #e8edf5;font-size:12px;color:#475569;white-space:nowrap;">${fmtPrintDate(r.dueDate)}</td>
+          </tr>`).join('')
+      : `<tr><td colspan="3" style="padding:10px;font-size:12px;color:#94a3b8;font-style:italic;">No actions entered</td></tr>`;
+    return `
+      <div style="border-bottom:1px solid #dde3ec;">
+        <div style="background:#0f2044;padding:5px 14px;display:flex;align-items:center;gap:8px;">
+          <span style="font-family:Georgia,serif;font-size:10px;color:#0d9488;font-weight:700;min-width:16px;">${num}</span>
+          <span style="font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:white;">${label}</span>
+        </div>
+        <div style="padding:10px 14px;">
+          <table style="width:100%;border-collapse:collapse;border:1px solid #e8edf5;border-radius:6px;overflow:hidden;">
+            <thead>
+              <tr style="background:#f1f5f9;">
+                <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#64748b;border-bottom:1px solid #dde3ec;">Action</th>
+                <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#64748b;border-bottom:1px solid #dde3ec;width:120px;">Owner</th>
+                <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#64748b;border-bottom:1px solid #dde3ec;width:100px;">Due Date</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHTML}</tbody>
+          </table>
+        </div>
+      </div>`;
+  }
+  // Regular text section
   const filled = content && content.trim().length > 0;
   return `
     <div style="border-bottom:1px solid #dde3ec;">
-      <div style="background:${accentColor || '#0f2044'};padding:5px 14px;display:flex;align-items:center;gap:8px;">
+      <div style="background:#0f2044;padding:5px 14px;display:flex;align-items:center;gap:8px;">
         <span style="font-family:Georgia,serif;font-size:10px;color:#0d9488;font-weight:700;min-width:16px;">${num}</span>
         <span style="font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:white;">${label}</span>
       </div>
@@ -983,7 +1021,12 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
     setOwner(e.data.owner || '');
     setTeam(e.data.team || '');
     setDate(e.data.date || '');
-    setForm({ ...EMPTY_A3, ...e.data });
+    // Migrate old string implementationPlan to array format
+    const rawImpl = e.data.implementationPlan;
+    const impl = Array.isArray(rawImpl)
+      ? rawImpl
+      : (rawImpl ? [{ id: Date.now(), action: rawImpl, owner: '', dueDate: '' }] : [EMPTY_IMPL_ROW()]);
+    setForm({ ...EMPTY_A3, ...e.data, implementationPlan: impl });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -1051,25 +1094,88 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
         </div>
 
         {/* Sections 2–8 */}
-        {Object.entries(A3_GUIDE).map(([key, g], idx) => (
-          <div key={key} style={{ background: 'white', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '1rem', boxShadow: '0 1px 4px rgba(15,32,68,0.05)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
-              <span style={{ background: '#0f2044', color: 'white', fontWeight: 800, fontSize: '0.72rem', borderRadius: 6, padding: '2px 8px', flexShrink: 0 }}>{idx + 2}</span>
-              <label className="label" style={{ margin: 0, color: '#0f2044', fontSize: '0.85rem' }}>{g.label.replace(/^\d+\.\s/, '')}</label>
-              {form[key]?.trim().length > 0 && (
-                <span style={{ marginLeft: 'auto', fontSize: '0.68rem', background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '2px 7px', borderRadius: 99 }}>✓ Filled</span>
+        {Object.entries(A3_GUIDE).map(([key, g], idx) => {
+          const isImpl = key === 'implementationPlan';
+          const implRows = form.implementationPlan || [EMPTY_IMPL_ROW()];
+          const implFilled = implRows.some(r => r.action || r.owner || r.dueDate);
+          const textFilled = !isImpl && typeof form[key] === 'string' && form[key].trim().length > 0;
+          return (
+            <div key={key} style={{ background: 'white', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '1rem', boxShadow: '0 1px 4px rgba(15,32,68,0.05)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
+                <span style={{ background: '#0f2044', color: 'white', fontWeight: 800, fontSize: '0.72rem', borderRadius: 6, padding: '2px 8px', flexShrink: 0 }}>{idx + 2}</span>
+                <label className="label" style={{ margin: 0, color: '#0f2044', fontSize: '0.85rem' }}>{g.label.replace(/^\d+\.\s/, '')}</label>
+                {(isImpl ? implFilled : textFilled) && (
+                  <span style={{ marginLeft: 'auto', fontSize: '0.68rem', background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '2px 7px', borderRadius: 99 }}>✓ Filled</span>
+                )}
+              </div>
+
+              {isImpl ? (
+                /* ── Implementation Plan grid ── */
+                <div>
+                  {/* Column headers */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 150px 36px', gap: 6, marginBottom: 4 }}>
+                    {['Action', 'Owner', 'Due Date', ''].map(h => (
+                      <span key={h} style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', letterSpacing: '0.05em', textTransform: 'uppercase', padding: '0 4px' }}>{h}</span>
+                    ))}
+                  </div>
+
+                  {/* Rows */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {implRows.map((row, ri) => (
+                      <div key={row.id} style={{ display: 'grid', gridTemplateColumns: '1fr 160px 150px 36px', gap: 6, alignItems: 'center' }}>
+                        <input
+                          className="input"
+                          value={row.action}
+                          onChange={e => setForm(f => ({ ...f, implementationPlan: f.implementationPlan.map((r, i) => i === ri ? { ...r, action: e.target.value } : r) }))}
+                          placeholder="What needs to be done?"
+                          style={{ margin: 0 }}
+                        />
+                        <input
+                          className="input"
+                          value={row.owner}
+                          onChange={e => setForm(f => ({ ...f, implementationPlan: f.implementationPlan.map((r, i) => i === ri ? { ...r, owner: e.target.value } : r) }))}
+                          placeholder="Name"
+                          style={{ margin: 0 }}
+                        />
+                        <input
+                          className="input"
+                          type="date"
+                          value={row.dueDate}
+                          onChange={e => setForm(f => ({ ...f, implementationPlan: f.implementationPlan.map((r, i) => i === ri ? { ...r, dueDate: e.target.value } : r) }))}
+                          style={{ margin: 0 }}
+                        />
+                        <button
+                          onClick={() => setForm(f => ({ ...f, implementationPlan: f.implementationPlan.filter((_, i) => i !== ri) }))}
+                          disabled={implRows.length === 1}
+                          title="Remove row"
+                          style={{ width: 32, height: 32, border: 'none', borderRadius: 7, background: implRows.length === 1 ? '#f1f5f9' : '#fee2e2', color: implRows.length === 1 ? '#cbd5e1' : '#ef4444', cursor: implRows.length === 1 ? 'default' : 'pointer', fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add row */}
+                  <button
+                    onClick={() => setForm(f => ({ ...f, implementationPlan: [...f.implementationPlan, EMPTY_IMPL_ROW()] }))}
+                    style={{ marginTop: 10, background: 'none', border: '1.5px dashed #0d9488', color: '#0d9488', borderRadius: 8, padding: '0.4rem 1rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', width: '100%' }}>
+                    + Add Action Row
+                  </button>
+                </div>
+              ) : (
+                <textarea
+                  className="input"
+                  rows={3}
+                  value={form[key]}
+                  onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                  placeholder={g.placeholder}
+                />
               )}
+
+              <A3GuidePanel fieldKey={key} />
             </div>
-            <textarea
-              className="input"
-              rows={3}
-              value={form[key]}
-              onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-              placeholder={g.placeholder}
-            />
-            <A3GuidePanel fieldKey={key} />
-          </div>
-        ))}
+          );
+        })}
 
         {/* Self-check */}
         <div style={{ background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: 12, padding: '0.9rem' }}>
