@@ -422,7 +422,108 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
 }
 
 // ─── Fishbone ─────────────────────────────────────────────────────────────────
-function CatCard({ cat, position, causes, onUpdate }) {
+
+const FISHBONE_GUIDE = {
+  people: {
+    goal: 'Surface causes related to skill, training, communication, or workload — without turning it into blame.',
+    prompts: [
+      'Was the person trained and qualified for this task?',
+      'Was there enough time/staffing to do this correctly?',
+      'Was there a communication gap between shifts, teams, or roles?',
+      'Is this a skill gap, or a system that doesn\'t support the person doing it right?',
+    ],
+    watchFor: 'Avoid landing on a name. Redirect: "What about how this role is set up made the error possible?"',
+  },
+  process: {
+    goal: 'Identify gaps in how the work is defined, documented, or sequenced.',
+    prompts: [
+      'Is there a documented procedure for this step? Is it followed?',
+      'Has the process changed recently, or drifted from the original design?',
+      'Are there unclear handoffs or steps open to interpretation?',
+      'Would two different people doing this task get the same result?',
+    ],
+    watchFor: 'An undocumented process is almost always a cause, not a category to leave blank.',
+  },
+  materials: {
+    goal: 'Identify input or raw material contributions to the problem.',
+    prompts: [
+      'Did the material meet specification when it arrived?',
+      'Was there a supplier change, lot change, or storage condition change?',
+      'Is there variability between suppliers or batches?',
+      'Was the material handled/stored correctly before use?',
+    ],
+    watchFor: 'Check for recent supplier or batch changes — these often correlate with sudden defect spikes.',
+  },
+  machine: {
+    goal: 'Identify equipment, tooling, or technology contributions.',
+    prompts: [
+      'Was the equipment calibrated, maintained, and in normal condition?',
+      'Has there been a change in equipment, settings, or tooling recently?',
+      'Is there a maintenance schedule, and was it followed?',
+      'Could the equipment produce this result even when used correctly?',
+    ],
+    watchFor: 'Don\'t skip this if the equipment "seems fine" — run the prompts anyway. Intermittent issues often hide here.',
+  },
+  environment: {
+    goal: 'Identify physical, organizational, or external conditions outside the immediate process.',
+    prompts: [
+      'Did temperature, humidity, noise, or lighting play a role?',
+      'Is this tied to time of day, shift, or seasonal factors?',
+      'Is there organizational pressure (e.g., rushing to hit a deadline) at play?',
+      'Would this happen in a different location, or is it specific to this environment?',
+    ],
+    watchFor: 'Cultural or schedule pressure is a real cause — don\'t dismiss it. "End of quarter rush" is an environmental condition.',
+  },
+  measurement: {
+    goal: 'Question whether the problem is real — or whether it\'s how it\'s being measured.',
+    prompts: [
+      'Is the measurement method/tool accurate and calibrated?',
+      'Are different people or shifts measuring this the same way?',
+      'Could this be a measurement error rather than an actual process problem?',
+      'Is the data being collected at the right point in the process?',
+    ],
+    watchFor: 'Teams often skip this category — but it can dissolve the entire "problem" if the root cause turns out to be a bad gauge or inconsistent method.',
+  },
+};
+
+const NAME_PATTERN = /\b([A-Z][a-z]+\s[A-Z][a-z]+|[A-Z][a-z]{2,})\b/;
+
+function fishboneCauseNudge(catId, value) {
+  if (!value) return null;
+  if (catId === 'people' && NAME_PATTERN.test(value)) {
+    return 'Looks like a name. Redirect: what about how this role is set up allowed the error to happen?';
+  }
+  return null;
+}
+
+function FishboneGuidePanel({ catId }) {
+  const [open, setOpen] = useState(false);
+  const g = FISHBONE_GUIDE[catId];
+  if (!g) return null;
+  return (
+    <div style={{ marginTop: 6 }}>
+      <button onClick={() => setOpen(o => !o)}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem', color: '#64748b', fontWeight: 600, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
+        {open ? '▾' : '▸'} {open ? 'Hide guide' : 'Show guide for this category'}
+      </button>
+      {open && (
+        <div style={{ marginTop: 6, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', fontSize: '0.73rem', color: '#475569', lineHeight: 1.6 }}>
+          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 4px' }}>Goal</p>
+          <p style={{ margin: '0 0 8px' }}>{g.goal}</p>
+          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 4px' }}>Ask yourself</p>
+          <ul style={{ margin: '0 0 8px', paddingLeft: 16 }}>
+            {g.prompts.map((p, i) => <li key={i} style={{ marginBottom: 2 }}>{p}</li>)}
+          </ul>
+          <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 6, padding: '5px 8px', color: '#713f12', fontSize: '0.71rem' }}>
+            <span style={{ fontWeight: 700 }}>Watch for: </span>{g.watchFor}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function CatCard({ cat, position, causes, onUpdate, effectText }) {
   const clip = position === 'top'
     ? 'polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%)'
     : 'polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 50%)';
@@ -432,17 +533,31 @@ function CatCard({ cat, position, causes, onUpdate }) {
         {cat.label}
       </div>
       <div style={{ padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
-        {causes[cat.id].map((v, i) => (
-          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-            <span style={{ color: cat.color, fontSize: '0.68rem', fontWeight: 900, flexShrink: 0 }}>→</span>
-            <input
-              style={{ flex: 1, border: '1px solid #e2e8f0', borderRadius: 6, padding: '3px 7px', fontSize: '0.75rem', outline: 'none', color: '#475569', background: 'white' }}
-              value={v}
-              onChange={e => onUpdate(cat.id, i, e.target.value)}
-              placeholder={`Cause ${i + 1}...`}
-            />
-          </div>
-        ))}
+        {causes[cat.id].map((v, i) => {
+          const nudge = fishboneCauseNudge(cat.id, v);
+          // Warn if cause text repeats the effect statement
+          const isSymptom = effectText && v.trim().length > 5 && effectText.trim().toLowerCase().includes(v.trim().toLowerCase().slice(0, 12));
+          return (
+            <div key={i}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                <span style={{ color: cat.color, fontSize: '0.68rem', fontWeight: 900, flexShrink: 0 }}>→</span>
+                <input
+                  style={{ flex: 1, border: `1px solid ${nudge || isSymptom ? '#fde047' : '#e2e8f0'}`, borderRadius: 6, padding: '3px 7px', fontSize: '0.75rem', outline: 'none', color: '#475569', background: 'white' }}
+                  value={v}
+                  onChange={e => onUpdate(cat.id, i, e.target.value)}
+                  placeholder={`Cause ${i + 1}...`}
+                />
+              </div>
+              {nudge && (
+                <p style={{ margin: '3px 0 0 14px', fontSize: '0.68rem', color: '#92400e', background: '#fef9c3', borderRadius: 5, padding: '2px 7px', lineHeight: 1.4 }}>⚠️ {nudge}</p>
+              )}
+              {!nudge && isSymptom && (
+                <p style={{ margin: '3px 0 0 14px', fontSize: '0.68rem', color: '#92400e', background: '#fef9c3', borderRadius: 5, padding: '2px 7px', lineHeight: 1.4 }}>⚠️ This looks like a restatement of the effect. Ask "why" one more time — what caused this?</p>
+              )}
+            </div>
+          );
+        })}
+        <FishboneGuidePanel catId={cat.id} />
       </div>
     </div>
   );
@@ -502,6 +617,9 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
   const [causes,  setCauses]  = useState(emptyCauses);
   const [saving,  setSaving]  = useState(false);
 
+  const effectReady = problem.trim().length >= 15;
+  const effectWarn  = problemStatementWarning(problem);
+
   function updateCause(catId, idx, val) {
     setCauses(c => ({ ...c, [catId]: c[catId].map((v, i) => i === idx ? val : v) }));
   }
@@ -534,46 +652,91 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
   return (
     <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div>
-            <label className="label">Diagram Name *</label>
-            <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Q3 Defect Analysis" />
-          </div>
-          <div>
-            <label className="label">Effect / Problem (Fish Head)</label>
-            <input className="input" value={problem} onChange={e => setProblem(e.target.value)} placeholder="e.g. High defect rate in Assembly Line 2" />
-          </div>
+
+        {/* Name */}
+        <div>
+          <label className="label">Diagram Name *</label>
+          <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Q3 Defect Analysis" />
         </div>
 
-        <div style={{ background: '#f8fafc', borderRadius: 16, padding: '12px', border: '1px solid #e8edf5' }}>
-          <div style={{ background: 'white', borderRadius: 12, padding: 10 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-              {TOP_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="top" causes={causes} onUpdate={updateCause} />)}
+        {/* Effect Gate */}
+        <div style={{ background: '#f8fafc', border: `2px solid ${effectReady ? '#ef4444' : '#e2e8f0'}`, borderRadius: 12, padding: '1rem', transition: 'border-color 0.2s' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+            <span style={{ fontSize: '1rem' }}>🐟</span>
+            <label className="label" style={{ margin: 0, color: '#0f2044' }}>Effect / Problem (Fish Head)</label>
+            {effectReady && <span style={{ fontSize: '0.7rem', background: '#fee2e2', color: '#b91c1c', fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>Ready</span>}
+          </div>
+          <p style={{ fontSize: '0.74rem', color: '#64748b', margin: '0 0 8px', lineHeight: 1.5 }}>
+            Specific, factual, measurable — everything branches off this statement.<br />
+            <span style={{ color: '#ef4444' }}>✗</span> "Quality is bad on Line 3" &nbsp;→&nbsp;
+            <span style={{ color: '#0d9488' }}>✓</span> "Line 3 defect rate increased from 2% to 9% over the last two weeks"
+          </p>
+          <input className="input" value={problem} onChange={e => setProblem(e.target.value)}
+            placeholder="What happened? How often? Include a number." />
+          {effectWarn && (
+            <div style={{ marginTop: 6, fontSize: '0.73rem', color: '#92400e', background: '#fef9c3', border: '1px solid #fde047', borderRadius: 7, padding: '5px 10px' }}>
+              💡 {effectWarn}
             </div>
-            <div style={{ position: 'relative', height: 64, margin: '2px 0' }}>
-              <svg width="100%" height="64" style={{ display: 'block' }}>
-                <defs>
-                  <marker id="fb-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                    <polygon points="0 0, 10 3.5, 0 7" fill="#0f2044" />
-                  </marker>
-                </defs>
-                <line x1="0" y1="32" x2="88%" y2="32" stroke="#0f2044" strokeWidth="4" strokeLinecap="round" markerEnd="url(#fb-arrow)" />
-                <line x1="16.5%" y1="0"   x2="24%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
-                <line x1="49.5%" y1="0"   x2="50%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
-                <line x1="82.5%" y1="0"   x2="73%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
-                <line x1="24%"  y1="32" x2="16.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
-                <line x1="50%"  y1="32" x2="49.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
-                <line x1="73%"  y1="32" x2="82.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
-              </svg>
-              <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: '#ef4444', color: 'white', padding: '5px 10px', borderRadius: '0 10px 10px 0', fontWeight: 700, fontSize: '0.72rem', maxWidth: '11%', textAlign: 'center', wordBreak: 'break-word', lineHeight: 1.3 }}>
-                {problem || 'Effect'}
+          )}
+          {!effectReady && problem.trim().length > 0 && (
+            <p style={{ marginTop: 6, fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic' }}>Add more detail to unlock the cause categories below.</p>
+          )}
+        </div>
+
+        {/* Diagram */}
+        {effectReady ? (
+          <>
+            <div style={{ background: '#f8fafc', borderRadius: 16, padding: '12px', border: '1px solid #e8edf5' }}>
+              <p style={{ fontSize: '0.72rem', color: '#64748b', margin: '0 0 10px', lineHeight: 1.5 }}>
+                <strong style={{ color: '#0f2044' }}>How to brainstorm:</strong> Go category by category — don't jump around. Capture everything first, filter later. If a cause appears in more than one category, it's likely your highest-priority lead.
+              </p>
+              <div style={{ background: 'white', borderRadius: 12, padding: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                  {TOP_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="top" causes={causes} onUpdate={updateCause} effectText={problem} />)}
+                </div>
+                <div style={{ position: 'relative', height: 64, margin: '2px 0' }}>
+                  <svg width="100%" height="64" style={{ display: 'block' }}>
+                    <defs>
+                      <marker id="fb-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                        <polygon points="0 0, 10 3.5, 0 7" fill="#0f2044" />
+                      </marker>
+                    </defs>
+                    <line x1="0" y1="32" x2="88%" y2="32" stroke="#0f2044" strokeWidth="4" strokeLinecap="round" markerEnd="url(#fb-arrow)" />
+                    <line x1="16.5%" y1="0"   x2="24%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
+                    <line x1="49.5%" y1="0"   x2="50%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
+                    <line x1="82.5%" y1="0"   x2="73%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
+                    <line x1="24%"  y1="32" x2="16.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
+                    <line x1="50%"  y1="32" x2="49.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
+                    <line x1="73%"  y1="32" x2="82.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
+                  </svg>
+                  <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: '#ef4444', color: 'white', padding: '5px 10px', borderRadius: '0 10px 10px 0', fontWeight: 700, fontSize: '0.72rem', maxWidth: '11%', textAlign: 'center', wordBreak: 'break-word', lineHeight: 1.3 }}>
+                    {problem}
+                  </div>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                  {BOTTOM_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="bottom" causes={causes} onUpdate={updateCause} effectText={problem} />)}
+                </div>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-              {BOTTOM_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="bottom" causes={causes} onUpdate={updateCause} />)}
+
+            {/* Self-check */}
+            <div style={{ background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: 12, padding: '0.9rem' }}>
+              <p style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.8rem', margin: '0 0 6px' }}>✅ Before you save — quick self-check</p>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: '0.74rem', color: '#0c4a6e', lineHeight: 1.8 }}>
+                <li>Every category has at least one entry (an empty category usually means the team didn't push hard enough, not that nothing is there)</li>
+                <li>No cause is just a restatement of the effect in different words</li>
+                <li>Any cause that appeared in more than one category is starred as a priority to investigate first</li>
+                <li>Each starred cause has a clear next step: verify with data, then test a fix</li>
+              </ul>
             </div>
+          </>
+        ) : (
+          <div style={{ border: '2px dashed #e2e8f0', borderRadius: 12, padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem' }}>
+            <p style={{ margin: 0, fontSize: '1.5rem', marginBottom: 8 }}>🔒</p>
+            <p style={{ margin: 0, fontWeight: 600 }}>Fill in the Effect above to unlock the cause categories</p>
+            <p style={{ margin: '4px 0 0', fontSize: '0.74rem' }}>A specific, measurable effect statement prevents every category from filling up with guesses.</p>
           </div>
-        </div>
+        )}
 
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>
