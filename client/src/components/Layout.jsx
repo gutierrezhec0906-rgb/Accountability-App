@@ -300,6 +300,21 @@ export default function Layout({ children }) {
             );
           })}
 
+          {/* Master Admin Panel — only for hectorg@accountability-app.com */}
+          {currentUser?.email === 'hectorg@accountability-app.com' && (
+            <>
+              <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '8px 0 6px' }} />
+              <button
+                className={`sidebar-link ${location.pathname === '/admin' ? 'active' : ''}`}
+                onClick={() => { navigate('/admin'); setMobileOpen(false); }}
+                title={collapsed ? 'Admin Panel' : ''}
+                style={{ background: location.pathname === '/admin' ? 'rgba(234,179,8,0.15)' : 'rgba(234,179,8,0.07)', border: '1px solid rgba(234,179,8,0.2)' }}>
+                <span style={{ fontSize: '1rem', flexShrink: 0 }}>⚙️</span>
+                {!collapsed && <span style={{ flex: 1, color: '#fbbf24', fontWeight: 700 }}>Admin Panel</span>}
+              </button>
+            </>
+          )}
+
           {/* Divider + Score Dashboard pinned at bottom */}
           <div style={{ height: 1, background: 'rgba(255,255,255,0.07)', margin: '8px 0 6px' }} />
           <button
