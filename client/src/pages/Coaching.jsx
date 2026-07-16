@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 
 const sessionTypes = ['Performance', 'Development', 'Disciplinary', 'Recognition', 'Career', 'General'];
 const typeColors   = { Performance: '#0d9488', Development: '#0f2044', Disciplinary: '#ef4444', Recognition: '#f59e0b', Career: '#8b5cf6', General: '#64748b' };
-const emptyForm    = { date: '', coachee: '', type: 'Performance', duration: '', notes: '', actionItems: '', nextSession: '' };
+const emptyForm    = { date: '', coachee: '', type: 'Performance', duration: '', coachingGoal: '', notes: '', actionItems: '', nextSession: '' };
 
 
 export default function Coaching() {
@@ -124,6 +124,7 @@ export default function Coaching() {
             <div><label className="label">Session Type</label><select className="input" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>{sessionTypes.map(t => <option key={t}>{t}</option>)}</select></div>
             <div><label className="label">Date</label><input className="input" type="date" required value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
             <div><label className="label">Duration</label><input className="input" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))} placeholder="e.g. 45 min" /></div>
+            <div style={{ gridColumn: '1/-1' }}><label className="label">Coaching Goal</label><input className="input" value={form.coachingGoal} onChange={e => setForm(f => ({ ...f, coachingGoal: e.target.value }))} placeholder="What is the goal for this coaching relationship?" /></div>
             <div style={{ gridColumn: '1/-1' }}><label className="label">Session Notes</label><textarea className="input" required rows={4} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Key discussion points, observations, commitments..." /></div>
             <div style={{ gridColumn: '1/-1' }}><label className="label">Action Items (one per line)</label><textarea className="input" rows={3} value={form.actionItems} onChange={e => setForm(f => ({ ...f, actionItems: e.target.value }))} placeholder="Complete worksheet by date&#10;Read chapter 3" /></div>
             <div><label className="label">Next Session Date</label><input className="input" type="date" value={form.nextSession} onChange={e => setForm(f => ({ ...f, nextSession: e.target.value }))} /></div>
@@ -191,6 +192,10 @@ export default function Coaching() {
                     <div><label className="label">Date</label><input className="input" type="date" required value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} /></div>
                     <div><label className="label">Duration</label><input className="input" value={editForm.duration} onChange={e => setEditForm(f => ({ ...f, duration: e.target.value }))} /></div>
                     <div style={{ gridColumn: '1/-1' }}>
+                      <label className="label">Coaching Goal</label>
+                      <input className="input" value={editForm.coachingGoal || ''} onChange={e => setEditForm(f => ({ ...f, coachingGoal: e.target.value }))} placeholder="What is the goal for this coaching relationship?" />
+                    </div>
+                    <div style={{ gridColumn: '1/-1' }}>
                       <label className="label">Session Notes</label>
                       <textarea className="input" rows={4} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} />
                     </div>
@@ -213,6 +218,12 @@ export default function Coaching() {
               {/* View details */}
               {selectedSession?.id === s.id && editingId !== s.id && (
                 <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
+                  {s.coachingGoal && (
+                    <div style={{ marginBottom: '0.875rem' }}>
+                      <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>Coaching Goal</p>
+                      <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>{s.coachingGoal}</p>
+                    </div>
+                  )}
                   <div style={{ marginBottom: '0.875rem' }}>
                     <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>Session Notes</p>
                     <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>{s.notes}</p>
