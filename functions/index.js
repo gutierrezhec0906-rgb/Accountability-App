@@ -117,9 +117,8 @@ exports.deleteUser = onCall(async (request) => {
     throw new HttpsError('permission-denied', 'Only master admin can delete users');
   }
   const { uid } = request.data;
-  await Promise.all([
-    admin.auth().deleteUser(uid),
-    admin.firestore().collection('users').doc(uid).delete(),
-  ]);
+  // Delete from Auth if the account exists (ignore error if it doesn't)
+  try { await admin.auth().deleteUser(uid); } catch (e) { /* orphan doc — no auth account */ }
+  await admin.firestore().collection('users').doc(uid).delete();
   return { success: true };
 });
