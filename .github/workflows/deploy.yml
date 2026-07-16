@@ -46,8 +46,8 @@ jobs:
           projectId: accountability-app-4752c
           channelId: live
 
-      - name: Deploy Firebase Storage Rules + Functions
+      - name: Deploy Firebase Functions
         run: |
           echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > /tmp/sa.json
           npm install -g firebase-tools
-          GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json firebase deploy --only storage,functions --force --project accountability-app-4752c
+          GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa.json firebase deploy --only functions --force --project accountability-app-4752c
