@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -72,24 +72,27 @@ export default function Team() {
 
   useEffect(() => {
     async function fetchMembers() {
-      if (!currentUser) return;
+      if (!currentUser || !userProfile) return;
       try {
-        const snap = await getDoc(doc(db, 'users', currentUser.uid));
-        const stored = snap.exists() ? snap.data().myTeam : null;
-        if (stored && stored.length > 0) {
-          setMembers(stored);
-        } else {
-          // Seed with sample members on first visit and persist
-          await setDoc(doc(db, 'users', currentUser.uid), { myTeam: sampleMembers }, { merge: true });
-          setMembers(sampleMembers);
+        const companyId = userProfile.companyId;
+        if (companyId) {
+          const snap = await getDocs(query(
+            collection(db, 'users'),
+            where('companyId', '==', companyId),
+            where('status', '==', 'approved'),
+          ));
+          const list = snap.docs
+            .map(d => ({ uid: d.id, ...d.data() }))
+            .filter(u => u.uid !== currentUser.uid);
+          setMembers(list);
         }
-      } catch {
-        setMembers(sampleMembers);
+      } catch (e) {
+        console.warn('Could not load team members', e);
       }
       setLoading(false);
     }
     fetchMembers();
-  }, [currentUser]);
+  }, [currentUser, userProfile]);
 
   const filtered = members.filter(m => {
     const matchRole = filter === 'All' || m.role === filter;
