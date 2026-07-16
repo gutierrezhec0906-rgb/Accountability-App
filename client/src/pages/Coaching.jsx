@@ -5,6 +5,7 @@ import DateStatus from '../components/DateStatus';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { calculateScore } from '../utils/scoring';
 
 const sessionTypes = ['Performance', 'Development', 'Disciplinary', 'Recognition', 'Career', 'General'];
 const typeColors   = { Performance: '#0d9488', Development: '#0f2044', Disciplinary: '#ef4444', Recognition: '#f59e0b', Career: '#8b5cf6', General: '#64748b' };
@@ -217,6 +218,7 @@ export default function Coaching() {
       setForm(emptyForm);
       setShowForm(false);
       toast.success('Session logged');
+      calculateScore(currentUser.uid).catch(() => {});
     } catch (e) {
       toast.error('Save failed: ' + e.message);
     }
@@ -245,6 +247,7 @@ export default function Coaching() {
       setSelectedSession(updated.find(s => s.id === editingId) || null);
       setEditingId(null);
       setEditForm(null);
+      calculateScore(currentUser.uid).catch(() => {});
       toast.success('Session updated');
     } catch (e) {
       toast.error('Update failed: ' + e.message);

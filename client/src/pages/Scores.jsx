@@ -12,6 +12,7 @@ const BREAKDOWN_CONFIG = [
   { key: 'depth',     label: 'Session Depth',    max: 15, icon: '⏱',  desc: 'Quality time spent per tool session' },
   { key: 'quality',   label: 'Entry Quality',    max: 25, icon: '✍️', desc: 'Completeness and depth of your entries' },
   { key: 'smart',     label: 'SMART Goals',      max: 10, icon: '🎯',  desc: 'Active and completed SMART goals' },
+  { key: 'coaching',  label: 'Coaching Log',     max: 20, icon: '📝',  desc: '5 pts per week with a complete coaching session (max 20/month)' },
   { key: 'evidence',  label: 'Evidence & AI',    max: 10, icon: '🤖',  desc: 'Attachments and AI-assessed purposefulness (coming soon)' },
   { key: 'bonus',     label: 'Bonus Points',     max: 20, icon: '🏆',  desc: 'Extra points from quote reflections and other daily actions' },
 ];
@@ -365,6 +366,7 @@ export default function Scores() {
                 { icon: '⏱',  tip: 'Spend meaningful time per tool — 5+ minutes per session.' },
                 { icon: '✍️', tip: 'Fill SMART goal fields with detail — aim for 30+ words each.' },
                 { icon: '🎯',  tip: 'Create active SMART goals and mark them complete.' },
+                { icon: '📝',  tip: 'Log a complete coaching session every week — goal, notes, and at least one action item — to earn 5 pts/week.' },
                 { icon: '🤖',  tip: 'Attach evidence to entries (AI assessment coming soon).' },
               ].map((item, i) => (
                 <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '0.875rem', display: 'flex', gap: 10 }}>

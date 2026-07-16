@@ -46,6 +46,48 @@ function fieldQuality(text = '') {
   return 1.0;
 }
 
+// Returns the ISO date string (YYYY-MM-DD) of the Monday that starts the week
+// containing the given date string.
+function weekMonday(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const day = d.getDay(); // 0=Sun … 6=Sat
+  const diffToMon = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diffToMon);
+  return d.toISOString().split('T')[0];
+}
+
+// A coaching session counts as "complete" when it has coachee, goal, notes,
+// and at least one action item with a description.
+function isCompleteCoachingSession(s) {
+  if (!s.date || !s.coachee) return false;
+  if (!(s.coachingGoal || '').trim()) return false;
+  if (fieldQuality(s.notes || '') < 0.3) return false;
+  const hasAction = Array.isArray(s.actionItems) &&
+    s.actionItems.some(a => (typeof a === 'string' ? a : (a.action || '')).trim());
+  return hasAction;
+}
+
+// Score: 5 pts for each week in the last 4 calendar weeks that contains at
+// least one complete coaching session. Max 20 pts.
+function coachingLogScore(sessions = []) {
+  const today = new Date();
+  // Build Monday keys for this week and the 3 prior weeks
+  const weekKeys = Array.from({ length: 4 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i * 7);
+    return weekMonday(d.toISOString().split('T')[0]);
+  });
+
+  const weeksWithEntry = new Set(
+    sessions
+      .filter(isCompleteCoachingSession)
+      .map(s => weekMonday(s.date))
+  );
+
+  const qualifyingWeeks = weekKeys.filter(k => weeksWithEntry.has(k)).length;
+  return qualifyingWeeks * 5; // 5 pts per week, max 20
+}
+
 export async function calculateScore(uid) {
   const userSnap = await getDoc(doc(db, 'users', uid));
   if (!userSnap.exists()) throw new Error('User not found');
@@ -94,8 +136,12 @@ export async function calculateScore(uid) {
   const completedGoals = goals.filter(g => g.status === 'completed').length;
   const smartScore = Math.min(activeGoals * 2 + completedGoals * 4, 10);
 
+  // --- Coaching Log (0-20): 5 pts per week with a complete session, last 4 weeks ---
+  const coachingSessions = data.coachingSessions || [];
+  const coachingScore = coachingLogScore(coachingSessions);
+
   const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + depth + quality + evidence + smartScore + bonusPts - penaltyPts
+    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + bonusPts - penaltyPts
   )));
 
   const breakdown = {
@@ -105,6 +151,7 @@ export async function calculateScore(uid) {
     quality:   Math.round(quality),
     evidence:  Math.round(evidence),
     smart:     Math.round(smartScore),
+    coaching:  Math.round(coachingScore),
     bonus:     Math.round(bonusPts),
   };
 
