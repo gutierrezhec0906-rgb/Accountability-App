@@ -220,15 +220,24 @@ export default function AdminPanel() {
                               {sorted.map(u => {
                                 const rc = ROLE_COLORS[u.role] || ROLE_COLORS['Individual Contributor'];
                                 return (
-                                  <div key={u.uid} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                                  <div key={u.uid} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
                                     <Avatar name={u.displayName} />
-                                    <div style={{ flex: 1 }}>
+                                    <div style={{ flex: 1, minWidth: 120 }}>
                                       <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>{u.displayName}</div>
                                       <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{u.email}</div>
                                     </div>
                                     <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: rc.bg, color: rc.text }}>{u.role}</span>
+                                    {!u.companyId && (
+                                      <select
+                                        defaultValue=""
+                                        onChange={e => e.target.value && assignCompany(u.uid, e.target.value)}
+                                        style={{ padding: '4px 8px', borderRadius: 7, border: '1px solid #fbbf24', fontSize: 11, color: '#92400e', background: '#fef9c3', cursor: 'pointer' }}>
+                                        <option value="">📌 Assign company</option>
+                                        {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                                      </select>
+                                    )}
                                     <button onClick={() => deleteUser(u.uid, u.displayName)}
-                                      style={{ marginLeft: 8, background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 14 }} title="Delete user">
+                                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 14 }} title="Delete user">
                                       🗑
                                     </button>
                                   </div>
