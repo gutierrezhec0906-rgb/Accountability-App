@@ -1,7 +1,10 @@
 const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { setGlobalOptions } = require('firebase-functions/v2');
+const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
 
+admin.initializeApp();
 setGlobalOptions({ region: 'us-central1' });
 
 const transporter = nodemailer.createTransport({
@@ -107,4 +110,16 @@ exports.sendWelcomeEmail = onDocumentCreated('users/{uid}', async (event) => {
   ]);
 
   console.log(`Welcome email sent to ${email}, admin notified at ${ADMIN_EMAIL}`);
+});
+
+exports.deleteUser = onCall(async (request) => {
+  if (request.auth?.token?.email !== 'hectorg@accountability-app.com') {
+    throw new HttpsError('permission-denied', 'Only master admin can delete users');
+  }
+  const { uid } = request.data;
+  await Promise.all([
+    admin.auth().deleteUser(uid),
+    admin.firestore().collection('users').doc(uid).delete(),
+  ]);
+  return { success: true };
 });

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -74,6 +75,19 @@ export default function AdminPanel() {
       toast.success(status === 'approved' ? '✅ User approved!' : '❌ User rejected');
     } catch (e) {
       toast.error('Failed to update status');
+    }
+  }
+
+  async function deleteUser(uid, name) {
+    if (!window.confirm(`Delete ${name}? This cannot be undone.`)) return;
+    try {
+      const fns = getFunctions();
+      const deleteFn = httpsCallable(fns, 'deleteUser');
+      await deleteFn({ uid });
+      setUsers(u => u.filter(x => x.uid !== uid));
+      toast.success(`${name} deleted`);
+    } catch (e) {
+      toast.error('Failed to delete user');
     }
   }
 
@@ -213,6 +227,10 @@ export default function AdminPanel() {
                                       <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{u.email}</div>
                                     </div>
                                     <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: rc.bg, color: rc.text }}>{u.role}</span>
+                                    <button onClick={() => deleteUser(u.uid, u.displayName)}
+                                      style={{ marginLeft: 8, background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 14 }} title="Delete user">
+                                      🗑
+                                    </button>
                                   </div>
                                 );
                               })}
@@ -269,6 +287,10 @@ export default function AdminPanel() {
                     <button onClick={() => updateStatus(u.uid, 'rejected')}
                       style={{ padding: '8px 20px', borderRadius: 8, background: '#dc2626', color: 'white', fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' }}>
                       ✕ Reject
+                    </button>
+                    <button onClick={() => deleteUser(u.uid, u.displayName)}
+                      style={{ padding: '8px 14px', borderRadius: 8, background: '#1e293b', color: '#f87171', fontWeight: 700, fontSize: 13, border: '1px solid #f87171', cursor: 'pointer' }}>
+                      🗑
                     </button>
                   </div>
                 </div>

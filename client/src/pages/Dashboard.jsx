@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { isLocked, TIER_LABELS, TIER_ICONS } from '../utils/subscription';
+import { collection, getDocs, query, where } from 'firebase/firestore';
+import { db } from '../firebase';
 
 const categories = [
   {
@@ -86,10 +88,31 @@ export default function Dashboard() {
   const { currentUser, userProfile } = useAuth();
   const navigate = useNavigate();
   const [score, setScore] = useState(null);
+  const [teamMembers, setTeamMembers] = useState([]);
 
   useEffect(() => {
     if (userProfile?.calculatedScore !== undefined) setScore(userProfile.calculatedScore);
   }, [userProfile]);
+
+  useEffect(() => {
+    async function loadTeam() {
+      if (!userProfile?.companyId) return;
+      try {
+        const snap = await getDocs(query(
+          collection(db, 'users'),
+          where('companyId', '==', userProfile.companyId),
+          where('status', '==', 'approved'),
+        ));
+        const members = snap.docs
+          .map(d => ({ uid: d.id, ...d.data() }))
+          .filter(u => u.uid !== currentUser?.uid);
+        setTeamMembers(members);
+      } catch (e) {
+        console.warn('Could not load team members', e);
+      }
+    }
+    loadTeam();
+  }, [userProfile, currentUser]);
 
   const firstName = currentUser?.displayName?.split(' ')[0] || 'Leader';
   const hour = new Date().getHours();
@@ -287,6 +310,41 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── Team Members ── */}
+      {teamMembers.length > 0 && (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+            <div>
+              <h2 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1.1rem' }}>👥 My Team</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: '2px 0 0' }}>{userProfile?.companyName} · {teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''}</p>
+            </div>
+            <button onClick={() => navigate('/team')} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer' }}>
+              View All →
+            </button>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+            {teamMembers.slice(0, 8).map(m => {
+              const colors = ['#0d9488', '#0f2044', '#7c3aed', '#be185d', '#b45309', '#065f46'];
+              const color = colors[(m.displayName?.charCodeAt(0) || 0) % colors.length];
+              const initials = m.displayName?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
+              const ROLE_COLORS = { Leader: '#1d4ed8', Manager: '#15803d', Supervisor: '#7e22ce', 'Individual Contributor': '#475569' };
+              return (
+                <div key={m.uid} className="card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 14, flexShrink: 0 }}>
+                    {initials}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <p style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.displayName}</p>
+                    <p style={{ fontSize: 11, color: ROLE_COLORS[m.role] || '#475569', fontWeight: 600, margin: '2px 0 0' }}>{m.role}</p>
+                    {m.teamName && <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: '1px 0 0' }}>{m.teamName}</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
