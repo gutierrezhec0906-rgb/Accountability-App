@@ -48,7 +48,7 @@ function fieldQuality(text = '') {
 
 // Returns the ISO date string (YYYY-MM-DD) of the Monday that starts the week
 // containing the given date string.
-function weekMonday(dateStr) {
+export function weekMonday(dateStr) {
   const d = new Date(dateStr + 'T12:00:00');
   const day = d.getDay(); // 0=Sun … 6=Sat
   const diffToMon = day === 0 ? -6 : 1 - day;
@@ -58,7 +58,7 @@ function weekMonday(dateStr) {
 
 // A coaching session counts as "complete" when it has coachee, goal, notes,
 // and at least one action item with a description.
-function isCompleteCoachingSession(s) {
+export function isCompleteCoachingSession(s) {
   if (!s.date || !s.coachee) return false;
   if (!(s.coachingGoal || '').trim()) return false;
   if (fieldQuality(s.notes || '') < 0.3) return false;

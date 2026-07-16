@@ -5,7 +5,7 @@ import DateStatus from '../components/DateStatus';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { calculateScore } from '../utils/scoring';
+import { calculateScore, logPointEvent, isCompleteCoachingSession, weekMonday } from '../utils/scoring';
 
 const sessionTypes = ['Performance', 'Development', 'Disciplinary', 'Recognition', 'Career', 'General'];
 const typeColors   = { Performance: '#0d9488', Development: '#0f2044', Disciplinary: '#ef4444', Recognition: '#f59e0b', Career: '#8b5cf6', General: '#64748b' };
@@ -172,6 +172,24 @@ export default function Coaching() {
   const [editForm, setEditForm]           = useState(null);
   const [form, setForm]                   = useState(emptyForm);
 
+  // Log 5 pts the first time a complete coaching session is saved in a given week
+  async function maybeLogCoachingPoints(session) {
+    if (!isCompleteCoachingSession(session)) return;
+    const snap = await getDoc(doc(db, 'users', currentUser.uid));
+    const events = snap.exists() ? (snap.data().pointEvents || []) : [];
+    const thisWeek = weekMonday(new Date().toISOString().split('T')[0]);
+    const alreadyEarned = events.some(
+      e => e.toolLabel === 'Coaching Log' && weekMonday(e.date) === thisWeek
+    );
+    if (!alreadyEarned) {
+      await logPointEvent(currentUser.uid, {
+        points: 5,
+        toolLabel: 'Coaching Log',
+        reason: `Complete coaching session with ${session.coachee}`,
+      });
+    }
+  }
+
   async function fetchSessions() {
     if (!currentUser) return;
     try {
@@ -218,6 +236,7 @@ export default function Coaching() {
       setForm(emptyForm);
       setShowForm(false);
       toast.success('Session logged');
+      await maybeLogCoachingPoints(newSession);
       calculateScore(currentUser.uid).catch(() => {});
     } catch (e) {
       toast.error('Save failed: ' + e.message);
@@ -247,6 +266,8 @@ export default function Coaching() {
       setSelectedSession(updated.find(s => s.id === editingId) || null);
       setEditingId(null);
       setEditForm(null);
+      const saved = updated.find(s => s.id === editingId);
+      if (saved) await maybeLogCoachingPoints(saved);
       calculateScore(currentUser.uid).catch(() => {});
       toast.success('Session updated');
     } catch (e) {
