@@ -2,21 +2,35 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // App config — readable by all authenticated users, writable by none (admin only)
+    function isMasterAdmin() {
+      return request.auth != null && request.auth.token.email == 'hectorg@accountability-app.com';
+    }
+
+    function isAdmin() {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
+    }
+
+    // App config — readable by all authenticated users
     match /appConfig/{docId} {
       allow read: if request.auth != null;
-      allow write: if false;
+      allow write: if isMasterAdmin();
     }
 
-    // Users — each user can read/write their own document
-    // list (collection query) is allowed for authenticated users so signup can detect first user
+    // Companies — readable by all authenticated users, writable by master admin only
+    match /companies/{companyId} {
+      allow read: if request.auth != null;
+      allow write: if isMasterAdmin();
+    }
+
+    // Users — own doc + admin access
     match /users/{userId} {
-      allow get: if request.auth != null && request.auth.uid == userId;
+      allow get: if request.auth != null && (request.auth.uid == userId || isMasterAdmin() || isAdmin());
       allow list: if request.auth != null;
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update: if request.auth != null && (request.auth.uid == userId || isMasterAdmin() || isAdmin());
     }
 
-    // All per-user collections — authenticated users can only access their own docs
     match /toolSessions/{docId} {
       allow read, write: if request.auth != null &&
         (resource == null || resource.data.uid == request.auth.uid) &&
@@ -96,6 +110,12 @@ service cloud.firestore {
     }
 
     match /careerGoals/{docId} {
+      allow read, write: if request.auth != null &&
+        (resource == null || resource.data.uid == request.auth.uid) &&
+        (request.resource == null || request.resource.data.uid == request.auth.uid);
+    }
+
+    match /surveys360/{docId} {
       allow read, write: if request.auth != null &&
         (resource == null || resource.data.uid == request.auth.uid) &&
         (request.resource == null || request.resource.data.uid == request.auth.uid);

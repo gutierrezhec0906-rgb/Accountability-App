@@ -31,6 +31,8 @@ import Pricing from './pages/Pricing';
 import SelfAssessment from './pages/SelfAssessment';
 import Survey360Manager from './pages/Survey360Manager';
 import Survey360 from './pages/Survey360';
+import CompleteProfile from './pages/CompleteProfile';
+import AdminPanel from './pages/AdminPanel';
 
 function PrivateLayout({ children }) {
   return (
@@ -48,6 +50,7 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/complete-profile" element={<PrivateRoute><CompleteProfile /></PrivateRoute>} />
           <Route path="/dashboard" element={<PrivateLayout><Dashboard /></PrivateLayout>} />
           <Route path="/team" element={<PrivateLayout><Team /></PrivateLayout>} />
           <Route path="/approvals" element={<PrivateLayout><Approvals /></PrivateLayout>} />
@@ -73,6 +76,7 @@ export default function App() {
           <Route path="/pricing" element={<PrivateLayout><Pricing /></PrivateLayout>} />
           <Route path="/self-assessment" element={<PrivateLayout><SelfAssessment /></PrivateLayout>} />
           <Route path="/360-feedback" element={<PrivateLayout><Survey360Manager /></PrivateLayout>} />
+          <Route path="/admin" element={<PrivateLayout><AdminPanel /></PrivateLayout>} />
           <Route path="/survey/:surveyId" element={<Survey360 />} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>

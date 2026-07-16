@@ -21,7 +21,7 @@ export default function Signup() {
     try {
       await signup(form.email, form.password, form.name, form.role);
       toast.success('Account created! Welcome aboard.');
-      navigate('/dashboard');
+      navigate('/complete-profile');
     } catch (err) {
       toast.error(err.message || 'Failed to create account');
     }
@@ -55,7 +55,6 @@ export default function Signup() {
                 <option>Leader</option>
                 <option>Manager</option>
                 <option>Supervisor</option>
-                <option>Team Lead</option>
                 <option>Individual Contributor</option>
               </select>
             </div>
