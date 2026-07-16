@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Coaching Session Guide — How to Fill Every Field</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f8fafc;
+      color: #1e293b;
+      padding: 2rem 1rem 5rem;
+    }
+    .container { max-width: 800px; margin: 0 auto; }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #0f2044 0%, #1e3a6e 60%, #0d9488 100%);
+      border-radius: 16px;
+      padding: 2rem 2rem 1.75rem;
+      color: white;
+      margin-bottom: 2rem;
+    }
+    .header-label {
+      font-size: 0.7rem; font-weight: 700; letter-spacing: 0.12em;
+      text-transform: uppercase; color: rgba(255,255,255,0.55); margin-bottom: 6px;
+    }
+    .header h1 { font-size: 1.55rem; font-weight: 900; margin-bottom: 6px; }
+    .header p  { color: rgba(255,255,255,0.75); font-size: 0.875rem; line-height: 1.65; }
+
+    /* Nav pills */
+    .nav {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 2rem;
+    }
+    .nav a {
+      text-decoration: none; font-size: 0.75rem; font-weight: 700;
+      padding: 0.35rem 0.9rem; border-radius: 9999px;
+      background: #1e3a6e; color: white;
+      transition: background 0.15s;
+    }
+    .nav a:hover { background: #0d9488; }
+
+    /* Section */
+    .section {
+      background: white; border-radius: 14px; border: 1.5px solid #e2e8f0;
+      margin-bottom: 1.5rem; overflow: hidden;
+    }
+    .section-header {
+      padding: 1rem 1.25rem 0.875rem;
+      border-bottom: 1.5px solid #f1f5f9;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .section-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0;
+    }
+    .section-header h2 { font-size: 1rem; font-weight: 800; color: #0f2044; }
+    .section-header p  { font-size: 0.78rem; color: #64748b; margin-top: 2px; }
+    .section-body { padding: 1.25rem; }
+
+    /* Field block */
+    .field {
+      margin-bottom: 1.25rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .field:last-child { margin-bottom: 0; padding-bottom: 0; border-bottom: none; }
+
+    .field-label {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 0.5rem;
+    }
+    .field-label strong {
+      font-size: 0.82rem; font-weight: 800; color: #0f2044;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .field-label .required {
+      font-size: 0.65rem; font-weight: 700; color: #ef4444;
+      background: #fee2e2; padding: 1px 6px; border-radius: 9999px;
+    }
+    .field-label .optional {
+      font-size: 0.65rem; font-weight: 700; color: #64748b;
+      background: #f1f5f9; padding: 1px 6px; border-radius: 9999px;
+    }
+
+    .field-desc {
+      font-size: 0.85rem; color: #475569; line-height: 1.65; margin-bottom: 0.75rem;
+    }
+
+    /* Mock input */
+    .mock-input {
+      background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px;
+      padding: 0.55rem 0.875rem; font-size: 0.82rem; color: #475569;
+      font-style: italic; margin-bottom: 0.75rem;
+    }
+
+    /* Example box */
+    .example {
+      background: #f0fdfa; border: 1.5px solid #99f6e4; border-radius: 10px;
+      padding: 0.75rem 1rem; margin-bottom: 0.75rem;
+    }
+    .example-label {
+      font-size: 0.65rem; font-weight: 800; color: #0d9488;
+      text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 4px;
+    }
+    .example p { font-size: 0.83rem; color: #0f4f47; line-height: 1.6; }
+
+    /* Warning box */
+    .warn {
+      background: #fffbeb; border: 1.5px solid #fde68a; border-radius: 10px;
+      padding: 0.75rem 1rem; display: flex; gap: 10px; align-items: flex-start;
+    }
+    .warn .icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+    .warn p { font-size: 0.82rem; color: #92400e; line-height: 1.6; }
+
+    /* Tips */
+    .tip {
+      background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 10px;
+      padding: 0.75rem 1rem; margin-top: 0.75rem;
+    }
+    .tip p { font-size: 0.82rem; color: #1e40af; line-height: 1.6; }
+
+    /* Stage badge */
+    .stage-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 0.25rem 0.75rem; border-radius: 9999px;
+      font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em;
+      margin-bottom: 0.75rem;
+    }
+    .stage-identify  { background: #dbeafe; color: #1d4ed8; }
+    .stage-trigger   { background: #fef3c7; color: #b45309; }
+    .stage-sustain   { background: #d1fae5; color: #065f46; }
+
+    /* Session type chips */
+    .type-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 0.75rem; }
+    .chip {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 0.3rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700;
+    }
+
+    /* Action grid mock */
+    .action-grid { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .action-grid thead tr { background: #0f2044; }
+    .action-grid th { padding: 0.5rem 0.75rem; color: white; font-weight: 600; text-align: left; font-size: 0.72rem; }
+    .action-grid td { padding: 0.5rem 0.75rem; border-bottom: 1px solid #f1f5f9; color: #334155; vertical-align: top; }
+    .action-grid tr:last-child td { border-bottom: none; }
+    .action-grid tr:nth-child(even) td { background: #fafafa; }
+
+    /* Stance cards */
+    .stance-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 0.75rem; }
+    @media (max-width: 560px) { .stance-grid { grid-template-columns: 1fr; } }
+    .stance-card {
+      border-radius: 10px; padding: 0.85rem;
+      font-size: 0.8rem; line-height: 1.6;
+    }
+    .stance-card.wrong { background: #fef2f2; border: 1.5px solid #fecaca; color: #7f1d1d; }
+    .stance-card.right { background: #f0fdfa; border: 1.5px solid #99f6e4; color: #0f4f47; }
+    .stance-card .label { font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 5px; }
+    .stance-card.wrong .label { color: #ef4444; }
+    .stance-card.right .label  { color: #0d9488; }
+
+    /* Resistance table */
+    .resist-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .resist-table th { text-align: left; padding: 0.5rem 0.75rem; background: #0f2044; color: rgba(255,255,255,0.8); font-weight: 600; font-size: 0.72rem; }
+    .resist-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid #f1f5f9; vertical-align: top; line-height: 1.55; }
+    .resist-table td:first-child { color: #64748b; font-style: italic; width: 42%; }
+    .resist-table td:last-child  { color: #0f2044; font-weight: 600; }
+    .resist-table tr:last-child td { border-bottom: none; }
+
+    /* Skills */
+    .skill-row {
+      display: flex; gap: 10px; align-items: flex-start; margin-bottom: 12px;
+    }
+    .skill-row:last-child { margin-bottom: 0; }
+    .skill-dot { width: 8px; height: 8px; border-radius: 50%; background: #0d9488; flex-shrink: 0; margin-top: 6px; }
+    .skill-row p { font-size: 0.83rem; color: #334155; line-height: 1.65; }
+    .skill-row strong { color: #0f2044; }
+
+    /* Footer */
+    .footer { text-align: center; padding-top: 1.5rem; font-size: 0.75rem; color: #94a3b8; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <p class="header-label">Coaching Module · Field Guide</p>
+    <h1>How to Fill Out a Coaching Session</h1>
+    <p>A field-by-field walkthrough of every input in the Coaching module — what it's for, what good looks like, and what to watch out for.</p>
+  </div>
+
+  <!-- Nav -->
+  <nav class="nav">
+    <a href="#stance">Coaching Stance</a>
+    <a href="#basics">Session Basics</a>
+    <a href="#goal">Coaching Goal</a>
+    <a href="#notes">Session Notes</a>
+    <a href="#actions">Action Items</a>
+    <a href="#next">Next Session</a>
+    <a href="#resistance">Handling Resistance</a>
+    <a href="#skills">Core Skills</a>
+  </nav>
+
+  <!-- ── COACHING STANCE ── -->
+  <div class="section" id="stance">
+    <div class="section-header">
+      <div class="section-icon" style="background:#eff6ff;">🧠</div>
+      <div>
+        <h2>Before You Open the Form — The Coaching Stance</h2>
+        <p>Check your mindset before the session starts. This is not a form field — it's what makes the fields matter.</p>
+      </div>
+    </div>
+    <div class="section-body">
+      <p class="field-desc">Ask yourself these three questions before every session. If you can't answer them honestly, the conversation will drift into advice-giving — and the person will leave without ownership.</p>
+
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:1rem;">
+        <div class="example">
+          <p class="example-label">Check-in question 1</p>
+          <p>"Am I coaching this person — or am I about to solve this for them?"</p>
+        </div>
+        <div class="example">
+          <p class="example-label">Check-in question 2</p>
+          <p>"Do I actually believe they can figure this out, or am I about to rescue them?"</p>
+        </div>
+        <div class="example">
+          <p class="example-label">Check-in question 3</p>
+          <p>"What do I need to let go of regarding my own opinion about the 'right' answer here?"</p>
+        </div>
+      </div>
+
+      <div class="stance-grid">
+        <div class="stance-card wrong">
+          <p class="label">❌ Coaching Fail</p>
+          <p>You already know what they should do. You ask questions to lead them to your answer. They agree. They leave without real ownership — and nothing changes.</p>
+        </div>
+        <div class="stance-card right">
+          <p class="label">✅ Coaching Done Right</p>
+          <p>You genuinely don't know what they'll say. You ask, listen, reflect. They arrive at their own answer. They own it. The app captures the commitment. You follow up on it.</p>
+        </div>
+      </div>
+
+      <div class="warn">
+        <div class="icon">⚠️</div>
+        <p><strong>The core rule:</strong> The moment you start giving the answer, ownership transfers from them back to you — and accountability dies right there. Your job is to ask, listen, and hold the silence.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SESSION BASICS ── -->
+  <div class="section" id="basics">
+    <div class="section-header">
+      <div class="section-icon" style="background:#f0fdf4;">📋</div>
+      <div>
+        <h2>Session Basics</h2>
+        <p>Date, coachee, session type, duration — the context record for this conversation.</p>
+      </div>
+    </div>
+    <div class="section-body">
+
+      <!-- Date -->
+      <div class="field">
+        <div class="field-label">
+          <strong>Session Date</strong>
+          <span class="required">Required</span>
+        </div>
+        <p class="field-desc">The date the conversation actually happened — not when you planned it or when you're entering it. If you're logging retroactively, enter the real date so the history is accurate.</p>
+        <div class="mock-input">e.g. 07 / 16 / 2026</div>
+        <div class="tip"><p><strong>Tip:</strong> Log sessions the same day or within 24 hours. Details blur fast — specifics like "I'll give feedback by Friday" are lost within a week if not captured immediately.</p></div>
+      </div>
+
+      <!-- Coachee -->
+      <div class="field">
+        <div class="field-label">
+          <strong>Coachee Name</strong>
+          <span class="required">Required</span>
+        </div>
+        <p class="field-desc">The name of the person you coached. Use the same name format every time so their history is searchable (e.g., always "Sandra Martinez," not sometimes "Sandra" and sometimes "S. Martinez").</p>
+        <div class="mock-input">e.g. Sandra Martinez</div>
+      </div>
+
+      <!-- Session Type -->
+      <div class="field">
+        <div class="field-label">
+          <strong>Session Type</strong>
+          <span class="required">Required</span>
+        </div>
+        <p class="field-desc">Select the primary purpose of this conversation. This determines how the session is filed and what patterns become visible over time.</p>
+        <div class="type-chips">
+          <span class="chip" style="background:#ccfbf1;color:#0d9488;">● Performance</span>
+          <span class="chip" style="background:#dbeafe;color:#0f2044;">● Development</span>
+          <span class="chip" style="background:#fee2e2;color:#ef4444;">● Disciplinary</span>
+          <span class="chip" style="background:#fef3c7;color:#b45309;">● Recognition</span>
+          <span class="chip" style="background:#ede9fe;color:#6d28d9;">● Career</span>
+          <span class="chip" style="background:#f1f5f9;color:#64748b;">● General</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:0.8rem;line-height:1.6;color:#334155;">
+          <p><strong style="color:#0d9488;">Performance</strong> — Addressing a gap between current output and expectation. Most common type.</p>
+          <p><strong style="color:#0f2044;">Development</strong> — Building a skill or expanding capability the person doesn't yet fully have.</p>
+          <p><strong style="color:#ef4444;">Disciplinary</strong> — A serious, documented conversation about conduct or repeated performance failure. Requires precision — every word matters.</p>
+          <p><strong style="color:#b45309;">Recognition</strong> — Reinforcing specific behavior you want repeated. Not generic praise — name exactly what they did and why it mattered.</p>
+          <p><strong style="color:#6d28d9;">Career</strong> — Goals, growth path, next role aspirations.</p>
+          <p><strong style="color:#64748b;">General</strong> — Check-in or catch-all when no single type fits.</p>
+        </div>
+      </div>
+
+      <!-- Duration -->
+      <div class="field">
+        <div class="field-label">
+          <strong>Duration (minutes)</strong>
+          <span class="optional">Optional</span>
+        </div>
+        <p class="field-desc">How long the session ran. Useful for tracking patterns — are your sessions consistently running over? Under? Are rushed sessions correlated with weak commitments?</p>
+        <div class="mock-input">e.g. 30</div>
+        <div class="tip"><p><strong>Tip:</strong> A well-structured coaching conversation using the Identify → Trigger → Sustain framework typically runs 20–40 minutes. Under 15 minutes usually means the Sustain stage was skipped. Over 60 minutes usually means the coach is talking too much.</p></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── COACHING GOAL ── -->
+  <div class="section" id="goal">
+    <div class="section-header">
+      <div class="section-icon" style="background:#fef3c7;">🎯</div>
+      <div>
+        <h2>Coaching Goal</h2>
+        <p>What this session is specifically trying to move — set before the conversation, not after.</p>
+      </div>
+    </div>
+    <div class="section-body">
+
+      <div class="field">
+        <div class="field-label">
+          <strong>Coaching Goal</strong>
+          <span class="optional">Optional but powerful</span>
+        </div>
+        <span class="stage-badge stage-identify">Stage: Identify</span>
+        <p class="field-desc">Write the specific outcome you want this conversation to produce — not what you'll talk about, but what will be different by the end. This is for you as the coach, not for the coachee. It keeps you anchored when the conversation drifts.</p>
+
+        <div class="example">
+          <p class="example-label">❌ Too vague</p>
+          <p>"Talk to Sandra about delegation."</p>
+        </div>
+        <div class="example" style="margin-top:8px;">
+          <p class="example-label">✅ Specific and useful</p>
+          <p>"Help Sandra identify the exact moment she takes over her lead's tasks, and commit to a concrete habit that stops it — with a specific first step logged before she leaves this session."</p>
+        </div>
+
+        <div class="warn" style="margin-top:0.75rem;">
+          <div class="icon">⚠️</div>
+          <p>If you can't write a specific goal before the session, that's a signal you're not clear on what the real issue is yet. Go into the session with the first question: <em>"What's on your mind this week?"</em> — and let the goal emerge from the Identify stage before you try to fix anything.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── SESSION NOTES ── -->
+  <div class="section" id="notes">
+    <div class="section-header">
+      <div class="section-icon" style="background:#ede9fe;">📝</div>
+      <div>
+        <h2>Session Notes</h2>
+        <p>The substance of the conversation — structured across all three stages.</p>
+      </div>
+    </div>
+    <div class="section-body">
+
+      <div class="field">
+        <div class="field-label">
+          <strong>Session Notes</strong>
+          <span class="optional">Optional</span>
+        </div>
+        <p class="field-desc">Use this field to record the key moments of the conversation — what they said, what surfaced, where they got stuck. Structure your notes in three stages so the pattern is visible over time:</p>
+
+        <!-- Stage 1: Identify -->
+        <div style="margin-bottom:1rem;">
+          <span class="stage-badge stage-identify">Stage 1 — Identify</span>
+          <p class="field-desc" style="margin-bottom:0.5rem;">Surface the real issue. Most people open with the presenting complaint — what they're upset about. Good notes capture the moment the deeper issue appeared.</p>
+          <div class="example">
+            <p class="example-label">Example notes — Identify stage</p>
+            <p>
+              <strong>Presenting:</strong> "I'm stretched thin — I ended up doing the PM checklist audit myself instead of having Dave do it."<br><br>
+              <strong>Deeper issue surfaced:</strong> "I didn't trust it would get done in time." (Pattern: absorbing tasks that belong to her leads — third session this theme has come up.)<br><br>
+              <strong>Her role in it:</strong> Acknowledged she made the decision to take it back before Dave had a chance to fail or succeed.
+            </p>
+          </div>
+          <div class="tip" style="margin-top:0.5rem;"><p><strong>Watch for:</strong> If their notes are all about what someone else did ("he was late," "she didn't communicate"), redirect — "That's what they did. What did you do, or not do, in response?" Get their behavior on the record, not just others'.</p></div>
+        </div>
+
+        <!-- Stage 2: Trigger -->
+        <div style="margin-bottom:1rem;">
+          <span class="stage-badge stage-trigger">Stage 2 — Trigger</span>
+          <p class="field-desc" style="margin-bottom:0.5rem;">Find the specific moment of choice. Vague insights don't change behavior. The notes here should capture one concrete, identifiable moment — not a general pattern.</p>
+          <div class="example">
+            <p class="example-label">Example notes — Trigger stage</p>
+            <p>
+              <strong>The moment:</strong> Tuesday morning, 20 minutes before she needed the data. Dave hadn't started.<br><br>
+              <strong>What she told herself:</strong> "It would be faster if I just did it."<br><br>
+              <strong>What catching it looks like:</strong> She identified that a Monday check-in (instead of Tuesday) would leave time for Dave to course-correct without her taking over.
+            </p>
+          </div>
+          <div class="tip" style="margin-top:0.5rem;"><p><strong>Watch for:</strong> Abstract answers like "I need to be more patient." Push for the specific scenario: "Tell me about the last time this happened — what exactly happened, minute by minute?" If they can't name the moment, they can't intercept it.</p></div>
+        </div>
+
+        <!-- Stage 3: Sustain -->
+        <div>
+          <span class="stage-badge stage-sustain">Stage 3 — Sustain</span>
+          <p class="field-desc" style="margin-bottom:0.5rem;">Lock in commitment and follow-through. Notes here should capture the specific commitment and the commitment check — not just "she agreed to delegate more."</p>
+          <div class="example">
+            <p class="example-label">Example notes — Sustain stage</p>
+            <p>
+              <strong>Commitment:</strong> "I will check in with Dave every Monday at 9am on anything with a Wednesday deadline — instead of taking it over myself."<br><br>
+              <strong>Commitment check (1–10):</strong> She said 8. The gap (to 10): she needed a recurring calendar reminder so it wasn't something she had to remember to remember. She committed to set it before end of shift.<br><br>
+              <strong>Accountability loop:</strong> She will log each Monday check-in in the app. We review at next session.
+            </p>
+          </div>
+          <div class="warn" style="margin-top:0.5rem;">
+            <div class="icon">⚠️</div>
+            <p>"I'll try to do better" is not a commitment. A real commitment has <strong>a specific action, a person responsible, and a date</strong>. If you can't write that down in the Action Items grid, the Sustain stage isn't done yet.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ACTION ITEMS ── -->
+  <div class="section" id="actions">
+    <div class="section-header">
+      <div class="section-icon" style="background:#d1fae5;">✅</div>
+      <div>
+        <h2>Action Items Grid</h2>
+        <p>The commitment record — one row per specific action, with a name and a date attached to each.</p>
+      </div>
+    </div>
+    <div class="section-body">
+
+      <div class="field">
+        <div class="field-label">
+          <strong>Action Items</strong>
+          <span class="stage-badge stage-sustain" style="margin-left:4px;">Stage: Sustain</span>
+        </div>
+        <p class="field-desc">Every row is a specific commitment that came out of this session. Three columns: what will be done, who owns it, and by when. This is the record you review at the next session — it's where accountability is made visible.</p>
+
+        <table class="action-grid" style="margin-bottom:1rem;">
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>Responsible</th>
+              <th>Due Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Check in with Dave every Monday at 9am on anything with a Wednesday deadline — instead of doing the task herself</td>
+              <td>Sandra</td>
+              <td>Starting Mon July 21</td>
+            </tr>
+            <tr>
+              <td>Set a recurring calendar reminder for the Monday check-in</td>
+              <td>Sandra</td>
+              <td>Today before end of shift</td>
+            </tr>
+            <tr>
+              <td>Log each Monday check-in in the app after it happens</td>
+              <td>Sandra</td>
+              <td>Ongoing — first by July 22</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="field-desc"><strong>Action column:</strong> Write the action as a verb — what will physically happen. Not "be better at delegating." Exactly: "Give Dave the PM checklist with a 24-hour buffer before deadline."</div>
+
+        <div class="example" style="margin-top:0.75rem;">
+          <p class="example-label">❌ Not a usable action item</p>
+          <p>"Work on communication skills."</p>
+        </div>
+        <div class="example" style="margin-top:8px;">
+          <p class="example-label">✅ Usable action item</p>
+          <p>"Give direct, specific feedback to my shift lead within 24 hours of a missed deadline — starting this week."</p>
+        </div>
+
+        <div style="margin-top:0.875rem;">
+          <p class="field-desc"><strong>Responsible column:</strong> Almost always the coachee — but occasionally it's you as the coach (e.g., "Manager sends Sandra a follow-up resource by Thursday"). If it's blank, no one owns it.</p>
+          <p class="field-desc" style="margin-top:0.5rem;"><strong>Due Date column:</strong> A real date, not "soon" or "ASAP." If they say "I'll do it when I can," ask: "What's the latest this could happen and still make a difference?" Then pick that date.</p>
+        </div>
+
+        <div class="warn" style="margin-top:0.875rem;">
+          <div class="icon">⚠️</div>
+          <p>If you finish a session and the Action Items grid is empty, the Sustain stage didn't happen. Go back. A coaching session with no committed action is a conversation — not coaching.</p>
+        </div>
+
+        <div class="tip" style="margin-top:0.75rem;"><p><strong>Add Row:</strong> Use the "+ Add Row" button for each distinct commitment. Keep them separate — one action per row makes it easy to check off at the next session and spot which ones didn't happen.</p></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── NEXT SESSION ── -->
+  <div class="section" id="next">
+    <div class="section-header">
+      <div class="section-icon" style="background:#fdf4ff;">📅</div>
+      <div>
+        <h2>Next Session Date</h2>
+        <p>When you'll follow up — the loop closes here.</p>
+      </div>
+    </div>
+    <div class="section-body">
+
+      <div class="field">
+        <div class="field-label">
+          <strong>Next Session</strong>
+          <span class="optional">Optional</span>
+        </div>
+        <p class="field-desc">Set this before the person leaves the session. Ask: "When should we meet to review how the commitments went?" Don't wait until the next week to schedule it — a commitment without a review date is a commitment that evaporates.</p>
+        <div class="mock-input">e.g. 07 / 23 / 2026</div>
+
+        <div class="example">
+          <p class="example-label">How to open the next session</p>
+          <p>Start by reviewing the action items from this session: "Last week you committed to X by Y — what happened?" Don't let them narrate around it. Get the fact first, then coach what comes next.</p>
+        </div>
+
+        <div class="tip"><p><strong>Cadence guide:</strong> Performance and Disciplinary sessions → weekly follow-up. Development sessions → every 2 weeks. Career and General → monthly is usually fine. Recognition sessions → no follow-up needed unless you want to reinforce the behavior further.</p></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── HANDLING RESISTANCE ── -->
+  <div class="section" id="resistance">
+    <div class="section-header">
+      <div class="section-icon" style="background:#fef2f2;">🛡️</div>
+      <div>
+        <h2>Handling Resistance</h2>
+        <p>What to say when the conversation stalls — without steamrolling or rescuing.</p>
+      </div>
+    </div>
+    <div class="section-body">
+      <p class="field-desc" style="margin-bottom:1rem;">Every coaching conversation hits a wall at some point. These responses keep it moving without the coach taking over.</p>
+      <table class="resist-table">
+        <thead>
+          <tr>
+            <th>When they say…</th>
+            <th>You say…</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>"I don't know."</td>
+            <td>"If you did know, what would it be?"</td>
+          </tr>
+          <tr>
+            <td>"It's not my fault — it's them."</td>
+            <td>"I hear that. What's the one thing within your control here?"</td>
+          </tr>
+          <tr>
+            <td>"I've already tried everything."</td>
+            <td>"What's one thing you haven't tried yet, even if it seems small?"</td>
+          </tr>
+          <tr>
+            <td>"This isn't going to work."</td>
+            <td>"What would need to be true for it to work?"</td>
+          </tr>
+          <tr>
+            <td>"I just need more time."</td>
+            <td>"If time weren't the issue, what else would still need to change?"</td>
+          </tr>
+          <tr>
+            <td>[Long silence — they freeze]</td>
+            <td>Wait. Count to ten silently. The answer is forming. Don't fill the space.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── CORE SKILLS ── -->
+  <div class="section" id="skills">
+    <div class="section-header">
+      <div class="section-icon" style="background:#fef9c3;">💡</div>
+      <div>
+        <h2>Core Coaching Skills — Quick Reference</h2>
+        <p>The four techniques that make a coaching conversation work.</p>
+      </div>
+    </div>
+    <div class="section-body">
+      <div class="skill-row">
+        <div class="skill-dot"></div>
+        <p><strong>Powerful Questions.</strong> Start with "What" or "How" — rarely "Why" (Why triggers defensiveness). Ask one question at a time. Stop after asking it. <span style="color:#ef4444;">❌ "Don't you think you should talk to them directly?"</span> (leading) → <span style="color:#0d9488;">✅ "What's stopping you from talking to them directly?"</span></p>
+      </div>
+      <div class="skill-row">
+        <div class="skill-dot"></div>
+        <p><strong>Silence.</strong> After asking a real question, stop talking. Coaches rush to fill silence — that's often where the real answer is forming. A pause that feels uncomfortable to you is usually the person working through the answer. Let it breathe.</p>
+      </div>
+      <div class="skill-row">
+        <div class="skill-dot"></div>
+        <p><strong>Reflecting Back.</strong> "What I'm hearing is X — is that right?" This confirms understanding and lets them hear their own words back. People often discover the gap themselves when their own words are reflected to them clearly.</p>
+      </div>
+      <div class="skill-row">
+        <div class="skill-dot"></div>
+        <p><strong>Naming the Pattern.</strong> "This is the third time this specific trigger has come up. What do you make of that?" Data, not accusation. The pattern is in the app's history — use it. The person can't unsee a pattern once it's named.</p>
+      </div>
+
+      <div class="warn" style="margin-top:1rem;">
+        <div class="icon">⚠️</div>
+        <p><strong>Coaching is not telling.</strong> If you find yourself giving advice, explaining the right answer, or finishing their sentences — stop. Ask a question instead. The test: could someone listening to this conversation tell which person is the coach? The coach asks. The coachee talks.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    Leadership Flow Technologies · Accountability App · Coaching Field Guide
+  </div>
+
+</div>
+</body>
+</html>
