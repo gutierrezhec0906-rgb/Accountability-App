@@ -63,7 +63,7 @@ function ScoreBar({ score }) {
 }
 
 export default function Team() {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
