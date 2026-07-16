@@ -12,6 +12,94 @@ const typeColors   = { Performance: '#0d9488', Development: '#0f2044', Disciplin
 const emptyActionRow = () => ({ action: '', responsible: '', date: '' });
 const emptyForm = { date: '', coachee: '', type: 'Performance', duration: '', coachingGoal: '', notes: '', actionItems: [emptyActionRow()], nextSession: '' };
 
+const GUIDES = {
+  sessionType: {
+    goal: 'Select the primary purpose of this conversation so sessions are filed correctly and patterns become visible over time.',
+    questions: [
+      'Performance — addressing a gap between current output and expectation.',
+      'Development — building a skill or expanding capability.',
+      'Disciplinary — a documented conversation about conduct or repeated failure. Every word matters.',
+      'Recognition — reinforcing specific behavior. Name exactly what they did and why it mattered.',
+      'Career — goals, growth path, next role aspirations.',
+      'General — catch-all check-in when no single type fits.',
+    ],
+    watch: null,
+  },
+  coachingGoal: {
+    goal: 'Write the specific outcome you want this conversation to produce — not what you\'ll talk about, but what will be different by the end. This anchors you when the conversation drifts.',
+    questions: [
+      'What do I want the coachee to realize or commit to by the end of this session?',
+      'How will I know the session succeeded?',
+      'What\'s the one thing that must not leave unsaid?',
+    ],
+    watch: 'Vague goals ("talk about delegation") produce vague sessions. "Help Sandra identify the exact moment she takes over and commit to a concrete habit to stop it" is specific enough to coach against.',
+  },
+  notes: {
+    goal: 'Capture the key moments of the conversation across three stages — Identify, Trigger, Sustain — so the pattern is visible over time.',
+    questions: [
+      'IDENTIFY: What was the real issue beneath the presenting complaint? What did they say about their own role in it?',
+      'TRIGGER: What was the exact moment of choice? What did they tell themselves right before the behavior?',
+      'SUSTAIN: What specific commitment did they make? What was their 1–10 commitment score, and what moved it?',
+    ],
+    watch: 'If notes only describe what others did ("he was late," "she didn\'t communicate"), redirect — get their behavior on the record. "That\'s what they did. What did you do, or not do, in response?"',
+  },
+  actionItems: {
+    goal: 'Every row is a specific commitment with a name and a date. This is the record you open at the next session — it\'s where accountability is made visible.',
+    questions: [
+      'Action: Write a verb — what will physically happen? Not "communicate better" but "give direct feedback within 24 hours of a missed deadline."',
+      'Responsible: Almost always the coachee. If blank, no one owns it.',
+      'Due Date: A real date. If they say "soon," ask: "What\'s the latest this could happen and still make a difference?"',
+    ],
+    watch: '"I\'ll try to do better" is not a commitment. If the Action column can\'t be read aloud as a specific thing that either happened or didn\'t — rewrite it.',
+  },
+  nextSession: {
+    goal: 'Set this before the person leaves. A commitment without a review date evaporates.',
+    questions: [
+      'Performance / Disciplinary → weekly follow-up.',
+      'Development → every 2 weeks.',
+      'Career / General → monthly is usually fine.',
+      'Recognition → no follow-up needed unless reinforcing further.',
+    ],
+    watch: 'Open the next session by reviewing action items first: "Last week you committed to X by Y — what happened?" Get the fact before coaching what comes next.',
+  },
+};
+
+function FieldGuide({ guideKey }) {
+  const [open, setOpen] = useState(false);
+  const g = GUIDES[guideKey];
+  if (!g) return null;
+  return (
+    <div style={{ marginTop: 6 }}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.75rem', color: '#0d9488', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}
+      >
+        <span style={{ display: 'inline-block', transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', fontSize: '0.65rem' }}>▼</span>
+        {open ? 'Hide guide' : 'Show guide'}
+      </button>
+      {open && (
+        <div style={{ marginTop: 8, background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0.875rem 1rem', fontSize: '0.82rem', lineHeight: 1.65 }}>
+          <p style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 6px' }}>Goal</p>
+          <p style={{ color: '#0d9488', margin: '0 0 10px' }}>{g.goal}</p>
+          <p style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 6px' }}>Ask yourself</p>
+          <ul style={{ margin: '0 0 10px', paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: 4 }}>
+            {g.questions.map((q, i) => (
+              <li key={i} style={{ color: '#0d9488' }}>{q}</li>
+            ))}
+          </ul>
+          {g.watch && (
+            <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: 8, padding: '0.6rem 0.75rem' }}>
+              <span style={{ fontWeight: 700, color: '#92400e' }}>Watch for: </span>
+              <span style={{ color: '#92400e' }}>{g.watch}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function ActionItemsGrid({ rows, onChange }) {
   function updateRow(i, field, value) {
     const updated = rows.map((r, idx) => idx === i ? { ...r, [field]: value } : r);
@@ -215,16 +303,33 @@ export default function Coaching() {
           <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>New Coaching Session</h3>
           <form onSubmit={addSession} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div><label className="label">Coachee Name</label><input className="input" required value={form.coachee} onChange={e => setForm(f => ({ ...f, coachee: e.target.value }))} placeholder="Team member name" /></div>
-            <div><label className="label">Session Type</label><select className="input" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>{sessionTypes.map(t => <option key={t}>{t}</option>)}</select></div>
+            <div>
+              <label className="label">Session Type</label>
+              <select className="input" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>{sessionTypes.map(t => <option key={t}>{t}</option>)}</select>
+              <FieldGuide guideKey="sessionType" />
+            </div>
             <div><label className="label">Date</label><input className="input" type="date" required value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
             <div><label className="label">Duration</label><input className="input" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))} placeholder="e.g. 45 min" /></div>
-            <div style={{ gridColumn: '1/-1' }}><label className="label">Coaching Goal</label><input className="input" value={form.coachingGoal} onChange={e => setForm(f => ({ ...f, coachingGoal: e.target.value }))} placeholder="What is the goal for this coaching relationship?" /></div>
-            <div style={{ gridColumn: '1/-1' }}><label className="label">Session Notes</label><textarea className="input" required rows={4} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Key discussion points, observations, commitments..." /></div>
+            <div style={{ gridColumn: '1/-1' }}>
+              <label className="label">Coaching Goal</label>
+              <input className="input" value={form.coachingGoal} onChange={e => setForm(f => ({ ...f, coachingGoal: e.target.value }))} placeholder="What is the specific outcome you want from this session?" />
+              <FieldGuide guideKey="coachingGoal" />
+            </div>
+            <div style={{ gridColumn: '1/-1' }}>
+              <label className="label">Session Notes</label>
+              <textarea className="input" required rows={4} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Key discussion points, observations, commitments..." />
+              <FieldGuide guideKey="notes" />
+            </div>
             <div style={{ gridColumn: '1/-1' }}>
               <label className="label" style={{ marginBottom: 8, display: 'block' }}>Action Items</label>
               <ActionItemsGrid rows={form.actionItems} onChange={rows => setForm(f => ({ ...f, actionItems: rows }))} />
+              <FieldGuide guideKey="actionItems" />
             </div>
-            <div><label className="label">Next Session Date</label><input className="input" type="date" value={form.nextSession} onChange={e => setForm(f => ({ ...f, nextSession: e.target.value }))} /></div>
+            <div>
+              <label className="label">Next Session Date</label>
+              <input className="input" type="date" value={form.nextSession} onChange={e => setForm(f => ({ ...f, nextSession: e.target.value }))} />
+              <FieldGuide guideKey="nextSession" />
+            </div>
             <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10 }}>
               <button className="btn-primary" type="submit">Save Session</button>
               <button className="btn-secondary" type="button" onClick={() => setShowForm(false)}>Cancel</button>
@@ -280,24 +385,32 @@ export default function Coaching() {
                 <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.875rem', margin: '0 0 1rem' }}>Edit Session</h4>
                 <form onSubmit={saveEdit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
                   <div><label className="label">Coachee Name</label><input className="input" required value={editForm.coachee} onChange={e => setEditForm(f => ({ ...f, coachee: e.target.value }))} /></div>
-                  <div><label className="label">Session Type</label><select className="input" value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))}>{sessionTypes.map(t => <option key={t}>{t}</option>)}</select></div>
+                  <div>
+                    <label className="label">Session Type</label>
+                    <select className="input" value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))}>{sessionTypes.map(t => <option key={t}>{t}</option>)}</select>
+                    <FieldGuide guideKey="sessionType" />
+                  </div>
                   <div><label className="label">Date</label><input className="input" type="date" required value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} /></div>
                   <div><label className="label">Duration</label><input className="input" value={editForm.duration} onChange={e => setEditForm(f => ({ ...f, duration: e.target.value }))} /></div>
                   <div style={{ gridColumn: '1/-1' }}>
                     <label className="label">Coaching Goal</label>
-                    <input className="input" value={editForm.coachingGoal || ''} onChange={e => setEditForm(f => ({ ...f, coachingGoal: e.target.value }))} placeholder="What is the goal for this coaching relationship?" />
+                    <input className="input" value={editForm.coachingGoal || ''} onChange={e => setEditForm(f => ({ ...f, coachingGoal: e.target.value }))} placeholder="What is the specific outcome you want from this session?" />
+                    <FieldGuide guideKey="coachingGoal" />
                   </div>
                   <div style={{ gridColumn: '1/-1' }}>
                     <label className="label">Session Notes</label>
                     <textarea className="input" rows={4} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} />
+                    <FieldGuide guideKey="notes" />
                   </div>
                   <div style={{ gridColumn: '1/-1' }}>
                     <label className="label" style={{ marginBottom: 8, display: 'block' }}>Action Items</label>
                     <ActionItemsGrid rows={editForm.actionItems} onChange={rows => setEditForm(f => ({ ...f, actionItems: rows }))} />
+                    <FieldGuide guideKey="actionItems" />
                   </div>
                   <div>
                     <label className="label">Next Session Date</label>
                     <input className="input" type="date" value={editForm.nextSession} onChange={e => setEditForm(f => ({ ...f, nextSession: e.target.value }))} />
+                    <FieldGuide guideKey="nextSession" />
                   </div>
                   <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10 }}>
                     <button className="btn-primary" type="submit">Save Changes</button>
