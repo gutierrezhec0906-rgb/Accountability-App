@@ -180,7 +180,6 @@ export default function Layout({ children }) {
           background: 'linear-gradient(180deg, #0b1a38 0%, #0f2044 40%, #122550 100%)',
           minWidth: collapsed ? '4rem' : '16rem',
           borderRight: '1px solid rgba(255,255,255,0.06)',
-          position: 'relative',
         }}
       >
         {/* Edge expand tab — visible only when collapsed */}
