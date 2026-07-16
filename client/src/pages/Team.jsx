@@ -7,7 +7,6 @@ const roleColors = {
   Leader: { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' },
   Manager: { bg: '#f0fdf4', text: '#15803d', border: '#bbf7d0' },
   Supervisor: { bg: '#fdf4ff', text: '#7e22ce', border: '#e9d5ff' },
-  'Team Lead': { bg: '#fff7ed', text: '#c2410c', border: '#fed7aa' },
   'Individual Contributor': { bg: '#f8fafc', text: '#475569', border: '#e2e8f0' },
 };
 
@@ -15,32 +14,17 @@ const roleIcons = {
   Leader: '👑',
   Manager: '🏢',
   Supervisor: '🎯',
-  'Team Lead': '⭐',
   'Individual Contributor': '👤',
 };
 
-const allRoles = ['All', 'Leader', 'Manager', 'Supervisor', 'Team Lead', 'Individual Contributor'];
-
-// Sample members shown when Firestore has no data yet
-const sampleMembers = [
-  { uid: '1', displayName: 'Patricia Wells', email: 'p.wells@company.com', role: 'Leader', createdAt: '2024-01-15', lastLogin: '2 hours ago', score: 4.8 },
-  { uid: '2', displayName: 'James Carter', email: 'j.carter@company.com', role: 'Manager', createdAt: '2024-02-01', lastLogin: '1 day ago', score: 4.2 },
-  { uid: '3', displayName: 'Sofia Nguyen', email: 's.nguyen@company.com', role: 'Team Lead', createdAt: '2024-03-10', lastLogin: '3 hours ago', score: 3.9 },
-  { uid: '4', displayName: 'Marcus Johnson', email: 'm.johnson@company.com', role: 'Individual Contributor', createdAt: '2024-03-15', lastLogin: '5 hours ago', score: 3.5 },
-  { uid: '5', displayName: 'Elena Martinez', email: 'e.martinez@company.com', role: 'Individual Contributor', createdAt: '2024-04-01', lastLogin: 'Yesterday', score: 4.1 },
-  { uid: '6', displayName: 'David Kim', email: 'd.kim@company.com', role: 'Supervisor', createdAt: '2024-04-20', lastLogin: '2 days ago', score: 3.7 },
-  { uid: '7', displayName: 'Ana Reyes', email: 'a.reyes@company.com', role: 'Individual Contributor', createdAt: '2024-05-05', lastLogin: 'Today', score: 4.4 },
-  { uid: '8', displayName: 'Tom Baker', email: 't.baker@company.com', role: 'Individual Contributor', createdAt: '2024-05-18', lastLogin: '4 hours ago', score: 3.2 },
-];
+const allRoles = ['All', 'Leader', 'Manager', 'Supervisor', 'Individual Contributor'];
 
 function Avatar({ name, photoURL, size = 40 }) {
   const initials = name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
   const colors = ['#0d9488', '#0f2044', '#7c3aed', '#be185d', '#b45309', '#065f46'];
   const color = colors[name?.charCodeAt(0) % colors.length] || '#0d9488';
   if (photoURL) {
-    return (
-      <img src={photoURL} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e2e8f0' }} />
-    );
+    return <img src={photoURL} alt={name} style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid #e2e8f0' }} />;
   }
   return (
     <div style={{ width: size, height: size, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: size * 0.35, flexShrink: 0 }}>
@@ -50,14 +34,16 @@ function Avatar({ name, photoURL, size = 40 }) {
 }
 
 function ScoreBar({ score }) {
-  const pct = (score / 5) * 100;
-  const color = score >= 4 ? '#0d9488' : score >= 3 ? '#f59e0b' : '#ef4444';
+  const pct = Math.min(100, score);
+  const color = score >= 75 ? '#0d9488' : score >= 50 ? '#f59e0b' : score >= 25 ? '#f97316' : '#94a3b8';
+  const label = score >= 75 ? 'Exceptional' : score >= 50 ? 'High Performer' : score >= 25 ? 'Developing' : 'Getting Started';
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
       <div style={{ flex: 1, background: '#e2e8f0', borderRadius: 9999, height: 6 }}>
         <div style={{ width: `${pct}%`, height: 6, borderRadius: 9999, background: color, transition: 'width 0.5s' }} />
       </div>
-      <span style={{ fontSize: '0.75rem', fontWeight: 700, color, minWidth: 24 }}>{score}</span>
+      <span style={{ fontSize: '0.75rem', fontWeight: 800, color, minWidth: 28 }}>{score}</span>
+      <span style={{ fontSize: '0.65rem', color: '#94a3b8', whiteSpace: 'nowrap' }}>{label}</span>
     </div>
   );
 }
@@ -70,29 +56,40 @@ export default function Team() {
   const [search, setSearch] = useState('');
   const [view, setView] = useState('grid');
 
+  const isAdmin = currentUser?.email === 'hectorg@accountability-app.com' || userProfile?.isAdmin;
+  const isLeader = userProfile?.role === 'Leader';
+  const canSeeScores = isAdmin || isLeader;
+
   useEffect(() => {
     async function fetchMembers() {
-      if (!currentUser || !userProfile) return;
+      if (!currentUser) return;
       try {
-        const companyId = userProfile.companyId;
-        if (companyId) {
-          const snap = await getDocs(query(
+        let snap;
+        if (isAdmin) {
+          // Admin sees ALL approved users
+          snap = await getDocs(query(collection(db, 'users'), where('status', '==', 'approved')));
+        } else {
+          // Leader/others see only their company
+          const companyId = userProfile?.companyId;
+          if (!companyId) { setLoading(false); return; }
+          snap = await getDocs(query(
             collection(db, 'users'),
             where('companyId', '==', companyId),
             where('status', '==', 'approved'),
           ));
-          const list = snap.docs
-            .map(d => ({ uid: d.id, ...d.data() }))
-            .filter(u => u.uid !== currentUser.uid);
-          setMembers(list);
         }
+        const list = snap.docs
+          .map(d => ({ uid: d.id, ...d.data() }))
+          .filter(u => u.uid !== currentUser.uid)
+          .sort((a, b) => (b.calculatedScore ?? 0) - (a.calculatedScore ?? 0));
+        setMembers(list);
       } catch (e) {
         console.warn('Could not load team members', e);
       }
       setLoading(false);
     }
-    fetchMembers();
-  }, [currentUser, userProfile]);
+    if (userProfile !== undefined) fetchMembers();
+  }, [currentUser, userProfile, isAdmin]);
 
   const filtered = members.filter(m => {
     const matchRole = filter === 'All' || m.role === filter;
@@ -118,9 +115,11 @@ export default function Team() {
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>Team</h1>
+          <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>
+            {isAdmin ? 'All Members' : 'Team'}
+          </h1>
           <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: 4 }}>
-            {members.length} member{members.length !== 1 ? 's' : ''} across all roles
+            {members.length} member{members.length !== 1 ? 's' : ''}{isAdmin ? ' across all companies' : ' in your team'}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
@@ -165,34 +164,39 @@ export default function Team() {
 
       {/* Grid View */}
       {view === 'grid' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 16 }}>
           {filtered.map(member => {
             const rc = roleColors[member.role] || roleColors['Individual Contributor'];
-            const isMe = member.uid === currentUser?.uid;
+            const score = member.calculatedScore ?? null;
             return (
-              <div key={member.uid} className="card" style={{ padding: '1.25rem', position: 'relative', borderTop: `3px solid ${rc.border}` }}>
-                {isMe && (
-                  <span style={{ position: 'absolute', top: 10, right: 10, background: '#0d9488', color: 'white', fontSize: '0.65rem', fontWeight: 700, padding: '2px 8px', borderRadius: 9999 }}>YOU</span>
-                )}
+              <div key={member.uid} className="card" style={{ padding: '1.25rem', borderTop: `3px solid ${rc.border}` }}>
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 10 }}>
                   <Avatar name={member.displayName} photoURL={member.photoURL} size={56} />
                   <div>
                     <p style={{ fontWeight: 700, color: '#1e293b', margin: 0, fontSize: '0.95rem' }}>{member.displayName || 'Unknown'}</p>
                     <p style={{ color: '#94a3b8', fontSize: '0.75rem', margin: '2px 0 0' }}>{member.email}</p>
+                    {isAdmin && member.companyName && (
+                      <p style={{ color: '#64748b', fontSize: '0.7rem', margin: '2px 0 0', fontWeight: 600 }}>{member.companyName}</p>
+                    )}
                   </div>
                   <span style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, padding: '0.2rem 0.75rem', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 700 }}>
                     {roleIcons[member.role]} {member.role}
                   </span>
-                  {member.score && (
+                  {canSeeScores && (
                     <div style={{ width: '100%' }}>
-                      <p style={{ fontSize: '0.7rem', color: '#94a3b8', marginBottom: 4, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Accountability Score</p>
-                      <ScoreBar score={member.score} />
+                      <p style={{ fontSize: '0.7rem', color: '#94a3b8', marginBottom: 6, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Accountability Score</p>
+                      {score !== null ? <ScoreBar score={score} /> : (
+                        <p style={{ fontSize: '0.72rem', color: '#cbd5e1', margin: 0 }}>No score yet</p>
+                      )}
                     </div>
                   )}
                 </div>
               </div>
             );
           })}
+          {filtered.length === 0 && (
+            <div style={{ gridColumn: '1/-1', padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No members match your search.</div>
+          )}
         </div>
       )}
 
@@ -204,23 +208,21 @@ export default function Team() {
               <tr style={{ background: '#0f2044' }}>
                 <th style={{ textAlign: 'left', padding: '0.75rem 1.25rem', color: 'white', fontWeight: 600 }}>Member</th>
                 <th style={{ textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 500 }}>Role</th>
+                {isAdmin && <th style={{ textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 500 }}>Company</th>}
                 <th style={{ textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 500 }}>Email</th>
-                <th style={{ textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 500, minWidth: 140 }}>Score</th>
+                {canSeeScores && <th style={{ textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 500, minWidth: 200 }}>Score</th>}
               </tr>
             </thead>
             <tbody>
               {filtered.map((member, i) => {
                 const rc = roleColors[member.role] || roleColors['Individual Contributor'];
-                const isMe = member.uid === currentUser?.uid;
+                const score = member.calculatedScore ?? null;
                 return (
-                  <tr key={member.uid} style={{ borderBottom: '1px solid #f1f5f9', background: isMe ? '#f0fdfa' : i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                  <tr key={member.uid} style={{ borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
                     <td style={{ padding: '0.75rem 1.25rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                         <Avatar name={member.displayName} photoURL={member.photoURL} size={36} />
-                        <div>
-                          <p style={{ fontWeight: 700, color: '#1e293b', margin: 0 }}>{member.displayName || 'Unknown'}</p>
-                          {isMe && <span style={{ fontSize: '0.65rem', background: '#0d9488', color: 'white', padding: '1px 6px', borderRadius: 9999, fontWeight: 700 }}>YOU</span>}
-                        </div>
+                        <p style={{ fontWeight: 700, color: '#1e293b', margin: 0 }}>{member.displayName || 'Unknown'}</p>
                       </div>
                     </td>
                     <td style={{ padding: '0.75rem 1rem' }}>
@@ -228,10 +230,13 @@ export default function Team() {
                         {roleIcons[member.role]} {member.role}
                       </span>
                     </td>
+                    {isAdmin && <td style={{ padding: '0.75rem 1rem', color: '#64748b', fontSize: '0.8rem' }}>{member.companyName || '—'}</td>}
                     <td style={{ padding: '0.75rem 1rem', color: '#64748b' }}>{member.email}</td>
-                    <td style={{ padding: '0.75rem 1rem', minWidth: 140 }}>
-                      {member.score ? <ScoreBar score={member.score} /> : <span style={{ color: '#cbd5e1', fontSize: '0.75rem' }}>No score yet</span>}
-                    </td>
+                    {canSeeScores && (
+                      <td style={{ padding: '0.75rem 1rem', minWidth: 200 }}>
+                        {score !== null ? <ScoreBar score={score} /> : <span style={{ color: '#cbd5e1', fontSize: '0.75rem' }}>No score yet</span>}
+                      </td>
+                    )}
                   </tr>
                 );
               })}
