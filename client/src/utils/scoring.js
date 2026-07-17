@@ -217,7 +217,7 @@ export async function calculateScore(uid) {
   const discPoints = discLastAt && discDaysAgo <= 90 ? 5 : 0;
 
   const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + bonusPts - penaltyPts
+    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + feedbackPoints + bonusPts - penaltyPts
   )));
 
   // Persist score to user doc
@@ -230,12 +230,21 @@ export async function calculateScore(uid) {
   // Daily snapshot stored inside users/{uid}.scoreHistory array (max 90 entries)
   const today = new Date().toISOString().split('T')[0];
 
-  // --- Mindfulness (0-2): today's points from pointEvents ---
   const allEvents = data.pointEvents || [];
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
+  // --- Mindfulness (0-2): today's points from pointEvents ---
   const mindfulnessPoints = Math.min(2,
     allEvents
       .filter(e => e.date === today && (e.toolLabel === 'Mindfulness' || e.toolLabel === 'Mindfulness Record') && e.points > 0)
       .reduce((s, e) => s + e.points, 0)
+  );
+
+  // --- Feedback Given (0-5): 1 pt per feedback given, rolling 30-day window ---
+  const feedbackPoints = Math.min(5,
+    allEvents
+      .filter(e => e.toolLabel === 'Feedback Given' && e.date >= thirtyDaysAgo && e.points > 0)
+      .length
   );
 
   const breakdown = {
@@ -249,6 +258,7 @@ export async function calculateScore(uid) {
     problemSolving: Math.round(psScore),
     disc:           Math.round(discPoints),
     mindfulness:    Math.round(mindfulnessPoints),
+    feedbackGiven:  Math.round(feedbackPoints),
     bonus:          Math.round(bonusPts),
   };
 

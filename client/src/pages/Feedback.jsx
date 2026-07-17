@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, getDocs, collection, query, where, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, query, where, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -216,7 +216,7 @@ export default function Feedback() {
   const [received, setReceived] = useState([]);
   const [requests, setRequests] = useState([]);
   const [submitting, setSubmitting] = useState(false);
-  const [bonusDates, setBonusDates] = useState({ given: null, requested: null });
+  const [monthlyFeedbackCount, setMonthlyFeedbackCount] = useState(0);
 
   const myName = userProfile?.displayName || currentUser?.displayName || currentUser?.email || '';
 
@@ -229,7 +229,12 @@ export default function Feedback() {
           const data = snap.data();
           setGiven(data.feedbackEntries || []);
           setRequests(data.feedbackRequests || []);
-          setBonusDates({ given: data.feedbackBonusGivenDate || null, requested: data.feedbackBonusRequestedDate || null });
+          // Count feedback points earned in last 30 days
+          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          const fbCount = (data.pointEvents || [])
+            .filter(e => e.toolLabel === 'Feedback Given' && e.date >= thirtyDaysAgo && e.points > 0)
+            .length;
+          setMonthlyFeedbackCount(fbCount);
 
           // Load team members from users collection filtered by same companyId
           const companyId = data.companyId;
@@ -249,19 +254,18 @@ export default function Feedback() {
     fetchAll();
   }, [currentUser]);
 
-  async function awardBonusIfNew(type) {
-    const today = new Date().toISOString().split('T')[0];
-    const field = type === 'given' ? 'feedbackBonusGivenDate' : 'feedbackBonusRequestedDate';
-    const already = type === 'given' ? bonusDates.given : bonusDates.requested;
-    if (already === today) return false;
-    const reason = type === 'given' ? 'Gave feedback to a team member' : 'Requested feedback from team member(s)';
-    const { awarded, capReached } = await logPointEvent(currentUser.uid, { points: 5, toolLabel: 'Feedback Box', reason });
+  async function awardFeedbackPoint() {
+    if (monthlyFeedbackCount >= 5) return 'capped-monthly';
+    const { awarded, capReached } = await logPointEvent(currentUser.uid, {
+      points: 1,
+      toolLabel: 'Feedback Given',
+      reason: 'Gave feedback to a team member (+1 pt, max 5/month)',
+    });
     if (awarded) {
-      await updateDoc(doc(db, 'users', currentUser.uid), { [field]: today, bonusPoints: increment(5) });
-      setBonusDates(d => ({ ...d, [type]: today }));
+      setMonthlyFeedbackCount(c => c + 1);
       return 'earned';
     }
-    return capReached ? 'capped' : false;
+    return capReached ? 'capped-daily' : false;
   }
 
   async function persist(entries, reqs) {
@@ -295,9 +299,10 @@ export default function Feedback() {
         createdAt: { seconds: Math.floor(Date.now() / 1000) },
       };
       await persist([newEntry, ...given], undefined);
-      const earned = await awardBonusIfNew('given');
-      if (earned === 'earned') toast.success('⭐ Feedback submitted! +5 pts added to your score', { duration: 6000, icon: '🌟' });
-      else if (earned === 'capped') toast('Feedback submitted! You\'ve reached your 25-pt daily limit — great effort today! Come back tomorrow. 🗓', { duration: 6000, icon: '📅' });
+      const earned = await awardFeedbackPoint();
+      if (earned === 'earned') toast.success(`Feedback submitted! +1 pt (${monthlyFeedbackCount + 1}/5 this month)`, { duration: 5000 });
+      else if (earned === 'capped-monthly') toast('Feedback submitted! You\'ve reached the 5-pt monthly feedback limit. Points reset in 30 days.', { duration: 6000, icon: '📅' });
+      else if (earned === 'capped-daily') toast('Feedback submitted! Daily 25-pt cap reached — come back tomorrow.', { duration: 6000, icon: '📅' });
       else toast.success('Feedback submitted!');
       setForm({ type: 'Peer', from: '', to: '', anonymous: false, category: 'Leadership', rating: 5, when: '', what: '', effect: '' });
       setShowForm(false);
@@ -330,11 +335,8 @@ export default function Feedback() {
     });
     try {
       await persist(undefined, [...newReqs, ...requests]);
-      const earned = await awardBonusIfNew('requested');
       const names = newReqs.map(r => r.to).join(', ');
-      if (earned === 'earned') toast.success(`⭐ Request${newReqs.length > 1 ? 's' : ''} sent to ${names} — +5 pts added to your score`, { duration: 6000, icon: '🌟' });
-      else if (earned === 'capped') toast(`Request${newReqs.length > 1 ? 's' : ''} sent to ${names}. Daily 25-pt limit reached — come back tomorrow to earn more! 🗓`, { duration: 6000, icon: '📅' });
-      else toast.success(`Request${newReqs.length > 1 ? 's' : ''} sent to ${names}`);
+      toast.success(`Request${newReqs.length > 1 ? 's' : ''} sent to ${names}`);
     } catch { toast.error('Could not save requests'); }
   }
 
