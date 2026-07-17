@@ -67,6 +67,56 @@ export function isCompleteCoachingSession(s) {
   return hasAction;
 }
 
+// ── Problem-Solving Score (0-20) ───────────────────────────────────────────
+// Points per tool per week (max once per tool per week):
+//   5 Whys   → 5 pts
+//   Fishbone → 5 pts
+//   A3       → 10 pts  (total cap 20 pts/week)
+//
+// Decay based on consecutive weeks of non-use since most recently active week:
+//   Used this week      → 100%
+//   1 week gap          →  80%
+//   2 week gap          →  50%
+//   3+ week gap         →  25%
+const PS_POINTS = { '5whys': 5, fishbone: 5, a3: 10 };
+
+export function problemSolvingScore(entries = []) {
+  if (!entries.length) return 0;
+
+  // Normalise createdAt to YYYY-MM-DD
+  const dated = entries.map(e => ({
+    type: e.type,
+    date: e.createdAt?.seconds
+      ? new Date(e.createdAt.seconds * 1000).toISOString().split('T')[0]
+      : typeof e.createdAt === 'string' ? e.createdAt.split('T')[0]
+      : null,
+  })).filter(e => e.date && PS_POINTS[e.type] !== undefined);
+
+  if (!dated.length) return 0;
+
+  // Most recently active week
+  const allWeekKeys = dated.map(e => weekMonday(e.date)).sort();
+  const mostRecentWeek = allWeekKeys[allWeekKeys.length - 1];
+
+  // Weeks elapsed since most recently active week
+  const currentWeek = weekMonday(new Date().toISOString().split('T')[0]);
+  const msPerWeek   = 7 * 24 * 60 * 60 * 1000;
+  const weeksGap    = Math.round((new Date(currentWeek) - new Date(mostRecentWeek)) / msPerWeek);
+
+  const decay = weeksGap === 0 ? 1.0
+              : weeksGap === 1 ? 0.8
+              : weeksGap === 2 ? 0.5
+              : 0.25;
+
+  // Points earned in that most recent week (one per tool type)
+  const weekTypes = new Set(
+    dated.filter(e => weekMonday(e.date) === mostRecentWeek).map(e => e.type)
+  );
+  const earned = [...weekTypes].reduce((sum, t) => sum + (PS_POINTS[t] || 0), 0);
+
+  return Math.min(Math.round(earned * decay), 20);
+}
+
 // Score: 5 pts for each week in the last 4 calendar weeks that contains at
 // least one complete coaching session. Max 20 pts.
 function coachingLogScore(sessions = []) {
@@ -140,19 +190,24 @@ export async function calculateScore(uid) {
   const coachingSessions = data.coachingSessions || [];
   const coachingScore = coachingLogScore(coachingSessions);
 
+  // --- Problem Solving (0-20): 5Whys+Fishbone+A3, weekly cap, decay on non-use ---
+  const psEntries = data.problemSolving || [];
+  const psScore = problemSolvingScore(psEntries);
+
   const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + bonusPts - penaltyPts
+    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + bonusPts - penaltyPts
   )));
 
   const breakdown = {
-    breadth:   Math.round(breadth),
-    frequency: Math.round(frequency),
-    depth:     Math.round(depth),
-    quality:   Math.round(quality),
-    evidence:  Math.round(evidence),
-    smart:     Math.round(smartScore),
-    coaching:  Math.round(coachingScore),
-    bonus:     Math.round(bonusPts),
+    breadth:        Math.round(breadth),
+    frequency:      Math.round(frequency),
+    depth:          Math.round(depth),
+    quality:        Math.round(quality),
+    evidence:       Math.round(evidence),
+    smart:          Math.round(smartScore),
+    coaching:       Math.round(coachingScore),
+    problemSolving: Math.round(psScore),
+    bonus:          Math.round(bonusPts),
   };
 
   // Persist score to user doc
