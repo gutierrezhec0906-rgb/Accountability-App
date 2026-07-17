@@ -13,6 +13,7 @@ const BREAKDOWN_CONFIG = [
   { key: 'quality',   label: 'Entry Quality',    max: 25, icon: '✍️', desc: 'Completeness and depth of your entries' },
   { key: 'smart',     label: 'SMART Goals',      max: 10, icon: '🎯',  desc: 'Active and completed SMART goals' },
   { key: 'coaching',  label: 'Coaching Log',     max: 20, icon: '📝',  desc: '5 pts per week with a complete coaching session (max 20/month)' },
+  { key: 'problemSolving', label: 'Problem Solving', max: 20, icon: '🔍', desc: '5 Whys (5pts) + Fishbone (5pts) + A3 (10pts) per week; decays 20%→50%→75% without use' },
   { key: 'evidence',  label: 'Evidence & AI',    max: 10, icon: '🤖',  desc: 'Attachments and AI-assessed purposefulness (coming soon)' },
   { key: 'bonus',     label: 'Bonus Points',     max: 20, icon: '🏆',  desc: 'Extra points from quote reflections and other daily actions' },
 ];

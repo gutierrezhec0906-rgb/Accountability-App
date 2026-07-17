@@ -5,6 +5,13 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
+import { logPointEvent, calculateScore, weekMonday } from '../utils/scoring';
+
+const PS_EVENT_LABELS = {
+  '5whys':    { label: '5 Whys Analysis',      points: 5  },
+  fishbone:   { label: 'Fishbone Diagram',      points: 5  },
+  a3:         { label: 'A3 Problem Solving',    points: 10 },
+};
 
 const TOOLS = ['5 Whys', 'Fishbone Diagram', 'A3 Template'];
 
@@ -1310,6 +1317,26 @@ export default function ProblemSolving() {
 
   useEffect(() => { fetchSaved(); }, [currentUser]);
 
+  async function maybeLogPSPoints(type) {
+    const cfg = PS_EVENT_LABELS[type];
+    if (!cfg) return;
+    try {
+      const snap = await getDoc(doc(db, 'users', currentUser.uid));
+      const events = snap.exists() ? (snap.data().pointEvents || []) : [];
+      const thisWeek = weekMonday(new Date().toISOString().split('T')[0]);
+      const alreadyEarned = events.some(
+        e => e.toolLabel === cfg.label && weekMonday(e.date) === thisWeek
+      );
+      if (!alreadyEarned) {
+        await logPointEvent(currentUser.uid, {
+          points: cfg.points,
+          toolLabel: cfg.label,
+          reason: `Completed ${cfg.label} this week`,
+        });
+      }
+    } catch {}
+  }
+
   async function handleSave({ type, title, data, onSaved }) {
     if (!currentUser) return toast.error('Not signed in');
     try {
@@ -1329,6 +1356,8 @@ export default function ProblemSolving() {
           createdAt: { seconds: Math.floor(Date.now() / 1000) },
         };
         updated = [newEntry, ...all];
+        await maybeLogPSPoints(type);
+        calculateScore(currentUser.uid).catch(() => {});
         toast.success('Template saved!');
       }
       await persist(updated);
