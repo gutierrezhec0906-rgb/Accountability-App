@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, query, where, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -155,7 +155,7 @@ function RequestModal({ teamMembers, onClose, onSave }) {
                     <Avatar name={m.displayName} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)', margin: 0 }}>{m.displayName || m.email}</p>
-                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>{m.role || 'Team Member'}</p>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>{[m.teamName, m.role].filter(Boolean).join(' · ') || 'Team Member'}</p>
                     </div>
                     {checked && <span style={{ fontSize: '0.8rem', color: '#0d9488', fontWeight: 700 }}>✓</span>}
                   </label>
@@ -227,10 +227,23 @@ export default function Feedback() {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
         if (snap.exists()) {
           const data = snap.data();
-          setTeamMembers((data.myTeam || []).filter(m => m.uid !== currentUser.uid));
           setGiven(data.feedbackEntries || []);
           setRequests(data.feedbackRequests || []);
           setBonusDates({ given: data.feedbackBonusGivenDate || null, requested: data.feedbackBonusRequestedDate || null });
+
+          // Load team members from users collection filtered by same companyId
+          const companyId = data.companyId;
+          if (companyId) {
+            const membersSnap = await getDocs(query(
+              collection(db, 'users'),
+              where('companyId', '==', companyId),
+              where('status', '==', 'approved')
+            ));
+            const members = membersSnap.docs
+              .map(d => ({ uid: d.id, ...d.data() }))
+              .filter(m => m.uid !== currentUser.uid);
+            setTeamMembers(members);
+          }
         }
       } catch (e) { console.error(e); }
     }
@@ -426,7 +439,7 @@ export default function Feedback() {
                       <option value="">— Select team member —</option>
                       {teamMembers.map(m => (
                         <option key={m.uid} value={m.displayName || m.email}>
-                          {m.displayName || m.email}{m.role ? ` (${m.role})` : ''}
+                          {m.displayName || m.email}{m.teamName ? ` · ${m.teamName}` : ''}{m.role ? ` (${m.role})` : ''}
                         </option>
                       ))}
                     </select>
