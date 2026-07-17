@@ -98,6 +98,8 @@ export default function Survey360() {
 
   async function loadSurvey() {
     try {
+      // Sign in anonymously first so Firestore auth rules pass
+      try { await signInAnonymously(auth); } catch (_) {}
       const snap = await getDoc(doc(db, 'surveys360', surveyId));
       if (!snap.exists()) { setNotFound(true); setLoading(false); return; }
       setSurvey(snap.data());

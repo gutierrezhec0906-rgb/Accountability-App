@@ -116,10 +116,11 @@ service cloud.firestore {
     }
 
     match /surveys360/{docId} {
-      // Public read so respondents can load the survey without logging in
-      allow read: if true;
-      // Only the survey owner can create; any authenticated user can update (to append responses)
+      // Any authenticated user can read (anonymous auth used for survey respondents)
+      allow read: if request.auth != null;
+      // Only the survey owner can create
       allow create: if request.auth != null && request.resource.data.uid == request.auth.uid;
+      // Any authenticated user can update (to append responses from anonymous respondents)
       allow update: if request.auth != null;
       allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
     }
