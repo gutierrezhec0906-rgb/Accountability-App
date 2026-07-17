@@ -194,8 +194,15 @@ export async function calculateScore(uid) {
   const psEntries = data.problemSolving || [];
   const psScore = problemSolvingScore(psEntries);
 
+  // --- DISC Assessment (0-5): 5 pts, valid for 90 days from last assessment ---
+  const discLastAt = data.discLastAssessmentAt?.seconds
+    ? data.discLastAssessmentAt.seconds * 1000
+    : null;
+  const discDaysAgo = discLastAt ? Math.floor((Date.now() - discLastAt) / 86400000) : null;
+  const discPoints = discLastAt && discDaysAgo <= 90 ? 5 : 0;
+
   const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + bonusPts - penaltyPts
+    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + bonusPts - penaltyPts
   )));
 
   const breakdown = {
@@ -207,6 +214,7 @@ export async function calculateScore(uid) {
     smart:          Math.round(smartScore),
     coaching:       Math.round(coachingScore),
     problemSolving: Math.round(psScore),
+    disc:           Math.round(discPoints),
     bonus:          Math.round(bonusPts),
   };
 

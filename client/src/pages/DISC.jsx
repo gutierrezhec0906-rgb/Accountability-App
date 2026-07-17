@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { logPointEvent, calculateScore } from '../utils/scoring';
 
 const discProfiles = {
   D: { name: 'Dominance',        color: '#ef4444', traits: ['Results-oriented','Direct & decisive','Competitive','Problem-solver','High sense of urgency'], strengths: 'Drives results, takes initiative, thrives under pressure', challenges: 'May overlook feelings, appear blunt, move too fast', tips: 'Slow down for team input. Ask questions before deciding.' },
@@ -97,17 +98,24 @@ function SavedPanel({ entries, onDelete }) {
 
 export default function DISC() {
   const { currentUser } = useAuth();
-  const [answers, setAnswers] = useState({});
-  const [result, setResult]   = useState(null);
-  const [view, setView]       = useState('assessment');
-  const [saved, setSaved]     = useState([]);
+  const [answers, setAnswers]           = useState({});
+  const [result, setResult]             = useState(null);
+  const [view, setView]                 = useState('assessment');
+  const [saved, setSaved]               = useState([]);
+  const [discMeta, setDiscMeta]         = useState(null); // { lastAt: ms, earned: bool }
 
   async function fetchSaved() {
     if (!currentUser) return;
     try {
       const snap = await getDoc(doc(db, 'users', currentUser.uid));
-      const entries = snap.exists() ? (snap.data().discAssessments || []) : [];
-      setSaved(entries);
+      if (!snap.exists()) return;
+      const data = snap.data();
+      setSaved(data.discAssessments || []);
+      const lastSec = data.discLastAssessmentAt?.seconds;
+      setDiscMeta({
+        lastAt:  lastSec ? lastSec * 1000 : null,
+        earned:  !!data.discPointsEarned,
+      });
     } catch (e) {
       console.error('fetchSaved error:', e);
     }
@@ -133,15 +141,37 @@ export default function DISC() {
     if (!result) return;
     if (!currentUser) return toast.error('Not logged in');
     try {
+      const nowSec = Math.floor(Date.now() / 1000);
       const newEntry = {
         id: Date.now().toString(),
         scores: result.scores,
         primary: result.primary,
         answers,
-        createdAt: { seconds: Math.floor(Date.now() / 1000) },
+        createdAt: { seconds: nowSec },
       };
       await persist([newEntry, ...saved]);
-      toast.success('Assessment saved!');
+
+      // Always refresh the 90-day clock
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        discLastAssessmentAt: { seconds: nowSec },
+      });
+
+      // Award +5 pts one time ever
+      const firstTime = !discMeta?.earned;
+      if (firstTime) {
+        await logPointEvent(currentUser.uid, {
+          points: 5,
+          toolLabel: 'DISC Assessment',
+          reason: 'Completed first DISC personality assessment',
+        });
+        await updateDoc(doc(db, 'users', currentUser.uid), { discPointsEarned: true });
+        toast.success('⭐ Assessment saved — +5 pts! Valid for 90 days.', { duration: 6000, icon: '🌟' });
+      } else {
+        toast.success('Assessment saved! Your 90-day score window has been reset.');
+      }
+
+      setDiscMeta({ lastAt: nowSec * 1000, earned: true });
+      calculateScore(currentUser.uid).catch(() => {});
     } catch (e) {
       toast.error('Save failed: ' + e?.message);
     }
@@ -163,9 +193,52 @@ export default function DISC() {
     ...(result ? [{ id: 'results', label: '🏆 My Results' }] : []),
   ];
 
+  // Warning banner logic
+  const discDaysAgo  = discMeta?.lastAt ? Math.floor((Date.now() - discMeta.lastAt) / 86400000) : null;
+  const discDaysLeft = discDaysAgo !== null ? 90 - discDaysAgo : null;
+  const nextDueDate  = discMeta?.lastAt
+    ? new Date(discMeta.lastAt + 90 * 86400000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+    : null;
+  const showExpiredBanner = discMeta?.earned && discDaysLeft !== null && discDaysLeft < 0;
+  const showWarnBanner    = discMeta?.earned && discDaysLeft !== null && discDaysLeft >= 0 && discDaysLeft <= 30;
+
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <PageHeader icon="🧠" title="DISC Personality Assessment" subtitle="Understand your behavioral style and leadership tendencies" />
+
+      {/* Expired banner — 5 pts lost */}
+      {showExpiredBanner && (
+        <div style={{ background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 12, padding: '0.875rem 1.25rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>🔴</span>
+          <div>
+            <p style={{ fontWeight: 800, color: '#dc2626', margin: '0 0 2px', fontSize: '0.875rem' }}>DISC Score Expired — 5 points deducted</p>
+            <p style={{ color: '#7f1d1d', fontSize: '0.78rem', margin: 0 }}>
+              Your last assessment was <strong>{Math.abs(discDaysLeft)} days</strong> ago. Complete a new DISC assessment to restore your 5 points.
+            </p>
+          </div>
+          <button onClick={() => setView('assessment')}
+            style={{ marginLeft: 'auto', flexShrink: 0, background: '#dc2626', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}>
+            Take Assessment →
+          </button>
+        </div>
+      )}
+
+      {/* Warning banner — expiring soon */}
+      {showWarnBanner && (
+        <div style={{ background: '#fffbeb', border: '1.5px solid #fcd34d', borderRadius: 12, padding: '0.875rem 1.25rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>⚠️</span>
+          <div>
+            <p style={{ fontWeight: 800, color: '#92400e', margin: '0 0 2px', fontSize: '0.875rem' }}>DISC Renewal Due — {discDaysLeft} day{discDaysLeft !== 1 ? 's' : ''} left</p>
+            <p style={{ color: '#78350f', fontSize: '0.78rem', margin: 0 }}>
+              Your 5 points expire on <strong>{nextDueDate}</strong>. Complete a new assessment before then to keep your score.
+            </p>
+          </div>
+          <button onClick={() => setView('assessment')}
+            style={{ marginLeft: 'auto', flexShrink: 0, background: '#d97706', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}>
+            Renew Now →
+          </button>
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         {/* Left: main content */}
