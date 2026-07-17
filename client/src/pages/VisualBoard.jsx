@@ -387,8 +387,8 @@ export default function VisualBoard() {
         </div>
       )}
 
-      {/* Filter + Sort toolbar */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+      {/* Filter + Sort toolbar — hidden when viewing closed actions */}
+      {!showClosed && <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
         {['All', 'Green', 'Yellow', 'Red'].map(s => {
           const stColor = s === 'Green' ? '#22c55e' : s === 'Yellow' ? '#eab308' : s === 'Red' ? '#ef4444' : '#0f2044';
           return (
@@ -430,10 +430,10 @@ export default function VisualBoard() {
             ✕ Clear filters · {filtered.length} shown
           </button>
         )}
-      </div>
+      </div>}
 
-      {/* Board items */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Board items — hidden when viewing closed actions */}
+      {!showClosed && <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {filtered.map(item => {
           const { st } = item;
           const activeDue = item.recommitmentDate || item.dueDate;
@@ -563,7 +563,7 @@ export default function VisualBoard() {
             {activeItems.length === 0 ? 'No open actions — click "+ Add Action" to get started' : 'No items for this filter'}
           </div>
         )}
-      </div>
+      </div>}
     </div>
   );
 }
