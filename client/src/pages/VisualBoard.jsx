@@ -4,7 +4,7 @@ import PageHeader from '../components/PageHeader';
 import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { logPointEvent } from '../utils/scoring';
+import { logPointEvent, calculateScore } from '../utils/scoring';
 
 // Status is computed automatically from due date — never manually set
 function computeStatus(dueDate, recommitmentDate) {
@@ -133,6 +133,8 @@ export default function VisualBoard() {
           toolLabel: 'Quick Action',
           reason: 'Created a board action within 5 min of Problem Solving Quick Action',
         });
+        await updateDoc(doc(db, 'users', currentUser.uid), { bonusPoints: increment(1) });
+        calculateScore(currentUser.uid).catch(() => {});
         toast.success('+1 point — action logged within 5 minutes! 🏆');
       } else {
         if (qaTs) localStorage.removeItem('ps_quick_action_ts');
