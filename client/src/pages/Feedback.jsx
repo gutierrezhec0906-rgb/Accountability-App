@@ -210,7 +210,7 @@ export default function Feedback() {
   const [showForm, setShowForm]       = useState(false);
   const [showRequest, setShowRequest] = useState(false);
   const [filterType, setFilterType]   = useState('All');
-  const [form, setForm] = useState({ type: 'Peer', from: '', to: '', anonymous: false, category: 'Leadership', rating: 5, text: '' });
+  const [form, setForm] = useState({ type: 'Peer', from: '', to: '', anonymous: false, category: 'Leadership', rating: 5, when: '', what: '', effect: '' });
   const [teamMembers, setTeamMembers] = useState([]);
   const [given,    setGiven]    = useState([]);
   const [received, setReceived] = useState([]);
@@ -287,7 +287,10 @@ export default function Feedback() {
         anonymous: form.anonymous,
         category: form.category,
         rating: form.rating,
-        text: form.text,
+        when: form.when,
+        what: form.what,
+        effect: form.effect,
+        text: [form.when && `When: ${form.when}`, form.what && `What: ${form.what}`, form.effect && `Effect: ${form.effect}`].filter(Boolean).join('\n\n'),
         date: new Date().toISOString().split('T')[0],
         createdAt: { seconds: Math.floor(Date.now() / 1000) },
       };
@@ -296,7 +299,7 @@ export default function Feedback() {
       if (earned === 'earned') toast.success('⭐ Feedback submitted! +5 pts added to your score', { duration: 6000, icon: '🌟' });
       else if (earned === 'capped') toast('Feedback submitted! You\'ve reached your 25-pt daily limit — great effort today! Come back tomorrow. 🗓', { duration: 6000, icon: '📅' });
       else toast.success('Feedback submitted!');
-      setForm({ type: 'Peer', from: '', to: '', anonymous: false, category: 'Leadership', rating: 5, text: '' });
+      setForm({ type: 'Peer', from: '', to: '', anonymous: false, category: 'Leadership', rating: 5, when: '', what: '', effect: '' });
       setShowForm(false);
     } catch (e) { toast.error('Submit failed: ' + (e?.message || e)); }
     setSubmitting(false);
@@ -479,9 +482,19 @@ export default function Feedback() {
                     ))}
                   </div>
                 </div>
-                <div><label className="label">Feedback Message</label>
-                  <textarea className="input" rows={4} required value={form.text} onChange={e => setForm(f => ({ ...f, text: e.target.value }))} placeholder="Be specific and constructive..." />
-                </div>
+                {[
+                  { key: 'when',   label: 'When did this happen?',         placeholder: 'e.g. Tuesday\'s huddle, last Thursday\'s client call…' },
+                  { key: 'what',   label: 'What did they specifically do?', placeholder: 'e.g. flagged the material delay before being asked…' },
+                  { key: 'effect', label: 'What was the positive effect?',  placeholder: 'e.g. team resequenced immediately instead of losing time mid-shift…' },
+                ].map(({ key, label, placeholder }) => (
+                  <div key={key}>
+                    <label className="label">{label}</label>
+                    <textarea className="input" rows={2} required value={form[key]}
+                      onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
+                      placeholder={placeholder}
+                      style={{ resize: 'vertical' }} />
+                  </div>
+                ))}
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button className="btn-primary" type="submit" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit Feedback'}</button>
                   <button className="btn-secondary" type="button" onClick={() => setShowForm(false)}>Cancel</button>
