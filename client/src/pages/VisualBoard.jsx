@@ -123,9 +123,24 @@ export default function VisualBoard() {
         createdAt: { seconds: Math.floor(Date.now() / 1000) },
       };
       await persist([newItem, ...items]);
+
+      // Award +1 if user arrived from Problem Solving Quick Action within 5 min
+      const qaTs = localStorage.getItem('ps_quick_action_ts');
+      if (qaTs && Date.now() - parseInt(qaTs, 10) < 5 * 60 * 1000) {
+        localStorage.removeItem('ps_quick_action_ts');
+        await logPointEvent(currentUser.uid, {
+          points: 1,
+          toolLabel: 'Quick Action',
+          reason: 'Created a board action within 5 min of Problem Solving Quick Action',
+        });
+        toast.success('+1 point — action logged within 5 minutes! 🏆');
+      } else {
+        if (qaTs) localStorage.removeItem('ps_quick_action_ts');
+        toast.success('Action added to board');
+      }
+
       setForm(EMPTY_FORM);
       setShowForm(false);
-      toast.success('Action added to board');
     } catch (e) {
       toast.error('Save failed: ' + e?.message);
     }

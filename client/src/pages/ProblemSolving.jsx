@@ -196,8 +196,11 @@ function NextStepRecommendation({ title, problem, rootCause, onGoToA3 }) {
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: choice ? 14 : 0 }}>
         {/* Option A — simple action */}
-        <button onClick={() => setChoice('action')}
-          style={{ background: choice === 'action' ? '#0d9488' : 'rgba(255,255,255,0.08)', border: `2px solid ${choice === 'action' ? '#0d9488' : 'rgba(255,255,255,0.18)'}`, borderRadius: 12, padding: '14px 12px', cursor: 'pointer', textAlign: 'left', color: 'white', transition: 'all 0.15s' }}>
+        <button onClick={() => { setChoice('action'); localStorage.setItem('ps_quick_action_ts', Date.now().toString()); }}
+          style={{ position: 'relative', background: choice === 'action' ? '#0d9488' : 'rgba(255,255,255,0.08)', border: `2px solid ${choice === 'action' ? '#0d9488' : 'rgba(255,255,255,0.18)'}`, borderRadius: 12, padding: '14px 12px', cursor: 'pointer', textAlign: 'left', color: 'white', transition: 'all 0.15s' }}>
+          {choice === 'action' && (
+            <span style={{ position: 'absolute', top: 8, right: 10, background: '#fbbf24', color: '#1e3a6e', fontWeight: 900, fontSize: '0.7rem', borderRadius: 9999, padding: '2px 7px', letterSpacing: 0.5 }}>+1 pt</span>
+          )}
           <p style={{ fontSize: '1.3rem', margin: '0 0 6px' }}>⚡</p>
           <p style={{ fontWeight: 800, fontSize: '0.85rem', margin: '0 0 4px' }}>Quick Action</p>
           <p style={{ fontSize: '0.73rem', color: 'rgba(255,255,255,0.75)', margin: 0, lineHeight: 1.5 }}>
