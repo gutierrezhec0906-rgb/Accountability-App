@@ -271,11 +271,11 @@ export default function VisualBoard() {
   const counts = { Green: 0, Yellow: 0, Red: 0 };
   enriched.forEach(i => { if (counts[i.st.label] !== undefined) counts[i.st.label]++; });
 
-  const owners = ['All', ...Array.from(new Set(activeItems.map(i => i.owner).filter(Boolean))).sort()];
+  const owners = ['All', ...Array.from(new Set(activeItems.map(i => (i.owner || '').trim()).filter(Boolean))).sort()];
 
   const filtered = enriched
     .filter(i => filter === 'All' || i.st.label === filter)
-    .filter(i => ownerFilter === 'All' || i.owner === ownerFilter)
+    .filter(i => ownerFilter === 'All' || (i.owner || '').trim() === ownerFilter)
     .sort((a, b) => {
       if (sortBy === 'date-asc')  return (a.dueDate || '') < (b.dueDate || '') ? -1 : 1;
       if (sortBy === 'date-desc') return (a.dueDate || '') > (b.dueDate || '') ? -1 : 1;
