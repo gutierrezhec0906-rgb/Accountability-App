@@ -174,7 +174,7 @@ export default function Coaching() {
 
   // Log 5 pts the first time a complete coaching session is saved in a given week
   async function maybeLogCoachingPoints(session) {
-    if (!isCompleteCoachingSession(session)) return;
+    if (!isCompleteCoachingSession(session)) return false;
     const snap = await getDoc(doc(db, 'users', currentUser.uid));
     const events = snap.exists() ? (snap.data().pointEvents || []) : [];
     const thisWeek = weekMonday(new Date().toISOString().split('T')[0]);
@@ -187,7 +187,9 @@ export default function Coaching() {
         toolLabel: 'Coaching Log',
         reason: `Complete coaching session with ${session.coachee}`,
       });
+      return true;
     }
+    return false;
   }
 
   async function fetchSessions() {
@@ -235,9 +237,13 @@ export default function Coaching() {
       await persist(updated);
       setForm(emptyForm);
       setShowForm(false);
-      toast.success('Session logged');
-      await maybeLogCoachingPoints(newSession);
+      const earned = await maybeLogCoachingPoints(newSession);
       calculateScore(currentUser.uid).catch(() => {});
+      if (earned) {
+        toast.success('⭐ Session logged — +5 pts for your Coaching Log this week!', { duration: 6000, icon: '🌟' });
+      } else {
+        toast.success('Session logged');
+      }
     } catch (e) {
       toast.error('Save failed: ' + e.message);
     }

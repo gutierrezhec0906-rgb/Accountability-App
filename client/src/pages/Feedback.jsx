@@ -278,7 +278,7 @@ export default function Feedback() {
       };
       await persist([newEntry, ...given], undefined);
       const earned = await awardBonusIfNew('given');
-      toast.success(earned ? 'Feedback submitted! +5 points earned 🏆' : 'Feedback submitted!');
+      earned ? toast.success('⭐ Feedback submitted! +5 pts added to your score', { duration: 6000, icon: '🌟' }) : toast.success('Feedback submitted!');
       setForm({ type: 'Peer', from: '', to: '', anonymous: false, category: 'Leadership', rating: 5, text: '' });
       setShowForm(false);
     } catch (e) { toast.error('Submit failed: ' + (e?.message || e)); }
@@ -312,7 +312,9 @@ export default function Feedback() {
       await persist(undefined, [...newReqs, ...requests]);
       const earned = await awardBonusIfNew('requested');
       const names = newReqs.map(r => r.to).join(', ');
-      toast.success(`Request${newReqs.length > 1 ? 's' : ''} sent to ${names}${earned ? ' · +5 points 🏆' : ''}`);
+      earned
+        ? toast.success(`⭐ Request${newReqs.length > 1 ? 's' : ''} sent to ${names} — +5 pts added to your score`, { duration: 6000, icon: '🌟' })
+        : toast.success(`Request${newReqs.length > 1 ? 's' : ''} sent to ${names}`);
     } catch { toast.error('Could not save requests'); }
   }
 

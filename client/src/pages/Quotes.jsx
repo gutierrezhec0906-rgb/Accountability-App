@@ -104,8 +104,8 @@ export default function Quotes() {
       setReflections(updated);
       setConnection('');
       setAction('');
-      setToast('+5 points earned! Reflection saved.');
-      setTimeout(() => setToast(''), 4000);
+      setToast('⭐ +5 pts earned! Reflection saved to your score.');
+      setTimeout(() => setToast(''), 6000);
     } catch (e) {
       console.error(e);
       setToast('Save failed. Please try again.');

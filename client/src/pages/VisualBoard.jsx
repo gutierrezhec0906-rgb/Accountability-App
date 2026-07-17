@@ -139,7 +139,7 @@ export default function VisualBoard() {
         });
         await updateDoc(doc(db, 'users', currentUser.uid), { bonusPoints: increment(1) });
         calculateScore(currentUser.uid).catch(() => {});
-        toast.success('+1 point — action logged within 5 minutes! 🏆');
+        toast.success('⭐ +1 pt — action logged within 5 minutes!', { duration: 6000, icon: '🌟' });
       } else {
         if (qaTs) localStorage.removeItem('ps_quick_action_ts');
         toast.success('Action added to board');
@@ -198,7 +198,7 @@ export default function VisualBoard() {
           toolLabel: 'Visual Management Board',
           reason: `Recommitted to action: "${item.title}" — 5 points restored`,
         });
-        toast.success('+5 points restored for recommitting!');
+        toast.success('⭐ +5 pts restored for recommitting to your action!', { duration: 6000, icon: '🌟' });
       } else {
         toast.success('New commitment date set!');
       }

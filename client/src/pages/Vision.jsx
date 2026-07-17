@@ -248,7 +248,7 @@ export default function Vision() {
             [`visionPointsEarned.${mode}`]: true,
           });
           calculateScore(currentUser.uid).catch(() => {});
-          toast.success(`Vision saved! +10 points for creating your first ${label.toLowerCase()} 🎉`);
+          toast.success(`⭐ Vision saved! +10 pts for your first ${label.toLowerCase()}`, { duration: 6000, icon: '🌟' });
         } else {
           toast.success('Vision saved!');
         }

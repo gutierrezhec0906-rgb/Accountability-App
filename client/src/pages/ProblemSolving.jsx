@@ -1322,7 +1322,7 @@ export default function ProblemSolving() {
 
   async function maybeLogPSPoints(type) {
     const cfg = PS_EVENT_LABELS[type];
-    if (!cfg) return;
+    if (!cfg) return false;
     try {
       const snap = await getDoc(doc(db, 'users', currentUser.uid));
       const events = snap.exists() ? (snap.data().pointEvents || []) : [];
@@ -1336,8 +1336,10 @@ export default function ProblemSolving() {
           toolLabel: cfg.label,
           reason: `Completed ${cfg.label} this week`,
         });
+        return true;
       }
     } catch {}
+    return false;
   }
 
   async function handleSave({ type, title, data, onSaved }) {
@@ -1359,9 +1361,14 @@ export default function ProblemSolving() {
           createdAt: { seconds: Math.floor(Date.now() / 1000) },
         };
         updated = [newEntry, ...all];
-        await maybeLogPSPoints(type);
+        const earned = await maybeLogPSPoints(type);
         calculateScore(currentUser.uid).catch(() => {});
-        toast.success('Template saved!');
+        if (earned) {
+          const cfg = PS_EVENT_LABELS[type];
+          toast.success(`⭐ Template saved — +${cfg.points} pts for ${cfg.label} this week!`, { duration: 6000, icon: '🌟' });
+        } else {
+          toast.success('Template saved!');
+        }
       }
       await persist(updated);
       onSaved?.();
