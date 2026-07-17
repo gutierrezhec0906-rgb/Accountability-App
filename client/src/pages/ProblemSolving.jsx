@@ -1331,12 +1331,12 @@ export default function ProblemSolving() {
         e => e.toolLabel === cfg.label && weekMonday(e.date) === thisWeek
       );
       if (!alreadyEarned) {
-        await logPointEvent(currentUser.uid, {
+        const { awarded, capReached } = await logPointEvent(currentUser.uid, {
           points: cfg.points,
           toolLabel: cfg.label,
           reason: `Completed ${cfg.label} this week`,
         });
-        return true;
+        return awarded ? 'earned' : capReached ? 'capped' : false;
       }
     } catch {}
     return false;
@@ -1363,9 +1363,11 @@ export default function ProblemSolving() {
         updated = [newEntry, ...all];
         const earned = await maybeLogPSPoints(type);
         calculateScore(currentUser.uid).catch(() => {});
-        if (earned) {
+        if (earned === 'earned') {
           const cfg = PS_EVENT_LABELS[type];
           toast.success(`⭐ Template saved — +${cfg.points} pts for ${cfg.label} this week!`, { duration: 6000, icon: '🌟' });
+        } else if (earned === 'capped') {
+          toast('Template saved. You\'ve reached your 25-pt daily limit — great work today! Come back tomorrow to keep scoring. 🗓', { duration: 6000, icon: '📅' });
         } else {
           toast.success('Template saved!');
         }

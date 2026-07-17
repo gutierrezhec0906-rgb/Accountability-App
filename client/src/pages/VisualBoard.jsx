@@ -132,14 +132,20 @@ export default function VisualBoard() {
       const qaTs = localStorage.getItem('ps_quick_action_ts');
       if (qaTs && Date.now() - parseInt(qaTs, 10) < 5 * 60 * 1000) {
         localStorage.removeItem('ps_quick_action_ts');
-        await logPointEvent(currentUser.uid, {
+        const { awarded, capReached } = await logPointEvent(currentUser.uid, {
           points: 1,
           toolLabel: 'Quick Action',
           reason: 'Created a board action within 5 min of Problem Solving Quick Action',
         });
-        await updateDoc(doc(db, 'users', currentUser.uid), { bonusPoints: increment(1) });
-        calculateScore(currentUser.uid).catch(() => {});
-        toast.success('⭐ +1 pt — action logged within 5 minutes!', { duration: 6000, icon: '🌟' });
+        if (awarded) {
+          await updateDoc(doc(db, 'users', currentUser.uid), { bonusPoints: increment(1) });
+          calculateScore(currentUser.uid).catch(() => {});
+          toast.success('⭐ +1 pt — action logged within 5 minutes!', { duration: 6000, icon: '🌟' });
+        } else if (capReached) {
+          toast('Action added to board. You\'ve reached your 25-pt daily limit — keep going tomorrow! 🗓', { duration: 6000, icon: '📅' });
+        } else {
+          toast.success('Action added to board');
+        }
       } else {
         if (qaTs) localStorage.removeItem('ps_quick_action_ts');
         toast.success('Action added to board');
@@ -192,13 +198,19 @@ export default function VisualBoard() {
       // Restore 5 points if they were previously deducted (dismissed modal)
       if (wasDeducted && !item?.pointsRestored) {
         await updateDoc(doc(db, 'users', currentUser.uid), { penaltyPoints: increment(-5) });
-        await logPointEvent(currentUser.uid, {
+        const { awarded, capReached } = await logPointEvent(currentUser.uid, {
           points: +5,
           tool: 'Visual Board',
           toolLabel: 'Visual Management Board',
           reason: `Recommitted to action: "${item.title}" — 5 points restored`,
         });
-        toast.success('⭐ +5 pts restored for recommitting to your action!', { duration: 6000, icon: '🌟' });
+        if (awarded) {
+          toast.success('⭐ +5 pts restored for recommitting to your action!', { duration: 6000, icon: '🌟' });
+        } else if (capReached) {
+          toast('Recommitment saved! You\'ve hit today\'s 25-pt limit — your restored points will show tomorrow. 🗓', { duration: 6000, icon: '📅' });
+        } else {
+          toast.success('Recommitment saved!');
+        }
       } else {
         toast.success('New commitment date set!');
       }

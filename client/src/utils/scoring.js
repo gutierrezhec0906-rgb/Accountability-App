@@ -1,18 +1,33 @@
 import { getDoc, setDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 
+export const DAILY_POINTS_CAP = 25;
+
 // Appends a point event to users/{uid}.pointEvents (max 200 entries).
-// { date, points, toolLabel, reason }
+// Returns { awarded: boolean, capReached: boolean, todayTotal: number }
+// If the user has already earned DAILY_POINTS_CAP points today, the event
+// is NOT written and awarded=false is returned so callers can show a message.
 export async function logPointEvent(uid, { points, toolLabel, reason }) {
-  if (!uid) return;
+  if (!uid) return { awarded: false, capReached: false, todayTotal: 0 };
   const today = new Date().toISOString().split('T')[0];
-  const event = { date: today, points, toolLabel, reason };
   try {
     const snap = await getDoc(doc(db, 'users', uid));
     const existing = snap.exists() ? (snap.data().pointEvents || []) : [];
+    const todayTotal = existing
+      .filter(e => e.date === today && e.points > 0)
+      .reduce((s, e) => s + e.points, 0);
+
+    if (todayTotal >= DAILY_POINTS_CAP) {
+      return { awarded: false, capReached: true, todayTotal };
+    }
+
+    const event = { date: today, points, toolLabel, reason };
     const updated = [event, ...existing].slice(0, 200);
     await setDoc(doc(db, 'users', uid), { pointEvents: updated }, { merge: true });
-  } catch {}
+    return { awarded: true, capReached: false, todayTotal: todayTotal + points };
+  } catch {
+    return { awarded: false, capReached: false, todayTotal: 0 };
+  }
 }
 
 export const TOOL_WEIGHTS = {

@@ -182,12 +182,12 @@ export default function Coaching() {
       e => e.toolLabel === 'Coaching Log' && weekMonday(e.date) === thisWeek
     );
     if (!alreadyEarned) {
-      await logPointEvent(currentUser.uid, {
+      const { awarded } = await logPointEvent(currentUser.uid, {
         points: 5,
         toolLabel: 'Coaching Log',
         reason: `Complete coaching session with ${session.coachee}`,
       });
-      return true;
+      return awarded ? 'earned' : 'capped';
     }
     return false;
   }
@@ -239,8 +239,10 @@ export default function Coaching() {
       setShowForm(false);
       const earned = await maybeLogCoachingPoints(newSession);
       calculateScore(currentUser.uid).catch(() => {});
-      if (earned) {
+      if (earned === 'earned') {
         toast.success('⭐ Session logged — +5 pts for your Coaching Log this week!', { duration: 6000, icon: '🌟' });
+      } else if (earned === 'capped') {
+        toast('Session logged. You\'ve reached your 25-pt daily limit — come back tomorrow to keep scoring! 🗓', { duration: 6000, icon: '📅' });
       } else {
         toast.success('Session logged');
       }

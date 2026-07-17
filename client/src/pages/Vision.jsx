@@ -238,17 +238,27 @@ export default function Vision() {
         const earned = snap.exists() ? (snap.data().visionPointsEarned || {}) : {};
         if (!earned[mode]) {
           const label = mode === 'personal' ? 'Personal Vision' : 'Team Vision';
-          await logPointEvent(currentUser.uid, {
+          const { awarded, capReached } = await logPointEvent(currentUser.uid, {
             points: 10,
             toolLabel: label,
             reason: `Created first ${label} statement`,
           });
-          await updateDoc(doc(db, 'users', currentUser.uid), {
-            bonusPoints: increment(10),
-            [`visionPointsEarned.${mode}`]: true,
-          });
-          calculateScore(currentUser.uid).catch(() => {});
-          toast.success(`⭐ Vision saved! +10 pts for your first ${label.toLowerCase()}`, { duration: 6000, icon: '🌟' });
+          if (awarded) {
+            await updateDoc(doc(db, 'users', currentUser.uid), {
+              bonusPoints: increment(10),
+              [`visionPointsEarned.${mode}`]: true,
+            });
+            calculateScore(currentUser.uid).catch(() => {});
+            toast.success(`⭐ Vision saved! +10 pts for your first ${label.toLowerCase()}`, { duration: 6000, icon: '🌟' });
+          } else {
+            // Still mark as earned so points are awarded next day
+            await updateDoc(doc(db, 'users', currentUser.uid), { [`visionPointsEarned.${mode}`]: true });
+            if (capReached) {
+              toast('Vision saved! You\'ve hit your 25-pt daily limit — your +10 pts will be credited when you return tomorrow. 🗓', { duration: 6000, icon: '📅' });
+            } else {
+              toast.success('Vision saved!');
+            }
+          }
         } else {
           toast.success('Vision saved!');
         }

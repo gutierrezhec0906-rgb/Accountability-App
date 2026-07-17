@@ -159,13 +159,19 @@ export default function DISC() {
       // Award +5 pts one time ever
       const firstTime = !discMeta?.earned;
       if (firstTime) {
-        await logPointEvent(currentUser.uid, {
+        const { awarded, capReached } = await logPointEvent(currentUser.uid, {
           points: 5,
           toolLabel: 'DISC Assessment',
           reason: 'Completed first DISC personality assessment',
         });
         await updateDoc(doc(db, 'users', currentUser.uid), { discPointsEarned: true });
-        toast.success('⭐ Assessment saved — +5 pts! Valid for 90 days.', { duration: 6000, icon: '🌟' });
+        if (awarded) {
+          toast.success('⭐ Assessment saved — +5 pts! Valid for 90 days.', { duration: 6000, icon: '🌟' });
+        } else if (capReached) {
+          toast('Assessment saved! You\'ve reached your 25-pt daily limit — your +5 pts will show when you return tomorrow. 🗓', { duration: 6000, icon: '📅' });
+        } else {
+          toast.success('Assessment saved!');
+        }
       } else {
         toast.success('Assessment saved! Your 90-day score window has been reset.');
       }

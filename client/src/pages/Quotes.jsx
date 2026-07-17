@@ -95,16 +95,24 @@ export default function Quotes() {
     const updated = [record, ...reflections].slice(0, 20);
     try {
       await setDoc(doc(db, 'users', currentUser.uid), { quoteReflections: updated }, { merge: true });
-      await updateDoc(doc(db, 'users', currentUser.uid), { bonusPoints: increment(5) });
-      await logPointEvent(currentUser.uid, {
+      const { awarded, capReached } = await logPointEvent(currentUser.uid, {
         points: 5,
         toolLabel: 'Leadership Quotes',
         reason: `Reflection on: "${quotes[selectedQuoteIdx].author}"`,
       });
+      if (awarded) {
+        await updateDoc(doc(db, 'users', currentUser.uid), { bonusPoints: increment(5) });
+      }
       setReflections(updated);
       setConnection('');
       setAction('');
-      setToast('⭐ +5 pts earned! Reflection saved to your score.');
+      if (awarded) {
+        setToast('⭐ +5 pts earned! Reflection saved to your score.');
+      } else if (capReached) {
+        setToast('Reflection saved! You\'ve reached your 25-pt daily limit — amazing effort! Come back tomorrow to earn more. 🗓');
+      } else {
+        setToast('Reflection saved!');
+      }
       setTimeout(() => setToast(''), 6000);
     } catch (e) {
       console.error(e);

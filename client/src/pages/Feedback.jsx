@@ -242,11 +242,14 @@ export default function Feedback() {
     const field = type === 'given' ? 'feedbackBonusGivenDate' : 'feedbackBonusRequestedDate';
     const already = type === 'given' ? bonusDates.given : bonusDates.requested;
     if (already === today) return false;
-    await updateDoc(doc(db, 'users', currentUser.uid), { [field]: today, bonusPoints: increment(5) });
-    setBonusDates(d => ({ ...d, [type]: today }));
     const reason = type === 'given' ? 'Gave feedback to a team member' : 'Requested feedback from team member(s)';
-    await logPointEvent(currentUser.uid, { points: 5, toolLabel: 'Feedback Box', reason });
-    return true;
+    const { awarded, capReached } = await logPointEvent(currentUser.uid, { points: 5, toolLabel: 'Feedback Box', reason });
+    if (awarded) {
+      await updateDoc(doc(db, 'users', currentUser.uid), { [field]: today, bonusPoints: increment(5) });
+      setBonusDates(d => ({ ...d, [type]: today }));
+      return 'earned';
+    }
+    return capReached ? 'capped' : false;
   }
 
   async function persist(entries, reqs) {
@@ -278,7 +281,9 @@ export default function Feedback() {
       };
       await persist([newEntry, ...given], undefined);
       const earned = await awardBonusIfNew('given');
-      earned ? toast.success('⭐ Feedback submitted! +5 pts added to your score', { duration: 6000, icon: '🌟' }) : toast.success('Feedback submitted!');
+      if (earned === 'earned') toast.success('⭐ Feedback submitted! +5 pts added to your score', { duration: 6000, icon: '🌟' });
+      else if (earned === 'capped') toast('Feedback submitted! You\'ve reached your 25-pt daily limit — great effort today! Come back tomorrow. 🗓', { duration: 6000, icon: '📅' });
+      else toast.success('Feedback submitted!');
       setForm({ type: 'Peer', from: '', to: '', anonymous: false, category: 'Leadership', rating: 5, text: '' });
       setShowForm(false);
     } catch (e) { toast.error('Submit failed: ' + (e?.message || e)); }
@@ -312,9 +317,9 @@ export default function Feedback() {
       await persist(undefined, [...newReqs, ...requests]);
       const earned = await awardBonusIfNew('requested');
       const names = newReqs.map(r => r.to).join(', ');
-      earned
-        ? toast.success(`⭐ Request${newReqs.length > 1 ? 's' : ''} sent to ${names} — +5 pts added to your score`, { duration: 6000, icon: '🌟' })
-        : toast.success(`Request${newReqs.length > 1 ? 's' : ''} sent to ${names}`);
+      if (earned === 'earned') toast.success(`⭐ Request${newReqs.length > 1 ? 's' : ''} sent to ${names} — +5 pts added to your score`, { duration: 6000, icon: '🌟' });
+      else if (earned === 'capped') toast(`Request${newReqs.length > 1 ? 's' : ''} sent to ${names}. Daily 25-pt limit reached — come back tomorrow to earn more! 🗓`, { duration: 6000, icon: '📅' });
+      else toast.success(`Request${newReqs.length > 1 ? 's' : ''} sent to ${names}`);
     } catch { toast.error('Could not save requests'); }
   }
 
