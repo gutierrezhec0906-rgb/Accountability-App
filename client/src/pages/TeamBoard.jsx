@@ -181,20 +181,39 @@ export default function TeamBoard() {
 
                     {/* Owner + due + recommitments row */}
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 20px', alignItems: 'center' }}>
-                      {/* Owner */}
+                      {/* Creator */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Creator</span>
                         <div style={{
-                          width: 26, height: 26, borderRadius: '50%',
-                          background: 'linear-gradient(135deg,#3b82f6,#1d4ed8)',
+                          width: 24, height: 24, borderRadius: '50%',
+                          background: 'linear-gradient(135deg,#6366f1,#4338ca)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '0.7rem', fontWeight: 900, color: 'white', flexShrink: 0,
+                          fontSize: '0.68rem', fontWeight: 900, color: 'white', flexShrink: 0,
                         }}>
                           {item.ownerName.charAt(0).toUpperCase()}
                         </div>
-                        <span style={{ fontSize: '0.88rem', fontWeight: 700, color: '#93c5fd' }}>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#a5b4fc' }}>
                           {item.ownerName}
                         </span>
                       </div>
+
+                      {/* Responsible */}
+                      {item.owner && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Responsible</span>
+                          <div style={{
+                            width: 24, height: 24, borderRadius: '50%',
+                            background: 'linear-gradient(135deg,#0891b2,#0e7490)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            fontSize: '0.68rem', fontWeight: 900, color: 'white', flexShrink: 0,
+                          }}>
+                            {item.owner.charAt(0).toUpperCase()}
+                          </div>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#67e8f9' }}>
+                            {item.owner}
+                          </span>
+                        </div>
+                      )}
 
                       {/* Due date */}
                       {activeDue && (
