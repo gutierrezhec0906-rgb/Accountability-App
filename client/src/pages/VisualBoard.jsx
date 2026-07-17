@@ -44,7 +44,7 @@ function RecommitModal({ entry, onSubmit, onDismiss }) {
         <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 10, padding: '0.75rem', marginBottom: '1.25rem', display: 'flex', gap: 8 }}>
           <span style={{ fontSize: '1rem', flexShrink: 0 }}>⚠️</span>
           <p style={{ fontSize: '0.78rem', color: '#92400e', margin: 0, lineHeight: 1.5 }}>
-            <strong>5 points will be deducted</strong> from your accountability score if you close this without setting a new commitment date.
+            <strong>−5 points have been deducted</strong> from your accountability score for going past due. Set a new date to keep this action active.
           </p>
         </div>
 
@@ -61,8 +61,8 @@ function RecommitModal({ entry, onSubmit, onDismiss }) {
             ✓ Commit to New Date
           </button>
           <button onClick={onDismiss}
-            style={{ padding: '0.65rem 1rem', borderRadius: 10, background: '#fef2f2', color: '#ef4444', fontWeight: 700, fontSize: '0.875rem', border: '1px solid #fca5a5', cursor: 'pointer' }}>
-            Close (−5 pts)
+            style={{ padding: '0.65rem 1rem', borderRadius: 10, background: '#f1f5f9', color: '#64748b', fontWeight: 700, fontSize: '0.875rem', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+            Dismiss
           </button>
         </div>
       </div>
@@ -82,8 +82,10 @@ export default function VisualBoard() {
   const [inlineDates, setInlineDates] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(EMPTY_FORM);
-  const [sortBy, setSortBy] = useState('date-asc');   // 'date-asc'|'date-desc'|'alpha'|'owner'
+  const [sortBy, setSortBy] = useState('date-asc');
   const [ownerFilter, setOwnerFilter] = useState('All');
+  const [closingId, setClosingId] = useState(null);   // id of card showing close-confirm
+  const [showClosed, setShowClosed] = useState(false);
 
   async function fetchItems() {
     if (!currentUser) return;
@@ -93,8 +95,9 @@ export default function VisualBoard() {
       entries.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
       setItems(entries);
 
-      // Fire recommitment modal for first past-due item not yet deducted
+      // Fire recommitment modal for first past-due open item not yet deducted
       const overdue = entries.find(e => {
+        if (e.closed) return false;
         const st = computeStatus(e.dueDate, e.recommitmentDate);
         return st.overdue && !e.deductionApplied;
       });
@@ -122,13 +125,16 @@ export default function VisualBoard() {
         owner:   form.owner,
         dueDate: form.dueDate,
         notes:   form.notes,
-        recommitmentDate: null,
-        deductionApplied: false,
+        recommitmentDate:  null,
+        recommitmentCount: 0,
+        deductionApplied:  false,
+        closed:     false,
+        closedAt:   null,
+        closedOnTime: false,
         createdAt: { seconds: Math.floor(Date.now() / 1000) },
       };
       await persist([newItem, ...items]);
 
-      // Award +1 if user arrived from Problem Solving Quick Action within 5 min
       const qaTs = localStorage.getItem('ps_quick_action_ts');
       if (qaTs && Date.now() - parseInt(qaTs, 10) < 5 * 60 * 1000) {
         localStorage.removeItem('ps_quick_action_ts');
@@ -140,9 +146,9 @@ export default function VisualBoard() {
         if (awarded) {
           await updateDoc(doc(db, 'users', currentUser.uid), { bonusPoints: increment(1) });
           calculateScore(currentUser.uid).catch(() => {});
-          toast.success('⭐ +1 pt — action logged within 5 minutes!', { duration: 6000, icon: '🌟' });
+          toast.success('+1 pt — action logged within 5 minutes!', { duration: 6000 });
         } else if (capReached) {
-          toast('Action added to board. You\'ve reached your 25-pt daily limit — keep going tomorrow! 🗓', { duration: 6000, icon: '📅' });
+          toast('Action added to board. Daily 25-pt limit reached — keep going tomorrow!', { duration: 6000, icon: '📅' });
         } else {
           toast.success('Action added to board');
         }
@@ -181,39 +187,58 @@ export default function VisualBoard() {
     }
   }
 
+  // Close an action — awards +5 pts if on time AND zero recommitments
+  async function handleClose(item) {
+    const st = computeStatus(item.dueDate, item.recommitmentDate);
+    const recommitCount = item.recommitmentCount || 0;
+    const closedOnTime  = !st.overdue && recommitCount === 0;
+    try {
+      await persist(items.map(i => i.id === item.id
+        ? { ...i, closed: true, closedAt: { seconds: Math.floor(Date.now() / 1000) }, closedOnTime }
+        : i
+      ));
+      setClosingId(null);
+
+      if (closedOnTime) {
+        const { awarded, capReached } = await logPointEvent(currentUser.uid, {
+          points: 5,
+          toolLabel: 'Action Closed On Time',
+          reason: `Closed action on time with no recommitments: "${item.title}"`,
+        });
+        if (awarded) {
+          calculateScore(currentUser.uid).catch(() => {});
+          toast.success('+5 pts! Action closed on time with no recommitments.', { duration: 6000 });
+        } else if (capReached) {
+          toast('Action closed! Daily 25-pt cap reached — great work today.', { duration: 5000, icon: '📅' });
+        } else {
+          toast.success('Action closed!');
+        }
+      } else if (recommitCount > 0) {
+        toast('Action closed. No points awarded — action had recommitments.', { icon: '📋', duration: 5000 });
+      } else {
+        // closed past due
+        toast('Action closed.', { icon: '📋' });
+      }
+    } catch (e) {
+      toast.error('Close failed: ' + e?.message);
+    }
+  }
+
   async function handleRecommit(id, newDate, item) {
-    // newDate must not be past due
     const st = computeStatus(newDate, null);
     if (st.overdue) return toast.error('Recommitment date must be today or in the future');
     try {
-      const wasDeducted = item?.deductionApplied && item?.recommitmentDate == null;
       const updatedItem = {
         ...item,
-        recommitmentDate: newDate,
+        recommitmentDate:  newDate,
+        recommitmentCount: (item.recommitmentCount || 0) + 1,
         recommitmentSetAt: { seconds: Math.floor(Date.now() / 1000) },
-        deductionApplied: true,
-        pointsRestored: wasDeducted ? true : (item?.pointsRestored || false),
+        // Reset deductionApplied so a future miss also triggers -5 pts
+        deductionApplied: false,
+        pointsRestored: item?.pointsRestored || false,
       };
       await persist(items.map(i => i.id === id ? updatedItem : i));
-      // Restore 5 points if they were previously deducted (dismissed modal)
-      if (wasDeducted && !item?.pointsRestored) {
-        await updateDoc(doc(db, 'users', currentUser.uid), { penaltyPoints: increment(-5) });
-        const { awarded, capReached } = await logPointEvent(currentUser.uid, {
-          points: +5,
-          tool: 'Visual Board',
-          toolLabel: 'Visual Management Board',
-          reason: `Recommitted to action: "${item.title}" — 5 points restored`,
-        });
-        if (awarded) {
-          toast.success('⭐ +5 pts restored for recommitting to your action!', { duration: 6000, icon: '🌟' });
-        } else if (capReached) {
-          toast('Recommitment saved! You\'ve hit today\'s 25-pt limit — your restored points will show tomorrow. 🗓', { duration: 6000, icon: '📅' });
-        } else {
-          toast.success('Recommitment saved!');
-        }
-      } else {
-        toast.success('New commitment date set!');
-      }
+      toast.success('New commitment date set!');
       setModalEntry(null);
     } catch (e) {
       toast.error('Failed to save: ' + e?.message);
@@ -227,11 +252,11 @@ export default function VisualBoard() {
       await updateDoc(doc(db, 'users', currentUser.uid), { penaltyPoints: increment(5) });
       await logPointEvent(currentUser.uid, {
         points: -5,
-        tool: 'Visual Board',
-        toolLabel: 'Visual Management Board',
-        reason: `Missed recommitment deadline for action: "${modalEntry.title}"`,
+        toolLabel: 'Visual Board Past Due',
+        reason: `Action went past due: "${modalEntry.title}"`,
       });
-      toast.error('−5 points deducted for missed recommitment');
+      calculateScore(currentUser.uid).catch(() => {});
+      toast.error('−5 pts deducted — action is past due');
       setModalEntry(null);
     } catch (e) {
       console.error(e);
@@ -239,12 +264,14 @@ export default function VisualBoard() {
     }
   }
 
-  // Compute status on the fly for each item
-  const enriched = items.map(item => ({ ...item, st: computeStatus(item.dueDate, item.recommitmentDate) }));
+  const activeItems = items.filter(i => !i.closed);
+  const closedItems = items.filter(i => i.closed);
+
+  const enriched = activeItems.map(item => ({ ...item, st: computeStatus(item.dueDate, item.recommitmentDate) }));
   const counts = { Green: 0, Yellow: 0, Red: 0 };
   enriched.forEach(i => { if (counts[i.st.label] !== undefined) counts[i.st.label]++; });
 
-  const owners = ['All', ...Array.from(new Set(items.map(i => i.owner).filter(Boolean))).sort()];
+  const owners = ['All', ...Array.from(new Set(activeItems.map(i => i.owner).filter(Boolean))).sort()];
 
   const filtered = enriched
     .filter(i => filter === 'All' || i.st.label === filter)
@@ -273,10 +300,16 @@ export default function VisualBoard() {
             {icon} {label}
           </span>
         ))}
+        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0d9488', background: '#f0fdfa', padding: '2px 10px', borderRadius: 9999 }}>
+          ✅ Closed on time = +5 pts (this week)
+        </span>
+        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ef4444', background: '#fef2f2', padding: '2px 10px', borderRadius: 9999 }}>
+          ⚠️ Past due = −5 pts each occurrence
+        </span>
       </div>
 
       {/* Status summary tiles */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: '1.5rem' }}>
         {['Green', 'Yellow', 'Red'].map(s => {
           const st = computeStatus(s === 'Green' ? '9999-01-01' : s === 'Yellow' ? new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0] : '2000-01-01');
           return (
@@ -288,6 +321,13 @@ export default function VisualBoard() {
             </div>
           );
         })}
+        {/* Closed tile */}
+        <div onClick={() => setShowClosed(s => !s)}
+          style={{ background: showClosed ? '#f0fdfa' : '#fff', border: `1.5px solid ${showClosed ? '#0d9488' : 'var(--border)'}`, borderRadius: 14, padding: '1rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.18s', boxShadow: '0 2px 8px rgba(15,32,68,0.05)' }}>
+          <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#0d9488', margin: '0 auto 8px' }} />
+          <p style={{ fontSize: '2rem', fontWeight: 900, color: '#0d9488', margin: 0, lineHeight: 1 }}>{closedItems.length}</p>
+          <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0d9488', margin: '4px 0 0' }}>Closed ✓</p>
+        </div>
       </div>
 
       {/* Add form */}
@@ -312,9 +352,43 @@ export default function VisualBoard() {
         </div>
       )}
 
+      {/* Closed items panel */}
+      {showClosed && (
+        <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', borderLeft: '4px solid #0d9488' }}>
+          <h3 style={{ fontWeight: 800, color: '#0d9488', marginBottom: '1rem', fontSize: '0.95rem', margin: '0 0 1rem' }}>
+            ✅ Closed Actions ({closedItems.length})
+          </h3>
+          {closedItems.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>No closed actions yet.</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {closedItems.map(item => (
+                <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0.75rem 1rem', background: '#f8fffe', border: '1px solid #99f6e4', borderRadius: 10 }}>
+                  <span style={{ fontSize: '1.1rem' }}>✅</span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)', margin: 0 }}>{item.title}</p>
+                    <div style={{ display: 'flex', gap: 12, fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                      <span>👤 {item.owner}</span>
+                      {item.closedAt?.seconds && <span>Closed {new Date(item.closedAt.seconds * 1000).toLocaleDateString()}</span>}
+                      {item.recommitmentCount > 0 && <span style={{ color: '#f59e0b' }}>🔄 {item.recommitmentCount} recommitment{item.recommitmentCount > 1 ? 's' : ''}</span>}
+                    </div>
+                  </div>
+                  <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 800,
+                    background: item.closedOnTime ? '#dcfce7' : '#f1f5f9',
+                    color: item.closedOnTime ? '#15803d' : '#64748b' }}>
+                    {item.closedOnTime ? '+5 pts' : 'No pts'}
+                  </span>
+                  <button onClick={() => handleDelete(item.id)} title="Remove"
+                    style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', fontSize: '1.1rem', padding: '0 2px' }}>×</button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Filter + Sort toolbar */}
       <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
-        {/* Status pills */}
         {['All', 'Green', 'Yellow', 'Red'].map(s => {
           const stColor = s === 'Green' ? '#22c55e' : s === 'Yellow' ? '#eab308' : s === 'Red' ? '#ef4444' : '#0f2044';
           return (
@@ -327,10 +401,8 @@ export default function VisualBoard() {
           );
         })}
 
-        {/* Divider */}
         <div style={{ width: 1, background: '#e2e8f0', alignSelf: 'stretch' }} />
 
-        {/* Sort buttons */}
         {[
           { key: 'date-asc',  label: '📅 Date ↑' },
           { key: 'date-desc', label: '📅 Date ↓' },
@@ -345,16 +417,13 @@ export default function VisualBoard() {
           </button>
         ))}
 
-        {/* Divider */}
         <div style={{ width: 1, background: '#e2e8f0', alignSelf: 'stretch' }} />
 
-        {/* Owner filter */}
         <select value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)}
           style={{ padding: '0.35rem 0.75rem', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 700, border: '1.5px solid #e2e8f0', background: ownerFilter !== 'All' ? '#eff6ff' : 'white', color: ownerFilter !== 'All' ? '#1d4ed8' : '#64748b', cursor: 'pointer', outline: 'none' }}>
           {owners.map(o => <option key={o}>{o === 'All' ? '👤 All Owners' : o}</option>)}
         </select>
 
-        {/* Active filter count */}
         {(filter !== 'All' || ownerFilter !== 'All') && (
           <button onClick={() => { setFilter('All'); setOwnerFilter('All'); }}
             style={{ padding: '0.35rem 0.875rem', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 700, border: '1.5px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}>
@@ -370,6 +439,8 @@ export default function VisualBoard() {
           const activeDue = item.recommitmentDate || item.dueDate;
           const inlineDate = inlineDates[item.id] || '';
           const inlineSt = inlineDate ? computeStatus(inlineDate, null) : null;
+          const isConfirmingClose = closingId === item.id;
+          const recommitCount = item.recommitmentCount || 0;
           return (
             <div key={item.id} className="card" style={{ padding: '1rem 1.25rem', borderLeft: `4px solid ${st.color}`, background: st.overdue ? '#fff8f8' : 'white' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
@@ -381,9 +452,9 @@ export default function VisualBoard() {
                       {st.daysLeft !== null && st.daysLeft < 0 && ` · ${Math.abs(st.daysLeft)}d overdue`}
                       {st.daysLeft !== null && st.daysLeft >= 0 && ` · ${st.daysLeft}d left`}
                     </span>
-                    {item.recommitmentDate && !st.overdue && (
+                    {recommitCount > 0 && (
                       <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: '0.65rem', fontWeight: 700, background: '#eff6ff', color: '#3b82f6', border: '1px solid #bfdbfe' }}>
-                        🔄 Recommitted
+                        🔄 {recommitCount} recommitment{recommitCount > 1 ? 's' : ''}
                       </span>
                     )}
                   </div>
@@ -393,13 +464,48 @@ export default function VisualBoard() {
                     {activeDue && <span>📅 Due: {new Date(activeDue + 'T00:00:00').toLocaleDateString()}</span>}
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-                  <button onClick={() => startEdit(item)} title="Edit"
+
+                {/* Action buttons */}
+                <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
+                  {!isConfirmingClose && (
+                    <button onClick={() => { setClosingId(item.id); setEditingId(null); }} title="Mark as closed"
+                      style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 7, color: '#0d9488', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, padding: '4px 10px', lineHeight: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
+                      ✅ Close
+                    </button>
+                  )}
+                  <button onClick={() => { startEdit(item); setClosingId(null); }} title="Edit"
                     style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: 7, color: '#64748b', cursor: 'pointer', fontSize: '0.8rem', padding: '3px 8px', lineHeight: 1 }}>✏️</button>
                   <button onClick={() => handleDelete(item.id)} title="Delete"
                     style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', fontSize: '1.25rem', lineHeight: 1, padding: '0 4px' }}>×</button>
                 </div>
               </div>
+
+              {/* Close confirmation inline */}
+              {isConfirmingClose && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '2px dashed #0d9488', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', background: '#f0fdfa', borderRadius: '0 0 10px 10px', margin: '12px -1.25rem -1rem', padding: '0.75rem 1.25rem 1rem' }}>
+                  <span style={{ fontSize: '1rem' }}>✅</span>
+                  <div style={{ flex: 1 }}>
+                    <p style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0d9488', margin: 0 }}>
+                      Mark this action as closed?
+                    </p>
+                    <p style={{ fontSize: '0.72rem', color: '#0d9488', margin: '2px 0 0' }}>
+                      {recommitCount === 0 && !computeStatus(item.dueDate, item.recommitmentDate).overdue
+                        ? '+5 pts will be added (on time, no recommitments)'
+                        : recommitCount > 0
+                          ? 'No points — action had recommitments'
+                          : 'No points — action is past due'}
+                    </p>
+                  </div>
+                  <button onClick={() => handleClose(item)}
+                    style={{ padding: '0.4rem 1.1rem', borderRadius: 8, background: '#0d9488', color: 'white', fontWeight: 800, fontSize: '0.8rem', border: 'none', cursor: 'pointer' }}>
+                    Yes, Close
+                  </button>
+                  <button onClick={() => setClosingId(null)}
+                    style={{ padding: '0.4rem 0.875rem', borderRadius: 8, background: 'white', color: '#64748b', fontWeight: 700, fontSize: '0.8rem', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                    Cancel
+                  </button>
+                </div>
+              )}
 
               {/* Inline edit form */}
               {editingId === item.id && (
@@ -418,7 +524,7 @@ export default function VisualBoard() {
               )}
 
               {/* Inline recommitment row — only for red items */}
-              {st.overdue && (
+              {st.overdue && !isConfirmingClose && (
                 <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed #fca5a5', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                   <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#dc2626' }}>📅 Recommit to:</span>
                   <input
@@ -445,7 +551,6 @@ export default function VisualBoard() {
                       color: (!inlineDate || (inlineSt && inlineSt.overdue)) ? '#94a3b8' : 'white',
                     }}>
                     ✓ Commit
-                    {item.deductionApplied && !item.pointsRestored ? ' (+5 pts)' : ''}
                   </button>
                   {inlineSt?.overdue && <span style={{ fontSize: '0.68rem', color: '#ef4444' }}>Date must be today or later</span>}
                 </div>
@@ -455,7 +560,7 @@ export default function VisualBoard() {
         })}
         {filtered.length === 0 && (
           <div className="card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            {items.length === 0 ? 'No actions yet — click "+ Add Action" to get started' : 'No items for this filter'}
+            {activeItems.length === 0 ? 'No open actions — click "+ Add Action" to get started' : 'No items for this filter'}
           </div>
         )}
       </div>

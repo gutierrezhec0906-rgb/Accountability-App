@@ -217,7 +217,7 @@ export async function calculateScore(uid) {
   const discPoints = discLastAt && discDaysAgo <= 90 ? 5 : 0;
 
   const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + feedbackPoints + bonusPts - penaltyPts
+    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + feedbackPoints + actionsClosedPoints + bonusPts - penaltyPts
   )));
 
   // Persist score to user doc
@@ -247,6 +247,12 @@ export async function calculateScore(uid) {
       .length
   );
 
+  // --- Actions Closed On Time (weekly): 5 pts per action closed on time with no recommitments, rolling 7-day window ---
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const actionsClosedPoints = allEvents
+    .filter(e => e.toolLabel === 'Action Closed On Time' && e.date >= sevenDaysAgo && e.points > 0)
+    .reduce((s, e) => s + e.points, 0);
+
   const breakdown = {
     breadth:        Math.round(breadth),
     frequency:      Math.round(frequency),
@@ -259,6 +265,7 @@ export async function calculateScore(uid) {
     disc:           Math.round(discPoints),
     mindfulness:    Math.round(mindfulnessPoints),
     feedbackGiven:  Math.round(feedbackPoints),
+    actionsClosed:  Math.round(actionsClosedPoints),
     bonus:          Math.round(bonusPts),
   };
 
