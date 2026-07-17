@@ -109,11 +109,11 @@ function KaizenForm({ initial, onSave, onCancel, title: formTitle }) {
           </div>
           <div>
             <label className="label">1. Scope — Specific process or area</label>
-            <input className="input" value={form.scope} onChange={e => set('scope', e.target.value)} placeholder="e.g. Reduce changeover time on Line 3 (not 'fix all of manufacturing')" />
+            <textarea className="input" rows={2} value={form.scope} onChange={e => set('scope', e.target.value)} placeholder="e.g. Reduce changeover time on Line 3 (not 'fix all of manufacturing')" />
           </div>
           <div>
             <label className="label">2. Goal — Measurable target</label>
-            <input className="input" value={form.goal} onChange={e => set('goal', e.target.value)} placeholder="e.g. Cut cycle time by 30%, reduce defects by 50%" />
+            <textarea className="input" rows={2} value={form.goal} onChange={e => set('goal', e.target.value)} placeholder="e.g. Cut cycle time by 30%, reduce defects by 50%" />
           </div>
           <div>
             <label className="label">3. Team — Cross-functional members, facilitator, sponsor</label>

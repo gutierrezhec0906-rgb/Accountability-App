@@ -134,7 +134,7 @@ body {
   box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.12);
 }
 select.input { appearance: auto; }
-textarea.input { resize: vertical; min-height: 90px; }
+textarea.input { resize: vertical; min-height: 60px; overflow-y: auto; box-sizing: border-box; }
 
 /* ── Labels ──────────────────────────────────────────── */
 .label {

@@ -346,7 +346,7 @@ export default function VisualBoard() {
                     <div><label className="label">Title / Action</label><input className="input" value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} /></div>
                     <div><label className="label">Owner</label><input className="input" value={editForm.owner} onChange={e => setEditForm(f => ({ ...f, owner: e.target.value }))} /></div>
                     <div><label className="label">Due Date</label><input className="input" type="date" value={editForm.dueDate} onChange={e => setEditForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
-                    <div><label className="label">Notes</label><input className="input" value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} /></div>
+                    <div style={{ gridColumn: '1/-1' }}><label className="label">Notes</label><textarea className="input" rows={2} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} /></div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 1rem' }} onClick={() => handleEditSave(item.id)}>Save Changes</button>

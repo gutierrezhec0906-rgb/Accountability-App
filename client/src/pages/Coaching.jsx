@@ -330,7 +330,7 @@ export default function Coaching() {
             <div><label className="label">Duration</label><input className="input" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))} placeholder="e.g. 45 min" /></div>
             <div style={{ gridColumn: '1/-1' }}>
               <label className="label">Coaching Goal</label>
-              <input className="input" value={form.coachingGoal} onChange={e => setForm(f => ({ ...f, coachingGoal: e.target.value }))} placeholder="What is the specific outcome you want from this session?" />
+              <textarea className="input" rows={2} value={form.coachingGoal} onChange={e => setForm(f => ({ ...f, coachingGoal: e.target.value }))} placeholder="What is the specific outcome you want from this session?" />
               <FieldGuide guideKey="coachingGoal" />
             </div>
             <div style={{ gridColumn: '1/-1' }}>
@@ -412,7 +412,7 @@ export default function Coaching() {
                   <div><label className="label">Duration</label><input className="input" value={editForm.duration} onChange={e => setEditForm(f => ({ ...f, duration: e.target.value }))} /></div>
                   <div style={{ gridColumn: '1/-1' }}>
                     <label className="label">Coaching Goal</label>
-                    <input className="input" value={editForm.coachingGoal || ''} onChange={e => setEditForm(f => ({ ...f, coachingGoal: e.target.value }))} placeholder="What is the specific outcome you want from this session?" />
+                    <textarea className="input" rows={2} value={editForm.coachingGoal || ''} onChange={e => setEditForm(f => ({ ...f, coachingGoal: e.target.value }))} placeholder="What is the specific outcome you want from this session?" />
                     <FieldGuide guideKey="coachingGoal" />
                   </div>
                   <div style={{ gridColumn: '1/-1' }}>
