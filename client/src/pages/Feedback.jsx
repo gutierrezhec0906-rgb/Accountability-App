@@ -446,12 +446,36 @@ export default function Feedback() {
                 </div>
                 <div>
                   <label className="label">Rating</label>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    {[1,2,3,4,5].map(n => (
-                      <button key={n} type="button" onClick={() => setForm(f => ({ ...f, rating: n }))}
-                        style={{ width: 40, height: 40, borderRadius: '50%', border: `2px solid ${n <= form.rating ? '#0d9488' : '#e2e8f0'}`, background: n <= form.rating ? '#0d9488' : 'transparent', color: n <= form.rating ? 'white' : '#94a3b8', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer', transition: 'all 0.15s' }}>
-                        {n}
-                      </button>
+                  <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+                    {[
+                      { n: 1, label: 'Small', desc: 'Worth a mention, but limited scope' },
+                      { n: 2, label: 'Noticed', desc: 'A positive moment, but minor' },
+                      { n: 3, label: 'Solid', desc: 'Met the standard well' },
+                      { n: 4, label: 'Strong', desc: 'Clearly did more than expected' },
+                      { n: 5, label: 'Exceptional', desc: 'Went well beyond what the situation required' },
+                    ].map(({ n, label, desc }) => (
+                      <div key={n} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}
+                        onMouseEnter={e => { const tip = e.currentTarget.querySelector('.rating-tip'); if (tip) tip.style.opacity = '1'; }}
+                        onMouseLeave={e => { const tip = e.currentTarget.querySelector('.rating-tip'); if (tip) tip.style.opacity = '0'; }}>
+                        {/* Tooltip */}
+                        <div className="rating-tip" style={{
+                          position: 'absolute', bottom: 'calc(100% + 10px)', left: '50%', transform: 'translateX(-50%)',
+                          background: '#0f2044', color: 'white', borderRadius: 8, padding: '6px 10px',
+                          width: 160, fontSize: '0.72rem', lineHeight: 1.4, textAlign: 'center',
+                          pointerEvents: 'none', opacity: 0, transition: 'opacity 0.15s', zIndex: 10,
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                        }}>
+                          <span style={{ fontWeight: 700, display: 'block', marginBottom: 2 }}>{n} — {label}</span>
+                          {desc}
+                          {/* Arrow */}
+                          <span style={{ position: 'absolute', bottom: -5, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '5px solid transparent', borderRight: '5px solid transparent', borderTop: '5px solid #0f2044' }} />
+                        </div>
+                        <button type="button" onClick={() => setForm(f => ({ ...f, rating: n }))}
+                          style={{ width: 40, height: 40, borderRadius: '50%', border: `2px solid ${n <= form.rating ? '#0d9488' : '#e2e8f0'}`, background: n <= form.rating ? '#0d9488' : 'transparent', color: n <= form.rating ? 'white' : '#94a3b8', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer', transition: 'all 0.15s' }}>
+                          {n}
+                        </button>
+                        <span style={{ fontSize: '0.6rem', fontWeight: 700, color: n <= form.rating ? '#0d9488' : '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', whiteSpace: 'nowrap', transition: 'color 0.15s' }}>{label}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
