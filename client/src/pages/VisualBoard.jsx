@@ -312,9 +312,10 @@ export default function VisualBoard() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4,1fr)', gap: 12, marginBottom: '1.5rem' }}>
         {['Green', 'Yellow', 'Red'].map(s => {
           const st = computeStatus(s === 'Green' ? '9999-01-01' : s === 'Yellow' ? new Date(Date.now() + 3 * 86400000).toISOString().split('T')[0] : '2000-01-01');
+          const active = !showClosed && filter === s;
           return (
-            <div key={s} onClick={() => setFilter(f => f === s ? 'All' : s)}
-              style={{ background: filter === s ? st.bg : '#fff', border: `1.5px solid ${filter === s ? st.color : 'var(--border)'}`, borderRadius: 14, padding: '1rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.18s', boxShadow: '0 2px 8px rgba(15,32,68,0.05)' }}>
+            <div key={s} onClick={() => { setShowClosed(false); setFilter(f => f === s ? 'All' : s); }}
+              style={{ background: active ? st.bg : '#fff', border: `1.5px solid ${active ? st.color : 'var(--border)'}`, borderRadius: 14, padding: '1rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.18s', boxShadow: '0 2px 8px rgba(15,32,68,0.05)' }}>
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: st.color, margin: '0 auto 8px' }} />
               <p style={{ fontSize: '2rem', fontWeight: 900, color: st.color, margin: 0, lineHeight: 1 }}>{counts[s]}</p>
               <p style={{ fontSize: '0.78rem', fontWeight: 700, color: st.text, margin: '4px 0 0' }}>{s}</p>
@@ -322,7 +323,7 @@ export default function VisualBoard() {
           );
         })}
         {/* Closed tile */}
-        <div onClick={() => setShowClosed(s => !s)}
+        <div onClick={() => { setShowClosed(true); setFilter('All'); }}
           style={{ background: showClosed ? '#f0fdfa' : '#fff', border: `1.5px solid ${showClosed ? '#0d9488' : 'var(--border)'}`, borderRadius: 14, padding: '1rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.18s', boxShadow: '0 2px 8px rgba(15,32,68,0.05)' }}>
           <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#0d9488', margin: '0 auto 8px' }} />
           <p style={{ fontSize: '2rem', fontWeight: 900, color: '#0d9488', margin: 0, lineHeight: 1 }}>{closedItems.length}</p>
@@ -392,7 +393,7 @@ export default function VisualBoard() {
         {['All', 'Green', 'Yellow', 'Red'].map(s => {
           const stColor = s === 'Green' ? '#22c55e' : s === 'Yellow' ? '#eab308' : s === 'Red' ? '#ef4444' : '#0f2044';
           return (
-            <button key={s} onClick={() => setFilter(s)}
+            <button key={s} onClick={() => { setShowClosed(false); setFilter(s); }}
               style={{ padding: '0.375rem 1rem', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
                 background: filter === s ? stColor : '#f1f5f9',
                 color: filter === s ? '#fff' : '#475569' }}>
