@@ -179,57 +179,64 @@ export default function TeamBoard() {
                       {item.title}
                     </p>
 
-                    {/* Owner + due + recommitments row */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 20px', alignItems: 'center' }}>
+                    {/* Meta row — fixed columns so every card aligns */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '200px 200px 160px auto', alignItems: 'center', gap: '0 0', columnGap: 0 }}>
                       {/* Creator */}
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                        <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Creator</span>
+                        <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', width: 72, flexShrink: 0 }}>Creator</span>
                         <div style={{
-                          width: 24, height: 24, borderRadius: '50%',
+                          width: 22, height: 22, borderRadius: '50%',
                           background: 'linear-gradient(135deg,#6366f1,#4338ca)',
                           display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '0.68rem', fontWeight: 900, color: 'white', flexShrink: 0,
+                          fontSize: '0.65rem', fontWeight: 900, color: 'white', flexShrink: 0,
                         }}>
                           {item.ownerName.charAt(0).toUpperCase()}
                         </div>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#a5b4fc' }}>
+                        <span style={{ fontSize: '0.83rem', fontWeight: 700, color: '#a5b4fc', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {item.ownerName}
                         </span>
                       </div>
 
                       {/* Responsible */}
-                      {item.owner && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                          <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.35)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Responsible</span>
-                          <div style={{
-                            width: 24, height: 24, borderRadius: '50%',
-                            background: 'linear-gradient(135deg,#0891b2,#0e7490)',
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '0.68rem', fontWeight: 900, color: 'white', flexShrink: 0,
-                          }}>
-                            {item.owner.charAt(0).toUpperCase()}
-                          </div>
-                          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#67e8f9' }}>
-                            {item.owner}
-                          </span>
-                        </div>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', width: 80, flexShrink: 0 }}>Responsible</span>
+                        {item.owner ? (
+                          <>
+                            <div style={{
+                              width: 22, height: 22, borderRadius: '50%',
+                              background: 'linear-gradient(135deg,#0891b2,#0e7490)',
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              fontSize: '0.65rem', fontWeight: 900, color: 'white', flexShrink: 0,
+                            }}>
+                              {item.owner.charAt(0).toUpperCase()}
+                            </div>
+                            <span style={{ fontSize: '0.83rem', fontWeight: 700, color: '#67e8f9', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                              {item.owner}
+                            </span>
+                          </>
+                        ) : (
+                          <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.2)' }}>—</span>
+                        )}
+                      </div>
 
                       {/* Due date */}
-                      {activeDue && (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                          <span style={{ fontSize: '0.78rem' }}>📅</span>
-                          <span style={{ fontSize: '0.82rem', fontWeight: 600, color: st.overdue ? '#fca5a5' : 'rgba(255,255,255,0.55)' }}>
-                            {dueLabel}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.3)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.06em', width: 28, flexShrink: 0 }}>Due</span>
+                        {activeDue ? (
+                          <span style={{ fontSize: '0.83rem', fontWeight: 600, color: st.overdue ? '#fca5a5' : 'rgba(255,255,255,0.6)', whiteSpace: 'nowrap' }}>
+                            📅 {dueLabel}
                           </span>
-                        </div>
-                      )}
+                        ) : (
+                          <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.2)' }}>—</span>
+                        )}
+                      </div>
 
                       {/* Recommitments */}
                       {recommitCount > 0 && (
                         <span style={{
                           fontSize: '0.75rem', fontWeight: 700, color: '#60a5fa',
                           background: 'rgba(96,165,250,0.12)', padding: '2px 10px', borderRadius: 9999,
+                          whiteSpace: 'nowrap', justifySelf: 'start',
                         }}>
                           🔄 {recommitCount} recommit{recommitCount > 1 ? 's' : ''}
                         </span>
