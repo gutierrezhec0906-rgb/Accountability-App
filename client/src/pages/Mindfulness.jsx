@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import toast from 'react-hot-toast';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
+import { logPointEvent, calculateScore } from '../utils/scoring';
 
 const exercises = [
   {
@@ -87,11 +89,67 @@ export default function Mindfulness() {
   async function recordSession(exName, completedCycles) {
     if (completedCycles === 0) return;
     const existing = logs[exName] || { sessions: [], best: 0 };
+    const isRecord = completedCycles > (existing.best || 0);
     const newSession = { date: new Date().toISOString(), cycles: completedCycles };
-    const sessions = [newSession, ...existing.sessions].slice(0, 20); // keep last 20
+    const sessions = [newSession, ...existing.sessions].slice(0, 20);
     const best = Math.max(existing.best || 0, completedCycles);
     const updated = { ...logs, [exName]: { sessions, best } };
     await saveLogs(updated);
+
+    // --- Points ---
+    // 1 pt for first session of any exercise today (daily dedup across all exercises)
+    const today = new Date().toISOString().split('T')[0];
+    const snap = await getDoc(doc(db, 'users', currentUser.uid));
+    const events = snap.exists() ? (snap.data().pointEvents || []) : [];
+    const alreadyToday = events.some(
+      e => e.toolLabel === 'Mindfulness' && e.date === today
+    );
+
+    if (!alreadyToday) {
+      const { awarded, capReached } = await logPointEvent(currentUser.uid, {
+        points: 1,
+        toolLabel: 'Mindfulness',
+        reason: `Completed ${exName} session (${completedCycles} cycle${completedCycles !== 1 ? 's' : ''})`,
+      });
+      if (awarded) {
+        await updateDoc(doc(db, 'users', currentUser.uid), { bonusPoints: increment(1) });
+        if (isRecord) {
+          // Extra +1 for breaking the record
+          const { awarded: r2 } = await logPointEvent(currentUser.uid, {
+            points: 1,
+            toolLabel: 'Mindfulness Record',
+            reason: `New personal record on ${exName}: ${completedCycles} cycles 🏆`,
+          });
+          if (r2) {
+            await updateDoc(doc(db, 'users', currentUser.uid), { bonusPoints: increment(1) });
+            toast.success(`⭐ New record! +2 pts — ${completedCycles} cycles on ${exName}`, { duration: 6000, icon: '🌟' });
+          } else {
+            toast.success(`⭐ +1 pt for today's mindfulness session`, { duration: 6000, icon: '🌟' });
+          }
+        } else {
+          toast.success(`⭐ +1 pt for completing a mindfulness session today`, { duration: 6000, icon: '🌟' });
+        }
+        calculateScore(currentUser.uid).catch(() => {});
+      } else if (capReached) {
+        toast(`Session saved! You've reached your 25-pt daily limit — come back tomorrow to keep scoring. 🗓`, { duration: 5000, icon: '📅' });
+      }
+    } else if (isRecord) {
+      // Already earned daily pt, but broke record → try to award the bonus pt
+      const { awarded: r2, capReached } = await logPointEvent(currentUser.uid, {
+        points: 1,
+        toolLabel: 'Mindfulness Record',
+        reason: `New personal record on ${exName}: ${completedCycles} cycles 🏆`,
+      });
+      if (r2) {
+        await updateDoc(doc(db, 'users', currentUser.uid), { bonusPoints: increment(1) });
+        calculateScore(currentUser.uid).catch(() => {});
+        toast.success(`⭐ New personal record! +1 bonus pt — ${completedCycles} cycles on ${exName}`, { duration: 6000, icon: '🏆' });
+      } else if (capReached) {
+        toast(`🏆 New record on ${exName}! Daily limit reached — record logged, no extra pts today.`, { duration: 5000, icon: '📅' });
+      } else {
+        toast.success(`🏆 New record! ${completedCycles} cycles on ${exName} — session saved.`);
+      }
+    }
   }
 
   function startStop() {

@@ -216,6 +216,15 @@ export async function calculateScore(uid) {
   const discDaysAgo = discLastAt ? Math.floor((Date.now() - discLastAt) / 86400000) : null;
   const discPoints = discLastAt && discDaysAgo <= 90 ? 5 : 0;
 
+  // --- Mindfulness (0-2): today's points from pointEvents ---
+  const today = new Date().toISOString().split('T')[0];
+  const allEvents = data.pointEvents || [];
+  const mindfulnessPoints = Math.min(2,
+    allEvents
+      .filter(e => e.date === today && (e.toolLabel === 'Mindfulness' || e.toolLabel === 'Mindfulness Record') && e.points > 0)
+      .reduce((s, e) => s + e.points, 0)
+  );
+
   const total = Math.round(Math.max(0, Math.min(100,
     breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + bonusPts - penaltyPts
   )));
@@ -230,6 +239,7 @@ export async function calculateScore(uid) {
     coaching:       Math.round(coachingScore),
     problemSolving: Math.round(psScore),
     disc:           Math.round(discPoints),
+    mindfulness:    Math.round(mindfulnessPoints),
     bonus:          Math.round(bonusPts),
   };
 
