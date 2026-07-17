@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { logPointEvent, calculateScore } from '../utils/scoring';
 
 function printVision(entry, prompts) {
   const dateStr = entry.createdAt
@@ -231,7 +232,26 @@ export default function Vision() {
         const updated = [newEntry, ...saved];
         await persistSaved(updated);
         setLoadedId(newEntry.id);
-        toast.success('Vision saved!');
+
+        // Award 10 pts once per vision type (personal / team), lifetime, no decay
+        const snap = await getDoc(doc(db, 'users', currentUser.uid));
+        const earned = snap.exists() ? (snap.data().visionPointsEarned || {}) : {};
+        if (!earned[mode]) {
+          const label = mode === 'personal' ? 'Personal Vision' : 'Team Vision';
+          await logPointEvent(currentUser.uid, {
+            points: 10,
+            toolLabel: label,
+            reason: `Created first ${label} statement`,
+          });
+          await updateDoc(doc(db, 'users', currentUser.uid), {
+            bonusPoints: increment(10),
+            [`visionPointsEarned.${mode}`]: true,
+          });
+          calculateScore(currentUser.uid).catch(() => {});
+          toast.success(`Vision saved! +10 points for creating your first ${label.toLowerCase()} 🎉`);
+        } else {
+          toast.success('Vision saved!');
+        }
       }
       setPanelTab(mode);
     } catch (e) { toast.error('Save failed: ' + e?.message); }
