@@ -82,6 +82,8 @@ export default function VisualBoard() {
   const [inlineDates, setInlineDates] = useState({});
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(EMPTY_FORM);
+  const [sortBy, setSortBy] = useState('date-asc');   // 'date-asc'|'date-desc'|'alpha'|'owner'
+  const [ownerFilter, setOwnerFilter] = useState('All');
 
   async function fetchItems() {
     if (!currentUser) return;
@@ -229,7 +231,19 @@ export default function VisualBoard() {
   const enriched = items.map(item => ({ ...item, st: computeStatus(item.dueDate, item.recommitmentDate) }));
   const counts = { Green: 0, Yellow: 0, Red: 0 };
   enriched.forEach(i => { if (counts[i.st.label] !== undefined) counts[i.st.label]++; });
-  const filtered = filter === 'All' ? enriched : enriched.filter(i => i.st.label === filter);
+
+  const owners = ['All', ...Array.from(new Set(items.map(i => i.owner).filter(Boolean))).sort()];
+
+  const filtered = enriched
+    .filter(i => filter === 'All' || i.st.label === filter)
+    .filter(i => ownerFilter === 'All' || i.owner === ownerFilter)
+    .sort((a, b) => {
+      if (sortBy === 'date-asc')  return (a.dueDate || '') < (b.dueDate || '') ? -1 : 1;
+      if (sortBy === 'date-desc') return (a.dueDate || '') > (b.dueDate || '') ? -1 : 1;
+      if (sortBy === 'alpha')     return (a.title || '').localeCompare(b.title || '');
+      if (sortBy === 'owner')     return (a.owner || '').localeCompare(b.owner || '');
+      return 0;
+    });
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto' }}>
@@ -286,8 +300,9 @@ export default function VisualBoard() {
         </div>
       )}
 
-      {/* Filter pills */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem', flexWrap: 'wrap' }}>
+      {/* Filter + Sort toolbar */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem', flexWrap: 'wrap', alignItems: 'center' }}>
+        {/* Status pills */}
         {['All', 'Green', 'Yellow', 'Red'].map(s => {
           const stColor = s === 'Green' ? '#22c55e' : s === 'Yellow' ? '#eab308' : s === 'Red' ? '#ef4444' : '#0f2044';
           return (
@@ -299,6 +314,41 @@ export default function VisualBoard() {
             </button>
           );
         })}
+
+        {/* Divider */}
+        <div style={{ width: 1, background: '#e2e8f0', alignSelf: 'stretch' }} />
+
+        {/* Sort buttons */}
+        {[
+          { key: 'date-asc',  label: '📅 Date ↑' },
+          { key: 'date-desc', label: '📅 Date ↓' },
+          { key: 'alpha',     label: '🔤 A → Z' },
+          { key: 'owner',     label: '👤 Owner' },
+        ].map(({ key, label }) => (
+          <button key={key} onClick={() => setSortBy(key)}
+            style={{ padding: '0.375rem 0.875rem', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 700, border: `1.5px solid ${sortBy === key ? '#0f2044' : '#e2e8f0'}`, cursor: 'pointer', transition: 'all 0.15s',
+              background: sortBy === key ? '#0f2044' : 'white',
+              color: sortBy === key ? '#fff' : '#64748b' }}>
+            {label}
+          </button>
+        ))}
+
+        {/* Divider */}
+        <div style={{ width: 1, background: '#e2e8f0', alignSelf: 'stretch' }} />
+
+        {/* Owner filter */}
+        <select value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)}
+          style={{ padding: '0.35rem 0.75rem', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 700, border: '1.5px solid #e2e8f0', background: ownerFilter !== 'All' ? '#eff6ff' : 'white', color: ownerFilter !== 'All' ? '#1d4ed8' : '#64748b', cursor: 'pointer', outline: 'none' }}>
+          {owners.map(o => <option key={o}>{o === 'All' ? '👤 All Owners' : o}</option>)}
+        </select>
+
+        {/* Active filter count */}
+        {(filter !== 'All' || ownerFilter !== 'All') && (
+          <button onClick={() => { setFilter('All'); setOwnerFilter('All'); }}
+            style={{ padding: '0.35rem 0.875rem', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 700, border: '1.5px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}>
+            ✕ Clear filters · {filtered.length} shown
+          </button>
+        )}
       </div>
 
       {/* Board items */}
