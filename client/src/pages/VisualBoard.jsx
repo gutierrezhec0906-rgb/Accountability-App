@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
@@ -74,6 +75,7 @@ const EMPTY_FORM = { title: '', owner: '', dueDate: '', notes: '' };
 
 export default function VisualBoard() {
   const { currentUser } = useAuth();
+  const navigate = useNavigate();
   const [items, setItems]       = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter]     = useState('All');
@@ -287,7 +289,15 @@ export default function VisualBoard() {
   return (
     <div style={{ maxWidth: 960, margin: '0 auto' }}>
       <PageHeader icon="🔴" title="Visual Management Board" subtitle="Escalation tracker — status updates automatically based on due date"
-        action={<button className="btn-primary" onClick={() => setShowForm(s => !s)}>+ Add Action</button>} />
+        action={
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-secondary" onClick={() => navigate('/team-board')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              📺 Team Board View
+            </button>
+            <button className="btn-primary" onClick={() => setShowForm(s => !s)}>+ Add Action</button>
+          </div>
+        } />
 
       {modalEntry && (
         <RecommitModal entry={modalEntry} onSubmit={(id, date) => handleRecommit(id, date, modalEntry)} onDismiss={handleDismissModal} />

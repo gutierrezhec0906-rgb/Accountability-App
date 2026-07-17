@@ -33,6 +33,7 @@ import Survey360Manager from './pages/Survey360Manager';
 import Survey360 from './pages/Survey360';
 import CompleteProfile from './pages/CompleteProfile';
 import AdminPanel from './pages/AdminPanel';
+import TeamBoard from './pages/TeamBoard';
 
 function PrivateLayout({ children }) {
   return (
@@ -78,6 +79,7 @@ export default function App() {
           <Route path="/360-feedback" element={<PrivateLayout><Survey360Manager /></PrivateLayout>} />
           <Route path="/admin" element={<PrivateLayout><AdminPanel /></PrivateLayout>} />
           <Route path="/survey/:surveyId" element={<Survey360 />} />
+          <Route path="/team-board" element={<PrivateRoute><TeamBoard /></PrivateRoute>} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </AuthProvider>
