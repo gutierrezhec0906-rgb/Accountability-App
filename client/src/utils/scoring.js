@@ -216,18 +216,27 @@ export async function calculateScore(uid) {
   const discDaysAgo = discLastAt ? Math.floor((Date.now() - discLastAt) / 86400000) : null;
   const discPoints = discLastAt && discDaysAgo <= 90 ? 5 : 0;
 
-  // --- Mindfulness (0-2): today's points from pointEvents ---
+  const total = Math.round(Math.max(0, Math.min(100,
+    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + bonusPts - penaltyPts
+  )));
+
+  // Persist score to user doc
+  await updateDoc(doc(db, 'users', uid), {
+    calculatedScore: total,
+    scoreBreakdown:  {},
+    scoreUpdatedAt:  serverTimestamp(),
+  });
+
+  // Daily snapshot stored inside users/{uid}.scoreHistory array (max 90 entries)
   const today = new Date().toISOString().split('T')[0];
+
+  // --- Mindfulness (0-2): today's points from pointEvents ---
   const allEvents = data.pointEvents || [];
   const mindfulnessPoints = Math.min(2,
     allEvents
       .filter(e => e.date === today && (e.toolLabel === 'Mindfulness' || e.toolLabel === 'Mindfulness Record') && e.points > 0)
       .reduce((s, e) => s + e.points, 0)
   );
-
-  const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + bonusPts - penaltyPts
-  )));
 
   const breakdown = {
     breadth:        Math.round(breadth),
@@ -243,15 +252,7 @@ export async function calculateScore(uid) {
     bonus:          Math.round(bonusPts),
   };
 
-  // Persist score to user doc
-  await updateDoc(doc(db, 'users', uid), {
-    calculatedScore: total,
-    scoreBreakdown:  breakdown,
-    scoreUpdatedAt:  serverTimestamp(),
-  });
-
-  // Daily snapshot stored inside users/{uid}.scoreHistory array (max 90 entries)
-  const today = new Date().toISOString().split('T')[0];
+  await updateDoc(doc(db, 'users', uid), { scoreBreakdown: breakdown });
   const existingHistory = data.scoreHistory || [];
   const filtered = existingHistory.filter(h => h.date !== today);
   const updatedHistory = [{ date: today, score: total, breakdown }, ...filtered].slice(0, 90);
