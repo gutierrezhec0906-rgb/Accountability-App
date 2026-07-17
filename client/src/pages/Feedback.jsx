@@ -155,7 +155,7 @@ function RequestModal({ teamMembers, onClose, onSave }) {
                     <Avatar name={m.displayName} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)', margin: 0 }}>{m.displayName || m.email}</p>
-                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>{[m.teamName, m.role].filter(Boolean).join(' · ') || 'Team Member'}</p>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>{[m.teamName, m.isAdmin ? 'Manager' : m.role].filter(Boolean).join(' · ') || 'Team Member'}</p>
                     </div>
                     {checked && <span style={{ fontSize: '0.8rem', color: '#0d9488', fontWeight: 700 }}>✓</span>}
                   </label>
@@ -236,12 +236,11 @@ export default function Feedback() {
           if (companyId) {
             const membersSnap = await getDocs(query(
               collection(db, 'users'),
-              where('companyId', '==', companyId),
-              where('status', '==', 'approved')
+              where('companyId', '==', companyId)
             ));
             const members = membersSnap.docs
               .map(d => ({ uid: d.id, ...d.data() }))
-              .filter(m => m.uid !== currentUser.uid);
+              .filter(m => m.status === 'approved' || m.isAdmin === true);
             setTeamMembers(members);
           }
         }
@@ -439,7 +438,7 @@ export default function Feedback() {
                       <option value="">— Select team member —</option>
                       {teamMembers.map(m => (
                         <option key={m.uid} value={m.displayName || m.email}>
-                          {m.displayName || m.email}{m.teamName ? ` · ${m.teamName}` : ''}{m.role ? ` (${m.role})` : ''}
+                          {m.displayName || m.email}{m.teamName ? ` · ${m.teamName}` : ''}{m.isAdmin ? ' (Manager)' : m.role ? ` (${m.role})` : ''}{m.uid === currentUser.uid ? ' — You' : ''}
                         </option>
                       ))}
                     </select>
