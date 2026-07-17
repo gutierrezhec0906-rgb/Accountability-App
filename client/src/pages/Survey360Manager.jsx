@@ -94,6 +94,7 @@ export default function Survey360Manager() {
       const surveyId = uid8();
       const surveyDoc = {
         surveyId,
+        uid: currentUser.uid,
         leaderUid: currentUser.uid,
         leaderName: userProfile?.displayName || currentUser.displayName || '',
         leaderRole: userProfile?.role || '',
