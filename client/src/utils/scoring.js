@@ -231,7 +231,8 @@ export async function calculateScore(uid) {
   const today = new Date().toISOString().split('T')[0];
 
   const allEvents = data.pointEvents || [];
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const thirtyDaysAgoStr = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const sevenDaysAgoStr  = new Date(Date.now() -  7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
   // --- Mindfulness (0-2): today's points from pointEvents ---
   const mindfulnessPoints = Math.min(2,
@@ -243,14 +244,13 @@ export async function calculateScore(uid) {
   // --- Feedback Given (0-5): 1 pt per feedback given, rolling 30-day window ---
   const feedbackPoints = Math.min(5,
     allEvents
-      .filter(e => e.toolLabel === 'Feedback Given' && e.date >= thirtyDaysAgo && e.points > 0)
+      .filter(e => e.toolLabel === 'Feedback Given' && e.date >= thirtyDaysAgoStr && e.points > 0)
       .length
   );
 
-  // --- Actions Closed On Time (weekly): 5 pts per action closed on time with no recommitments, rolling 7-day window ---
-  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  // --- Actions Closed On Time (weekly): 5 pts per action closed on time, rolling 7-day window ---
   const actionsClosedPoints = allEvents
-    .filter(e => e.toolLabel === 'Action Closed On Time' && e.date >= sevenDaysAgo && e.points > 0)
+    .filter(e => e.toolLabel === 'Action Closed On Time' && e.date >= sevenDaysAgoStr && e.points > 0)
     .reduce((s, e) => s + e.points, 0);
 
   const breakdown = {
