@@ -80,6 +80,8 @@ export default function VisualBoard() {
   const [form, setForm]         = useState(EMPTY_FORM);
   const [modalEntry, setModalEntry] = useState(null);
   const [inlineDates, setInlineDates] = useState({});
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState(EMPTY_FORM);
 
   async function fetchItems() {
     if (!currentUser) return;
@@ -145,6 +147,21 @@ export default function VisualBoard() {
       setShowForm(false);
     } catch (e) {
       toast.error('Save failed: ' + e?.message);
+    }
+  }
+
+  function startEdit(item) {
+    setEditingId(item.id);
+    setEditForm({ title: item.title, owner: item.owner, dueDate: item.dueDate, notes: item.notes || '' });
+  }
+
+  async function handleEditSave(id) {
+    try {
+      await persist(items.map(i => i.id === id ? { ...i, ...editForm, updatedAt: { seconds: Math.floor(Date.now() / 1000) } } : i));
+      setEditingId(null);
+      toast.success('Action updated');
+    } catch (e) {
+      toast.error('Update failed: ' + e?.message);
     }
   }
 
@@ -314,9 +331,29 @@ export default function VisualBoard() {
                     {activeDue && <span>📅 Due: {new Date(activeDue + 'T00:00:00').toLocaleDateString()}</span>}
                   </div>
                 </div>
-                <button onClick={() => handleDelete(item.id)}
-                  style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', fontSize: '1.25rem', lineHeight: 1, padding: '0 4px', flexShrink: 0 }}>×</button>
+                <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                  <button onClick={() => startEdit(item)} title="Edit"
+                    style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: 7, color: '#64748b', cursor: 'pointer', fontSize: '0.8rem', padding: '3px 8px', lineHeight: 1 }}>✏️</button>
+                  <button onClick={() => handleDelete(item.id)} title="Delete"
+                    style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', fontSize: '1.25rem', lineHeight: 1, padding: '0 4px' }}>×</button>
+                </div>
               </div>
+
+              {/* Inline edit form */}
+              {editingId === item.id && (
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
+                    <div><label className="label">Title / Action</label><input className="input" value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} /></div>
+                    <div><label className="label">Owner</label><input className="input" value={editForm.owner} onChange={e => setEditForm(f => ({ ...f, owner: e.target.value }))} /></div>
+                    <div><label className="label">Due Date</label><input className="input" type="date" value={editForm.dueDate} onChange={e => setEditForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
+                    <div><label className="label">Notes</label><input className="input" value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} /></div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 1rem' }} onClick={() => handleEditSave(item.id)}>Save Changes</button>
+                    <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 1rem' }} onClick={() => setEditingId(null)}>Cancel</button>
+                  </div>
+                </div>
+              )}
 
               {/* Inline recommitment row — only for red items */}
               {st.overdue && (
