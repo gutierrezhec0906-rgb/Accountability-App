@@ -56,15 +56,15 @@ function balanceNote(scores) {
   return { level: 'good', text: `Balanced blend of ${top.map(([k]) => `${k} (${discProfiles[k].name})`).join(' & ')} — a strong combination for adaptive leadership.` };
 }
 
-function SavedPanel({ entries, onDelete }) {
+function SavedPanel({ entries, onDelete, onDownload, userName }) {
   return (
-    <div style={{ width: 270, flexShrink: 0, background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', alignSelf: 'flex-start', position: 'sticky', top: 24 }}>
+    <div style={{ width: 280, flexShrink: 0, background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', alignSelf: 'flex-start', position: 'sticky', top: 24 }}>
       <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)', margin: '0 0 4px' }}>Assessment History</p>
       <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 14px' }}>Goal: balanced across 2–3 styles</p>
 
       {entries.length === 0
         ? <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 24 }}>No assessments saved yet.</p>
-        : <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 560, overflowY: 'auto' }}>
+        : <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 600, overflowY: 'auto' }}>
             {entries.map(e => {
               const taken = e.createdAt?.seconds ? new Date(e.createdAt.seconds * 1000) : new Date();
               const next  = new Date(taken); next.setMonth(next.getMonth() + 3);
@@ -96,6 +96,11 @@ function SavedPanel({ entries, onDelete }) {
                   <div style={{ background: '#eff6ff', borderRadius: 7, padding: '0.4rem 0.6rem', marginBottom: 8 }}>
                     <p style={{ fontSize: '0.65rem', color: '#3b82f6', fontWeight: 700, margin: 0 }}>📅 Re-evaluate by {next.toLocaleDateString()}</p>
                   </div>
+                  {/* PDF download — always available from history */}
+                  <button onClick={() => onDownload({ scores: e.scores, primary: e.primary }, userName)}
+                    style={{ width: '100%', padding: '0.3rem 0', borderRadius: 7, fontSize: '0.72rem', fontWeight: 700, border: '1.5px solid #0f2044', background: '#0f2044', color: 'white', cursor: 'pointer', marginBottom: 6 }}>
+                    📄 Download PDF Report
+                  </button>
                   <button onClick={() => onDelete(e.id)}
                     style={{ width: '100%', padding: '0.25rem 0', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #fca5a5', background: 'white', color: '#ef4444', cursor: 'pointer' }}>
                     Delete
@@ -181,10 +186,11 @@ export default function DISC() {
     }
   }
 
-  function handleDownloadPDF() {
-    if (!result) return;
+  function handleDownloadPDF(targetResult, targetName) {
+    const r = targetResult || result;
+    if (!r) return;
     try {
-      generateDISCReport(result, userName);
+      generateDISCReport(r, targetName || userName);
       toast.success('PDF report downloaded!', { duration: 3000 });
     } catch (e) {
       toast.error('PDF generation failed: ' + e?.message);
@@ -412,7 +418,7 @@ export default function DISC() {
         </div>
 
         {/* Right: saved panel */}
-        <SavedPanel entries={saved} onDelete={handleDelete} />
+        <SavedPanel entries={saved} onDelete={handleDelete} onDownload={handleDownloadPDF} userName={userName} />
       </div>
     </div>
   );
