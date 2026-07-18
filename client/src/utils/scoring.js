@@ -216,20 +216,8 @@ export async function calculateScore(uid) {
   const discDaysAgo = discLastAt ? Math.floor((Date.now() - discLastAt) / 86400000) : null;
   const discPoints = discLastAt && discDaysAgo <= 90 ? 5 : 0;
 
-  const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + feedbackPoints + actionsClosedPoints + bonusPts - penaltyPts
-  )));
-
-  // Persist score to user doc
-  await updateDoc(doc(db, 'users', uid), {
-    calculatedScore: total,
-    scoreBreakdown:  {},
-    scoreUpdatedAt:  serverTimestamp(),
-  });
-
-  // Daily snapshot stored inside users/{uid}.scoreHistory array (max 90 entries)
+  // --- pointEvents-based scores (must be computed before total) ---
   const today = new Date().toISOString().split('T')[0];
-
   const allEvents = data.pointEvents || [];
   const thirtyDaysAgoStr = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const sevenDaysAgoStr  = new Date(Date.now() -  7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -253,6 +241,21 @@ export async function calculateScore(uid) {
     .filter(e => e.toolLabel === 'Action Closed On Time' && e.date >= sevenDaysAgoStr && e.points > 0)
     .reduce((s, e) => s + e.points, 0);
 
+  const total = Math.round(Math.max(0, Math.min(100,
+    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + bonusPts - penaltyPts
+  )));
+
+  // Persist score to user doc
+  await updateDoc(doc(db, 'users', uid), {
+    calculatedScore: total,
+    scoreBreakdown:  {},
+    scoreUpdatedAt:  serverTimestamp(),
+  });
+
+  // Daily snapshot stored inside users/{uid}.scoreHistory array (max 90 entries)
+  const existingHistory = data.scoreHistory || [];
+  const filtered = existingHistory.filter(h => h.date !== today);
+
   const breakdown = {
     breadth:        Math.round(breadth),
     frequency:      Math.round(frequency),
@@ -270,8 +273,6 @@ export async function calculateScore(uid) {
   };
 
   await updateDoc(doc(db, 'users', uid), { scoreBreakdown: breakdown });
-  const existingHistory = data.scoreHistory || [];
-  const filtered = existingHistory.filter(h => h.date !== today);
   const updatedHistory = [{ date: today, score: total, breakdown }, ...filtered].slice(0, 90);
   await setDoc(doc(db, 'users', uid), { scoreHistory: updatedHistory }, { merge: true });
 
