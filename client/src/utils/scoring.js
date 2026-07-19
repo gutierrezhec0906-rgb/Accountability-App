@@ -196,10 +196,15 @@ export async function calculateScore(uid) {
   // --- Evidence (0-10) — placeholder ---
   const evidence = 0;
 
-  // --- SMART Goals (0-10): active + completed counts ---
-  const activeGoals    = goals.filter(g => g.status === 'active').length;
-  const completedGoals = goals.filter(g => g.status === 'completed').length;
-  const smartScore = Math.min(activeGoals * 2 + completedGoals * 4, 10);
+  // --- SMART Goals (0-15): 1 pt per fully-filled goal created (max 5/6 months) + 2 pts per approved completion (no decay) ---
+  const sixMonthsAgoStr = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const smartCreationPts = Math.min(5,
+    allEvents.filter(e => e.toolLabel === 'SMART Goal Created' && e.date >= sixMonthsAgoStr && e.points > 0).length
+  );
+  const smartCompletionPts = allEvents
+    .filter(e => e.toolLabel === 'SMART Goal Completed' && e.points > 0)
+    .reduce((s, e) => s + e.points, 0);
+  const smartScore = Math.min(smartCreationPts + smartCompletionPts, 15);
 
   // --- Coaching Log (0-20): 5 pts per week with a complete session, last 4 weeks ---
   const coachingSessions = data.coachingSessions || [];

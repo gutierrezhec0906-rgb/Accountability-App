@@ -1,17 +1,22 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { logPointEvent, calculateScore } from '../utils/scoring';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import DateStatus from '../components/DateStatus';
 
 const STATUS_STYLES = {
-  draft:     { bg: '#f1f5f9', text: '#64748b', label: 'Draft' },
-  active:    { bg: '#eff6ff', text: '#1d4ed8', label: 'Active' },
-  completed: { bg: '#f0fdf4', text: '#15803d', label: 'Completed' },
-  paused:    { bg: '#fff7ed', text: '#c2410c', label: 'Paused' },
+  draft:              { bg: '#f1f5f9', text: '#64748b',  label: 'Draft' },
+  active:             { bg: '#eff6ff', text: '#1d4ed8',  label: 'Active' },
+  pending_approval:   { bg: '#fefce8', text: '#b45309',  label: 'Pending Approval' },
+  completed:          { bg: '#f0fdf4', text: '#15803d',  label: 'Completed' },
+  paused:             { bg: '#fff7ed', text: '#c2410c',  label: 'Paused' },
 };
+
+const SMART_FIELDS = ['specific', 'measurable', 'achievable', 'relevant', 'timeBound'];
+const SMART_180_DAYS = 180 * 24 * 60 * 60 * 1000;
 
 const SMART = [
   {
@@ -82,7 +87,7 @@ function QualityBadge({ pct }) {
 const emptyForm = { title: '', specific: '', measurable: '', achievable: '', relevant: '', timeBound: '', dueDate: '', status: 'draft' };
 
 export default function SmartGoals() {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -90,6 +95,9 @@ export default function SmartGoals() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState(null);
+  const [pendingTeamGoals, setPendingTeamGoals] = useState([]); // for leaders/admins
+
+  const isLeader = userProfile?.isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager';
 
   async function fetchGoals() {
     if (!currentUser) return;
@@ -101,18 +109,42 @@ export default function SmartGoals() {
     setLoading(false);
   }
 
+  // Leaders fetch all team members' pending_approval goals
+  async function fetchPendingTeamGoals() {
+    const companyId = userProfile?.companyId;
+    if (!companyId || !isLeader) return;
+    try {
+      const snap = await getDocs(query(collection(db, 'users'), where('companyId', '==', companyId)));
+      const pending = [];
+      snap.forEach(d => {
+        if (d.id === currentUser.uid) return;
+        const u = d.data();
+        (u.smartGoals || [])
+          .filter(g => g.status === 'pending_approval')
+          .forEach(g => pending.push({ ...g, ownerUid: d.id, ownerName: u.displayName || u.email || 'Unknown' }));
+      });
+      setPendingTeamGoals(pending);
+    } catch (e) { console.error(e); }
+  }
+
   async function persist(updated) {
     await setDoc(doc(db, 'users', currentUser.uid), { smartGoals: updated }, { merge: true });
     setGoals(updated);
   }
 
   useEffect(() => { fetchGoals(); }, [currentUser]);
+  useEffect(() => { fetchPendingTeamGoals(); }, [userProfile?.companyId, isLeader]);
 
   function openCreate() { setForm(emptyForm); setEditing(null); setShowForm(true); }
   function openEdit(goal) {
-    setForm({ title: goal.title, specific: goal.specific, measurable: goal.measurable, achievable: goal.achievable, relevant: goal.relevant, timeBound: goal.timeBound, dueDate: goal.dueDate || '', status: goal.status });
+    setForm({ title: goal.title, specific: goal.specific || '', measurable: goal.measurable || '', achievable: goal.achievable || '', relevant: goal.relevant || '', timeBound: goal.timeBound || '', dueDate: goal.dueDate || '', status: goal.status });
     setEditing(goal.id);
     setShowForm(true);
+  }
+
+  // Check if all 5 SMART fields are filled (≥ 15 words each = 80% quality)
+  function isFullyFilled(g) {
+    return SMART_FIELDS.every(k => fieldQualityPct(g[k] || '') >= 80);
   }
 
   async function handleSave(e) {
@@ -126,8 +158,33 @@ export default function SmartGoals() {
         toast.success('Goal updated');
       } else {
         const newGoal = { ...form, id: Date.now().toString(), createdAt: new Date().toISOString() };
-        await persist([newGoal, ...goals]);
-        toast.success('Goal created');
+        const updatedGoals = [newGoal, ...goals];
+        await persist(updatedGoals);
+
+        // Award +1 pt if all 5 fields are fully filled and < 5 pts earned in last 180 days
+        if (isFullyFilled(newGoal)) {
+          const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
+          const allEvents = userSnap.exists() ? (userSnap.data().pointEvents || []) : [];
+          const cutoff = new Date(Date.now() - SMART_180_DAYS).toISOString().split('T')[0];
+          const recentCreations = allEvents.filter(e => e.toolLabel === 'SMART Goal Created' && e.date >= cutoff).length;
+          if (recentCreations < 5) {
+            const { awarded } = await logPointEvent(currentUser.uid, {
+              points: 1,
+              toolLabel: 'SMART Goal Created',
+              reason: `Fully-filled SMART goal: "${newGoal.title}"`,
+            });
+            if (awarded) {
+              await calculateScore(currentUser.uid);
+              toast.success('Goal created! +1 pt for completing all SMART fields.', { duration: 4000 });
+            } else {
+              toast.success('Goal created!');
+            }
+          } else {
+            toast.success('Goal created! (5-goal point limit reached for this 6-month window)');
+          }
+        } else {
+          toast.success('Goal created — fill all 5 fields fully to earn +1 pt.');
+        }
       }
       setShowForm(false);
     } catch { toast.error('Save failed'); }
@@ -140,11 +197,59 @@ export default function SmartGoals() {
     toast.success('Goal deleted');
   }
 
-  async function changeStatus(id, status) {
-    await persist(goals.map(g => g.id === id ? { ...g, status } : g));
+  async function handleRequestApproval(id) {
+    const goal = goals.find(g => g.id === id);
+    if (!goal) return;
+    if (!isFullyFilled(goal)) {
+      return toast.error('All 5 SMART fields must be fully filled before requesting approval.', { duration: 4000 });
+    }
+    await persist(goals.map(g => g.id === id ? { ...g, status: 'pending_approval', approvalRequestedAt: new Date().toISOString() } : g));
+    toast.success('Completion approval requested — your leader will review it.');
   }
 
-  const counts = { draft: 0, active: 0, completed: 0, paused: 0 };
+  async function handleApproveGoal(ownerUid, goalId) {
+    try {
+      const ownerSnap = await getDoc(doc(db, 'users', ownerUid));
+      if (!ownerSnap.exists()) return toast.error('User not found');
+      const ownerGoals = ownerSnap.data().smartGoals || [];
+      const updatedGoals = ownerGoals.map(g =>
+        g.id === goalId ? { ...g, status: 'completed', completedAt: new Date().toISOString(), approvedBy: currentUser.uid } : g
+      );
+      await setDoc(doc(db, 'users', ownerUid), { smartGoals: updatedGoals }, { merge: true });
+
+      // Award +2 pts to the goal owner
+      const { awarded } = await logPointEvent(ownerUid, {
+        points: 2,
+        toolLabel: 'SMART Goal Completed',
+        reason: `Goal completion approved by leader`,
+      });
+      if (awarded) await calculateScore(ownerUid);
+
+      setPendingTeamGoals(prev => prev.filter(g => !(g.ownerUid === ownerUid && g.id === goalId)));
+      toast.success('+2 pts awarded to the goal owner.');
+    } catch (e) {
+      console.error(e);
+      toast.error('Approval failed — try again.');
+    }
+  }
+
+  async function handleRejectGoal(ownerUid, goalId) {
+    try {
+      const ownerSnap = await getDoc(doc(db, 'users', ownerUid));
+      if (!ownerSnap.exists()) return;
+      const ownerGoals = ownerSnap.data().smartGoals || [];
+      const updatedGoals = ownerGoals.map(g =>
+        g.id === goalId ? { ...g, status: 'active', approvalRequestedAt: null } : g
+      );
+      await setDoc(doc(db, 'users', ownerUid), { smartGoals: updatedGoals }, { merge: true });
+      setPendingTeamGoals(prev => prev.filter(g => !(g.ownerUid === ownerUid && g.id === goalId)));
+      toast.success('Goal returned to Active — owner will be notified.');
+    } catch (e) {
+      toast.error('Could not reject — try again.');
+    }
+  }
+
+  const counts = { draft: 0, active: 0, pending_approval: 0, completed: 0, paused: 0 };
   goals.forEach(g => { if (counts[g.status] !== undefined) counts[g.status]++; });
 
   return (
@@ -152,12 +257,49 @@ export default function SmartGoals() {
       <PageHeader icon="🎯" title="SMART Goals" subtitle="Set purposeful goals that drive accountability. Each goal contributes to your Accountability Score."
         action={<button className="btn-primary" onClick={openCreate}>+ New SMART Goal</button>} />
 
+      {/* Leader: Pending Approvals */}
+      {isLeader && pendingTeamGoals.length > 0 && (
+        <div className="card" style={{ overflow: 'hidden' }}>
+          <div style={{ padding: '0.75rem 1.25rem', background: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+            <span style={{ color: 'white', fontWeight: 800, fontSize: '0.9rem' }}>⏳ Pending Goal Approvals</span>
+            <span style={{ background: 'rgba(255,255,255,0.2)', color: 'white', borderRadius: 9999, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 700 }}>{pendingTeamGoals.length}</span>
+          </div>
+          {pendingTeamGoals.map(g => (
+            <div key={`${g.ownerUid}-${g.id}`} style={{ padding: '0.875rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <p style={{ margin: '0 0 2px', fontWeight: 700, color: '#1e293b', fontSize: '0.875rem' }}>{g.title}</p>
+                <p style={{ margin: 0, fontSize: '0.72rem', color: '#64748b' }}>
+                  👤 {g.ownerName} · Requested {g.approvalRequestedAt ? new Date(g.approvalRequestedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+                </p>
+                <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
+                  {SMART_FIELDS.map(k => (
+                    <span key={k} style={{ fontSize: '0.65rem', padding: '1px 7px', borderRadius: 9999, background: fieldQualityPct(g[k] || '') >= 80 ? '#f0fdf4' : '#fef2f2', color: fieldQualityPct(g[k] || '') >= 80 ? '#0d9488' : '#ef4444', fontWeight: 700 }}>
+                      {k.charAt(0).toUpperCase()}{k === 'timeBound' ? 'T' : ''} {fieldQualityPct(g[k] || '') >= 80 ? '✓' : '✗'}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                <button onClick={() => handleApproveGoal(g.ownerUid, g.id)}
+                  style={{ padding: '0.4rem 0.875rem', borderRadius: 8, fontSize: '0.78rem', fontWeight: 700, border: 'none', background: '#0d9488', color: 'white', cursor: 'pointer' }}>
+                  ✅ Approve (+2 pts)
+                </button>
+                <button onClick={() => handleRejectGoal(g.ownerUid, g.id)}
+                  style={{ padding: '0.4rem 0.875rem', borderRadius: 8, fontSize: '0.78rem', fontWeight: 700, border: '1.5px solid #fca5a5', background: 'white', color: '#ef4444', cursor: 'pointer' }}>
+                  ↩ Return
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
         {Object.entries(STATUS_STYLES).map(([key, s]) => (
           <div key={key} className="stat-tile" style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: s.text }}>{counts[key]}</div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: 4 }}>{s.label}</div>
+            <div style={{ fontSize: '1.75rem', fontWeight: 900, color: s.text }}>{counts[key] || 0}</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: 4 }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -210,12 +352,53 @@ export default function SmartGoals() {
                       ))}
                     </div>
 
+                    {/* Points indicator */}
+                    {(() => {
+                      const filled = isFullyFilled(goal);
+                      const completed = goal.status === 'completed';
+                      return (
+                        <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: '0.72rem', padding: '3px 10px', borderRadius: 9999, fontWeight: 700, background: filled ? '#f0fdf4' : '#f8fafc', color: filled ? '#0d9488' : '#94a3b8', border: `1px solid ${filled ? '#0d948840' : '#e2e8f0'}` }}>
+                            {filled ? '✓ +1 pt earned (created)' : '○ Fill all fields fully → +1 pt'}
+                          </span>
+                          <span style={{ fontSize: '0.72rem', padding: '3px 10px', borderRadius: 9999, fontWeight: 700, background: completed ? '#f0fdf4' : '#f8fafc', color: completed ? '#0d9488' : '#94a3b8', border: `1px solid ${completed ? '#0d948840' : '#e2e8f0'}` }}>
+                            {completed ? '✓ +2 pts earned (approved)' : '○ Get leader approval → +2 pts'}
+                          </span>
+                        </div>
+                      );
+                    })()}
+
                     {/* Actions */}
-                    <div style={{ marginTop: 20, paddingTop: 16, borderTop: '1px solid #f1f5f9', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                      <button className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => openEdit(goal)}>✏️ Edit</button>
-                      {goal.status !== 'active'    && <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => changeStatus(goal.id, 'active')}>▶ Set Active</button>}
-                      {goal.status !== 'completed' && <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => changeStatus(goal.id, 'completed')}>✅ Complete</button>}
-                      {goal.status !== 'paused'    && <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => changeStatus(goal.id, 'paused')}>⏸ Pause</button>}
+                    <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #f1f5f9', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                      {goal.status !== 'completed' && goal.status !== 'pending_approval' && (
+                        <button className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => openEdit(goal)}>✏️ Edit</button>
+                      )}
+                      {goal.status === 'draft' && (
+                        <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => changeStatus(goal.id, 'active')}>▶ Set Active</button>
+                      )}
+                      {goal.status === 'paused' && (
+                        <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => changeStatus(goal.id, 'active')}>▶ Resume</button>
+                      )}
+                      {(goal.status === 'active' || goal.status === 'draft') && (
+                        <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => changeStatus(goal.id, 'paused')}>⏸ Pause</button>
+                      )}
+                      {goal.status === 'active' && (
+                        <button
+                          onClick={() => handleRequestApproval(goal.id)}
+                          style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem', borderRadius: 8, fontWeight: 700, border: 'none', background: '#0f2044', color: 'white', cursor: 'pointer' }}>
+                          📤 Request Completion Approval
+                        </button>
+                      )}
+                      {goal.status === 'pending_approval' && (
+                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#b45309', padding: '0.4rem 0.875rem', background: '#fefce8', borderRadius: 8, border: '1px solid #fde68a' }}>
+                          ⏳ Awaiting leader approval…
+                        </span>
+                      )}
+                      {goal.status === 'completed' && (
+                        <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#15803d', padding: '0.4rem 0.875rem', background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0' }}>
+                          🏆 Completed & Approved
+                        </span>
+                      )}
                       <button style={{ marginLeft: 'auto', fontSize: '0.8rem', padding: '0.4rem 0.875rem', background: 'none', border: '1px solid #fca5a5', color: '#ef4444', borderRadius: 8, cursor: 'pointer' }} onClick={() => handleDelete(goal.id)}>🗑 Delete</button>
                     </div>
                   </div>
@@ -275,7 +458,7 @@ export default function SmartGoals() {
               <div>
                 <label className="label">Status</label>
                 <select className="input" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
-                  {Object.entries(STATUS_STYLES).map(([k, s]) => <option key={k} value={k}>{s.label}</option>)}
+                  {Object.entries(STATUS_STYLES).filter(([k]) => k !== 'pending_approval').map(([k, s]) => <option key={k} value={k}>{s.label}</option>)}
                 </select>
               </div>
 

@@ -11,7 +11,7 @@ const BREAKDOWN_CONFIG = [
   { key: 'frequency', label: 'Consistency',      max: 20, icon: '📅',  desc: 'How regularly you use the app (last 30 days)' },
   { key: 'depth',     label: 'Session Depth',    max: 15, icon: '⏱',  desc: 'Quality time spent per tool session' },
   { key: 'quality',   label: 'Entry Quality',    max: 25, icon: '✍️', desc: 'Completeness and depth of your entries' },
-  { key: 'smart',     label: 'SMART Goals',      max: 10, icon: '🎯',  desc: 'Active and completed SMART goals' },
+  { key: 'smart',     label: 'SMART Goals',      max: 15, icon: '🎯',  desc: '+1 pt per fully-filled goal created (max 5 per 6 months) · +2 pts per leader-approved completion · no decay on completions' },
   { key: 'coaching',  label: 'Coaching Log',     max: 20, icon: '📝',  desc: '5 pts per week with a complete coaching session (max 20/month)' },
   { key: 'problemSolving', label: 'Problem Solving', max: 20, icon: '🔍', desc: '5 Whys (5pts) + Fishbone (5pts) + A3 (10pts) per week; decays 20%→50%→75% without use' },
   { key: 'disc', label: 'DISC Assessment', max: 5, icon: '🧠', desc: '5 pts for completing a DISC assessment; valid for 90 days — renew before expiry to keep points' },
