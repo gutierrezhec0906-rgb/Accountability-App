@@ -2,8 +2,15 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { logPointEvent, calculateScore } from '../utils/scoring';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
+
+const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+
+function thirtyDayCutoff() {
+  return new Date(Date.now() - THIRTY_DAYS_MS).toISOString().split('T')[0];
+}
 
 const defaultCategories = [
   { category: 'Leadership',    skills: [{ name: 'Strategic Thinking', self: 3, peer: 0 },{ name: 'Team Development', self: 3, peer: 0 },{ name: 'Decision Making', self: 3, peer: 0 },{ name: 'Communication', self: 3, peer: 0 }] },
@@ -116,11 +123,17 @@ export default function Skills() {
   const [expandedRec, setExpandedRec] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  // Peer assessment (leaders only)
+  // Peer assessment
   const [team, setTeam] = useState([]);
   const [assessingUid, setAssessingUid] = useState('');
   const [peerRatings, setPeerRatings] = useState({});
   const [savingPeer, setSavingPeer] = useState(false);
+
+  // Scoring: which skills points were earned in the last 30 days
+  const [earned30, setEarned30] = useState({ self: false, requested: false, received: false });
+  const [myRequest, setMyRequest] = useState(null); // { requestedAt, toUid, toName, status }
+  const [requestTarget, setRequestTarget] = useState('');
+  const [requesting, setRequesting] = useState(false);
 
   const isLeader = userProfile?.isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager';
 
@@ -133,17 +146,28 @@ export default function Skills() {
           const data = snap.data();
           if (data.skillsMatrix)  setMatrix(data.skillsMatrix);
           if (data.skillsHistory) setHistory(data.skillsHistory);
+          if (data.skillsPeerRequest) setMyRequest(data.skillsPeerRequest);
+
+          const cutoff = thirtyDayCutoff();
+          const events = (data.pointEvents || []).filter(e => e.date >= cutoff && e.points > 0);
+          setEarned30({
+            self:      events.some(e => e.toolLabel === 'Skills Self-Assessment'),
+            requested: events.some(e => e.toolLabel === 'Skills Peer Survey Requested'),
+            received:  events.some(e => e.toolLabel === 'Skills Peer Survey Received'),
+          });
         }
       } catch (e) { console.error(e); }
     }
     load();
   }, [currentUser]);
 
-  // Leaders: load teammates in the same company (skill names only are shown — blind rating)
+  // Everyone loads company teammates: users pick who to request a survey from;
+  // leaders (and anyone with an incoming request) can assess. Blind rating —
+  // only skill names are ever shown.
   useEffect(() => {
     async function fetchTeam() {
       const companyId = userProfile?.companyId;
-      if (!companyId || !isLeader || !currentUser) return;
+      if (!companyId || !currentUser) return;
       try {
         const snap = await getDocs(query(collection(db, 'users'), where('companyId', '==', companyId)));
         const members = [];
@@ -154,13 +178,19 @@ export default function Skills() {
             uid: d.id,
             name: u.displayName || u.email || 'Unknown',
             matrix: u.skillsMatrix || defaultCategories,
+            request: u.skillsPeerRequest || null,
           });
         });
         setTeam(members);
       } catch (e) { console.error(e); }
     }
     fetchTeam();
-  }, [userProfile?.companyId, isLeader, currentUser]);
+  }, [userProfile?.companyId, currentUser]);
+
+  // Who can I assess? Leaders: anyone. Everyone else: teammates who requested ME.
+  const assessableTeam = isLeader
+    ? team
+    : team.filter(m => m.request?.status === 'pending' && m.request?.toUid === currentUser?.uid);
 
   const assessee = team.find(t => t.uid === assessingUid) || null;
   const assesseeSkillCount = assessee ? assessee.matrix.flatMap(c => c.skills).length : 0;
@@ -209,12 +239,30 @@ export default function Skills() {
       };
       const theirHistory = [record, ...(data.skillsHistory || [])].slice(0, 12);
 
-      await setDoc(doc(db, 'users', assessee.uid), {
+      // Close out their pending request (if any) now that a survey was delivered
+      const updateDocFields = {
         skillsMatrix: updatedMatrix,
         skillsHistory: theirHistory,
-      }, { merge: true });
+      };
+      if (data.skillsPeerRequest?.status === 'pending') {
+        updateDocFields.skillsPeerRequest = { ...data.skillsPeerRequest, status: 'completed', completedAt: now, completedBy: assessorName };
+      }
+      await setDoc(doc(db, 'users', assessee.uid), updateDocFields, { merge: true });
 
-      toast.success(`Peer assessment saved for ${assessee.name}`);
+      // Award the ASSESSED person +1 pt for receiving a peer survey, max once per 30 days
+      const cutoff = thirtyDayCutoff();
+      const theirEvents = (data.pointEvents || []).filter(e => e.date >= cutoff && e.points > 0);
+      const alreadyReceived = theirEvents.some(e => e.toolLabel === 'Skills Peer Survey Received');
+      if (!alreadyReceived) {
+        const { awarded } = await logPointEvent(assessee.uid, {
+          points: 1,
+          toolLabel: 'Skills Peer Survey Received',
+          reason: `Received a peer skills assessment from ${assessorName}`,
+        });
+        if (awarded) await calculateScore(assessee.uid);
+      }
+
+      toast.success(`Peer assessment saved for ${assessee.name} — they earned +1 pt for receiving it.`);
       setAssessingUid('');
       setPeerRatings({});
       // Refresh team so a re-open shows current state
@@ -256,12 +304,65 @@ export default function Skills() {
         skillsHistory: updatedHistory,
       }, { merge: true });
       setHistory(updatedHistory);
-      toast.success('Assessment saved');
+
+      // +1 pt for completing the self-assessment, max once per 30 days
+      if (!earned30.self) {
+        const { awarded } = await logPointEvent(currentUser.uid, {
+          points: 1,
+          toolLabel: 'Skills Self-Assessment',
+          reason: 'Completed skills development self-assessment',
+        });
+        if (awarded) {
+          await calculateScore(currentUser.uid);
+          setEarned30(p => ({ ...p, self: true }));
+          toast.success('Assessment saved! +1 pt earned.', { duration: 4000 });
+        } else {
+          toast.success('Assessment saved');
+        }
+      } else {
+        toast.success('Assessment saved (self-assessment point already earned this month)');
+      }
     } catch (e) {
       console.error(e);
       toast.error('Save failed');
     }
     setSaving(false);
+  }
+
+  async function requestPeerSurvey() {
+    if (!currentUser || !requestTarget) return;
+    const target = team.find(t => t.uid === requestTarget);
+    if (!target) return;
+    setRequesting(true);
+    try {
+      const now = new Date().toISOString();
+      const request = { requestedAt: now, toUid: target.uid, toName: target.name, status: 'pending' };
+      await setDoc(doc(db, 'users', currentUser.uid), { skillsPeerRequest: request }, { merge: true });
+      setMyRequest(request);
+      setRequestTarget('');
+
+      // +1 pt for requesting a peer survey, max once per 30 days
+      if (!earned30.requested) {
+        const { awarded } = await logPointEvent(currentUser.uid, {
+          points: 1,
+          toolLabel: 'Skills Peer Survey Requested',
+          reason: `Requested a peer skills assessment from ${target.name}`,
+        });
+        if (awarded) {
+          await calculateScore(currentUser.uid);
+          setEarned30(p => ({ ...p, requested: true }));
+          toast.success(`Request sent to ${target.name}! +1 pt earned.`, { duration: 4000 });
+        } else {
+          toast.success(`Request sent to ${target.name}`);
+        }
+      } else {
+        toast.success(`Request sent to ${target.name} (request point already earned this month)`);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Request failed');
+    }
+    setRequesting(false);
   }
 
   async function addSkill(e) {
@@ -315,8 +416,62 @@ export default function Skills() {
         </div>
       </div>
 
-      {/* Leader: peer assessment panel */}
-      {isLeader && team.length > 0 && (
+      {/* Monthly skills points */}
+      <div className="card" style={{ padding: '0.875rem 1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+          Skills pts this month: {[earned30.self, earned30.requested, earned30.received].filter(Boolean).length}/3
+        </span>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {[
+            { label: 'Self-assessment', key: 'self' },
+            { label: 'Survey requested', key: 'requested' },
+            { label: 'Survey received', key: 'received' },
+          ].map(({ label, key }) => (
+            <span key={key} style={{
+              padding: '3px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 700,
+              background: earned30[key] ? '#f0fdf4' : '#f1f5f9',
+              color: earned30[key] ? '#15803d' : '#94a3b8',
+              border: `1px solid ${earned30[key] ? '#86efac' : '#e2e8f0'}`,
+            }}>
+              {earned30[key] ? '✓' : '○'} {label} +1
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* Request a peer assessment */}
+      {team.length > 0 && (
+        <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', borderLeft: '4px solid #0d9488' }}>
+          <h3 style={{ fontWeight: 800, color: '#0f766e', margin: '0 0 4px', fontSize: '0.95rem' }}>🙋 Request a Peer Assessment</h3>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 12px', lineHeight: 1.5 }}>
+            Ask a teammate to rate your skills. +1 pt for requesting, and +1 more when they deliver it (each max once per month).
+          </p>
+          {myRequest?.status === 'pending' ? (
+            <div style={{ padding: '0.625rem 1rem', borderRadius: 10, background: '#fefce8', border: '1px solid #fde047', fontSize: '0.8rem', color: '#a16207', fontWeight: 700 }}>
+              ⏳ Waiting on {myRequest.toName} — requested {fmtDate(myRequest.requestedAt)}
+            </div>
+          ) : (
+            <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              <select className="input" value={requestTarget} onChange={e => setRequestTarget(e.target.value)} style={{ maxWidth: 280 }}>
+                <option value="">Choose a teammate…</option>
+                {team.map(m => <option key={m.uid} value={m.uid}>{m.name}</option>)}
+              </select>
+              <button className="btn-primary" onClick={requestPeerSurvey} disabled={requesting || !requestTarget}
+                style={{ opacity: requestTarget ? 1 : 0.5 }}>
+                {requesting ? 'Sending…' : 'Send Request (+1 pt)'}
+              </button>
+            </div>
+          )}
+          {myRequest?.status === 'completed' && (
+            <p style={{ fontSize: '0.72rem', color: '#15803d', fontWeight: 700, margin: '10px 0 0' }}>
+              ✓ Last survey delivered by {myRequest.completedBy} on {fmtDate(myRequest.completedAt)}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Peer assessment panel — leaders see everyone; others see teammates who requested them */}
+      {assessableTeam.length > 0 && (
         <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', border: '1px solid #c4b5fd', background: '#faf5ff' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <span style={{ fontSize: '1.1rem' }}>👥</span>
@@ -330,7 +485,11 @@ export default function Skills() {
             onChange={e => { setAssessingUid(e.target.value); setPeerRatings({}); }}
             style={{ marginBottom: assessingUid ? 14 : 0, maxWidth: 360 }}>
             <option value="">Select a teammate…</option>
-            {team.map(m => <option key={m.uid} value={m.uid}>{m.name}</option>)}
+            {assessableTeam.map(m => (
+              <option key={m.uid} value={m.uid}>
+                {m.request?.status === 'pending' && m.request?.toUid === currentUser?.uid ? `🙋 ${m.name} (requested you)` : m.name}
+              </option>
+            ))}
           </select>
 
           {assessee && assesseeSkillCount === 0 && (

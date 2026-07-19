@@ -56,3 +56,7 @@ Reference implementation: `DailyMovementFeed` + `DayRow` in `client/src/pages/Sc
 - DISC (max 5): valid 90 days.
 - Urgency (max 4/day, 20 rolling week): individual survey +1, individual reflection
   (20+ words) +1, team survey +1, team reflection (20+ words, separate question pool) +1.
+- Skills (max 3, rolling 30 days): self-assessment save +1, peer survey requested +1,
+  peer survey received +1. Request stored as `users/{uid}.skillsPeerRequest`
+  ({toUid, toName, status}); the assessor marks it completed and awards the assessee's
+  "received" point cross-user (same pattern as SMART approvals).
