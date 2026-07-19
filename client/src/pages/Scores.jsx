@@ -176,7 +176,7 @@ function DayRow({ date, events, isToday }) {
   const dateLabel = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
   return (
-    <div style={{ borderRadius: 10, border: `1px solid ${isToday ? '#99f6e4' : '#f1f5f9'}`, overflow: 'hidden' }}>
+    <div style={{ borderRadius: 10, border: `1px solid ${isToday ? '#99f6e4' : '#f1f5f9'}`, overflow: 'hidden', flexShrink: 0 }}>
       {/* Collapsed header — always visible, clickable */}
       <button
         onClick={() => setOpen(o => !o)}
@@ -242,16 +242,23 @@ function DailyMovementFeed({ logs }) {
   const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a)).slice(0, 30);
 
   return (
-    <div style={{
-      display: 'flex', flexDirection: 'column', gap: 6,
-      maxHeight: 400, overflowY: 'scroll',
-      paddingRight: 6,
-      scrollbarWidth: 'auto', scrollbarColor: '#94a3b8 #e2e8f0',
-    }}>
-      {dates.map((date) => (
-        <DayRow key={date} date={date} events={byDate[date]} isToday={date === today} />
-      ))}
-    </div>
+    <>
+      <style>{`
+        .dm-scroll::-webkit-scrollbar { width: 8px; -webkit-appearance: none; }
+        .dm-scroll::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 8px; }
+        .dm-scroll::-webkit-scrollbar-thumb { background: #64748b; border-radius: 8px; border: 1px solid #e2e8f0; }
+      `}</style>
+      <div className="dm-scroll" style={{
+        display: 'flex', flexDirection: 'column', gap: 6,
+        maxHeight: 400, overflowY: 'scroll',
+        paddingRight: 6,
+        scrollbarWidth: 'thin', scrollbarColor: '#64748b #e2e8f0',
+      }}>
+        {dates.map((date) => (
+          <DayRow key={date} date={date} events={byDate[date]} isToday={date === today} />
+        ))}
+      </div>
+    </>
   );
 }
 
