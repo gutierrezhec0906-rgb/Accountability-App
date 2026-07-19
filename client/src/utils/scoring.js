@@ -196,8 +196,14 @@ export async function calculateScore(uid) {
   // --- Evidence (0-10) — placeholder ---
   const evidence = 0;
 
+  // --- pointEvents — declared here so all event-based scores below can use them ---
+  const today = new Date().toISOString().split('T')[0];
+  const allEvents = data.pointEvents || [];
+  const thirtyDaysAgoStr = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const sevenDaysAgoStr  = new Date(Date.now() -  7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const sixMonthsAgoStr  = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+
   // --- SMART Goals (0-15): 1 pt per fully-filled goal created (max 5/6 months) + 2 pts per approved completion (no decay) ---
-  const sixMonthsAgoStr = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const smartCreationPts = Math.min(5,
     allEvents.filter(e => e.toolLabel === 'SMART Goal Created' && e.date >= sixMonthsAgoStr && e.points > 0).length
   );
@@ -228,11 +234,7 @@ export async function calculateScore(uid) {
   const eqDevPlanPts = data.eqDevPlan?.savedAt?.slice(0, 10) >= ninetyDaysAgoStr ? 2 : 0;
   const eqPoints = eqAssessmentPts + eqDevPlanPts;
 
-  // --- pointEvents-based scores (must be computed before total) ---
-  const today = new Date().toISOString().split('T')[0];
-  const allEvents = data.pointEvents || [];
-  const thirtyDaysAgoStr = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const sevenDaysAgoStr  = new Date(Date.now() -  7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  // --- pointEvents-based scores (allEvents declared above) ---
 
   // --- Mindfulness (0-2): today's points from pointEvents ---
   const mindfulnessPoints = Math.min(2,
