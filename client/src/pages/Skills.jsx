@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -33,7 +33,7 @@ function RatingDots({ value, onChange, color }) {
 }
 
 export default function Skills() {
-  const { currentUser } = useAuth();
+  const { currentUser, userProfile } = useAuth();
   const [matrix, setMatrix] = useState(defaultCategories);
   const [editMode, setEditMode] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -41,6 +41,14 @@ export default function Skills() {
   const [history, setHistory] = useState([]);
   const [expandedRec, setExpandedRec] = useState(null);
   const [saving, setSaving] = useState(false);
+
+  // Peer assessment (leaders only)
+  const [team, setTeam] = useState([]);
+  const [assessingUid, setAssessingUid] = useState('');
+  const [peerRatings, setPeerRatings] = useState({});
+  const [savingPeer, setSavingPeer] = useState(false);
+
+  const isLeader = userProfile?.isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager';
 
   useEffect(() => {
     async function load() {
@@ -56,6 +64,93 @@ export default function Skills() {
     }
     load();
   }, [currentUser]);
+
+  // Leaders: load teammates in the same company (skill names only are shown — blind rating)
+  useEffect(() => {
+    async function fetchTeam() {
+      const companyId = userProfile?.companyId;
+      if (!companyId || !isLeader || !currentUser) return;
+      try {
+        const snap = await getDocs(query(collection(db, 'users'), where('companyId', '==', companyId)));
+        const members = [];
+        snap.forEach(d => {
+          if (d.id === currentUser.uid) return;
+          const u = d.data();
+          members.push({
+            uid: d.id,
+            name: u.displayName || u.email || 'Unknown',
+            matrix: u.skillsMatrix || defaultCategories,
+          });
+        });
+        setTeam(members);
+      } catch (e) { console.error(e); }
+    }
+    fetchTeam();
+  }, [userProfile?.companyId, isLeader, currentUser]);
+
+  const assessee = team.find(t => t.uid === assessingUid) || null;
+  const assesseeSkillCount = assessee ? assessee.matrix.flatMap(c => c.skills).length : 0;
+  const peerRatedCount = Object.values(peerRatings).filter(v => v > 0).length;
+  const allPeerRated = assessee && peerRatedCount === assesseeSkillCount && assesseeSkillCount > 0;
+
+  function skillKey(cat, name) { return `${cat}|${name}`; }
+
+  async function savePeerAssessment() {
+    if (!assessee || !allPeerRated) return;
+    setSavingPeer(true);
+    try {
+      const now = new Date().toISOString();
+      const assessorName = userProfile?.displayName || userProfile?.email || 'Leader';
+
+      // Re-read the teammate's doc fresh so we don't clobber concurrent changes
+      const snap = await getDoc(doc(db, 'users', assessee.uid));
+      const data = snap.exists() ? snap.data() : {};
+      const theirMatrix = data.skillsMatrix || defaultCategories;
+
+      const updatedMatrix = theirMatrix.map(cat => ({
+        ...cat,
+        skills: cat.skills.map(s => {
+          const rating = peerRatings[skillKey(cat.category, s.name)];
+          return rating > 0 ? { ...s, peer: rating, peerBy: assessorName, peerAt: now } : s;
+        }),
+      }));
+
+      const ratedVals = Object.values(peerRatings).filter(v => v > 0);
+      const avgPeerNow = +(ratedVals.reduce((a, b) => a + b, 0) / ratedVals.length).toFixed(1);
+      const allTheirSkills = updatedMatrix.flatMap(c => c.skills);
+      const avgSelfNow = allTheirSkills.length
+        ? +(allTheirSkills.reduce((a, s) => a + s.self, 0) / allTheirSkills.length).toFixed(1) : 0;
+
+      const record = {
+        id: now,
+        savedAt: now,
+        type: 'peer',
+        assessorName,
+        avgSelf: avgSelfNow,
+        avgPeer: avgPeerNow,
+        snapshot: updatedMatrix.map(cat => ({
+          category: cat.category,
+          skills: cat.skills.map(s => ({ name: s.name, self: s.self, peer: s.peer || 0 })),
+        })),
+      };
+      const theirHistory = [record, ...(data.skillsHistory || [])].slice(0, 12);
+
+      await setDoc(doc(db, 'users', assessee.uid), {
+        skillsMatrix: updatedMatrix,
+        skillsHistory: theirHistory,
+      }, { merge: true });
+
+      toast.success(`Peer assessment saved for ${assessee.name}`);
+      setAssessingUid('');
+      setPeerRatings({});
+      // Refresh team so a re-open shows current state
+      setTeam(t => t.map(m => m.uid === assessee.uid ? { ...m, matrix: updatedMatrix } : m));
+    } catch (e) {
+      console.error(e);
+      toast.error('Save failed — check permissions');
+    }
+    setSavingPeer(false);
+  }
 
   function updateSelf(catIdx, skillIdx, val) {
     setMatrix(m => m.map((cat, ci) => ci !== catIdx ? cat : { ...cat, skills: cat.skills.map((s, si) => si !== skillIdx ? s : { ...s, self: val }) }));
@@ -135,6 +230,67 @@ export default function Skills() {
         </div>
       </div>
 
+      {/* Leader: peer assessment panel */}
+      {isLeader && team.length > 0 && (
+        <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', border: '1px solid #c4b5fd', background: '#faf5ff' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+            <span style={{ fontSize: '1.1rem' }}>👥</span>
+            <h3 style={{ fontWeight: 800, color: '#5b21b6', margin: 0, fontSize: '0.95rem' }}>Assess a Teammate</h3>
+          </div>
+          <p style={{ fontSize: '0.75rem', color: '#7c3aed', margin: '0 0 12px', lineHeight: 1.5 }}>
+            Rate each skill from your own observation. Their self-ratings are hidden on purpose — a blind rating is what makes the gap analysis honest.
+          </p>
+
+          <select className="input" value={assessingUid}
+            onChange={e => { setAssessingUid(e.target.value); setPeerRatings({}); }}
+            style={{ marginBottom: assessingUid ? 14 : 0, maxWidth: 360 }}>
+            <option value="">Select a teammate…</option>
+            {team.map(m => <option key={m.uid} value={m.uid}>{m.name}</option>)}
+          </select>
+
+          {assessee && assesseeSkillCount === 0 && (
+            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>This teammate has no skills defined yet.</p>
+          )}
+
+          {assessee && assesseeSkillCount > 0 && (
+            <>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {assessee.matrix.map(cat => (
+                  <div key={cat.category} style={{ background: 'white', borderRadius: 12, border: '1px solid #e9d5ff', overflow: 'hidden' }}>
+                    <div style={{ padding: '0.5rem 1rem', background: catColors[cat.category] || '#0f2044' }}>
+                      <span style={{ color: 'white', fontWeight: 800, fontSize: '0.8rem' }}>{cat.category}</span>
+                    </div>
+                    {cat.skills.map((s, si) => {
+                      const key = skillKey(cat.category, s.name);
+                      return (
+                        <div key={s.name} style={{ padding: '0.75rem 1rem', borderBottom: si < cat.skills.length - 1 ? '1px solid #f3e8ff' : 'none' }}>
+                          <p style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-primary)', margin: '0 0 8px' }}>{s.name}</p>
+                          <div style={{ display: 'grid', gridTemplateColumns: '42px auto', columnGap: 12, alignItems: 'center', justifyContent: 'start' }}>
+                            <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Peer</p>
+                            <RatingDots value={peerRatings[key] || 0}
+                              onChange={val => setPeerRatings(r => ({ ...r, [key]: val }))} color="#7c3aed" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 700, color: allPeerRated ? '#15803d' : '#7c3aed' }}>
+                  {peerRatedCount}/{assesseeSkillCount} skills rated {allPeerRated ? '✓' : ''}
+                </span>
+                <button className="btn-primary" onClick={savePeerAssessment}
+                  disabled={savingPeer || !allPeerRated}
+                  style={{ background: '#7c3aed', borderColor: '#7c3aed', opacity: allPeerRated ? 1 : 0.5 }}>
+                  {savingPeer ? 'Saving…' : `💾 Save Peer Assessment for ${assessee.name}`}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+
       {showAdd && (
         <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
           <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>Add New Skill</h3>
@@ -178,7 +334,14 @@ export default function Skills() {
                     <RatingDots value={skill.self} onChange={editMode ? val => updateSelf(ci, si, val) : null} color="#0d9488" />
                     <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Peer</p>
                     {skill.peer > 0
-                      ? <RatingDots value={skill.peer} color="#0f2044" />
+                      ? <div>
+                          <RatingDots value={skill.peer} color="#0f2044" />
+                          {skill.peerBy && (
+                            <p style={{ fontSize: '0.65rem', color: '#94a3b8', margin: '3px 0 0' }}>
+                              by {skill.peerBy}{skill.peerAt ? ` · ${new Date(skill.peerAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                            </p>
+                          )}
+                        </div>
                       : <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic' }}>Awaiting peer assessment</span>}
                   </div>
                 </div>
@@ -214,6 +377,11 @@ export default function Skills() {
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         {i === 0 && <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#0d9488', color: 'white', padding: '1px 7px', borderRadius: 9999 }}>Latest</span>}
+                        <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '1px 7px', borderRadius: 9999,
+                          background: rec.type === 'peer' ? '#ede9fe' : '#f0fdfa',
+                          color: rec.type === 'peer' ? '#7c3aed' : '#0d9488' }}>
+                          {rec.type === 'peer' ? `👥 Peer · ${rec.assessorName || 'Leader'}` : 'Self'}
+                        </span>
                         <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{fmtDate(rec.savedAt)}</span>
                       </div>
                       <div style={{ display: 'flex', gap: 12, marginTop: 3, flexWrap: 'wrap' }}>
