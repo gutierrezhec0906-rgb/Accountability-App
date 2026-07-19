@@ -142,9 +142,9 @@ export default function SmartGoals() {
     setShowForm(true);
   }
 
-  // Check if all 5 SMART fields are filled (≥ 15 words each = 80% quality)
+  // Check if all 5 SMART fields have at least a few words (≥ 5 words each = 20% quality)
   function isFullyFilled(g) {
-    return SMART_FIELDS.every(k => fieldQualityPct(g[k] || '') >= 80);
+    return SMART_FIELDS.every(k => fieldQualityPct(g[k] || '') >= 20);
   }
 
   async function handleSave(e) {
@@ -183,7 +183,7 @@ export default function SmartGoals() {
             toast.success('Goal created! (5-goal point limit reached for this 6-month window)');
           }
         } else {
-          toast.success('Goal created — fill all 5 fields fully to earn +1 pt.');
+          toast.success('Goal created — add at least 5 words to each field to earn +1 pt.');
         }
       }
       setShowForm(false);
@@ -360,7 +360,7 @@ export default function SmartGoals() {
                       return (
                         <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           <span style={{ fontSize: '0.72rem', padding: '3px 10px', borderRadius: 9999, fontWeight: 700, background: filled ? '#f0fdf4' : '#f8fafc', color: filled ? '#0d9488' : '#94a3b8', border: `1px solid ${filled ? '#0d948840' : '#e2e8f0'}` }}>
-                            {filled ? '✓ +1 pt earned (created)' : '○ Fill all fields fully → +1 pt'}
+                            {filled ? '✓ +1 pt earned (created)' : '○ Fill all 5 fields (5+ words each) → +1 pt'}
                           </span>
                           <span style={{ fontSize: '0.72rem', padding: '3px 10px', borderRadius: 9999, fontWeight: 700, background: completed ? '#f0fdf4' : '#f8fafc', color: completed ? '#0d9488' : '#94a3b8', border: `1px solid ${completed ? '#0d948840' : '#e2e8f0'}` }}>
                             {completed ? '✓ +2 pts earned (approved)' : '○ Get leader approval → +2 pts'}
