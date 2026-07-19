@@ -245,8 +245,8 @@ function DailyMovementFeed({ logs }) {
     <div style={{ position: 'relative' }}>
       <div style={{
         display: 'flex', flexDirection: 'column', gap: 6,
-        maxHeight: 460, overflowY: 'auto', paddingBottom: 8,
-        scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent',
+        maxHeight: 460, overflowY: 'scroll', paddingBottom: 8, paddingRight: 4,
+        scrollbarWidth: 'thin', scrollbarColor: '#94a3b8 #f1f5f9',
       }}>
         {dates.map((date) => (
           <DayRow key={date} date={date} events={byDate[date]} isToday={date === today} />
