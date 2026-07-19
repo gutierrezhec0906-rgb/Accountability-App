@@ -191,6 +191,10 @@ export default function SmartGoals() {
     setSaving(false);
   }
 
+  async function changeStatus(id, status) {
+    await persist(goals.map(g => g.id === id ? { ...g, status } : g));
+  }
+
   async function handleDelete(id) {
     if (!confirm('Delete this goal?')) return;
     await persist(goals.filter(g => g.id !== id));
