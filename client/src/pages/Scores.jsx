@@ -245,7 +245,7 @@ function DailyMovementFeed({ logs }) {
     <div style={{ position: 'relative' }}>
       <div style={{
         display: 'flex', flexDirection: 'column', gap: 6,
-        maxHeight: 460, overflowY: 'scroll', paddingBottom: 8, paddingRight: 4,
+        flex: 1, overflowY: 'scroll', paddingBottom: 8, paddingRight: 4,
         scrollbarWidth: 'thin', scrollbarColor: '#94a3b8 #f1f5f9',
       }}>
         {dates.map((date) => (
@@ -475,7 +475,7 @@ export default function Scores() {
           </div>
 
           {/* Daily movement feed */}
-          <div className="card" style={{ padding: '1.25rem' }}>
+          <div className="card" style={{ padding: '1.25rem', maxHeight: 520, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
               <p style={{ fontWeight: 800, color: '#1e293b', margin: 0, fontSize: '0.9rem' }}>Daily Movement</p>
               {(() => {
