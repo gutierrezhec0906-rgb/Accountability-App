@@ -14,6 +14,80 @@ const defaultCategories = [
 const levelLabels = ['','Novice','Developing','Proficient','Advanced','Expert'];
 const catColors = { Leadership: '#0f2044', Technical: '#0891b2', Interpersonal: '#8b5cf6' };
 
+// Skill library: suggested skills per category, each with a proficiency guide
+// (what the skill means + what a 1 and a 5 look like on the job).
+const SKILL_LIBRARY = {
+  Leadership: [
+    { name: 'Strategic Thinking', guide: { what: 'Seeing beyond today\'s tasks — connecting daily decisions to long-term direction, anticipating obstacles, and positioning the team for what comes next.', low: 'Reacts day to day. Decisions are made in isolation without considering downstream impact; surprised by predictable problems.', high: 'Consistently links team priorities to company direction, anticipates risks quarters ahead, and adjusts plans before problems arrive.' } },
+    { name: 'Team Development', guide: { what: 'Growing the capability of your people — identifying potential, creating stretch opportunities, and building successors.', low: 'Does the work themselves rather than developing others; team skills stay flat year over year.', high: 'Every team member has a visible growth path; regularly promotes people and has a ready successor for their own role.' } },
+    { name: 'Decision Making', guide: { what: 'Choosing well under uncertainty — gathering just enough information, weighing trade-offs, deciding promptly, and owning the outcome.', low: 'Avoids or delays decisions, escalates everything, or decides impulsively without weighing consequences.', high: 'Makes timely, well-reasoned calls even with incomplete data; explains the why, commits fully, and course-corrects fast when wrong.' } },
+    { name: 'Communication', guide: { what: 'Delivering messages that land — clear, adapted to the audience, timely, and two-directional.', low: 'Messages are confusing or late; the team frequently discovers changes second-hand and misunderstands priorities.', high: 'People always know what matters, why, and what\'s expected; adapts style from shop floor to boardroom effortlessly.' } },
+    { name: 'Delegation', guide: { what: 'Assigning the right work to the right people with clear expectations — transferring ownership, not just tasks.', low: 'Keeps all meaningful work; when they do hand off, instructions are vague and they take the task back at the first stumble.', high: 'Matches work to each person\'s growth edge, sets crisp expectations and check-in points, and lets people own the result.' } },
+    { name: 'Change Management', guide: { what: 'Leading people through transitions — building the case for change, managing resistance, and sustaining new behaviors.', low: 'Announces changes and expects compliance; is caught off guard by resistance and lets initiatives quietly die.', high: 'Builds genuine buy-in early, names resistance openly and works it through, and keeps changes alive until they stick.' } },
+    { name: 'Accountability & Follow-Up', guide: { what: 'Ensuring commitments are kept — yours and the team\'s — through consistent follow-up and honest performance conversations.', low: 'Misses own commitments; lets team deadlines slide silently and avoids uncomfortable performance conversations.', high: 'Every commitment has an owner and a date; follows up predictably, addresses slippage the day it happens, respectfully and directly.' } },
+    { name: 'Vision Setting', guide: { what: 'Painting a compelling picture of where the team is going and making it meaningful for every role.', low: 'Team members can\'t say what the team is trying to achieve beyond this week\'s tasks.', high: 'Everyone on the team can articulate the destination, why it matters, and how their own work moves it forward.' } },
+  ],
+  Technical: [
+    { name: 'Lean Principles', guide: { what: 'Applying waste elimination, flow, and pull thinking to daily operations.', low: 'Cannot identify the 8 wastes on their own line; improvement is something other people do.', high: 'Sees waste instinctively, teaches lean thinking to others, and has led measurable flow improvements.' } },
+    { name: 'Data Analysis', guide: { what: 'Turning raw numbers into decisions — collecting the right data, spotting trends, and separating signal from noise.', low: 'Decisions rely on gut feel or anecdote; charts are read incorrectly or not at all.', high: 'Frames the question first, pulls the right data, spots the real trend, and changes decisions based on what it says.' } },
+    { name: 'Root Cause Analysis', guide: { what: 'Digging past symptoms to the true cause using tools like 5 Whys and fishbone diagrams — so problems stay fixed.', low: 'Fixes symptoms; the same problems return monthly and firefighting is the norm.', high: 'Facilitates rigorous RCA that finds systemic causes; recurring problems actually stop recurring.' } },
+    { name: 'Project Management', guide: { what: 'Delivering initiatives on time and on scope — planning, sequencing, tracking, and unblocking.', low: 'Projects drift without milestones; status is unknown until the deadline is already missed.', high: 'Scopes realistically, tracks visibly, surfaces risks early, and delivers on the date named at kickoff.' } },
+    { name: 'Process Mapping', guide: { what: 'Documenting how work actually flows — making the invisible visible so it can be improved.', low: 'Cannot describe the end-to-end process they manage; documentation is missing or fictional.', high: 'Maps current state accurately with the people who do the work, and uses maps to drive redesigns that stick.' } },
+    { name: 'KPI & Metrics Management', guide: { what: 'Choosing and using the few measures that matter — leading indicators, honest baselines, and visible tracking.', low: 'Tracks whatever is easy to measure; metrics exist but nobody acts on them.', high: 'A handful of well-chosen KPIs drive daily conversations; the team knows the numbers and what moves them.' } },
+    { name: 'Standard Work', guide: { what: 'Establishing and maintaining the current best-known way to do each task — the foundation for improvement.', low: 'Every operator does it differently; quality depends on who showed up today.', high: 'Standards are documented, followed, audited, and improved — variation between people is minimal.' } },
+    { name: 'Continuous Improvement (Kaizen)', guide: { what: 'Building the habit of small, constant improvement in yourself and the team.', low: 'Things are done the way they\'ve always been done; suggestions die in a drawer.', high: 'The team implements improvements weekly without being asked; small wins compound into major gains.' } },
+  ],
+  Interpersonal: [
+    { name: 'Conflict Resolution', guide: { what: 'Addressing disagreements directly and productively — getting to the real issue and preserving relationships.', low: 'Avoids conflict until it explodes, or wins arguments while losing people.', high: 'Surfaces tension early, hears both sides genuinely, and turns conflicts into stronger working agreements.' } },
+    { name: 'Coaching & Mentoring', guide: { what: 'Developing others through questions and guided discovery rather than answers — building capability, not dependence.', low: 'Gives answers and instructions; people come back with the same questions repeatedly.', high: 'Asks questions that help people solve their own problems; direct reports visibly grow in judgment and confidence.' } },
+    { name: 'Emotional Intelligence', guide: { what: 'Reading and managing your own emotions and accurately reading others — staying effective under pressure.', low: 'Blindsided by own reactions under stress; misses obvious signals that others are frustrated or disengaged.', high: 'Stays composed and deliberate under pressure; reads the room accurately and adjusts approach in real time.' } },
+    { name: 'Active Listening', guide: { what: 'Listening to understand, not to reply — full attention, clarifying questions, and confirming what you heard.', low: 'Interrupts, multitasks during conversations, and walks away with a different message than was said.', high: 'People leave conversations feeling genuinely heard; restates and confirms before responding, and remembers what was said.' } },
+    { name: 'Giving Feedback', guide: { what: 'Delivering specific, timely, actionable feedback — both reinforcing and corrective — that people can actually use.', low: 'Saves everything for the annual review, speaks in vague generalities, or avoids corrective feedback entirely.', high: 'Gives specific, behavior-based feedback within days, balanced between recognition and correction; people seek their input.' } },
+    { name: 'Influence & Persuasion', guide: { what: 'Moving people without authority — building the case, finding shared interest, and earning genuine agreement.', low: 'Relies on hierarchy or gives up when told no; peers rarely change position based on their input.', high: 'Regularly wins support across departments through preparation, credibility, and framing that connects to others\' goals.' } },
+    { name: 'Cross-Functional Collaboration', guide: { what: 'Working effectively across department lines — sharing information, aligning priorities, and solving jointly.', low: 'Protects silo interests; other departments learn about impacts after the fact.', high: 'Builds working relationships across functions before needing them; joint problems get solved without escalation.' } },
+    { name: 'Recognition & Motivation', guide: { what: 'Noticing and reinforcing good work in ways that are meaningful to each individual.', low: 'Good work goes unmentioned; recognition, when it happens, is generic and feels hollow.', high: 'Catches people doing things right weekly, tailors recognition to the person, and the team\'s discretionary effort shows it.' } },
+  ],
+};
+
+// Fast lookup: skill name → guide
+const SKILL_GUIDES = {};
+Object.values(SKILL_LIBRARY).forEach(list => list.forEach(s => { SKILL_GUIDES[s.name] = s.guide; }));
+
+const GENERIC_GUIDE = {
+  what: 'Rate how consistently and independently this skill is demonstrated on the job.',
+  low: 'Novice — just beginning; needs guidance and supervision to apply this skill, and results are inconsistent.',
+  high: 'Expert — a go-to reference others learn from; applies the skill instinctively in new situations with consistently strong results.',
+};
+
+// Collapsible "what does 1–5 mean" guide shown under each skill
+function SkillGuide({ name }) {
+  const [open, setOpen] = useState(false);
+  const guide = SKILL_GUIDES[name] || GENERIC_GUIDE;
+  return (
+    <div style={{ marginBottom: open ? 10 : 6 }}>
+      <button onClick={() => setOpen(o => !o)}
+        style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+        <span style={{ fontSize: '0.55rem', color: open ? '#0d9488' : '#94a3b8', transition: 'transform 0.18s', display: 'inline-block', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
+        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: open ? '#0d9488' : '#94a3b8' }}>What does 1–5 mean?</span>
+      </button>
+      {open && (
+        <div style={{ marginTop: 8, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '0.75rem 0.875rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.55 }}>{guide.what}</p>
+          <div style={{ borderLeft: '3px solid #ef4444', paddingLeft: 10 }}>
+            <p style={{ fontSize: '0.68rem', fontWeight: 800, color: '#dc2626', margin: '0 0 2px' }}>1 — Novice</p>
+            <p style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>{guide.low}</p>
+          </div>
+          <div style={{ borderLeft: '3px solid #22c55e', paddingLeft: 10 }}>
+            <p style={{ fontSize: '0.68rem', fontWeight: 800, color: '#15803d', margin: '0 0 2px' }}>5 — Expert</p>
+            <p style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>{guide.high}</p>
+          </div>
+          <p style={{ fontSize: '0.68rem', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>2 = between novice and proficient · 3 = proficient with occasional guidance · 4 = advanced, others ask for help</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function fmtDate(iso) {
   if (!iso) return '';
   return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -202,6 +276,17 @@ export default function Skills() {
     } catch (e) { console.error(e); toast.error('Save failed'); }
   }
 
+  async function addSuggested(category, name) {
+    const updated = matrix.map(cat => cat.category !== category ? cat : { ...cat, skills: [...cat.skills, { name, self: 3, peer: 0 }] });
+    setMatrix(updated);
+    try {
+      if (currentUser) await setDoc(doc(db, 'users', currentUser.uid), { skillsMatrix: updated }, { merge: true });
+      toast.success(`"${name}" added to ${category}`);
+    } catch (e) { console.error(e); toast.error('Save failed'); }
+  }
+
+  const existingSkillNames = new Set(allSkills.map(s => s.name));
+
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
       <PageHeader icon="⭐" title="Skills Development Matrix" subtitle="Self-assessment and peer ratings across skill domains"
@@ -264,7 +349,8 @@ export default function Skills() {
                       const key = skillKey(cat.category, s.name);
                       return (
                         <div key={s.name} style={{ padding: '0.75rem 1rem', borderBottom: si < cat.skills.length - 1 ? '1px solid #f3e8ff' : 'none' }}>
-                          <p style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-primary)', margin: '0 0 8px' }}>{s.name}</p>
+                          <p style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-primary)', margin: '0 0 6px' }}>{s.name}</p>
+                          <SkillGuide name={s.name} />
                           <div style={{ display: 'grid', gridTemplateColumns: '42px auto', columnGap: 12, alignItems: 'center', justifyContent: 'start' }}>
                             <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Peer</p>
                             <RatingDots value={peerRatings[key] || 0}
@@ -303,6 +389,31 @@ export default function Skills() {
               <button className="btn-secondary" type="button" onClick={() => setShowAdd(false)}>Cancel</button>
             </div>
           </form>
+
+          {/* Suggested skills — tap to add */}
+          <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
+            <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 2px', fontSize: '0.85rem' }}>💡 Suggested Skills</h4>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 12px' }}>Tap any suggestion to add it to your matrix — each comes with a built-in proficiency guide.</p>
+            {Object.entries(SKILL_LIBRARY).map(([category, list]) => {
+              const available = list.filter(s => !existingSkillNames.has(s.name));
+              if (available.length === 0) return null;
+              return (
+                <div key={category} style={{ marginBottom: 10 }}>
+                  <p style={{ fontSize: '0.7rem', fontWeight: 800, color: catColors[category] || '#0f2044', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{category}</p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                    {available.map(s => (
+                      <button key={s.name} onClick={() => addSuggested(category, s.name)}
+                        style={{ padding: '4px 12px', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
+                          background: 'white', color: catColors[category] || '#0f2044',
+                          border: `1.5px solid ${catColors[category] || '#0f2044'}40` }}>
+                        + {s.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
@@ -328,6 +439,7 @@ export default function Skills() {
                       {skill.self < 3 && <span className="badge-red">Develop</span>}
                     </div>
                   </div>
+                  <SkillGuide name={skill.name} />
                   {/* Line 2: ratings in a fixed-width label grid — identical left edge on every row */}
                   <div style={{ display: 'grid', gridTemplateColumns: '42px auto', columnGap: 12, rowGap: 8, alignItems: 'center', justifyContent: 'start' }}>
                     <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Self</p>
