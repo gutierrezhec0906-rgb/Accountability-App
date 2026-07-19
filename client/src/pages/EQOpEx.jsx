@@ -60,6 +60,134 @@ function ScaleButton({ n, selected, onClick, isLast }) {
   );
 }
 
+// Real-life guide text for each question — keyed as `${dimensionId}-${questionIndex}`
+const EQ_GUIDES = {
+  'self-awareness-0': {
+    what: 'You notice how you are feeling in the moment — before it affects your words or actions.',
+    example: 'During a heated project review, you catch yourself feeling defensive as your ideas are challenged. Instead of snapping back, you name it internally: "I\'m feeling threatened right now." That pause is self-awareness in action.',
+    low: 'You only realize you were frustrated after the meeting is over, or when a colleague tells you that you seemed upset.',
+    high: 'You can say mid-conversation, "I notice I\'m getting tense — give me a second," and adjust your tone before the situation escalates.',
+  },
+  'self-awareness-1': {
+    what: 'You know which specific situations, words, or people tend to provoke a strong reaction in you — and why.',
+    example: 'You know that last-minute scope changes make you anxious. So when a client calls Friday at 4pm with new requests, you recognize the spike of stress immediately and have a planned response ready instead of reacting impulsively.',
+    low: 'You frequently say things like "I don\'t know why I got so upset" or "They just push my buttons."',
+    high: 'You can tell a direct report: "When deadlines are moved without notice, I tend to get short. If you need to flag a delay, give me some lead time and I\'ll handle it much better."',
+  },
+  'self-awareness-2': {
+    what: 'You actively invite honest input about how others experience you — and you use it.',
+    example: 'After a quarterly business review, you ask your manager: "Was there anything in how I presented that landed poorly with the exec team?" You take the answer seriously, even if it\'s uncomfortable.',
+    low: 'You avoid asking for feedback, or only ask people who you know will say positive things.',
+    high: 'You have a habit of a brief debrief after important interactions: "What went well, what would you have done differently?" and you document patterns you hear repeatedly.',
+  },
+  'self-awareness-3': {
+    what: 'You have a clear, honest picture of where you excel and where you still have gaps — without excessive self-criticism or overconfidence.',
+    example: 'You know you are excellent at building relationships and driving alignment, but struggle with detailed data analysis. So you delegate the financial modeling to someone stronger in that area and focus your energy on stakeholder communication.',
+    low: 'You either overestimate your abilities (leading to avoidable mistakes) or underestimate them (holding back when you should step up).',
+    high: 'In a talent conversation, you can say: "My strength is energizing teams through change. My growth area is patience with slow decision-making processes — I\'m working on it."',
+  },
+
+  'self-regulation-0': {
+    what: 'Under stress, conflict, or tight deadlines, you remain composed and solution-focused rather than reactive.',
+    example: 'A key team member calls in sick the morning of a major client presentation. Instead of expressing panic or frustration in front of the team, you calmly assess what can be adjusted, reassign tasks, and communicate the revised plan with confidence.',
+    low: 'When things go wrong, your stress is visible — raised voice, short responses, or visible frustration that affects the team\'s own anxiety level.',
+    high: 'Team members say they feel calmer just having you in the room during a crisis, because your steadiness sets the tone.',
+  },
+  'self-regulation-1': {
+    what: 'When something triggers a strong emotional reaction, you pause and process before you respond.',
+    example: 'A peer publicly criticizes your team\'s performance in a leadership meeting. Instead of firing back immediately, you take a breath, let them finish, and respond with: "I appreciate you raising this — can we set time to dig into the data together?"',
+    low: 'You send reactive emails you later regret, interrupt people when you disagree, or make decisions in anger that you have to walk back.',
+    high: 'You have personal rules: never send an email when you\'re emotionally activated. You draft it, wait an hour, then review before sending.',
+  },
+  'self-regulation-2': {
+    what: 'When priorities shift, processes change, or plans fall apart, you adjust without becoming rigid or destabilized.',
+    example: 'Mid-project, leadership changes the success metrics and reduces your budget. Instead of resisting or complaining, you reframe the constraint as a design challenge, update the plan, and re-energize your team around the new direction.',
+    low: 'You get stuck on "but that\'s not how we planned it" or visibly disengage when the goalposts move.',
+    high: 'When a reorganization announcement comes, you are the first to ask: "What does success look like in the new structure?" and begin adapting your team immediately.',
+  },
+  'self-regulation-3': {
+    what: 'Even in difficult stretches — setbacks, conflict, or boring grind phases — you model optimism and forward momentum.',
+    example: 'Your team has missed two consecutive targets. In the Monday standup, instead of dwelling on the misses, you acknowledge the reality briefly and pivot to: "Here\'s what I believe we can control this week." Your attitude shapes what they believe is possible.',
+    low: 'When things are hard, your attitude visibly drags — you vent frequently, express cynicism about the company, or bring a low-energy presence that the team absorbs.',
+    high: 'People come to you when they are demoralized because your perspective consistently helps them see a path forward without dismissing the difficulty.',
+  },
+
+  'motivation-0': {
+    what: 'When you hit setbacks, rejection, or slow progress, you stay engaged and continue pushing forward.',
+    example: 'A proposal you worked on for three weeks gets rejected by the client. You\'re disappointed, but within a day you\'re analyzing what to improve and building a stronger follow-up version — not because someone pushed you, but because you genuinely want to get it right.',
+    low: 'Setbacks cause you to disengage, become passive, or wait for someone else to reinvigorate the effort.',
+    high: 'People describe you as someone who "doesn\'t stay down long" — your recovery time after failures is noticeably fast.',
+  },
+  'motivation-1': {
+    what: 'You set goals that stretch you beyond your comfort zone and pursue them with visible energy.',
+    example: 'Rather than targeting the same safe sales number as last year, you set a goal 30% higher and break it into weekly milestones. You block time proactively to work toward it — not just when you feel like it.',
+    low: 'You tend to set conservative targets that are easy to hit, or you set ambitious goals but fade once early momentum stalls.',
+    high: 'Your goals make some people around you uncomfortable because of how high you set the bar — and you regularly hit them anyway.',
+  },
+  'motivation-2': {
+    what: 'You proactively look for better ways to do your work — not because you\'re told to, but because you want to.',
+    example: 'After completing a project, you run a brief post-mortem not to comply with a process, but because you genuinely want to know what slowed you down and what you can do faster next time. You apply that learning to the next project without being asked.',
+    low: 'You do the job well but rarely ask "how could this be even better?" unless it\'s part of a formal review cycle.',
+    high: 'You regularly bring unsolicited ideas to your manager: "I was thinking about our onboarding process — here\'s a change that could cut ramp time in half."',
+  },
+  'motivation-3': {
+    what: 'Your personal commitment to the work raises the standard for people around you — they work harder because you do.',
+    example: 'When your team is hitting a slow patch, you don\'t give a speech — you put in visible extra effort, solve a hard problem in front of them, and the energy shifts. They match your level because you model what "fully committed" looks like.',
+    low: 'Your engagement level is consistent but doesn\'t visibly raise the bar for others. You do your part without creating a pull effect on the team.',
+    high: 'Team members say things like "I didn\'t want to be the one who gave up when they were still going" — your commitment creates social proof that raises the group\'s standard.',
+  },
+
+  'empathy-0': {
+    what: 'When someone is speaking, you give them your full attention — you are not internally formulating your response while they are still talking.',
+    example: 'A team member comes to you frustrated about a workload issue. Instead of jumping to solutions, you ask follow-up questions, make eye contact, and summarize what you heard before offering anything: "It sounds like the real issue is that you feel like your capacity isn\'t being respected — is that right?"',
+    low: 'You frequently finish people\'s sentences, jump to solutions before they\'re done explaining, or check your phone or screen while others are talking.',
+    high: 'People leave conversations with you feeling genuinely heard — even when you disagree with them or cannot give them what they asked for.',
+  },
+  'empathy-1': {
+    what: 'Before making decisions that affect others, you think through how they will feel — not just what is logically optimal.',
+    example: 'Before announcing a role change that benefits the organization, you think: "This person has been in this position for 8 years — they\'ll feel displaced even if the new role is technically a promotion. How do I frame this conversation?" You plan accordingly.',
+    low: 'You make sound logical decisions but are often surprised by how people react emotionally — "I didn\'t think it would be a big deal."',
+    high: 'People describe you as someone who "gets people" — your decisions are both analytically sound and emotionally intelligent in how they\'re structured and communicated.',
+  },
+  'empathy-2': {
+    what: 'You recognize that different people need to hear things differently — and you adjust your style to fit the person, not just the message.',
+    example: 'With your analytical direct report, you lead with data when giving feedback. With your more relationship-oriented colleague, you lead with connection and context. Same message, different delivery — and both land well.',
+    low: 'You communicate in the way that works for you and expect others to adapt. You\'re consistent but not always effective with people who are wired differently.',
+    high: 'You can shift between direct/blunt and warm/narrative in the same meeting depending on who you\'re addressing — and it feels natural, not performative.',
+  },
+  'empathy-3': {
+    what: 'You pick up on team dynamics, unspoken tension, or drops in engagement — before they become visible problems.',
+    example: 'During a team standup, no one is making jokes or cross-talking like usual. You notice the shift and pull aside two people afterward: "The energy felt different today — is everything okay?" You surface a festering conflict between two team members before it blows up.',
+    low: 'You\'re often the last to know about interpersonal tension on your team, or you notice it only after it has already affected performance or caused someone to resign.',
+    high: 'You treat team energy as a leading indicator, the same way you treat pipeline as a leading indicator for revenue — you monitor it proactively and act early.',
+  },
+
+  'social-skills-0': {
+    what: 'People at every level — your reports, peers, and senior leaders — feel confident that you will do what you say, tell the truth, and treat them fairly.',
+    example: 'You follow up on every commitment you make, even small ones. When you can\'t deliver, you say so proactively before the deadline. Over time, people stop double-checking your work because they know you won\'t let it slip.',
+    low: 'You are well-liked, but people still hedge when relying on you — they confirm twice, add buffer time, or keep a backup plan because they\'re not fully certain you\'ll come through.',
+    high: 'Your reputation travels ahead of you. People who haven\'t worked with you directly already trust you based on what others have said.',
+  },
+  'social-skills-1': {
+    what: 'When two people or groups are in conflict, you step in and move them toward resolution — without taking sides or escalating.',
+    example: 'Two team leads are blaming each other for a missed handoff. Instead of picking a side or ignoring it, you bring them together: "I want to understand both perspectives, and then I want us to agree on a process so this doesn\'t happen again." You leave with a signed-off process, not just a truce.',
+    low: 'You avoid conflict when possible, or when you do engage, you tend to side with one party, which increases rather than resolves tension.',
+    high: 'When people are locked in conflict, they often ask you to mediate — not because it\'s your job, but because they trust your ability to keep it fair and move it forward.',
+  },
+  'social-skills-2': {
+    what: 'When you speak — in meetings, emails, or one-on-ones — people understand your point and feel compelled to act on it.',
+    example: 'You can walk into a room of skeptical stakeholders and, in 10 minutes, shift their position — not by overwhelming them with data, but by connecting the data to something they care about. You know what motivates your audience and you lead with that.',
+    low: 'Your content is solid but people sometimes walk away unsure of what you were asking for, or your updates take longer than needed because you struggle to frame the core point first.',
+    high: 'Your presentations and memos get used as internal templates because of how clearly and persuasively they are structured.',
+  },
+  'social-skills-3': {
+    what: 'The teams you lead or participate in consistently outperform — because you create an environment where people collaborate, hold each other accountable, and bring their best.',
+    example: 'On a cross-functional team you led, people who previously never worked together began proactively helping each other outside of formal meetings. The team finished ahead of schedule, not because of extra hours, but because the collaboration removed friction and duplication.',
+    low: 'Teams you are on function adequately but rarely achieve the level of cohesion where people go beyond their defined responsibilities to help each other.',
+    high: 'People compete to be on teams you lead — not because of your title, but because working with you makes them better and the outcome is usually excellent.',
+  },
+};
+
 const eqDimensions = [
   { id: 'self-awareness', label: 'Self-Awareness',  icon: '🪞', desc: 'Understanding your emotions and their impact',         questions: ['I recognize my emotional states in real-time','I understand my triggers and how they affect my behavior','I seek feedback to understand my blind spots','I know my strengths and development areas clearly'] },
   { id: 'self-regulation',label: 'Self-Regulation', icon: '🎛️', desc: 'Managing your emotions and impulses effectively',       questions: ['I stay calm under pressure and in conflict','I think before reacting in tense situations','I adapt my approach when things change unexpectedly','I maintain a positive attitude in challenging situations'] },
@@ -92,6 +220,60 @@ function ScoreBar({ value, max = 5 }) {
   return (
     <div style={{ background: '#f1f5f9', borderRadius: 9999, height: 6, flex: 1 }}>
       <div style={{ height: 6, borderRadius: 9999, background: color, width: `${pct}%`, transition: 'width 0.4s' }} />
+    </div>
+  );
+}
+
+function QuestionGuide({ guideKey }) {
+  const [open, setOpen] = useState(false);
+  const guide = EQ_GUIDES[guideKey];
+  if (!guide) return null;
+  return (
+    <div style={{ width: '100%', marginTop: 6 }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 5,
+          background: 'none', border: 'none', cursor: 'pointer',
+          padding: '2px 0', color: '#0d9488', fontSize: '0.72rem', fontWeight: 700,
+        }}
+      >
+        <span style={{
+          fontSize: '0.55rem', display: 'inline-block',
+          transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+          transition: 'transform 0.18s',
+        }}>▶</span>
+        {open ? 'Hide guide' : 'What does this mean?'}
+      </button>
+
+      {open && (
+        <div style={{
+          marginTop: 6, borderRadius: 10, overflow: 'hidden',
+          border: '1px solid #ccfbf1', background: '#f0fdf4',
+        }}>
+          {/* What it means */}
+          <div style={{ padding: '0.6rem 0.875rem', borderBottom: '1px solid #ccfbf1' }}>
+            <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.05em' }}>What this means</p>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: '#1e293b', lineHeight: 1.55 }}>{guide.what}</p>
+          </div>
+          {/* Day-to-day example */}
+          <div style={{ padding: '0.6rem 0.875rem', borderBottom: '1px solid #ccfbf1', background: 'white' }}>
+            <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#0891b2', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Real-life example</p>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: '#334155', lineHeight: 1.55, fontStyle: 'italic' }}>{guide.example}</p>
+          </div>
+          {/* Low vs High */}
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
+            <div style={{ padding: '0.6rem 0.875rem', borderRight: '1px solid #ccfbf1' }}>
+              <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.05em' }}>⬇ Scoring low looks like</p>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b', lineHeight: 1.5 }}>{guide.low}</p>
+            </div>
+            <div style={{ padding: '0.6rem 0.875rem' }}>
+              <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.05em' }}>⬆ Scoring high looks like</p>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b', lineHeight: 1.5 }}>{guide.high}</p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -429,13 +611,16 @@ export default function EQOpEx() {
                   </div>
                 </div>
                 {dim.questions.map((q, i) => (
-                  <div key={i} style={{ padding: '0.875rem 1.25rem', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', borderBottom: i < dim.questions.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                    <p style={{ flex: 1, fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>{q}</p>
-                    <div style={{ display: 'flex', gap: 6 }}>
-                      {[1, 2, 3, 4, 5].map(n => (
-                        <ScaleButton key={n} n={n} selected={eqScores[`${dim.id}-${i}`] || 0} onClick={() => setScore(dim.id, i, n)} isLast={n === 5} />
-                      ))}
+                  <div key={i} style={{ padding: '0.875rem 1.25rem', display: 'flex', flexDirection: 'column', gap: 8, borderBottom: i < dim.questions.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                      <p style={{ flex: 1, fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>{q}</p>
+                      <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                        {[1, 2, 3, 4, 5].map(n => (
+                          <ScaleButton key={n} n={n} selected={eqScores[`${dim.id}-${i}`] || 0} onClick={() => setScore(dim.id, i, n)} isLast={n === 5} />
+                        ))}
+                      </div>
                     </div>
+                    <QuestionGuide guideKey={`${dim.id}-${i}`} />
                   </div>
                 ))}
               </div>
