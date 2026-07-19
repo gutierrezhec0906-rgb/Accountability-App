@@ -242,22 +242,15 @@ function DailyMovementFeed({ logs }) {
   const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a)).slice(0, 30);
 
   return (
-    <div style={{ position: 'relative' }}>
-      <div style={{
-        display: 'flex', flexDirection: 'column', gap: 6,
-        flex: 1, overflowY: 'scroll', paddingBottom: 8, paddingRight: 4,
-        scrollbarWidth: 'thin', scrollbarColor: '#94a3b8 #f1f5f9',
-      }}>
-        {dates.map((date) => (
-          <DayRow key={date} date={date} events={byDate[date]} isToday={date === today} />
-        ))}
-      </div>
-      {/* Bottom fade hint */}
-      <div style={{
-        position: 'absolute', bottom: 0, left: 0, right: 0, height: 28,
-        background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.9))',
-        pointerEvents: 'none',
-      }} />
+    <div style={{
+      display: 'flex', flexDirection: 'column', gap: 6,
+      maxHeight: 400, overflowY: 'scroll',
+      paddingRight: 6,
+      scrollbarWidth: 'auto', scrollbarColor: '#94a3b8 #e2e8f0',
+    }}>
+      {dates.map((date) => (
+        <DayRow key={date} date={date} events={byDate[date]} isToday={date === today} />
+      ))}
     </div>
   );
 }
@@ -475,7 +468,7 @@ export default function Scores() {
           </div>
 
           {/* Daily movement feed */}
-          <div className="card" style={{ padding: '1.25rem', maxHeight: 520, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          <div className="card" style={{ padding: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
               <p style={{ fontWeight: 800, color: '#1e293b', margin: 0, fontSize: '0.9rem' }}>Daily Movement</p>
               {(() => {
