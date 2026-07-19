@@ -94,24 +94,24 @@ export default function Skills() {
             </div>
             <div>
               {cat.skills.map((skill, si) => (
-                <div key={skill.name} style={{ padding: '0.875rem 1.25rem', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap', borderBottom: si < cat.skills.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                  <div style={{ flex: 1, minWidth: 160 }}>
-                    <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)', margin: '0 0 2px' }}>{skill.name}</p>
-                    <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>{levelLabels[skill.self]}</p>
-                  </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+                <div key={skill.name} style={{ padding: '0.875rem 1.25rem', borderBottom: si < cat.skills.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                  {/* Line 1: name + level on the left, badges on the right */}
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
                     <div>
-                      <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: '0 0 4px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Self</p>
-                      <RatingDots value={skill.self} onChange={editMode ? val => updateSelf(ci, si, val) : null} color="#0d9488" />
+                      <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)', margin: '0 0 2px' }}>{skill.name}</p>
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>{levelLabels[skill.self]}</p>
                     </div>
-                    <div>
-                      <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: '0 0 4px', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Peer</p>
-                      <RatingDots value={skill.peer} color="#0f2044" />
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                    <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                       {skill.self > skill.peer && skill.peer > 0 && <span className="badge-yellow">Gap</span>}
                       {skill.self < 3 && <span className="badge-red">Develop</span>}
                     </div>
+                  </div>
+                  {/* Line 2: ratings in a fixed-width label grid — identical left edge on every row */}
+                  <div style={{ display: 'grid', gridTemplateColumns: '42px auto', columnGap: 12, rowGap: 8, alignItems: 'center', justifyContent: 'start' }}>
+                    <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Self</p>
+                    <RatingDots value={skill.self} onChange={editMode ? val => updateSelf(ci, si, val) : null} color="#0d9488" />
+                    <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Peer</p>
+                    <RatingDots value={skill.peer} color="#0f2044" />
                   </div>
                 </div>
               ))}
