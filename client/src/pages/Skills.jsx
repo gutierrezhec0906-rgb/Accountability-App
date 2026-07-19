@@ -1,15 +1,23 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 
-const skillCategories = [
-  { category: 'Leadership',    skills: [{ name: 'Strategic Thinking', self: 3, peer: 4 },{ name: 'Team Development', self: 4, peer: 3 },{ name: 'Decision Making', self: 3, peer: 3 },{ name: 'Communication', self: 5, peer: 4 }] },
-  { category: 'Technical',     skills: [{ name: 'Lean Principles', self: 4, peer: 4 },{ name: 'Data Analysis', self: 2, peer: 3 },{ name: 'Root Cause Analysis', self: 4, peer: 4 },{ name: 'Project Management', self: 3, peer: 3 }] },
-  { category: 'Interpersonal', skills: [{ name: 'Conflict Resolution', self: 3, peer: 3 },{ name: 'Coaching & Mentoring', self: 4, peer: 5 },{ name: 'Emotional Intelligence', self: 4, peer: 4 },{ name: 'Active Listening', self: 5, peer: 4 }] },
+const defaultCategories = [
+  { category: 'Leadership',    skills: [{ name: 'Strategic Thinking', self: 3, peer: 0 },{ name: 'Team Development', self: 3, peer: 0 },{ name: 'Decision Making', self: 3, peer: 0 },{ name: 'Communication', self: 3, peer: 0 }] },
+  { category: 'Technical',     skills: [{ name: 'Lean Principles', self: 3, peer: 0 },{ name: 'Data Analysis', self: 3, peer: 0 },{ name: 'Root Cause Analysis', self: 3, peer: 0 },{ name: 'Project Management', self: 3, peer: 0 }] },
+  { category: 'Interpersonal', skills: [{ name: 'Conflict Resolution', self: 3, peer: 0 },{ name: 'Coaching & Mentoring', self: 3, peer: 0 },{ name: 'Emotional Intelligence', self: 3, peer: 0 },{ name: 'Active Listening', self: 3, peer: 0 }] },
 ];
 
 const levelLabels = ['','Novice','Developing','Proficient','Advanced','Expert'];
 const catColors = { Leadership: '#0f2044', Technical: '#0891b2', Interpersonal: '#8b5cf6' };
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
 
 function RatingDots({ value, onChange, color }) {
   return (
@@ -25,34 +33,91 @@ function RatingDots({ value, onChange, color }) {
 }
 
 export default function Skills() {
-  const [matrix, setMatrix] = useState(skillCategories);
+  const { currentUser } = useAuth();
+  const [matrix, setMatrix] = useState(defaultCategories);
   const [editMode, setEditMode] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
   const [newSkill, setNewSkill] = useState({ category: 'Leadership', name: '', self: 3 });
+  const [history, setHistory] = useState([]);
+  const [expandedRec, setExpandedRec] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      if (!currentUser) return;
+      try {
+        const snap = await getDoc(doc(db, 'users', currentUser.uid));
+        if (snap.exists()) {
+          const data = snap.data();
+          if (data.skillsMatrix)  setMatrix(data.skillsMatrix);
+          if (data.skillsHistory) setHistory(data.skillsHistory);
+        }
+      } catch (e) { console.error(e); }
+    }
+    load();
+  }, [currentUser]);
 
   function updateSelf(catIdx, skillIdx, val) {
     setMatrix(m => m.map((cat, ci) => ci !== catIdx ? cat : { ...cat, skills: cat.skills.map((s, si) => si !== skillIdx ? s : { ...s, self: val }) }));
   }
 
-  function addSkill(e) {
-    e.preventDefault();
-    setMatrix(m => m.map(cat => cat.category !== newSkill.category ? cat : { ...cat, skills: [...cat.skills, { name: newSkill.name, self: newSkill.self, peer: 0 }] }));
-    setNewSkill({ category: 'Leadership', name: '', self: 3 });
-    setShowAdd(false);
-    toast.success('Skill added');
+  const allSkills = matrix.flatMap(c => c.skills);
+  const avgSelf = allSkills.length ? +(allSkills.reduce((a, s) => a + s.self, 0) / allSkills.length).toFixed(1) : 0;
+  const peerRated = allSkills.filter(s => s.peer > 0);
+  const avgPeer = peerRated.length ? +(peerRated.reduce((a, s) => a + s.peer, 0) / peerRated.length).toFixed(1) : null;
+
+  async function saveAssessment() {
+    if (!currentUser) return;
+    setSaving(true);
+    try {
+      const now = new Date().toISOString();
+      const record = {
+        id: now,
+        savedAt: now,
+        avgSelf,
+        avgPeer,
+        snapshot: matrix.map(cat => ({
+          category: cat.category,
+          skills: cat.skills.map(s => ({ name: s.name, self: s.self, peer: s.peer || 0 })),
+        })),
+      };
+      const updatedHistory = [record, ...history].slice(0, 12);
+      await setDoc(doc(db, 'users', currentUser.uid), {
+        skillsMatrix: matrix,
+        skillsHistory: updatedHistory,
+      }, { merge: true });
+      setHistory(updatedHistory);
+      toast.success('Assessment saved');
+    } catch (e) {
+      console.error(e);
+      toast.error('Save failed');
+    }
+    setSaving(false);
   }
 
-  const allSkills = matrix.flatMap(c => c.skills);
-  const avgSelf = +(allSkills.reduce((a, s) => a + s.self, 0) / allSkills.length).toFixed(1);
-  const avgPeer = +(allSkills.filter(s => s.peer).reduce((a, s) => a + s.peer, 0) / allSkills.filter(s => s.peer).length).toFixed(1);
+  async function addSkill(e) {
+    e.preventDefault();
+    const updated = matrix.map(cat => cat.category !== newSkill.category ? cat : { ...cat, skills: [...cat.skills, { name: newSkill.name, self: newSkill.self, peer: 0 }] });
+    setMatrix(updated);
+    setNewSkill({ category: 'Leadership', name: '', self: 3 });
+    setShowAdd(false);
+    try {
+      if (currentUser) await setDoc(doc(db, 'users', currentUser.uid), { skillsMatrix: updated }, { merge: true });
+      toast.success('Skill added');
+    } catch (e) { console.error(e); toast.error('Save failed'); }
+  }
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
       <PageHeader icon="⭐" title="Skills Development Matrix" subtitle="Self-assessment and peer ratings across skill domains"
         action={
           <div style={{ display: 'flex', gap: 10 }}>
-            <button className={editMode ? 'btn-primary' : 'btn-secondary'} onClick={() => { setEditMode(e => !e); if (editMode) toast.success('Ratings saved'); }}>
-              {editMode ? '✓ Save' : '✏️ Edit'}
+            <button className={editMode ? 'btn-primary' : 'btn-secondary'} disabled={saving}
+              onClick={() => {
+                if (editMode) saveAssessment();
+                setEditMode(e => !e);
+              }}>
+              {editMode ? (saving ? 'Saving…' : '✓ Save Assessment') : '✏️ Edit'}
             </button>
             <button className="btn-primary" onClick={() => setShowAdd(s => !s)}>+ Add Skill</button>
           </div>
@@ -66,7 +131,7 @@ export default function Skills() {
         </div>
         <div className="stat-tile" style={{ textAlign: 'center' }}>
           <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 4px' }}>Avg Peer Rating</p>
-          <p style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0f2044', margin: 0 }}>{avgPeer}<span style={{ fontSize: '1rem', color: '#94a3b8', fontWeight: 400 }}>/5</span></p>
+          <p style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0f2044', margin: 0 }}>{avgPeer ?? '—'}<span style={{ fontSize: '1rem', color: '#94a3b8', fontWeight: 400 }}>/5</span></p>
         </div>
       </div>
 
@@ -103,6 +168,7 @@ export default function Skills() {
                     </div>
                     <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                       {skill.self > skill.peer && skill.peer > 0 && <span className="badge-yellow">Gap</span>}
+                      {skill.peer > skill.self && <span className="badge-green" style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 700 }}>Hidden Strength</span>}
                       {skill.self < 3 && <span className="badge-red">Develop</span>}
                     </div>
                   </div>
@@ -111,7 +177,9 @@ export default function Skills() {
                     <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Self</p>
                     <RatingDots value={skill.self} onChange={editMode ? val => updateSelf(ci, si, val) : null} color="#0d9488" />
                     <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Peer</p>
-                    <RatingDots value={skill.peer} color="#0f2044" />
+                    {skill.peer > 0
+                      ? <RatingDots value={skill.peer} color="#0f2044" />
+                      : <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic' }}>Awaiting peer assessment</span>}
                   </div>
                 </div>
               ))}
@@ -119,6 +187,70 @@ export default function Skills() {
           </div>
         ))}
       </div>
+
+      {/* Assessment records */}
+      {history.length > 0 && (
+        <div className="card" style={{ padding: '1rem 1.25rem', marginTop: '1.5rem' }}>
+          <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '0.9rem' }}>Assessment Records</h4>
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 12px' }}>Every saved assessment with its date — tap one to see the full snapshot</p>
+          <style>{`
+            .skills-rec-scroll::-webkit-scrollbar { width: 8px; -webkit-appearance: none; }
+            .skills-rec-scroll::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 8px; }
+            .skills-rec-scroll::-webkit-scrollbar-thumb { background: #64748b; border-radius: 8px; border: 1px solid #e2e8f0; }
+          `}</style>
+          <div className="skills-rec-scroll" style={{
+            display: 'flex', flexDirection: 'column', gap: 8,
+            maxHeight: 420, overflowY: history.length > 4 ? 'scroll' : 'visible',
+            paddingRight: 6,
+            scrollbarWidth: 'thin', scrollbarColor: '#64748b #e2e8f0',
+          }}>
+            {history.map((rec, i) => {
+              const prev = history[i + 1];
+              const delta = prev ? +(rec.avgSelf - prev.avgSelf).toFixed(1) : null;
+              return (
+                <div key={rec.id} style={{ borderRadius: 10, border: `1px solid ${i === 0 ? '#99f6e4' : '#e2e8f0'}`, overflow: 'hidden', flexShrink: 0 }}>
+                  <button onClick={() => setExpandedRec(expandedRec === rec.id ? null : rec.id)}
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '0.65rem 0.875rem', background: i === 0 ? '#f0fdfa' : '#f8fafc', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                        {i === 0 && <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#0d9488', color: 'white', padding: '1px 7px', borderRadius: 9999 }}>Latest</span>}
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{fmtDate(rec.savedAt)}</span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 12, marginTop: 3, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '0.72rem', color: '#0d9488', fontWeight: 700 }}>Self: {rec.avgSelf}/5</span>
+                        <span style={{ fontSize: '0.72rem', color: '#0f2044', fontWeight: 700 }}>Peer: {rec.avgPeer ?? '—'}/5</span>
+                        {delta !== null && delta !== 0 && (
+                          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: delta > 0 ? '#15803d' : '#dc2626' }}>
+                            {delta > 0 ? `▲ +${delta}` : `▼ ${delta}`} vs previous
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: '#64748b', flexShrink: 0 }}>{expandedRec === rec.id ? '▲' : '▼'}</span>
+                  </button>
+                  {expandedRec === rec.id && (
+                    <div style={{ padding: '0.75rem 0.875rem', background: 'white', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                      {(rec.snapshot || []).map(cat => (
+                        <div key={cat.category}>
+                          <p style={{ fontSize: '0.7rem', fontWeight: 800, color: catColors[cat.category] || '#0f2044', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{cat.category}</p>
+                          {cat.skills.map(s => (
+                            <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '2px 0', borderBottom: '1px dashed #f1f5f9' }}>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{s.name}</span>
+                              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', flexShrink: 0 }}>
+                                Self {s.self} · Peer {s.peer || '—'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
