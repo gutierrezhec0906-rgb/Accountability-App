@@ -107,6 +107,7 @@ export default function EQOpEx() {
   const [opexHistory, setOpexHistory] = useState([]);
   const [opexExpandedAudit, setOpexExpandedAudit] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [lastSavedRecord, setLastSavedRecord] = useState(null);
 
   // EQ history sidebar
   const [eqHistory, setEqHistory] = useState([]);
@@ -182,6 +183,7 @@ export default function EQOpEx() {
         toast.success('Assessment saved! (points already awarded within the last 90 days)');
       }
 
+      setLastSavedRecord(newRecord);
       setEqHistory(h => [newRecord, ...h]);
       setSaveLabel('');
       setShowLabelInput(false);
@@ -438,6 +440,46 @@ export default function EQOpEx() {
                 ))}
               </div>
             ))}
+
+            {/* Next Step banner — shown after saving */}
+            {lastSavedRecord && (
+              <div style={{
+                position: 'sticky', bottom: 16, zIndex: 20,
+                background: 'linear-gradient(135deg, #0f2044 0%, #0d4f6e 100%)',
+                borderRadius: 14, padding: '1rem 1.25rem',
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12,
+                boxShadow: '0 8px 32px rgba(13,148,136,0.25)',
+                border: '1.5px solid rgba(153,246,228,0.25)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <span style={{ fontSize: '1.5rem' }}>📄</span>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 800, color: 'white', fontSize: '0.875rem' }}>Your EQ Report is ready</p>
+                    <p style={{ margin: 0, fontSize: '0.72rem', color: 'rgba(153,246,228,0.85)' }}>Personalized recommendations, strengths & action plan</p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+                  <button
+                    onClick={() => generateEQReport(lastSavedRecord, userProfile?.displayName || currentUser?.displayName || '', userProfile?.role || '')}
+                    style={{
+                      padding: '0.5rem 1rem', borderRadius: 10, fontWeight: 800, fontSize: '0.8rem',
+                      border: 'none', cursor: 'pointer',
+                      background: '#0d9488', color: 'white',
+                    }}>
+                    Download PDF →
+                  </button>
+                  <button
+                    onClick={() => setLastSavedRecord(null)}
+                    style={{
+                      padding: '0.5rem 0.65rem', borderRadius: 10, fontWeight: 700, fontSize: '0.8rem',
+                      border: '1px solid rgba(255,255,255,0.15)', cursor: 'pointer',
+                      background: 'transparent', color: 'rgba(255,255,255,0.5)',
+                    }}>
+                    ✕
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Save area */}
             <div className="card" style={{ padding: '1rem' }}>
