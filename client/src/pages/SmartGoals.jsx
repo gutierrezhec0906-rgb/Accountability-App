@@ -204,9 +204,6 @@ export default function SmartGoals() {
   async function handleRequestApproval(id) {
     const goal = goals.find(g => g.id === id);
     if (!goal) return;
-    if (!isFullyFilled(goal)) {
-      return toast.error('All 5 SMART fields must be fully filled before requesting approval.', { duration: 4000 });
-    }
     await persist(goals.map(g => g.id === id ? { ...g, status: 'pending_approval', approvalRequestedAt: new Date().toISOString() } : g));
     toast.success('Completion approval requested — your leader will review it.');
   }
