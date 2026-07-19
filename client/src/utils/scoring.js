@@ -216,10 +216,12 @@ export async function calculateScore(uid) {
   const discDaysAgo = discLastAt ? Math.floor((Date.now() - discLastAt) / 86400000) : null;
   const discPoints = discLastAt && discDaysAgo <= 90 ? 5 : 0;
 
-  // --- EQ Assessment (0-3): 3 pts if an EQ assessment was saved in the last 90 days ---
+  // --- EQ Assessment (0-5): 3 pts for assessment + 2 pts for dev plan, both within 90 days ---
   const ninetyDaysAgoStr = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
   const eqHistory = data.eqHistory || [];
-  const eqPoints = eqHistory.some(r => (r.savedAt || '').slice(0, 10) >= ninetyDaysAgoStr) ? 3 : 0;
+  const eqAssessmentPts = eqHistory.some(r => (r.savedAt || '').slice(0, 10) >= ninetyDaysAgoStr) ? 3 : 0;
+  const eqDevPlanPts = data.eqDevPlan?.savedAt?.slice(0, 10) >= ninetyDaysAgoStr ? 2 : 0;
+  const eqPoints = eqAssessmentPts + eqDevPlanPts;
 
   // --- pointEvents-based scores (must be computed before total) ---
   const today = new Date().toISOString().split('T')[0];

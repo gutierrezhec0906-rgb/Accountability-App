@@ -188,6 +188,41 @@ const EQ_GUIDES = {
   },
 };
 
+const EQ_SUGGESTED_ACTIONS = {
+  'self-awareness': [
+    'Keep a daily 3-minute emotion journal — write one emotion you noticed and what triggered it',
+    'After each significant meeting, ask yourself: "How was I feeling, and did it affect how I showed up?"',
+    'Request specific feedback from two colleagues on one blind spot you suspect you have',
+    'Create a personal "trigger list" — document 3 situations that reliably change your behavior and why',
+  ],
+  'self-regulation': [
+    'Establish a personal rule: draft any reactive email, wait 30 minutes, then review before sending',
+    'Practice a 5-second breathing pause before responding in tense conversations',
+    'Identify your top stress signal (e.g. raised shoulders, faster speech) and use it as a stop cue',
+    'After a moment you regret, write down what you would do differently — make it a learning ritual',
+  ],
+  'motivation': [
+    'Set one stretch goal per quarter that makes you slightly uncomfortable — track weekly progress',
+    'Run a 15-minute post-project debrief focused only on "what could we improve?" — apply one finding',
+    'Block 30 minutes each Friday to review what you accomplished and what still energizes you about the work',
+    'Identify one person on your team you can inspire this month through visible commitment on a shared goal',
+  ],
+  'empathy': [
+    'In your next 5 one-on-ones, listen fully before speaking — summarize what you heard before responding',
+    'Before a difficult conversation, write down how the other person likely feels about the situation',
+    'Identify one team member with a different communication style and practice adapting your approach for 30 days',
+    'At the start of each week, do a 2-minute "team pulse check" — ask one person how they are really doing',
+  ],
+  'social-skills': [
+    'Make one specific commitment per week and follow up publicly — build your reliability reputation deliberately',
+    'Identify one ongoing conflict or tension in your team and schedule a structured mediation conversation',
+    'Before your next presentation, write down the top concern of each key stakeholder and address it explicitly',
+    'Introduce one team norm that encourages cross-functional help — recognize publicly when it happens',
+  ],
+};
+
+const EQ_DEFAULT_DUE_DAYS = 90;
+
 const eqDimensions = [
   { id: 'self-awareness', label: 'Self-Awareness',  icon: '🪞', desc: 'Understanding your emotions and their impact',         questions: ['I recognize my emotional states in real-time','I understand my triggers and how they affect my behavior','I seek feedback to understand my blind spots','I know my strengths and development areas clearly'] },
   { id: 'self-regulation',label: 'Self-Regulation', icon: '🎛️', desc: 'Managing your emotions and impulses effectively',       questions: ['I stay calm under pressure and in conflict','I think before reacting in tense situations','I adapt my approach when things change unexpectedly','I maintain a positive attitude in challenging situations'] },
@@ -291,6 +326,12 @@ export default function EQOpEx() {
   const [saving, setSaving] = useState(false);
   const [lastSavedRecord, setLastSavedRecord] = useState(null);
 
+  // Personal Development Plan state
+  const [pdpAreas, setPdpAreas] = useState(null); // null = not yet initialized
+  const [pdpActions, setPdpActions] = useState({}); // { dimId: [{action, responsible, dueDate}] }
+  const [savingPdp, setSavingPdp] = useState(false);
+  const [savedPdp, setSavedPdp] = useState(null); // existing saved PDP from Firestore
+
   // EQ history sidebar
   const [eqHistory, setEqHistory] = useState([]);
   const [selectedRecord, setSelectedRecord] = useState(null);
@@ -308,6 +349,7 @@ export default function EQOpEx() {
           const history = (data.eqHistory || []).slice().reverse();
           setEqHistory(history);
           setOpexHistory(data.opexAudits || []);
+          if (data.eqDevPlan) setSavedPdp(data.eqDevPlan);
         }
       } catch (e) { console.error(e); setLoadError(true); }
     }
@@ -374,6 +416,99 @@ export default function EQOpEx() {
       toast.error('Save failed: ' + e.message, { duration: 6000 });
     }
     setSaving(false);
+  }
+
+  async function savePdp() {
+    if (!currentUser) return toast.error('Not logged in');
+    const allActions = Object.values(pdpActions).flat().filter(a => a.action.trim());
+    const MIN_PER_AREA = 2;
+    const areasOk = pdpAreas && pdpAreas.every(dimId => {
+      const filled = (pdpActions[dimId] || []).filter(a => a.action.trim()).length;
+      return filled >= MIN_PER_AREA;
+    });
+    if (!areasOk) {
+      return toast.error('Add at least 2 actions for each focus area to earn the points.', { duration: 4000 });
+    }
+    setSavingPdp(true);
+    try {
+      const now = new Date().toISOString();
+      const plan = { areas: pdpAreas, actions: pdpActions, savedAt: now };
+      await setDoc(doc(db, 'users', currentUser.uid), { eqDevPlan: plan }, { merge: true });
+      setSavedPdp(plan);
+
+      // Award +2 pts if no PDP saved in the last 90 days
+      const ninetyDaysAgoStr = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const lastPdpDate = savedPdp?.savedAt?.slice(0, 10) || '';
+      if (!lastPdpDate || lastPdpDate < ninetyDaysAgoStr) {
+        const { awarded, capReached } = await logPointEvent(currentUser.uid, {
+          points: 2,
+          toolLabel: 'EQ Development Plan',
+          reason: 'Completed EQ Personal Development Plan with 4+ improvement actions',
+        });
+        if (awarded) {
+          await calculateScore(currentUser.uid);
+          toast.success('+2 pts — EQ Development Plan saved!', { duration: 4000 });
+        } else if (capReached) {
+          toast.success('Plan saved! (daily point cap reached — score unchanged)', { duration: 4000 });
+        } else {
+          toast.success('Development plan saved!');
+        }
+      } else {
+        toast.success('Development plan updated! (points already awarded within the last 90 days)');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Save failed: ' + e.message, { duration: 6000 });
+    }
+    setSavingPdp(false);
+  }
+
+  function initPdp() {
+    // Pick the 2 lowest-scoring dimensions from the most recent assessment
+    const latest = eqHistory[0];
+    let weakAreas;
+    if (latest?.dimResults) {
+      weakAreas = [...latest.dimResults]
+        .filter(d => d.avg > 0)
+        .sort((a, b) => a.avg - b.avg)
+        .slice(0, 2)
+        .map(d => d.id);
+    } else {
+      weakAreas = ['self-awareness', 'self-regulation'];
+    }
+    const defaultDue = new Date(Date.now() + EQ_DEFAULT_DUE_DAYS * 86400000).toISOString().split('T')[0];
+    const userName = userProfile?.displayName || currentUser?.displayName || 'Me';
+    const initialActions = {};
+    weakAreas.forEach(dimId => {
+      const suggestions = EQ_SUGGESTED_ACTIONS[dimId] || [];
+      initialActions[dimId] = suggestions.slice(0, 2).map(s => ({ action: s, responsible: userName, dueDate: defaultDue }));
+    });
+    setPdpAreas(weakAreas);
+    setPdpActions(initialActions);
+  }
+
+  function addPdpAction(dimId) {
+    const defaultDue = new Date(Date.now() + EQ_DEFAULT_DUE_DAYS * 86400000).toISOString().split('T')[0];
+    const userName = userProfile?.displayName || currentUser?.displayName || 'Me';
+    setPdpActions(prev => ({
+      ...prev,
+      [dimId]: [...(prev[dimId] || []), { action: '', responsible: userName, dueDate: defaultDue }],
+    }));
+  }
+
+  function updatePdpAction(dimId, idx, field, value) {
+    setPdpActions(prev => {
+      const updated = [...(prev[dimId] || [])];
+      updated[idx] = { ...updated[idx], [field]: value };
+      return { ...prev, [dimId]: updated };
+    });
+  }
+
+  function removePdpAction(dimId, idx) {
+    setPdpActions(prev => {
+      const updated = (prev[dimId] || []).filter((_, i) => i !== idx);
+      return { ...prev, [dimId]: updated };
+    });
   }
 
   async function saveOpexAudit() {
@@ -694,6 +829,179 @@ export default function EQOpEx() {
                 }}>Save Assessment</button>
               )}
             </div>
+
+            {/* ── Personal Development Plan ── */}
+            <div className="card" style={{ overflow: 'hidden', marginTop: 8 }}>
+              {/* Header */}
+              <div style={{ padding: '1rem 1.25rem', background: 'linear-gradient(135deg, #0f2044 0%, #134e6a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                <div>
+                  <p style={{ margin: 0, fontWeight: 900, color: 'white', fontSize: '1rem' }}>🌱 EQ Personal Development Plan</p>
+                  <p style={{ margin: '3px 0 0', fontSize: '0.72rem', color: 'rgba(153,246,228,0.85)' }}>Build a 90-day improvement plan on your two weakest areas and earn +2 pts (5 pts total for the quarter)</p>
+                </div>
+                {!pdpAreas && (
+                  <button
+                    onClick={initPdp}
+                    style={{ padding: '0.5rem 1.1rem', borderRadius: 10, fontWeight: 800, fontSize: '0.8rem', border: 'none', cursor: 'pointer', background: '#0d9488', color: 'white', flexShrink: 0 }}>
+                    Build My Plan →
+                  </button>
+                )}
+              </div>
+
+              {/* Existing saved plan notice */}
+              {savedPdp && !pdpAreas && (
+                <div style={{ padding: '0.75rem 1.25rem', background: '#f0fdf4', borderBottom: '1px solid #ccfbf1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 700, color: '#0d9488', fontSize: '0.8rem' }}>✓ Plan saved on {new Date(savedPdp.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.72rem', color: '#64748b' }}>You can edit and re-save your plan at any time</p>
+                  </div>
+                  <button onClick={initPdp} style={{ padding: '0.4rem 0.9rem', borderRadius: 8, fontWeight: 700, fontSize: '0.75rem', border: '1.5px solid #0d9488', background: 'white', color: '#0d9488', cursor: 'pointer' }}>Edit Plan</button>
+                </div>
+              )}
+
+              {/* Plan builder */}
+              {pdpAreas && (
+                <div style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: 20 }}>
+
+                  {/* Progress indicator */}
+                  {(() => {
+                    const totalFilled = pdpAreas.reduce((sum, dimId) => sum + (pdpActions[dimId] || []).filter(a => a.action.trim()).length, 0);
+                    const minNeeded = pdpAreas.length * 2;
+                    const ready = totalFilled >= minNeeded;
+                    return (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.6rem 0.875rem', borderRadius: 10, background: ready ? '#f0fdf4' : '#fefce8', border: `1px solid ${ready ? '#0d948840' : '#f59e0b40'}` }}>
+                        <span style={{ fontSize: '1.1rem' }}>{ready ? '✅' : '📝'}</span>
+                        <p style={{ margin: 0, fontSize: '0.78rem', fontWeight: 700, color: ready ? '#0d9488' : '#b45309' }}>
+                          {ready
+                            ? `Plan complete — ${totalFilled} actions across ${pdpAreas.length} areas. Ready to save and earn +2 pts.`
+                            : `${totalFilled} of ${minNeeded} minimum actions filled in — add at least 2 actions per area to unlock +2 pts.`}
+                        </p>
+                      </div>
+                    );
+                  })()}
+
+                  {pdpAreas.map(dimId => {
+                    const dim = eqDimensions.find(d => d.id === dimId);
+                    const latest = eqHistory[0];
+                    const dimScore = latest?.dimResults?.find(d => d.id === dimId)?.avg;
+                    const rows = pdpActions[dimId] || [];
+                    const suggestions = EQ_SUGGESTED_ACTIONS[dimId] || [];
+                    const usedSuggestions = new Set(rows.map(r => r.action));
+                    const unusedSuggestions = suggestions.filter(s => !usedSuggestions.has(s));
+
+                    return (
+                      <div key={dimId} style={{ border: '1.5px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
+                        {/* Area header */}
+                        <div style={{ padding: '0.75rem 1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <span style={{ fontSize: '1.2rem' }}>{dim?.icon}</span>
+                          <div style={{ flex: 1 }}>
+                            <p style={{ margin: 0, fontWeight: 800, color: '#0f2044', fontSize: '0.9rem' }}>{dim?.label}</p>
+                            {dimScore && <p style={{ margin: '1px 0 0', fontSize: '0.7rem', color: '#64748b' }}>Current score: <strong style={{ color: dimScore < 3 ? '#ef4444' : '#f59e0b' }}>{dimScore}/5</strong></p>}
+                          </div>
+                          <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: 9999, background: '#fef2f2', color: '#ef4444', fontWeight: 700 }}>Focus area</span>
+                        </div>
+
+                        {/* Column headers */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 130px 120px 36px', gap: 0, padding: '0.4rem 1rem', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
+                          {['Improvement Action', 'Responsible', 'Due Date', ''].map((h, i) => (
+                            <span key={i} style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</span>
+                          ))}
+                        </div>
+
+                        {/* Action rows */}
+                        {rows.map((row, idx) => (
+                          <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 130px 120px 36px', gap: 0, padding: '0.5rem 1rem', borderBottom: '1px solid #f1f5f9', alignItems: 'center' }}>
+                            <input
+                              className="input"
+                              style={{ fontSize: '0.8rem', padding: '0.35rem 0.6rem', marginRight: 8 }}
+                              placeholder="Describe the action…"
+                              value={row.action}
+                              onChange={e => updatePdpAction(dimId, idx, 'action', e.target.value)}
+                            />
+                            <input
+                              className="input"
+                              style={{ fontSize: '0.78rem', padding: '0.35rem 0.6rem', marginRight: 8, background: '#f8fafc', color: '#64748b' }}
+                              value={row.responsible}
+                              onChange={e => updatePdpAction(dimId, idx, 'responsible', e.target.value)}
+                            />
+                            <input
+                              type="date"
+                              className="input"
+                              style={{ fontSize: '0.78rem', padding: '0.35rem 0.6rem', marginRight: 8 }}
+                              value={row.dueDate}
+                              onChange={e => updatePdpAction(dimId, idx, 'dueDate', e.target.value)}
+                            />
+                            <button
+                              onClick={() => removePdpAction(dimId, idx)}
+                              style={{ width: 28, height: 28, borderRadius: 6, border: '1px solid #fecaca', background: 'white', color: '#ef4444', cursor: 'pointer', fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              ✕
+                            </button>
+                          </div>
+                        ))}
+
+                        {/* Footer: add action + suggestions */}
+                        <div style={{ padding: '0.75rem 1rem', background: '#fafafa', display: 'flex', flexDirection: 'column', gap: 8 }}>
+                          <button
+                            onClick={() => addPdpAction(dimId)}
+                            style={{ alignSelf: 'flex-start', padding: '0.35rem 0.875rem', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, border: '1.5px dashed #0d9488', background: 'white', color: '#0d9488', cursor: 'pointer' }}>
+                            + Add Action
+                          </button>
+                          {unusedSuggestions.length > 0 && (
+                            <div>
+                              <p style={{ margin: '0 0 5px', fontSize: '0.68rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>💡 Suggested actions — click to add</p>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                                {unusedSuggestions.map((s, si) => (
+                                  <button key={si} onClick={() => {
+                                    const defaultDue = new Date(Date.now() + EQ_DEFAULT_DUE_DAYS * 86400000).toISOString().split('T')[0];
+                                    const userName = userProfile?.displayName || currentUser?.displayName || 'Me';
+                                    setPdpActions(prev => ({
+                                      ...prev,
+                                      [dimId]: [...(prev[dimId] || []), { action: s, responsible: userName, dueDate: defaultDue }],
+                                    }));
+                                  }}
+                                  style={{ textAlign: 'left', padding: '0.4rem 0.75rem', borderRadius: 8, fontSize: '0.75rem', border: '1px solid #e2e8f0', background: 'white', color: '#475569', cursor: 'pointer', lineHeight: 1.45 }}>
+                                    ＋ {s}
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* Save button */}
+                  <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                    <button
+                      className="btn-primary"
+                      onClick={savePdp}
+                      disabled={savingPdp}>
+                      {savingPdp ? 'Saving…' : '💾 Save Development Plan'}
+                    </button>
+                    <button
+                      className="btn-secondary"
+                      onClick={() => { setPdpAreas(null); setPdpActions({}); }}>
+                      Cancel
+                    </button>
+                    <p style={{ margin: 0, fontSize: '0.72rem', color: '#94a3b8' }}>Minimum 2 actions per area · +2 pts every 90 days · Due dates default to 90 days from today</p>
+                  </div>
+                </div>
+              )}
+
+              {/* No plan, no builder: show teaser */}
+              {!pdpAreas && !savedPdp && (
+                <div style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: 14 }}>
+                  <div style={{ fontSize: '2rem' }}>📋</div>
+                  <div>
+                    <p style={{ margin: '0 0 4px', fontWeight: 700, color: '#1e293b', fontSize: '0.875rem' }}>Turn insights into action</p>
+                    <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.55 }}>
+                      After completing and saving your EQ assessment, click <strong>Build My Plan</strong> above to auto-generate a 90-day development plan focused on your two weakest areas. Completing the plan with at least 4 actions earns you +2 bonus points (5 pts total for the quarter).
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       )}

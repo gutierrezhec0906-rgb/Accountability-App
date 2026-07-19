@@ -15,7 +15,7 @@ const BREAKDOWN_CONFIG = [
   { key: 'coaching',  label: 'Coaching Log',     max: 20, icon: '📝',  desc: '5 pts per week with a complete coaching session (max 20/month)' },
   { key: 'problemSolving', label: 'Problem Solving', max: 20, icon: '🔍', desc: '5 Whys (5pts) + Fishbone (5pts) + A3 (10pts) per week; decays 20%→50%→75% without use' },
   { key: 'disc', label: 'DISC Assessment', max: 5, icon: '🧠', desc: '5 pts for completing a DISC assessment; valid for 90 days — renew before expiry to keep points' },
-  { key: 'eq', label: 'EQ Assessment', max: 3, icon: '💡', desc: '3 pts for completing an Emotional Intelligence assessment; resets every 90 days' },
+  { key: 'eq', label: 'EQ Assessment', max: 5, icon: '💡', desc: '3 pts for completing an EQ assessment + 2 pts for building a 90-day development plan (4+ actions); both reset every 90 days' },
   { key: 'mindfulness', label: 'Mindfulness', max: 2, icon: '🧘', desc: '1 pt/day for completing any breathing exercise; +1 bonus pt for breaking your personal cycle record' },
   { key: 'feedbackGiven', label: 'Feedback Given', max: 5, icon: '📬', desc: '+1 pt each time you give feedback to a teammate (max 5/month); points expire after 30 days' },
   { key: 'actionsClosed', label: 'Actions Closed On Time', max: 25, icon: '✅', desc: '+5 pts per action closed on time with zero recommitments; points valid for 7 days. Closing with recommitments = no points. Past due = −5 pts per occurrence.' },
