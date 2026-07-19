@@ -464,7 +464,14 @@ export default function EQOpEx() {
   }
 
   function initPdp() {
-    // Pick the 2 lowest-scoring dimensions from the most recent assessment
+    // If a plan was already saved, load it exactly as-is so no actions are lost
+    if (savedPdp?.areas && savedPdp?.actions) {
+      setPdpAreas(savedPdp.areas);
+      setPdpActions(savedPdp.actions);
+      return;
+    }
+
+    // First time: pick the 2 lowest-scoring dimensions and pre-fill with suggestions
     const latest = eqHistory[0];
     let weakAreas;
     if (latest?.dimResults) {
