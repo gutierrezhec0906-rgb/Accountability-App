@@ -216,6 +216,11 @@ export async function calculateScore(uid) {
   const discDaysAgo = discLastAt ? Math.floor((Date.now() - discLastAt) / 86400000) : null;
   const discPoints = discLastAt && discDaysAgo <= 90 ? 5 : 0;
 
+  // --- EQ Assessment (0-3): 3 pts if an EQ assessment was saved in the last 90 days ---
+  const ninetyDaysAgoStr = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const eqHistory = data.eqHistory || [];
+  const eqPoints = eqHistory.some(r => (r.savedAt || '').slice(0, 10) >= ninetyDaysAgoStr) ? 3 : 0;
+
   // --- pointEvents-based scores (must be computed before total) ---
   const today = new Date().toISOString().split('T')[0];
   const allEvents = data.pointEvents || [];
@@ -242,7 +247,7 @@ export async function calculateScore(uid) {
     .reduce((s, e) => s + e.points, 0);
 
   const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + bonusPts - penaltyPts
+    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + bonusPts - penaltyPts
   )));
 
   // Persist score to user doc
@@ -266,6 +271,7 @@ export async function calculateScore(uid) {
     coaching:       Math.round(coachingScore),
     problemSolving: Math.round(psScore),
     disc:           Math.round(discPoints),
+    eq:             Math.round(eqPoints),
     mindfulness:    Math.round(mindfulnessPoints),
     feedbackGiven:  Math.round(feedbackPoints),
     actionsClosed:  Math.round(actionsClosedPoints),

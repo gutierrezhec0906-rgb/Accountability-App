@@ -5,6 +5,7 @@ import { arrayUnion, doc, getDoc, setDoc } from 'firebase/firestore';
 import { generateEQReport } from '../utils/eqReport';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { logPointEvent, calculateScore } from '../utils/scoring';
 
 const SCALE_LABELS = {
   1: { label: 'Rarely',    desc: 'This behavior is absent or reactive. Others would not recognize it as a strength. Immediate focus needed.' },
@@ -159,10 +160,31 @@ export default function EQOpEx() {
       };
       const userRef = doc(db, 'users', currentUser.uid);
       await setDoc(userRef, { eqHistory: arrayUnion(newRecord) }, { merge: true });
+
+      // Award 3 pts if no EQ assessment in the last 90 days
+      const ninetyDaysAgoStr = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+      const recentEQ = (eqHistory).filter(r => (r.savedAt || '').slice(0, 10) >= ninetyDaysAgoStr);
+      if (recentEQ.length === 0) {
+        const { awarded, capReached } = await logPointEvent(currentUser.uid, {
+          points: 3,
+          toolLabel: 'EQ Assessment',
+          reason: 'Completed Emotional Intelligence assessment (3-month window)',
+        });
+        if (awarded) {
+          await calculateScore(currentUser.uid);
+          toast.success('+3 pts — EQ Assessment complete!', { duration: 4000 });
+        } else if (capReached) {
+          toast.success('Assessment saved! (daily point cap reached — score unchanged)', { duration: 4000 });
+        } else {
+          toast.success('Assessment saved!');
+        }
+      } else {
+        toast.success('Assessment saved! (points already awarded within the last 90 days)');
+      }
+
       setEqHistory(h => [newRecord, ...h]);
       setSaveLabel('');
       setShowLabelInput(false);
-      toast.success('Assessment saved!');
     } catch (e) {
       console.error(e);
       toast.error('Save failed: ' + e.message, { duration: 6000 });
