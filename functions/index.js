@@ -1,4 +1,4 @@
-const { onDocumentCreated } = require('firebase-functions/v2/firestore');
+const { onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
 const { setGlobalOptions } = require('firebase-functions/v2');
 const admin = require('firebase-admin');
@@ -110,6 +110,134 @@ exports.sendWelcomeEmail = onDocumentCreated('users/{uid}', async (event) => {
   ]);
 
   console.log(`Welcome email sent to ${email}, admin notified at ${ADMIN_EMAIL}`);
+});
+
+// ── Request notification emails ─────────────────────────────────────────────
+// Watches users/{uid} updates and emails the person who needs to act when a
+// request is created in any module:
+//   1. Skills   — skillsPeerRequest {toUid, status:'pending'}      → the requested teammate
+//   2. Feedback — feedbackRequests[] items {toUid, status:'pending'} → each requested teammate
+//   3. SMART    — a goal transitions to status 'pending_approval'   → company leaders/managers
+
+function brandedEmail(heading, bodyHtml, ctaLabel, ctaPath) {
+  return `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: #0f2044; padding: 24px 32px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 20px;">Leadership Flow Technologies</h1>
+        <p style="color: #93c5fd; margin: 6px 0 0; font-size: 13px;">Accountability App</p>
+      </div>
+      <div style="padding: 32px; background: #f8fafc;">
+        <h2 style="color: #0f2044; margin-top: 0;">${heading}</h2>
+        ${bodyHtml}
+        <div style="margin: 28px 0; text-align: center;">
+          <a href="${APP_URL}${ctaPath}"
+             style="background: #0d9488; color: white; padding: 13px 30px; border-radius: 8px; text-decoration: none; font-size: 15px; font-weight: bold;">
+            ${ctaLabel}
+          </a>
+        </div>
+        <p style="color: #94a3b8; font-size: 13px;">You are receiving this because a teammate needs your input in the Accountability App.</p>
+      </div>
+      <div style="background: #0f2044; padding: 14px; text-align: center;">
+        <p style="color: #93c5fd; font-size: 12px; margin: 0;">© 2026 Leadership Flow Technologies. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+}
+
+async function emailForUid(uid) {
+  if (!uid) return null;
+  try {
+    const snap = await admin.firestore().collection('users').doc(uid).get();
+    return snap.exists ? (snap.data().email || null) : null;
+  } catch { return null; }
+}
+
+exports.sendRequestEmails = onDocumentUpdated('users/{uid}', async (event) => {
+  const before = event.data?.before?.data() || {};
+  const after  = event.data?.after?.data()  || {};
+  const requesterName = after.displayName || after.email || 'A teammate';
+  const mails = [];
+
+  // 1. Skills peer-assessment request (new pending request, or re-request)
+  const prevReq = before.skillsPeerRequest;
+  const newReq  = after.skillsPeerRequest;
+  if (newReq?.status === 'pending' && newReq.toUid &&
+      (prevReq?.requestedAt !== newReq.requestedAt || prevReq?.status !== 'pending')) {
+    const to = await emailForUid(newReq.toUid);
+    if (to) {
+      mails.push({
+        to,
+        subject: `🙋 ${requesterName} requested your peer assessment`,
+        html: brandedEmail(
+          'Peer assessment requested',
+          `<p style="color: #475569; font-size: 15px; line-height: 1.6;">
+             <strong>${requesterName}</strong> asked you to rate their skills in the
+             <strong>Skills Development Matrix</strong>. Your honest, independent rating helps them
+             see their real gaps — their self-ratings stay hidden from you on purpose.
+           </p>`,
+          'Complete Their Assessment', '/skills'
+        ),
+      });
+    }
+  }
+
+  // 2. Feedback requests — email each newly added pending request target
+  const prevFbIds = new Set((before.feedbackRequests || []).map(r => r.id));
+  const newFbReqs = (after.feedbackRequests || []).filter(r => r.status === 'pending' && !prevFbIds.has(r.id));
+  for (const req of newFbReqs) {
+    const to = await emailForUid(req.toUid);
+    if (to) {
+      mails.push({
+        to,
+        subject: `📨 ${requesterName} requested your feedback`,
+        html: brandedEmail(
+          'Feedback requested',
+          `<p style="color: #475569; font-size: 15px; line-height: 1.6;">
+             <strong>${requesterName}</strong> asked for your feedback${req.category ? ` on <strong>${req.category}</strong>` : ''}.
+           </p>
+           ${req.note ? `<p style="color: #64748b; font-size: 14px; border-left: 3px solid #0d9488; padding-left: 12px; line-height: 1.6;">"${req.note}"</p>` : ''}`,
+          'Give Feedback', '/feedback'
+        ),
+      });
+    }
+  }
+
+  // 3. SMART goal approval requests — email company leaders/managers/admins
+  const prevPending = new Set((before.smartGoals || []).filter(g => g.status === 'pending_approval').map(g => g.id));
+  const newPending  = (after.smartGoals || []).filter(g => g.status === 'pending_approval' && !prevPending.has(g.id));
+  if (newPending.length > 0 && after.companyId) {
+    try {
+      const leadersSnap = await admin.firestore().collection('users')
+        .where('companyId', '==', after.companyId).get();
+      const leaders = leadersSnap.docs
+        .map(d => ({ uid: d.id, ...d.data() }))
+        .filter(u => u.uid !== event.params.uid && u.email &&
+                     (u.isAdmin || u.role === 'Leader' || u.role === 'Manager'));
+      const goalTitles = newPending.map(g => `<li style="margin-bottom: 4px;"><strong>${g.title || 'Untitled goal'}</strong></li>`).join('');
+      for (const leader of leaders) {
+        mails.push({
+          to: leader.email,
+          subject: `🎯 ${requesterName} requested SMART goal approval`,
+          html: brandedEmail(
+            'SMART goal completion needs your approval',
+            `<p style="color: #475569; font-size: 15px; line-height: 1.6;">
+               <strong>${requesterName}</strong> marked the following goal${newPending.length > 1 ? 's' : ''} as completed
+               and is waiting for your review:
+             </p>
+             <ul style="color: #0f2044; font-size: 14px; line-height: 1.6;">${goalTitles}</ul>`,
+            'Review & Approve', '/smart-goals'
+          ),
+        });
+      }
+    } catch (e) { console.error('Could not load leaders for SMART approval email', e); }
+  }
+
+  if (mails.length === 0) return;
+  await Promise.all(mails.map(m => transporter.sendMail({
+    from: `"Accountability App" <${ADMIN_EMAIL}>`,
+    ...m,
+  })));
+  console.log(`Sent ${mails.length} request notification email(s) for user ${event.params.uid}`);
 });
 
 exports.deleteUser = onCall(async (request) => {
