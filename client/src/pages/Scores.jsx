@@ -168,6 +168,61 @@ function ScoreLineChart({ history }) {
   );
 }
 
+function DayRow({ date, events, isToday }) {
+  const [open, setOpen] = useState(isToday);
+  const netDelta = events.reduce((sum, e) => sum + e.points, 0);
+  const d = new Date(date + 'T00:00:00');
+  const dateLabel = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+
+  return (
+    <div style={{ borderRadius: 10, border: `1px solid ${isToday ? '#99f6e4' : '#f1f5f9'}`, overflow: 'hidden' }}>
+      {/* Collapsed header — always visible, clickable */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          width: '100%', padding: '0.5rem 0.75rem',
+          background: isToday ? '#f0fdfa' : '#f8fafc',
+          border: 'none', cursor: 'pointer', textAlign: 'left',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{
+            fontSize: '0.55rem', color: open ? '#0d9488' : '#94a3b8',
+            transition: 'transform 0.18s', display: 'inline-block',
+            transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
+          }}>▶</span>
+          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b' }}>{dateLabel}</span>
+        </div>
+        <span style={{
+          padding: '2px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 800,
+          background: netDelta > 0 ? '#dcfce7' : netDelta < 0 ? '#fee2e2' : '#f1f5f9',
+          color: netDelta > 0 ? '#15803d' : netDelta < 0 ? '#dc2626' : '#64748b',
+        }}>
+          {netDelta > 0 ? `+${netDelta}` : netDelta === 0 ? '—' : netDelta} pts net
+        </span>
+      </button>
+
+      {/* Expanded event list */}
+      {open && events.map((ev, i) => (
+        <div key={i} style={{ display: 'flex', gap: 8, padding: '0.45rem 0.75rem', borderTop: '1px solid #f1f5f9', alignItems: 'flex-start' }}>
+          <span style={{
+            padding: '1px 7px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 800, flexShrink: 0, marginTop: 2,
+            background: ev.points > 0 ? '#dcfce7' : '#fee2e2',
+            color: ev.points > 0 ? '#15803d' : '#dc2626',
+          }}>
+            {ev.points > 0 ? `+${ev.points}` : ev.points}
+          </span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1e293b', margin: '0 0 1px' }}>{ev.toolLabel}</p>
+            <p style={{ fontSize: '0.68rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>{ev.reason}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function DailyMovementFeed({ logs }) {
   if (logs.length === 0) return (
     <p style={{ fontSize: '0.78rem', color: '#94a3b8', textAlign: 'center', marginTop: 16 }}>
@@ -175,53 +230,33 @@ function DailyMovementFeed({ logs }) {
     </p>
   );
 
+  const today = new Date().toISOString().split('T')[0];
+
   // Group events by date, newest first
   const byDate = {};
   logs.forEach(e => {
     if (!byDate[e.date]) byDate[e.date] = [];
     byDate[e.date].push(e);
   });
-  const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a)).slice(0, 14);
+  const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a)).slice(0, 30);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 420, overflowY: 'auto' }}>
-      {dates.map((date, di) => {
-        const events = byDate[date];
-        const netDelta = events.reduce((sum, e) => sum + e.points, 0);
-        const d = new Date(date + 'T00:00:00');
-        const dateLabel = d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-        return (
-          <div key={date} style={{ borderRadius: 10, border: `1px solid ${di === 0 ? '#99f6e4' : '#f1f5f9'}`, overflow: 'hidden' }}>
-            {/* Day header */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 0.75rem', background: di === 0 ? '#f0fdfa' : '#f8fafc' }}>
-              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b' }}>{dateLabel}</span>
-              <span style={{
-                padding: '2px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 800,
-                background: netDelta > 0 ? '#dcfce7' : netDelta < 0 ? '#fee2e2' : '#f1f5f9',
-                color: netDelta > 0 ? '#15803d' : netDelta < 0 ? '#dc2626' : '#64748b',
-              }}>
-                {netDelta > 0 ? `+${netDelta}` : netDelta === 0 ? '—' : netDelta} pts net
-              </span>
-            </div>
-            {/* Individual events */}
-            {events.map((ev, i) => (
-              <div key={i} style={{ display: 'flex', gap: 8, padding: '0.45rem 0.75rem', borderTop: '1px solid #f1f5f9', alignItems: 'flex-start' }}>
-                <span style={{
-                  padding: '1px 7px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 800, flexShrink: 0, marginTop: 2,
-                  background: ev.points > 0 ? '#dcfce7' : '#fee2e2',
-                  color: ev.points > 0 ? '#15803d' : '#dc2626',
-                }}>
-                  {ev.points > 0 ? `+${ev.points}` : ev.points}
-                </span>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#1e293b', margin: '0 0 1px' }}>{ev.toolLabel}</p>
-                  <p style={{ fontSize: '0.68rem', color: '#64748b', margin: 0, lineHeight: 1.4 }}>{ev.reason}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        );
-      })}
+    <div style={{ position: 'relative' }}>
+      <div style={{
+        display: 'flex', flexDirection: 'column', gap: 6,
+        maxHeight: 460, overflowY: 'auto', paddingBottom: 8,
+        scrollbarWidth: 'thin', scrollbarColor: '#cbd5e1 transparent',
+      }}>
+        {dates.map((date) => (
+          <DayRow key={date} date={date} events={byDate[date]} isToday={date === today} />
+        ))}
+      </div>
+      {/* Bottom fade hint */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: 28,
+        background: 'linear-gradient(to bottom, transparent, rgba(255,255,255,0.9))',
+        pointerEvents: 'none',
+      }} />
     </div>
   );
 }
