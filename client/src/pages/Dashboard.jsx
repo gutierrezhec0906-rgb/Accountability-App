@@ -119,6 +119,11 @@ export default function Dashboard() {
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
   const userTier = userProfile?.subscriptionTier || 'free';
 
+  // Teammates who asked ME to complete their skills peer assessment
+  const incomingSkillsRequests = teamMembers.filter(
+    m => m.skillsPeerRequest?.status === 'pending' && m.skillsPeerRequest?.toUid === currentUser?.uid
+  );
+
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
 
@@ -188,6 +193,28 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* ── Action needed: incoming skills peer-assessment requests ── */}
+      {incomingSkillsRequests.length > 0 && (
+        <div style={{
+          borderRadius: 14, border: '1px solid #fde047', background: '#fefce8',
+          padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
+        }}>
+          <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>🙋</span>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <p style={{ fontWeight: 800, color: '#a16207', margin: '0 0 2px', fontSize: '0.9rem' }}>
+              Action needed: peer assessment{incomingSkillsRequests.length > 1 ? 's' : ''} waiting on you
+            </p>
+            <p style={{ fontSize: '0.8rem', color: '#854d0e', margin: 0, lineHeight: 1.5 }}>
+              {incomingSkillsRequests.map(m => m.displayName || m.email || 'A teammate').join(', ')} asked you to rate their skills in the Skills Development Matrix.
+            </p>
+          </div>
+          <button onClick={() => navigate('/skills')}
+            style={{ background: '#ca8a04', color: 'white', border: 'none', borderRadius: 10, padding: '0.5rem 1.1rem', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', flexShrink: 0 }}>
+            Complete Assessment →
+          </button>
+        </div>
+      )}
 
       {/* ── Stats row ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
