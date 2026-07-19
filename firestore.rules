@@ -11,6 +11,16 @@ service cloud.firestore {
         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
+    // True when the signed-in user and the target user share a non-null companyId.
+    // Enables cross-user writes for peer assessments, SMART goal approvals, and
+    // cross-user point awards — but only between teammates in the same company.
+    function sameCompany(userId) {
+      return request.auth != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId ==
+          get(/databases/$(database)/documents/users/$(userId)).data.companyId;
+    }
+
     // App config — readable by all authenticated users
     match /appConfig/{docId} {
       allow read: if request.auth != null;
@@ -28,7 +38,7 @@ service cloud.firestore {
       allow get: if request.auth != null && (request.auth.uid == userId || isMasterAdmin() || isAdmin());
       allow list: if request.auth != null;
       allow create: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null && (request.auth.uid == userId || isMasterAdmin() || isAdmin());
+      allow update: if request.auth != null && (request.auth.uid == userId || isMasterAdmin() || isAdmin() || sameCompany(userId));
     }
 
     match /toolSessions/{docId} {
