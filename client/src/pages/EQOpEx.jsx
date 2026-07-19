@@ -720,6 +720,73 @@ export default function EQOpEx() {
                         style={{ width: '100%', padding: '0.4rem', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', border: '1.5px solid #0f2044', background: '#0f2044', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.15s' }}>
                         📄 Download Recommendations Report
                       </button>
+
+                      {/* Development plan status badge */}
+                      {(() => {
+                        const isLatest = idx === 0;
+                        const planSavedAfter = savedPdp?.savedAt && rec.savedAt && savedPdp.savedAt >= rec.savedAt;
+                        const hasPlan = isLatest && planSavedAfter;
+                        const planDate = hasPlan
+                          ? new Date(savedPdp.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                          : null;
+                        const totalActions = hasPlan
+                          ? Object.values(savedPdp.actions || {}).flat().filter(a => a.action?.trim()).length
+                          : 0;
+
+                        if (hasPlan) {
+                          return (
+                            <div style={{
+                              marginTop: 8, borderRadius: 10, overflow: 'hidden',
+                              border: '1.5px solid #0d948840',
+                              background: 'linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%)',
+                            }}>
+                              <div style={{ padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', gap: 8 }}>
+                                <span style={{ fontSize: '1.2rem' }}>🏆</span>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 800, color: '#0d9488' }}>Development Plan Complete</p>
+                                  <p style={{ margin: 0, fontSize: '0.67rem', color: '#64748b' }}>
+                                    {totalActions} action{totalActions !== 1 ? 's' : ''} · Saved {planDate}
+                                  </p>
+                                </div>
+                              </div>
+                              {savedPdp.areas?.length > 0 && (
+                                <div style={{ padding: '0 0.75rem 0.5rem', display: 'flex', gap: 5, flexWrap: 'wrap' }}>
+                                  {savedPdp.areas.map(areaId => {
+                                    const dim = eqDimensions.find(d => d.id === areaId);
+                                    return dim ? (
+                                      <span key={areaId} style={{ fontSize: '0.67rem', padding: '2px 7px', borderRadius: 9999, background: '#0d948820', color: '#0d9488', fontWeight: 700 }}>
+                                        {dim.icon} {dim.label}
+                                      </span>
+                                    ) : null;
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <div style={{
+                            marginTop: 8, borderRadius: 10, border: '1.5px dashed #e2e8f0',
+                            padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', gap: 8,
+                            background: '#fafafa',
+                          }}>
+                            <span style={{ fontSize: '1.1rem' }}>📋</span>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8' }}>
+                                {isLatest ? 'No development plan yet' : 'No plan for this record'}
+                              </p>
+                              {isLatest && (
+                                <button
+                                  onClick={() => { initPdp(); document.querySelector('[data-pdp-section]')?.scrollIntoView({ behavior: 'smooth' }); }}
+                                  style={{ marginTop: 3, background: 'none', border: 'none', padding: 0, fontSize: '0.67rem', color: '#0d9488', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}>
+                                  Build your plan → earn +2 pts
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })()}
                     </div>
                   );
                 })}
@@ -838,7 +905,7 @@ export default function EQOpEx() {
             </div>
 
             {/* ── Personal Development Plan ── */}
-            <div className="card" style={{ overflow: 'hidden', marginTop: 8 }}>
+            <div className="card" data-pdp-section style={{ overflow: 'hidden', marginTop: 8 }}>
               {/* Header */}
               <div style={{ padding: '1rem 1.25rem', background: 'linear-gradient(135deg, #0f2044 0%, #134e6a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                 <div>
