@@ -1,6 +1,23 @@
 # Accountability App — Project Notes
 
 React + Vite app in `client/`, Firebase Auth + Firestore, deployed on Firebase Hosting.
+
+## Deployment (IMPORTANT — never tell the user to deploy manually)
+
+`.github/workflows/deploy.yml` **auto-deploys on every push to the active feature
+branch** (`on: push: branches: [claude/...]`). One push runs the whole pipeline:
+builds the client, writes `functions/.env` from GitHub Secrets, deploys Hosting AND
+`firebase deploy --only functions`. So:
+- Pushing code = the live site AND Cloud Functions update automatically. No Cloud
+  Shell, no `firebase deploy`, no terminal steps for the user. ALWAYS check
+  `.github/workflows/` before giving deploy instructions.
+- Frontend env vars (`VITE_*`) and functions secrets (`ZOHO_EMAIL`,
+  `ZOHO_APP_PASSWORD`, etc.) live in **GitHub repo Secrets**, injected at build time —
+  not in any committed `.env`. New env vars must be added there to take effect.
+- Email is sent server-side from `functions/index.js` via nodemailer + Zoho SMTP
+  (welcome emails + `sendRequestEmails` for peer/feedback/approval requests).
+  `@emailjs/browser` is in package.json but unused — prefer the existing Zoho path.
+
 Primary data store is the `users/{uid}` document; most features persist arrays on it
 (`pointEvents`, `smartGoals`, `eqHistory`, `urgencyRecords`, `scoreHistory`, …).
 Most users are on **mobile** — always verify UI works on a narrow phone screen.
