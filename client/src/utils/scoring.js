@@ -255,8 +255,17 @@ export async function calculateScore(uid) {
     .filter(e => e.toolLabel === 'Action Closed On Time' && e.date >= sevenDaysAgoStr && e.points > 0)
     .reduce((s, e) => s + e.points, 0);
 
+  // --- Sense of Urgency (0-20): 4 pts/day max (ind survey + ind reflection + team survey + team reflection)
+  //     rolling 7-day window, 4 pts/day × 5 active days = 20 pt ceiling
+  const URGENCY_LABELS = ['Urgency Individual Survey', 'Urgency Individual Reflection', 'Urgency Team Survey', 'Urgency Team Reflection'];
+  const urgencyPoints = Math.min(20,
+    allEvents
+      .filter(e => URGENCY_LABELS.includes(e.toolLabel) && e.date >= sevenDaysAgoStr && e.points > 0)
+      .reduce((s, e) => s + e.points, 0)
+  );
+
   const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + bonusPts - penaltyPts
+    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + urgencyPoints + bonusPts - penaltyPts
   )));
 
   // Persist score to user doc
@@ -284,6 +293,7 @@ export async function calculateScore(uid) {
     mindfulness:    Math.round(mindfulnessPoints),
     feedbackGiven:  Math.round(feedbackPoints),
     actionsClosed:  Math.round(actionsClosedPoints),
+    urgency:        Math.round(urgencyPoints),
     bonus:          Math.round(bonusPts),
   };
 

@@ -19,6 +19,7 @@ const BREAKDOWN_CONFIG = [
   { key: 'mindfulness', label: 'Mindfulness', max: 2, icon: '🧘', desc: '1 pt/day for completing any breathing exercise; +1 bonus pt for breaking your personal cycle record' },
   { key: 'feedbackGiven', label: 'Feedback Given', max: 5, icon: '📬', desc: '+1 pt each time you give feedback to a teammate (max 5/month); points expire after 30 days' },
   { key: 'actionsClosed', label: 'Actions Closed On Time', max: 25, icon: '✅', desc: '+5 pts per action closed on time with zero recommitments; points valid for 7 days. Closing with recommitments = no points. Past due = −5 pts per occurrence.' },
+  { key: 'urgency', label: 'Sense of Urgency', max: 20, icon: '⚡', desc: '+1 pt per day for completing the individual survey (all tips rated) · +1 pt for individual daily reflection (20+ words) · +1 pt for team survey · +1 pt for team daily reflection (20+ words, different question pool). Max 4 pts/day · 20 pts/week rolling window.' },
   { key: 'evidence',  label: 'Evidence & AI',    max: 10, icon: '🤖',  desc: 'Attachments and AI-assessed purposefulness (coming soon)' },
   { key: 'bonus',     label: 'Bonus Points',     max: 20, icon: '🏆',  desc: 'Extra points from quote reflections and other daily actions' },
 ];
