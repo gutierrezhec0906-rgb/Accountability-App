@@ -47,7 +47,7 @@ const emptyKaizen = {
   // Phase 2
   gembaFindings: '', wastesIdentified: [], rootCauses: '', futureState: '', implementationNotes: '', standardWork: '',
   // Phase 3
-  resultsTracking: '', followUpOwners: '', followUpActions: [], auditSchedule: '', wins: '',
+  resultsTracking: '', followUpOwners: '', followUpActions: [], auditSchedule: '', auditDates: { d30: '', d60: '', d90: '' }, wins: '',
 };
 
 const statusOptions = ['Preparing', 'In Progress', 'Report-Out', 'Sustaining', 'Complete'];
@@ -74,10 +74,12 @@ function KaizenForm({ initial, onSave, onCancel, title: formTitle }) {
     ...initial,
     wastesIdentified: Array.isArray(initial?.wastesIdentified) ? initial.wastesIdentified : [],
     followUpActions: normalizeFollowUps(initial),
+    auditDates: { d30: '', d60: '', d90: '', ...(initial?.auditDates || {}) },
   });
   const [phase, setPhase]     = useState('prepare');
 
   function set(field, val) { setForm(f => ({ ...f, [field]: val })); }
+  function setAuditDate(key, val) { setForm(f => ({ ...f, auditDates: { ...f.auditDates, [key]: val } })); }
 
   function updateFollowUp(i, field, val) {
     setForm(f => ({ ...f, followUpActions: f.followUpActions.map((r, idx) => idx === i ? { ...r, [field]: val } : r) }));
@@ -264,7 +266,19 @@ function KaizenForm({ initial, onSave, onCancel, title: formTitle }) {
           </div>
           <div>
             <label className="label">3. Audit Schedule — 30 / 60 / 90 day checks</label>
-            <input className="input" value={form.auditSchedule} onChange={e => set('auditSchedule', e.target.value)} placeholder="e.g. 30-day audit: 8/1 | 60-day: 9/1 | 90-day: 10/1" />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 4 }}>
+              {[
+                { key: 'd30', label: '30-Day Audit' },
+                { key: 'd60', label: '60-Day Audit' },
+                { key: 'd90', label: '90-Day Audit' },
+              ].map(({ key, label }) => (
+                <div key={key}>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', display: 'block', marginBottom: 4 }}>{label}</span>
+                  <input className="input" type="date" style={{ fontSize: '0.82rem', padding: '0.45rem 0.6rem' }}
+                    value={form.auditDates[key]} onChange={e => setAuditDate(key, e.target.value)} />
+                </div>
+              ))}
+            </div>
           </div>
           <div>
             <label className="label">4. Wins — Results & momentum to share with the team</label>
@@ -380,7 +394,7 @@ function KaizenCard({ k, onEdit }) {
             </div>
           )}
           {/* Phase 3 */}
-          {(k.resultsTracking || k.followUpOwners || k.followUpActions?.length || k.auditSchedule || k.wins) && (
+          {(k.resultsTracking || k.followUpOwners || k.followUpActions?.length || k.auditSchedule || k.auditDates?.d30 || k.auditDates?.d60 || k.auditDates?.d90 || k.wins) && (
             <div>
               <p style={{ fontSize: '0.72rem', fontWeight: 800, color: '#9333ea', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>📈 Phase 3: Sustain</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -411,7 +425,14 @@ function KaizenCard({ k, onEdit }) {
                 {!k.followUpActions?.length && k.followUpOwners && (
                   <div><span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>Follow-Up: </span><span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{k.followUpOwners}</span></div>
                 )}
-                {k.auditSchedule && (
+                {(k.auditDates?.d30 || k.auditDates?.d60 || k.auditDates?.d90) ? (
+                  <div><span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>Audit Schedule: </span>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                      {[['30-day', k.auditDates.d30], ['60-day', k.auditDates.d60], ['90-day', k.auditDates.d90]]
+                        .filter(([, v]) => v).map(([lbl, v]) => `${lbl}: ${v}`).join('  ·  ')}
+                    </span>
+                  </div>
+                ) : k.auditSchedule && (
                   <div><span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>Audit Schedule: </span><span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{k.auditSchedule}</span></div>
                 )}
                 {k.wins && (
