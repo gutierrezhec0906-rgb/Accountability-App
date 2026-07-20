@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { logPointEvent, calculateScore } from '../utils/scoring';
+import { logPointEvent, calculateScore, localDateStr } from '../utils/scoring';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import DateStatus from '../components/DateStatus';
@@ -170,7 +170,7 @@ export default function SmartGoals() {
         if (isFullyFilled(newGoal)) {
           const userSnap = await getDoc(doc(db, 'users', currentUser.uid));
           const allEvents = userSnap.exists() ? (userSnap.data().pointEvents || []) : [];
-          const cutoff = new Date(Date.now() - SMART_180_DAYS).toISOString().split('T')[0];
+          const cutoff = localDateStr(new Date(Date.now() - SMART_180_DAYS));
           const recentCreations = allEvents.filter(e => e.toolLabel === 'SMART Goal Created' && e.date >= cutoff).length;
           if (recentCreations < 5) {
             const { awarded } = await logPointEvent(currentUser.uid, {

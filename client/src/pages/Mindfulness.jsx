@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
-import { logPointEvent, calculateScore } from '../utils/scoring';
+import { logPointEvent, calculateScore, localDateStr } from '../utils/scoring';
 
 const exercises = [
   {
@@ -98,7 +98,7 @@ export default function Mindfulness() {
 
     // --- Points ---
     // 1 pt for first session of any exercise today (daily dedup across all exercises)
-    const today = new Date().toISOString().split('T')[0];
+    const today = localDateStr();
     const snap = await getDoc(doc(db, 'users', currentUser.uid));
     const events = snap.exists() ? (snap.data().pointEvents || []) : [];
     const alreadyToday = events.some(

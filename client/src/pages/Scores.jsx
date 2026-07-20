@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { calculateScore } from '../utils/scoring';
+import { calculateScore, localDateStr } from '../utils/scoring';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 
@@ -232,7 +232,7 @@ function DailyMovementFeed({ logs }) {
     </p>
   );
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr();
 
   // Group events by date, newest first
   const byDate = {};
@@ -480,7 +480,7 @@ export default function Scores() {
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
               <p style={{ fontWeight: 800, color: '#1e293b', margin: 0, fontSize: '0.9rem' }}>Daily Movement</p>
               {(() => {
-                const today = new Date().toISOString().split('T')[0];
+                const today = localDateStr();
                 const net = movementLog.filter(e => e.date === today).reduce((s, e) => s + e.points, 0);
                 if (net === 0) return null;
                 return (

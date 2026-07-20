@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import { logPointEvent } from '../utils/scoring';
+import { logPointEvent, localDateStr } from '../utils/scoring';
 
 const categories = ['Leadership', 'Performance', 'Communication', 'Coaching', 'Teamwork', 'Technical', 'General'];
 const types = ['All', 'Peer', 'Supervisor', 'Direct Report', 'Self'];
@@ -230,7 +230,7 @@ export default function Feedback() {
           setGiven(data.feedbackEntries || []);
           setRequests(data.feedbackRequests || []);
           // Count feedback points earned in last 30 days
-          const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+          const thirtyDaysAgo = localDateStr(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
           const fbCount = (data.pointEvents || [])
             .filter(e => e.toolLabel === 'Feedback Given' && e.date >= thirtyDaysAgo && e.points > 0)
             .length;
@@ -295,7 +295,7 @@ export default function Feedback() {
         what: form.what,
         effect: form.effect,
         text: [form.when && `When: ${form.when}`, form.what && `What: ${form.what}`, form.effect && `Effect: ${form.effect}`].filter(Boolean).join('\n\n'),
-        date: new Date().toISOString().split('T')[0],
+        date: localDateStr(),
         createdAt: { seconds: Math.floor(Date.now() / 1000) },
       };
       await persist([newEntry, ...given], undefined);
@@ -319,7 +319,7 @@ export default function Feedback() {
   }
 
   async function handleSendRequests(selectedUids, category, note) {
-    const now = new Date().toISOString().split('T')[0];
+    const now = localDateStr();
     const newReqs = selectedUids.map(uid => {
       const member = teamMembers.find(m => m.uid === uid);
       return {

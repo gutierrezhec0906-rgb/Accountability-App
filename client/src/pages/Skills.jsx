@@ -2,14 +2,14 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { logPointEvent, calculateScore } from '../utils/scoring';
+import { logPointEvent, calculateScore, localDateStr } from '../utils/scoring';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 
 const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
 function thirtyDayCutoff() {
-  return new Date(Date.now() - THIRTY_DAYS_MS).toISOString().split('T')[0];
+  return localDateStr(new Date(Date.now() - THIRTY_DAYS_MS));
 }
 
 const defaultCategories = [

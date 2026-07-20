@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { logPointEvent, calculateScore } from '../utils/scoring';
+import { logPointEvent, calculateScore, localDateStr } from '../utils/scoring';
 import PageHeader from '../components/PageHeader';
 
 const tips = [
@@ -52,7 +52,7 @@ function fmtDate(iso) {
 }
 
 function todayStr() {
-  return new Date().toISOString().split('T')[0];
+  return localDateStr();
 }
 
 // Deterministic daily question index

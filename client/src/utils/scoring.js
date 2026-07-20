@@ -3,13 +3,23 @@ import { db } from '../firebase';
 
 export const DAILY_POINTS_CAP = 25;
 
+// Local calendar date as YYYY-MM-DD. NOT UTC: `new Date().toISOString()` returns
+// the UTC date, so in the evening for users west of UTC (e.g. US timezones) events
+// were being stamped as "tomorrow". This shifts by the local offset so the date
+// matches the user's wall clock. Use this everywhere a point-event date is written
+// or compared, so storage, gating, and display all agree.
+export function localDateStr(d = new Date()) {
+  const off = d.getTimezoneOffset() * 60000;
+  return new Date(d.getTime() - off).toISOString().split('T')[0];
+}
+
 // Appends a point event to users/{uid}.pointEvents (max 200 entries).
 // Returns { awarded: boolean, capReached: boolean, todayTotal: number }
 // If the user has already earned DAILY_POINTS_CAP points today, the event
 // is NOT written and awarded=false is returned so callers can show a message.
 export async function logPointEvent(uid, { points, toolLabel, reason }) {
   if (!uid) return { awarded: false, capReached: false, todayTotal: 0 };
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr();
   try {
     const snap = await getDoc(doc(db, 'users', uid));
     const existing = snap.exists() ? (snap.data().pointEvents || []) : [];
@@ -197,11 +207,11 @@ export async function calculateScore(uid) {
   const evidence = 0;
 
   // --- pointEvents — declared here so all event-based scores below can use them ---
-  const today = new Date().toISOString().split('T')[0];
+  const today = localDateStr();
   const allEvents = data.pointEvents || [];
-  const thirtyDaysAgoStr = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const sevenDaysAgoStr  = new Date(Date.now() -  7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-  const sixMonthsAgoStr  = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const thirtyDaysAgoStr = localDateStr(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
+  const sevenDaysAgoStr  = localDateStr(new Date(Date.now() -  7 * 24 * 60 * 60 * 1000));
+  const sixMonthsAgoStr  = localDateStr(new Date(Date.now() - 180 * 24 * 60 * 60 * 1000));
 
   // --- SMART Goals (0-15): 1 pt per fully-filled goal created (max 5/6 months) + 2 pts per approved completion (no decay) ---
   const smartCreationPts = Math.min(5,
@@ -228,7 +238,7 @@ export async function calculateScore(uid) {
   const discPoints = discLastAt && discDaysAgo <= 90 ? 5 : 0;
 
   // --- EQ Assessment (0-5): 3 pts for assessment + 2 pts for dev plan, both within 90 days ---
-  const ninetyDaysAgoStr = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const ninetyDaysAgoStr = localDateStr(new Date(Date.now() - 90 * 24 * 60 * 60 * 1000));
   const eqHistory = data.eqHistory || [];
   const eqAssessmentPts = eqHistory.some(r => (r.savedAt || '').slice(0, 10) >= ninetyDaysAgoStr) ? 3 : 0;
   const eqDevPlanPts = data.eqDevPlan?.savedAt?.slice(0, 10) >= ninetyDaysAgoStr ? 2 : 0;
