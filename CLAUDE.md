@@ -17,6 +17,21 @@ builds the client, writes `functions/.env` from GitHub Secrets, deploys Hosting 
 - Email is sent server-side from `functions/index.js` via nodemailer + Zoho SMTP
   (welcome emails + `sendRequestEmails` for peer/feedback/approval requests).
   `@emailjs/browser` is in package.json but unused — prefer the existing Zoho path.
+- **Firestore rules do NOT auto-deploy.** The CI service account lacks
+  `firebaserules.*` permission, so `firebase deploy --only ...,firestore:rules`
+  FAILS (403) and takes the whole deploy step down with it. Keep the workflow at
+  `--only functions`. When `firestore.rules` changes, the user must publish it
+  manually: Firebase Console → Firestore Database → Rules → paste → Publish.
+  (To auto-deploy later, grant the service account the Firebase Rules Admin role.)
+
+## Cross-user Firestore writes (peer assessments, SMART approvals)
+
+Features where user A writes to user B's `users/{uid}` doc (Skills peer assessment,
+SMART goal approval, cross-user `logPointEvent`) need BOTH `get` AND `update` on the
+`users/{userId}` rule to allow it — the save reads B's doc before writing. Current
+rule allows self OR master-admin OR admin OR `sameCompany(userId)`. A "Save failed —
+check permissions" toast almost always means a rule is missing `sameCompany` on `get`
+or `update`. `sameCompany` compares non-null `companyId` of requester and target.
 
 Primary data store is the `users/{uid}` document; most features persist arrays on it
 (`pointEvents`, `smartGoals`, `eqHistory`, `urgencyRecords`, `scoreHistory`, …).
