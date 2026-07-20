@@ -124,6 +124,28 @@ export default function Dashboard() {
     m => m.skillsPeerRequest?.status === 'pending' && m.skillsPeerRequest?.toUid === currentUser?.uid
   );
 
+  // Career plan milestone reminder — due within 5 days or overdue (points at risk)
+  const careerReminder = (() => {
+    const cp = userProfile?.careerPlan;
+    if (!cp?.completedAt) return null;
+    const windows = [
+      { key: 'd30', label: '30-day', days: 30,  penalty: '−2 pts' },
+      { key: 'd90', label: '90-day', days: 90,  penalty: '−3 pts' },
+      { key: 'm6',  label: '6-month', days: 180, penalty: '−2 pts' },
+      { key: 'm12', label: '12-month', days: 365, penalty: 'all remaining points' },
+    ];
+    const daysSince = (Date.now() - new Date(cp.completedAt).getTime()) / 86400000;
+    for (const w of windows) {
+      const filled = (cp.checkIns?.[w.key]?.note || '').trim().length > 0;
+      if (filled) continue;
+      const daysUntil = Math.ceil(w.days - daysSince);
+      if (daysUntil <= 0) return { ...w, overdue: true };            // already lost the points
+      if (daysUntil <= 5) return { ...w, overdue: false, daysUntil }; // due soon
+      break; // the next unmet window is more than 5 days out — nothing to nag yet
+    }
+    return null;
+  })();
+
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
 
@@ -212,6 +234,33 @@ export default function Dashboard() {
           <button onClick={() => navigate('/skills')}
             style={{ background: '#ca8a04', color: 'white', border: 'none', borderRadius: 10, padding: '0.5rem 1.1rem', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', flexShrink: 0 }}>
             Complete Assessment →
+          </button>
+        </div>
+      )}
+
+      {/* ── Career plan milestone reminder ── */}
+      {careerReminder && (
+        <div style={{
+          borderRadius: 14, padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
+          background: careerReminder.overdue ? '#fef2f2' : '#eff6ff',
+          border: `1px solid ${careerReminder.overdue ? '#fecaca' : '#bfdbfe'}`,
+        }}>
+          <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>{careerReminder.overdue ? '⚠️' : '🚀'}</span>
+          <div style={{ flex: 1, minWidth: 200 }}>
+            <p style={{ fontWeight: 800, margin: '0 0 2px', fontSize: '0.9rem', color: careerReminder.overdue ? '#b91c1c' : '#1e40af' }}>
+              {careerReminder.overdue
+                ? `Your ${careerReminder.label} career check-in is overdue`
+                : `Your ${careerReminder.label} career check-in is due in ${careerReminder.daysUntil} day${careerReminder.daysUntil === 1 ? '' : 's'}`}
+            </p>
+            <p style={{ fontSize: '0.8rem', margin: 0, lineHeight: 1.5, color: careerReminder.overdue ? '#991b1b' : '#3730a3' }}>
+              {careerReminder.overdue
+                ? `Add your progress note to restore your points (${careerReminder.penalty} at stake).`
+                : `Log a progress note on your Career Development Plan to keep your points (${careerReminder.penalty} at stake).`}
+            </p>
+          </div>
+          <button onClick={() => navigate('/career')}
+            style={{ background: careerReminder.overdue ? '#dc2626' : '#0d9488', color: 'white', border: 'none', borderRadius: 10, padding: '0.5rem 1.1rem', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', flexShrink: 0 }}>
+            {careerReminder.overdue ? 'Update Now →' : 'Add Progress Note →'}
           </button>
         </div>
       )}

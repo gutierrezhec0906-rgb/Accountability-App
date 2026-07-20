@@ -15,8 +15,11 @@ builds the client, writes `functions/.env` from GitHub Secrets, deploys Hosting 
   `ZOHO_APP_PASSWORD`, etc.) live in **GitHub repo Secrets**, injected at build time —
   not in any committed `.env`. New env vars must be added there to take effect.
 - Email is sent server-side from `functions/index.js` via nodemailer + Zoho SMTP
-  (welcome emails + `sendRequestEmails` for peer/feedback/approval requests).
+  (welcome emails + `sendRequestEmails` for peer/feedback/approval requests +
+  `careerMilestoneReminders`, a daily `onSchedule` cron emailing career-plan milestone
+  reminders 5 days before due / on lapse, deduped via `careerPlan.reminders` flags).
   `@emailjs/browser` is in package.json but unused — prefer the existing Zoho path.
+  NOTE: scheduled functions need Cloud Scheduler + Pub/Sub APIs enabled on first deploy.
 - **Firestore rules do NOT auto-deploy.** The CI service account lacks
   `firebaserules.*` permission, so `firebase deploy --only ...,firestore:rules`
   FAILS (403) and takes the whole deploy step down with it. Keep the workflow at

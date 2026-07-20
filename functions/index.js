@@ -1,5 +1,6 @@
 const { onDocumentCreated, onDocumentUpdated } = require('firebase-functions/v2/firestore');
 const { onCall, HttpsError } = require('firebase-functions/v2/https');
+const { onSchedule } = require('firebase-functions/v2/scheduler');
 const { setGlobalOptions } = require('firebase-functions/v2');
 const admin = require('firebase-admin');
 const nodemailer = require('nodemailer');
@@ -238,6 +239,82 @@ exports.sendRequestEmails = onDocumentUpdated('users/{uid}', async (event) => {
     ...m,
   })));
   console.log(`Sent ${mails.length} request notification email(s) for user ${event.params.uid}`);
+});
+
+// ── Career plan milestone reminder emails (daily scheduled) ─────────────────
+// Runs once a day. For each user with a completed careerPlan, emails them when a
+// milestone progress note is due within 5 days, or the day it lapses (points lost).
+// Per-milestone flags (careerPlan.reminders) prevent duplicate emails.
+const CAREER_WINDOWS = [
+  { key: 'd30', label: '30-day',  days: 30,  penalty: '2 points' },
+  { key: 'd90', label: '90-day',  days: 90,  penalty: '3 points' },
+  { key: 'm6',  label: '6-month', days: 180, penalty: '2 points' },
+  { key: 'm12', label: '12-month', days: 365, penalty: 'all your remaining points' },
+];
+
+exports.careerMilestoneReminders = onSchedule('every day 14:00', async () => {
+  const snap = await admin.firestore().collection('users').get();
+  let sent = 0;
+
+  for (const docSnap of snap.docs) {
+    const data = docSnap.data();
+    const cp = data.careerPlan;
+    if (!cp?.completedAt || !data.email) continue;
+
+    const daysSince = (Date.now() - new Date(cp.completedAt).getTime()) / 86400000;
+    const reminders = { ...(cp.reminders || {}) };
+    let changed = false;
+
+    for (const w of CAREER_WINDOWS) {
+      const filled = (cp.checkIns?.[w.key]?.note || '').trim().length > 0;
+      if (filled) continue;
+      const daysUntil = w.days - daysSince;
+      const flag = reminders[w.key] || { warned: false, lapsed: false };
+
+      // Due within 5 days (and not yet passed) → "due soon" email, once
+      if (daysUntil > 0 && daysUntil <= 5 && !flag.warned) {
+        await transporter.sendMail({
+          from: `"Accountability App" <${ADMIN_EMAIL}>`,
+          to: data.email,
+          subject: `🚀 Your ${w.label} career check-in is due in ${Math.ceil(daysUntil)} day${Math.ceil(daysUntil) === 1 ? '' : 's'}`,
+          html: brandedEmail(
+            `Your ${w.label} career check-in is coming up`,
+            `<p style="color: #475569; font-size: 15px; line-height: 1.6;">
+               Add a progress note to your Career Development Plan by day ${w.days} to keep your points.
+               If you miss it, you'll lose <strong>${w.penalty}</strong>.
+             </p>`,
+            'Add Progress Note', '/career'
+          ),
+        });
+        flag.warned = true; changed = true; sent++;
+      }
+
+      // Just lapsed → "points lost" email, once
+      if (daysUntil <= 0 && !flag.lapsed) {
+        await transporter.sendMail({
+          from: `"Accountability App" <${ADMIN_EMAIL}>`,
+          to: data.email,
+          subject: `⚠️ Your ${w.label} career check-in is overdue`,
+          html: brandedEmail(
+            `Your ${w.label} career check-in is overdue`,
+            `<p style="color: #475569; font-size: 15px; line-height: 1.6;">
+               You missed the ${w.label} checkpoint on your Career Development Plan, so <strong>${w.penalty}</strong> are at risk.
+               Add your progress note now — even late, it restores that milestone's points.
+             </p>`,
+            'Update My Plan', '/career'
+          ),
+        });
+        flag.lapsed = true; changed = true; sent++;
+      }
+
+      reminders[w.key] = flag;
+    }
+
+    if (changed) {
+      await docSnap.ref.set({ careerPlan: { ...cp, reminders } }, { merge: true });
+    }
+  }
+  console.log(`Career milestone reminders: sent ${sent} email(s)`);
 });
 
 exports.deleteUser = onCall(async (request) => {
