@@ -111,6 +111,7 @@ Reference implementation: `DailyMovementFeed` + `DayRow` in `client/src/pages/Sc
   questions ≥20 words + committed coach + timeline + per-pillar resources/timeline).
   Computed live in `calculateScore` from `data.careerPlan` (NOT a pointEvent — it decays
   by time). `completedAt` anchors milestone windows; missing progress notes decay the
-  points: −5 if `checkIns.d30.note` empty after 30 days, −3 more at 90 (`d90`), −2 more
-  (all) at 180 (`m6`). Filling a note restores that milestone's points. Section 1 is
-  read-only from `skillsMatrix` (same 3 pillars); user fills Sections 2–5.
+  points: −2 if `checkIns.d30.note` empty after 30 days, −3 more at 90 (`d90`), −2 more
+  at 180 (`m6`), and lose ALL remaining if `m12` empty after 365 days (10→8→5→3→0).
+  Filling a note restores that milestone's points. Section 1 is read-only from
+  `skillsMatrix` (same 3 pillars); user fills Sections 2–5.

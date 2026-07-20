@@ -287,9 +287,10 @@ export async function calculateScore(uid) {
     const daysSince = (Date.now() - new Date(cp.completedAt).getTime()) / 86400000;
     const noteFilled = (k) => ((cp.checkIns && cp.checkIns[k] && cp.checkIns[k].note) || '').trim().length > 0;
     let pts = 10;
-    if (daysSince >= 30  && !noteFilled('d30')) pts -= 5;
+    if (daysSince >= 30  && !noteFilled('d30')) pts -= 2;
     if (daysSince >= 90  && !noteFilled('d90')) pts -= 3;
     if (daysSince >= 180 && !noteFilled('m6'))  pts -= 2;
+    if (daysSince >= 365 && !noteFilled('m12')) pts = 0;
     careerPoints = Math.max(0, pts);
   }
 

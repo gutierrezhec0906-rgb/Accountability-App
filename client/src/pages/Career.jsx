@@ -165,10 +165,10 @@ function WordHint({ text }) {
 
 // Milestone check-in windows that drive the score decay.
 const CHECKINS = [
-  { key: 'd30', label: '30-Day Progress Note',  days: 30,  penalty: 5, note: 'Missing after 30 days: −5 pts' },
-  { key: 'd90', label: '90-Day Progress Note',  days: 90,  penalty: 3, note: 'Missing after 90 days: −3 more' },
-  { key: 'm6',  label: '6-Month Progress Note', days: 180, penalty: 2, note: 'Missing after 6 months: −2 more (all)' },
-  { key: 'm12', label: '12-Month Completion / Renewal Note', days: 365, penalty: 0, note: 'Wrap up or renew the plan' },
+  { key: 'd30', label: '30-Day Progress Note',  days: 30,  penalty: 2, penaltyLabel: '−2 pts',        note: 'Missing after 30 days: −2 pts' },
+  { key: 'd90', label: '90-Day Progress Note',  days: 90,  penalty: 3, penaltyLabel: '−3 pts',        note: 'Missing after 90 days: −3 more' },
+  { key: 'm6',  label: '6-Month Progress Note', days: 180, penalty: 2, penaltyLabel: '−2 pts',        note: 'Missing after 6 months: −2 more' },
+  { key: 'm12', label: '12-Month Completion / Renewal Note', days: 365, penalty: 10, penaltyLabel: 'lose all', note: 'Missing after 12 months: lose all remaining points' },
 ];
 
 export default function Career() {
@@ -219,9 +219,10 @@ export default function Career() {
     const daysSince = (Date.now() - new Date(plan.completedAt).getTime()) / 86400000;
     const noteFilled = k => (plan.checkIns?.[k]?.note || '').trim().length > 0;
     let pts = 10;
-    if (daysSince >= 30  && !noteFilled('d30')) pts -= 5;
+    if (daysSince >= 30  && !noteFilled('d30')) pts -= 2;
     if (daysSince >= 90  && !noteFilled('d90')) pts -= 3;
     if (daysSince >= 180 && !noteFilled('m6'))  pts -= 2;
+    if (daysSince >= 365 && !noteFilled('m12')) pts = 0;
     return { pts: Math.max(0, pts), earned: true, daysSince };
   })();
 
@@ -275,7 +276,7 @@ export default function Career() {
               : planComplete ? 'Ready to earn 10 points — save your plan' : 'Complete the template to earn 10 points'}
           </p>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0', lineHeight: 1.5 }}>
-            Fill 100% of the template with 20+ words per question → +10 pts. Then return at 30 days, 90 days, and 6 months to log progress notes or the points decay (−5 / −3 / −2).
+            Fill 100% of the template with 20+ words per question → +10 pts. Then return at 30 days, 90 days, 6 months, and 12 months to log progress notes or the points decay (−2 / −3 / −2 / lose all).
             {' '}<strong>{essaysDone}/{essays.length}</strong> questions have 20+ words.
           </p>
         </div>
@@ -531,7 +532,7 @@ export default function Career() {
             const windowOpen = plan.completedAt && daysSince >= 0;
             const overdue = plan.completedAt && daysSince >= ci.days && !filled && ci.penalty > 0;
             const statusColor = filled ? '#15803d' : overdue ? '#dc2626' : '#94a3b8';
-            const statusLabel = filled ? '✓ Logged' : overdue ? `⚠ Overdue — ${ci.penalty > 0 ? `−${ci.penalty} pts` : ''}` : plan.completedAt ? `Due day ${ci.days}` : 'Locked';
+            const statusLabel = filled ? '✓ Logged' : overdue ? `⚠ Overdue — ${ci.penaltyLabel}` : plan.completedAt ? `Due day ${ci.days}` : 'Locked';
             return (
               <div key={ci.key} style={{ border: `1px solid ${filled ? '#86efac' : overdue ? '#fecaca' : 'var(--border)'}`, borderRadius: 10, padding: '0.75rem 0.875rem', background: filled ? '#f0fdf4' : overdue ? '#fef2f2' : 'white' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
