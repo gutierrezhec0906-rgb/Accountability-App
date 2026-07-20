@@ -3,7 +3,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { calculateScore } from '../utils/scoring';
+import { calculateScore, logPointEvent } from '../utils/scoring';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 
@@ -243,8 +243,19 @@ export default function Career() {
       const toSave = { ...plan, checkIns, completedAt, createdAt: plan.createdAt || now, updatedAt: now };
       await setDoc(doc(db, 'users', currentUser.uid), { careerPlan: toSave }, { merge: true });
       setPlan(toSave);
+      // First time the plan reaches 100% → log a +10 event so it appears in Daily Movement.
+      // (The score itself is computed live from careerPlan, so this event is display-only and
+      // is NOT summed by any scoring component — no double counting.)
+      const firstCompletion = !plan.completedAt && completedAt;
+      if (firstCompletion) {
+        await logPointEvent(currentUser.uid, {
+          points: 10,
+          toolLabel: 'Career Development Plan',
+          reason: 'Completed the full career development plan (100% + 20 words per question)',
+        });
+      }
       try { await calculateScore(currentUser.uid); } catch { /* score refresh is best-effort */ }
-      if (!plan.completedAt && completedAt) {
+      if (firstCompletion) {
         toast.success('Plan complete! +10 pts earned. Return at each milestone to keep them.', { duration: 5000 });
       } else {
         toast.success('Career development plan saved');
