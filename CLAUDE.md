@@ -17,7 +17,12 @@ builds the client, writes `functions/.env` from GitHub Secrets, deploys Hosting 
 - Email is sent server-side from `functions/index.js` via nodemailer + Zoho SMTP
   (welcome emails + `sendRequestEmails` for peer/feedback/approval requests +
   `careerMilestoneReminders`, a daily `onSchedule` cron emailing career-plan milestone
-  reminders 5 days before due / on lapse, deduped via `careerPlan.reminders` flags).
+  reminders 5 days before due / on lapse, deduped via `careerPlan.reminders` flags +
+  `weeklyAccountabilityReport`, a Friday 17:00 America/Chicago `onSchedule` cron emailing
+  every approved user a motivational weekly report (points earned, tool-coverage %, praise
+  for tools used, nudges for tools not used, rotating quote) built by `buildWeeklyReport`;
+  `sendMyWeeklyReport` is an `onCall` that emails the caller their own report on demand —
+  wired to the "📧 Email My Weekly Report" button on the Scores page for testing).
   `@emailjs/browser` is in package.json but unused — prefer the existing Zoho path.
   NOTE: scheduled functions need Cloud Scheduler + Pub/Sub APIs enabled on first deploy.
 - **Firestore rules do NOT auto-deploy.** The CI service account lacks

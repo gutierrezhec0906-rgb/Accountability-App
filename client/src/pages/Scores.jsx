@@ -3,6 +3,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { calculateScore, localDateStr } from '../utils/scoring';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 
@@ -352,6 +353,20 @@ export default function Scores() {
     setCalculating(false);
   }
 
+  const [emailing, setEmailing] = useState(false);
+  async function emailWeeklyReport() {
+    setEmailing(true);
+    try {
+      const fn = httpsCallable(getFunctions(), 'sendMyWeeklyReport');
+      const res = await fn();
+      toast.success(`Weekly report emailed to ${res.data?.to || 'you'}!`);
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not send the report. Try again.');
+    }
+    setEmailing(false);
+  }
+
   // Derive daily movements from score history diffs, merged with pointEvents
   const historyMovements = history.slice(1).map((h, i) => {
     const delta = h.score - history[i].score;
@@ -386,6 +401,10 @@ export default function Scores() {
                 <button onClick={handleCalculate} disabled={calculating}
                   style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 8, padding: '0.6rem 1.25rem', fontWeight: 700, fontSize: '0.875rem', cursor: calculating ? 'not-allowed' : 'pointer' }}>
                   {calculating ? '⏳ Calculating...' : '🔄 Calculate My Score'}
+                </button>
+                <button onClick={emailWeeklyReport} disabled={emailing}
+                  style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '0.6rem 1.25rem', fontWeight: 700, fontSize: '0.875rem', cursor: emailing ? 'not-allowed' : 'pointer' }}>
+                  {emailing ? '⏳ Sending…' : '📧 Email My Weekly Report'}
                 </button>
                 {lastUpdated && <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem' }}>Last updated: {lastUpdated}</span>}
               </div>
