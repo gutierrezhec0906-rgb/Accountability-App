@@ -3,6 +3,7 @@ import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore, localDateStr } from '../utils/scoring';
+import { generateSkillsMatrixPDF } from '../utils/moduleReports';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 
@@ -400,6 +401,7 @@ export default function Skills() {
               }}>
               {editMode ? (saving ? 'Saving…' : '✓ Save Assessment') : '✏️ Edit'}
             </button>
+            <button className="btn-secondary" onClick={() => generateSkillsMatrixPDF(matrix, { userName: currentUser?.displayName || '' })}>🖨️ PDF</button>
             <button className="btn-primary" onClick={() => setShowAdd(s => !s)}>+ Add Skill</button>
           </div>
         }

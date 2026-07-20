@@ -5,6 +5,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore, localDateStr } from '../utils/scoring';
+import { generateKaizenPDF } from '../utils/moduleReports';
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const MIN_OPP_WORDS = 4;   // an "area of opportunity" must be described in ≥4 words
@@ -356,6 +357,10 @@ function KaizenCard({ k, onEdit }) {
           <button onClick={() => onEdit(k)}
             style={{ background: 'none', border: '1px solid #0d9488', borderRadius: 8, padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 700, color: '#0d9488', cursor: 'pointer' }}>
             ✏️ Edit
+          </button>
+          <button onClick={() => generateKaizenPDF(k)}
+            style={{ background: 'none', border: '1px solid #64748b', borderRadius: 8, padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>
+            🖨️ PDF
           </button>
           <button onClick={() => setExpanded(e => !e)}
             style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '0.25rem 0.75rem', fontSize: '0.75rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>

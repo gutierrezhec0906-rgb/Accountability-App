@@ -6,6 +6,7 @@ import { logPointEvent, calculateScore, localDateStr } from '../utils/scoring';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import DateStatus from '../components/DateStatus';
+import { generateSmartGoalsPDF } from '../utils/moduleReports';
 
 const STATUS_STYLES = {
   draft:              { bg: '#f1f5f9', text: '#64748b',  label: 'Draft' },
@@ -261,7 +262,12 @@ export default function SmartGoals() {
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }} className="space-y-6">
       <PageHeader icon="🎯" title="SMART Goals" subtitle="Set purposeful goals that drive accountability. Each goal contributes to your Accountability Score."
-        action={<button className="btn-primary" onClick={openCreate}>+ New SMART Goal</button>} />
+        action={
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button className="btn-secondary" onClick={() => generateSmartGoalsPDF(goals, { userName: currentUser?.displayName || '' })}>🖨️ PDF</button>
+            <button className="btn-primary" onClick={openCreate}>+ New SMART Goal</button>
+          </div>
+        } />
 
       {/* Leader: Pending Approvals */}
       {isLeader && pendingTeamGoals.length > 0 && (
