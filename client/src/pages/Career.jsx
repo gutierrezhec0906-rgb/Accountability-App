@@ -3,8 +3,12 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { calculateScore } from '../utils/scoring';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
+
+const MIN_WORDS = 20; // every narrative question needs 20+ words for the 10 pts
+function wc(text = '') { return text.trim().split(/\s+/).filter(Boolean).length; }
 
 const PILLARS = ['Leadership', 'Technical', 'Interpersonal'];
 const PILLAR_COLORS = { Leadership: '#0f2044', Technical: '#0891b2', Interpersonal: '#8b5cf6' };
@@ -56,6 +60,14 @@ function emptyPlan() {
       m6:  { text: '', date: '', done: false },
       m12: { text: '', date: '', done: false },
     },
+    // Progress notes the leader returns to log at each checkpoint — these sustain the score.
+    checkIns: {
+      d30: { note: '', savedAt: null },
+      d90: { note: '', savedAt: null },
+      m6:  { note: '', savedAt: null },
+      m12: { note: '', savedAt: null },
+    },
+    completedAt: null, // set when the plan first reaches 100% + 20 words — anchors milestone windows
     createdAt: null, updatedAt: null,
   };
 }
@@ -79,7 +91,32 @@ function hydratePlan(saved) {
       m6:  { ...base.milestones.m6,  ...(saved.milestones?.m6 || {}) },
       m12: { ...base.milestones.m12, ...(saved.milestones?.m12 || {}) },
     },
+    checkIns: {
+      d30: { ...base.checkIns.d30, ...(saved.checkIns?.d30 || {}) },
+      d90: { ...base.checkIns.d90, ...(saved.checkIns?.d90 || {}) },
+      m6:  { ...base.checkIns.m6,  ...(saved.checkIns?.m6 || {}) },
+      m12: { ...base.checkIns.m12, ...(saved.checkIns?.m12 || {}) },
+    },
   };
+}
+
+// The narrative "questions" that must have 20+ words for the 10 pts.
+function essayFields(plan) {
+  return [
+    plan.aspiration, plan.motivation,
+    plan.companyNeeds.skillsGaps, plan.companyNeeds.strategicPriorities, plan.companyNeeds.resources,
+    ...PILLARS.flatMap(p => [plan.pillars[p].goal, plan.pillars[p].actions]),
+  ];
+}
+
+// Template is 100% complete when every essay question has 20+ words, the coach is
+// committed, timeline is set, and each pillar has resources + a timeline date.
+function isTemplateComplete(plan) {
+  if (!essayFields(plan).every(t => wc(t) >= MIN_WORDS)) return false;
+  if (!plan.timeline) return false;
+  if (!(plan.coach.name.trim() && plan.coach.relationship && plan.coach.committed)) return false;
+  if (!PILLARS.every(p => (plan.pillars[p].resources || '').trim() && plan.pillars[p].timeline)) return false;
+  return true;
 }
 
 // Per-pillar averages from the Skills Development Matrix (categories match the pillars).
@@ -114,6 +151,25 @@ function SectionCard({ n, title, subtitle, children, accent = '#0d9488' }) {
 }
 
 const labelStyle = { fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' };
+
+// 20-word progress hint shown under each narrative question
+function WordHint({ text }) {
+  const n = wc(text);
+  const ok = n >= MIN_WORDS;
+  return (
+    <span style={{ fontSize: '0.65rem', fontWeight: 600, color: ok ? '#15803d' : '#94a3b8' }}>
+      {n}/{MIN_WORDS} words {ok ? '✓' : ''}
+    </span>
+  );
+}
+
+// Milestone check-in windows that drive the score decay.
+const CHECKINS = [
+  { key: 'd30', label: '30-Day Progress Note',  days: 30,  penalty: 5, note: 'Missing after 30 days: −5 pts' },
+  { key: 'd90', label: '90-Day Progress Note',  days: 90,  penalty: 3, note: 'Missing after 90 days: −3 more' },
+  { key: 'm6',  label: '6-Month Progress Note', days: 180, penalty: 2, note: 'Missing after 6 months: −2 more (all)' },
+  { key: 'm12', label: '12-Month Completion / Renewal Note', days: 365, penalty: 0, note: 'Wrap up or renew the plan' },
+];
 
 export default function Career() {
   const { currentUser } = useAuth();
@@ -152,21 +208,46 @@ export default function Career() {
   const summary = pillarSummary(skillsMatrix);
   const hasSkills = skillsMatrix && skillsMatrix.some(c => (c.skills || []).length);
 
-  // Completeness — all three pillars have a goal, coach committed, timeline set.
-  const pillarsComplete = PILLARS.every(p => (plan.pillars[p].goal || '').trim());
-  const coachComplete = plan.coach.name.trim() && plan.coach.relationship && plan.coach.committed;
-  const section2Complete = plan.aspiration.trim() && plan.motivation.trim() && plan.timeline;
-  const planComplete = pillarsComplete && coachComplete && section2Complete;
+  // 100%-complete template with 20 words per question → eligible for the 10 pts.
+  const essays = essayFields(plan);
+  const essaysDone = essays.filter(t => wc(t) >= MIN_WORDS).length;
+  const planComplete = isTemplateComplete(plan);
+
+  // Live score standing (mirrors scoring.js so the leader sees decay before it hits the total).
+  const careerStanding = (() => {
+    if (!plan.completedAt) return { pts: planComplete ? 10 : 0, earned: false };
+    const daysSince = (Date.now() - new Date(plan.completedAt).getTime()) / 86400000;
+    const noteFilled = k => (plan.checkIns?.[k]?.note || '').trim().length > 0;
+    let pts = 10;
+    if (daysSince >= 30  && !noteFilled('d30')) pts -= 5;
+    if (daysSince >= 90  && !noteFilled('d90')) pts -= 3;
+    if (daysSince >= 180 && !noteFilled('m6'))  pts -= 2;
+    return { pts: Math.max(0, pts), earned: true, daysSince };
+  })();
 
   async function savePlan() {
     if (!currentUser) return;
     setSaving(true);
     try {
       const now = new Date().toISOString();
-      const toSave = { ...plan, createdAt: plan.createdAt || now, updatedAt: now };
+      // Anchor the milestone windows the first time the plan reaches 100% + 20 words.
+      const completedAt = plan.completedAt || (isTemplateComplete(plan) ? now : null);
+      // Stamp savedAt on any check-in note that has text but no timestamp yet.
+      const checkIns = {};
+      for (const k of ['d30', 'd90', 'm6', 'm12']) {
+        const ci = plan.checkIns[k] || { note: '', savedAt: null };
+        const hasText = (ci.note || '').trim().length > 0;
+        checkIns[k] = { note: ci.note || '', savedAt: hasText ? (ci.savedAt || now) : null };
+      }
+      const toSave = { ...plan, checkIns, completedAt, createdAt: plan.createdAt || now, updatedAt: now };
       await setDoc(doc(db, 'users', currentUser.uid), { careerPlan: toSave }, { merge: true });
       setPlan(toSave);
-      toast.success('Career development plan saved');
+      try { await calculateScore(currentUser.uid); } catch { /* score refresh is best-effort */ }
+      if (!plan.completedAt && completedAt) {
+        toast.success('Plan complete! +10 pts earned. Return at each milestone to keep them.', { duration: 5000 });
+      } else {
+        toast.success('Career development plan saved');
+      }
     } catch { toast.error('Save failed'); }
     setSaving(false);
   }
@@ -178,16 +259,24 @@ export default function Career() {
       <PageHeader icon="🚀" title="Career Development Plan"
         subtitle="Employee-owned, company-aligned. Start with where you are, define where you want to go, and build the plan at the intersection." />
 
-      {/* Completeness banner */}
-      <div style={{ borderRadius: 12, padding: '0.875rem 1.125rem', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+      {/* Completeness + points banner */}
+      <div style={{ borderRadius: 12, padding: '0.875rem 1.125rem', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
         background: planComplete ? '#f0fdf4' : '#eff6ff', border: `1px solid ${planComplete ? '#86efac' : '#bfdbfe'}` }}>
-        <span style={{ fontSize: '1.25rem' }}>{planComplete ? '✅' : '🧭'}</span>
+        <div style={{ textAlign: 'center', flexShrink: 0 }}>
+          <div style={{ fontSize: '1.75rem', fontWeight: 900, lineHeight: 1, color: careerStanding.pts === 10 ? '#15803d' : careerStanding.pts > 0 ? '#b45309' : '#94a3b8' }}>
+            {careerStanding.pts}<span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600 }}>/10</span>
+          </div>
+          <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>Plan pts</div>
+        </div>
         <div style={{ flex: 1, minWidth: 200 }}>
           <p style={{ fontWeight: 800, margin: 0, fontSize: '0.85rem', color: planComplete ? '#15803d' : '#1e40af' }}>
-            {planComplete ? 'Your plan is complete' : 'Build a complete plan'}
+            {careerStanding.earned
+              ? (careerStanding.pts === 10 ? 'Full 10 points — keep logging milestone notes' : 'Points decaying — add your milestone progress notes below')
+              : planComplete ? 'Ready to earn 10 points — save your plan' : 'Complete the template to earn 10 points'}
           </p>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0', lineHeight: 1.5 }}>
-            A complete plan has a goal in all three pillars, a committed coach, an aspiration, and a timeline.
+            Fill 100% of the template with 20+ words per question → +10 pts. Then return at 30 days, 90 days, and 6 months to log progress notes or the points decay (−5 / −3 / −2).
+            {' '}<strong>{essaysDone}/{essays.length}</strong> questions have 20+ words.
           </p>
         </div>
         <button className="btn-primary" onClick={savePlan} disabled={saving} style={{ flexShrink: 0 }}>
@@ -248,12 +337,14 @@ export default function Career() {
             <textarea className="input" rows={2} value={plan.aspiration}
               onChange={e => setField(['aspiration'], e.target.value)}
               placeholder="Your next role, expanded responsibility, or skill mastery you're aiming for…" />
+            <WordHint text={plan.aspiration} />
           </div>
           <div>
             <label style={labelStyle}>Personal Motivation — why this matters to you</label>
             <textarea className="input" rows={2} value={plan.motivation}
               onChange={e => setField(['motivation'], e.target.value)}
               placeholder="What makes this growth meaningful for you personally?" />
+            <WordHint text={plan.motivation} />
           </div>
           <div>
             <label style={labelStyle}>Target Timeline</label>
@@ -319,18 +410,21 @@ export default function Career() {
             <textarea className="input" rows={2} value={plan.companyNeeds.skillsGaps}
               onChange={e => setField(['companyNeeds', 'skillsGaps'], e.target.value)}
               placeholder="What capabilities does the team/company need right now that this growth can help fill?" />
+            <WordHint text={plan.companyNeeds.skillsGaps} />
           </div>
           <div>
             <label style={labelStyle}>Strategic Priorities This Growth Supports</label>
             <textarea className="input" rows={2} value={plan.companyNeeds.strategicPriorities}
               onChange={e => setField(['companyNeeds', 'strategicPriorities'], e.target.value)}
               placeholder="Which company goals or priorities does this development plan advance?" />
+            <WordHint text={plan.companyNeeds.strategicPriorities} />
           </div>
           <div>
             <label style={labelStyle}>Resources the Company Will Provide</label>
             <textarea className="input" rows={2} value={plan.companyNeeds.resources}
               onChange={e => setField(['companyNeeds', 'resources'], e.target.value)}
               placeholder="Training budget, mentoring, cross-functional exposure, time, certifications…" />
+            <WordHint text={plan.companyNeeds.resources} />
           </div>
         </div>
       </SectionCard>
@@ -353,12 +447,14 @@ export default function Career() {
                     <textarea className="input" rows={2} value={row.goal}
                       onChange={e => setField(['pillars', p, 'goal'], e.target.value)}
                       placeholder={`What will you develop in ${p.toLowerCase()}?`} />
+                    <WordHint text={row.goal} />
                   </div>
                   <div>
                     <label style={labelStyle}>Action Steps</label>
                     <textarea className="input" rows={2} value={row.actions}
                       onChange={e => setField(['pillars', p, 'actions'], e.target.value)}
                       placeholder="Concrete steps — training, projects, mentoring, on-the-job experiences…" />
+                    <WordHint text={row.actions} />
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px 130px', gap: 10 }}>
                     <div>
@@ -415,6 +511,45 @@ export default function Career() {
             );
           })}
         </div>
+      </SectionCard>
+
+      {/* Milestone progress notes — sustain the 10 points */}
+      <SectionCard n="✓" title="Milestone Progress Notes" accent="#15803d"
+        subtitle="Return at each checkpoint and log your real progress. These notes sustain your 10 points — miss one and the points decay.">
+        {!plan.completedAt && (
+          <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: 12 }}>
+            <p style={{ fontSize: '0.78rem', color: '#1e40af', margin: 0, lineHeight: 1.5 }}>
+              Complete and save the plan above first (100% + 20 words per question). Once you earn the 10 points, your 30 / 90 / 180-day windows start and these notes keep the points alive.
+            </p>
+          </div>
+        )}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {CHECKINS.map(ci => {
+            const val = plan.checkIns[ci.key] || { note: '', savedAt: null };
+            const filled = (val.note || '').trim().length > 0;
+            const daysSince = plan.completedAt ? (Date.now() - new Date(plan.completedAt).getTime()) / 86400000 : 0;
+            const windowOpen = plan.completedAt && daysSince >= 0;
+            const overdue = plan.completedAt && daysSince >= ci.days && !filled && ci.penalty > 0;
+            const statusColor = filled ? '#15803d' : overdue ? '#dc2626' : '#94a3b8';
+            const statusLabel = filled ? '✓ Logged' : overdue ? `⚠ Overdue — ${ci.penalty > 0 ? `−${ci.penalty} pts` : ''}` : plan.completedAt ? `Due day ${ci.days}` : 'Locked';
+            return (
+              <div key={ci.key} style={{ border: `1px solid ${filled ? '#86efac' : overdue ? '#fecaca' : 'var(--border)'}`, borderRadius: 10, padding: '0.75rem 0.875rem', background: filled ? '#f0fdf4' : overdue ? '#fef2f2' : 'white' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+                  <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-primary)' }}>{ci.label}</span>
+                  <span style={{ fontSize: '0.7rem', fontWeight: 700, color: statusColor }}>{statusLabel}</span>
+                </div>
+                <p style={{ fontSize: '0.66rem', color: 'var(--text-muted)', margin: '0 0 6px' }}>{ci.note}{val.savedAt ? ` · last saved ${new Date(val.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}</p>
+                <textarea className="input" rows={2} style={{ fontSize: '0.82rem' }}
+                  value={val.note}
+                  onChange={e => setField(['checkIns', ci.key, 'note'], e.target.value)}
+                  placeholder="What progress have you made? What's working, what's blocked, what's next?" />
+              </div>
+            );
+          })}
+        </div>
+        <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '10px 0 0', lineHeight: 1.5 }}>
+          Tip: adding a note — even late — restores that milestone's points. Save the plan after writing your notes to update your score.
+        </p>
       </SectionCard>
 
       {/* Save (bottom) */}

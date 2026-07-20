@@ -274,6 +274,25 @@ export async function calculateScore(uid) {
   //     Rolling 7-day window — the points expire after a week unless a new audit is saved. ---
   const lean5sPoints = allEvents.some(e => e.toolLabel === 'Lean 5S Audit' && e.date >= sevenDaysAgoStr && e.points > 0) ? 5 : 0;
 
+  // --- Career Development (0-10): 10 pts for a fully completed plan (100% of template,
+  //     min 20 words per question). Sustained by milestone progress notes — the leader must
+  //     return at each checkpoint and log notes or the points decay:
+  //       missing 30-day note after 30 days  → −5   (10 → 5)
+  //       missing 90-day note after 90 days  → −3   (5 → 2)
+  //       missing 6-month note after 180 days → −2  (2 → 0)
+  //     Filling a milestone note (even late) restores that milestone's points. ---
+  const cp = data.careerPlan;
+  let careerPoints = 0;
+  if (cp && cp.completedAt) {
+    const daysSince = (Date.now() - new Date(cp.completedAt).getTime()) / 86400000;
+    const noteFilled = (k) => ((cp.checkIns && cp.checkIns[k] && cp.checkIns[k].note) || '').trim().length > 0;
+    let pts = 10;
+    if (daysSince >= 30  && !noteFilled('d30')) pts -= 5;
+    if (daysSince >= 90  && !noteFilled('d90')) pts -= 3;
+    if (daysSince >= 180 && !noteFilled('m6'))  pts -= 2;
+    careerPoints = Math.max(0, pts);
+  }
+
   // --- Sense of Urgency (0-20): 4 pts/day max (ind survey + ind reflection + team survey + team reflection)
   //     rolling 7-day window, 4 pts/day × 5 active days = 20 pt ceiling
   const URGENCY_LABELS = ['Urgency Individual Survey', 'Urgency Individual Reflection', 'Urgency Team Survey', 'Urgency Team Reflection'];
@@ -284,7 +303,7 @@ export async function calculateScore(uid) {
   );
 
   const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + urgencyPoints + skillsPoints + lean5sPoints + bonusPts - penaltyPts
+    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + urgencyPoints + skillsPoints + lean5sPoints + careerPoints + bonusPts - penaltyPts
   )));
 
   // Persist score to user doc
@@ -315,6 +334,7 @@ export async function calculateScore(uid) {
     urgency:        Math.round(urgencyPoints),
     skills:         Math.round(skillsPoints),
     lean5s:         Math.round(lean5sPoints),
+    career:         Math.round(careerPoints),
     bonus:          Math.round(bonusPts),
   };
 

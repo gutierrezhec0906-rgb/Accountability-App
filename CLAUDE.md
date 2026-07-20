@@ -107,3 +107,10 @@ Reference implementation: `DailyMovementFeed` + `DayRow` in `client/src/pages/Sc
   opportunity (≥4 words each), once per 7 days. `Lean 5S Audit` event; points expire
   after a week (scoring checks `date >= sevenDaysAgoStr`), so the leader must re-audit
   weekly to keep them. Areas stored on the `fiveSAudits` record as `opportunities[]`.
+- Career Development (max 10): 10 pts for a 100%-complete `careerPlan` (all 11 narrative
+  questions ≥20 words + committed coach + timeline + per-pillar resources/timeline).
+  Computed live in `calculateScore` from `data.careerPlan` (NOT a pointEvent — it decays
+  by time). `completedAt` anchors milestone windows; missing progress notes decay the
+  points: −5 if `checkIns.d30.note` empty after 30 days, −3 more at 90 (`d90`), −2 more
+  (all) at 180 (`m6`). Filling a note restores that milestone's points. Section 1 is
+  read-only from `skillsMatrix` (same 3 pillars); user fills Sections 2–5.
