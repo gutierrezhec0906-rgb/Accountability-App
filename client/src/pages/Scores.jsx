@@ -21,6 +21,7 @@ const BREAKDOWN_CONFIG = [
   { key: 'actionsClosed', label: 'Actions Closed On Time', max: 25, icon: '✅', desc: '+5 pts per action closed on time with zero recommitments; points valid for 7 days. Closing with recommitments = no points. Past due = −5 pts per occurrence.' },
   { key: 'urgency', label: 'Sense of Urgency', max: 20, icon: '⚡', desc: '+1 pt per day for completing the individual survey (all tips rated) · +1 pt for individual daily reflection (20+ words) · +1 pt for team survey · +1 pt for team daily reflection (20+ words, different question pool). Max 4 pts/day · 20 pts/week rolling window.' },
   { key: 'skills', label: 'Skills Development', max: 3, icon: '⭐', desc: '+1 pt for completing the skills self-assessment · +1 pt for requesting a peer survey · +1 pt when a peer delivers your survey. Each max once per rolling 30 days.' },
+  { key: 'lean5s', label: 'Lean 5S Audit', max: 5, icon: '🏭', desc: '+5 pts for a weekly 5S audit that describes at least 3 areas of opportunity. Points expire after 7 days — run a new audit each week to keep them.' },
   { key: 'evidence',  label: 'Evidence & AI',    max: 10, icon: '🤖',  desc: 'Attachments and AI-assessed purposefulness (coming soon)' },
   { key: 'bonus',     label: 'Bonus Points',     max: 20, icon: '🏆',  desc: 'Extra points from quote reflections and other daily actions' },
 ];

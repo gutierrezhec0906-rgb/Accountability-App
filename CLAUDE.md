@@ -92,3 +92,7 @@ Reference implementation: `DailyMovementFeed` + `DayRow` in `client/src/pages/Sc
   peer survey received +1. Request stored as `users/{uid}.skillsPeerRequest`
   ({toUid, toName, status}); the assessor marks it completed and awards the assessee's
   "received" point cross-user (same pattern as SMART approvals).
+- Lean 5S (max 5, rolling 7 days): +5 pts for a 5S audit describing 3+ areas of
+  opportunity (≥4 words each), once per 7 days. `Lean 5S Audit` event; points expire
+  after a week (scoring checks `date >= sevenDaysAgoStr`), so the leader must re-audit
+  weekly to keep them. Areas stored on the `fiveSAudits` record as `opportunities[]`.

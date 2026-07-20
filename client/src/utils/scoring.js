@@ -270,6 +270,10 @@ export async function calculateScore(uid) {
   const skillsPoints = SKILLS_LABELS.reduce((sum, label) =>
     sum + (allEvents.some(e => e.toolLabel === label && e.date >= thirtyDaysAgoStr && e.points > 0) ? 1 : 0), 0);
 
+  // --- Lean 5S (0-5): 5 pts for a weekly 5S audit with 3+ described areas of opportunity.
+  //     Rolling 7-day window — the points expire after a week unless a new audit is saved. ---
+  const lean5sPoints = allEvents.some(e => e.toolLabel === 'Lean 5S Audit' && e.date >= sevenDaysAgoStr && e.points > 0) ? 5 : 0;
+
   // --- Sense of Urgency (0-20): 4 pts/day max (ind survey + ind reflection + team survey + team reflection)
   //     rolling 7-day window, 4 pts/day × 5 active days = 20 pt ceiling
   const URGENCY_LABELS = ['Urgency Individual Survey', 'Urgency Individual Reflection', 'Urgency Team Survey', 'Urgency Team Reflection'];
@@ -280,7 +284,7 @@ export async function calculateScore(uid) {
   );
 
   const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + urgencyPoints + skillsPoints + bonusPts - penaltyPts
+    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + urgencyPoints + skillsPoints + lean5sPoints + bonusPts - penaltyPts
   )));
 
   // Persist score to user doc
@@ -310,6 +314,7 @@ export async function calculateScore(uid) {
     actionsClosed:  Math.round(actionsClosedPoints),
     urgency:        Math.round(urgencyPoints),
     skills:         Math.round(skillsPoints),
+    lean5s:         Math.round(lean5sPoints),
     bonus:          Math.round(bonusPts),
   };
 
