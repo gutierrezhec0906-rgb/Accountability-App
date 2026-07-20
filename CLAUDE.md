@@ -37,6 +37,17 @@ Primary data store is the `users/{uid}` document; most features persist arrays o
 (`pointEvents`, `smartGoals`, `eqHistory`, `urgencyRecords`, `scoreHistory`, …).
 Most users are on **mobile** — always verify UI works on a narrow phone screen.
 
+## Action-item grid pattern (Action / Owner-Responsible / Deadline)
+
+When a template needs a list of action items, use the editable grid pattern, NOT a
+free-text box: a CSS-grid header row + data rows of `{ action, owner/responsible, deadline }`,
+with a `type="date"` input for the deadline (native calendar picker) and a "+ Add Row"
+button. State is an array of row objects with `updateRow/addRow/removeRow` helpers; filter
+out empty rows on save; when loading old records, fall back to one empty row and keep any
+legacy free-text value for display only. Reference: `ActionItemsEditor` in
+`client/src/pages/Coaching.jsx` and Kaizen Phase-3 "Follow-Up Owners" in `Lean.jsx`
+(`followUpActions[]`). Apply this whenever the user asks for an action/owner/deadline grid.
+
 ## Scrollable panel pattern (IMPORTANT — hard-won fix)
 
 When making a scrollable list/feed inside a card, all three rules are required or the

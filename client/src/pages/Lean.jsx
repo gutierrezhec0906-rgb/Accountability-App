@@ -47,7 +47,7 @@ const emptyKaizen = {
   // Phase 2
   gembaFindings: '', wastesIdentified: [], rootCauses: '', futureState: '', implementationNotes: '', standardWork: '',
   // Phase 3
-  resultsTracking: '', followUpOwners: '', auditSchedule: '', wins: '',
+  resultsTracking: '', followUpOwners: '', followUpActions: [], auditSchedule: '', wins: '',
 };
 
 const statusOptions = ['Preparing', 'In Progress', 'Report-Out', 'Sustaining', 'Complete'];
@@ -57,15 +57,40 @@ const WASTES = ['Defects','Overproduction','Waiting','Non-Utilized Talent','Tran
 
 const tabs = [{ id: '5s', label: '5S Checklist' }, { id: 'waste', label: 'Waste Types' }, { id: 'kaizen', label: 'Kaizen Log' }];
 
+const emptyFollowUpRow = () => ({ action: '', owner: '', deadline: '' });
+
+// Normalize follow-up actions from a record: prefer the new grid array; if only
+// the legacy free-text `followUpOwners` string exists, start with one empty row.
+function normalizeFollowUps(initial) {
+  if (Array.isArray(initial?.followUpActions) && initial.followUpActions.length) {
+    return initial.followUpActions.map(r => ({ action: r.action || '', owner: r.owner || '', deadline: r.deadline || '' }));
+  }
+  return [emptyFollowUpRow()];
+}
+
 function KaizenForm({ initial, onSave, onCancel, title: formTitle }) {
   const [form, setForm]       = useState({
     ...emptyKaizen,
     ...initial,
     wastesIdentified: Array.isArray(initial?.wastesIdentified) ? initial.wastesIdentified : [],
+    followUpActions: normalizeFollowUps(initial),
   });
   const [phase, setPhase]     = useState('prepare');
 
   function set(field, val) { setForm(f => ({ ...f, [field]: val })); }
+
+  function updateFollowUp(i, field, val) {
+    setForm(f => ({ ...f, followUpActions: f.followUpActions.map((r, idx) => idx === i ? { ...r, [field]: val } : r) }));
+  }
+  function addFollowUp() {
+    setForm(f => ({ ...f, followUpActions: [...f.followUpActions, emptyFollowUpRow()] }));
+  }
+  function removeFollowUp(i) {
+    setForm(f => {
+      const updated = f.followUpActions.filter((_, idx) => idx !== i);
+      return { ...f, followUpActions: updated.length ? updated : [emptyFollowUpRow()] };
+    });
+  }
   function toggleWaste(w) {
     setForm(f => {
       const current = Array.isArray(f.wastesIdentified) ? f.wastesIdentified : [];
@@ -209,7 +234,33 @@ function KaizenForm({ initial, onSave, onCancel, title: formTitle }) {
           </div>
           <div>
             <label className="label">2. Follow-Up Owners — Open action items with owners & deadlines</label>
-            <textarea className="input" rows={3} value={form.followUpOwners} onChange={e => set('followUpOwners', e.target.value)} placeholder="Action item | Owner | Deadline&#10;e.g. Install shadow board | J. Smith | 7/30" />
+            {/* Header row */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 150px 32px', gap: 6, marginBottom: 6, marginTop: 4 }}>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: 4 }}>Action</span>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: 4 }}>Owner</span>
+              <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: 4 }}>Deadline</span>
+              <span />
+            </div>
+            {/* Data rows */}
+            {form.followUpActions.map((row, i) => (
+              <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 160px 150px 32px', gap: 6, marginBottom: 6 }}>
+                <input className="input" style={{ fontSize: '0.82rem', padding: '0.45rem 0.6rem' }}
+                  placeholder="Describe the action…" value={row.action}
+                  onChange={e => updateFollowUp(i, 'action', e.target.value)} />
+                <input className="input" style={{ fontSize: '0.82rem', padding: '0.45rem 0.6rem' }}
+                  placeholder="Owner name" value={row.owner}
+                  onChange={e => updateFollowUp(i, 'owner', e.target.value)} />
+                <input className="input" type="date" style={{ fontSize: '0.82rem', padding: '0.45rem 0.6rem' }}
+                  value={row.deadline}
+                  onChange={e => updateFollowUp(i, 'deadline', e.target.value)} />
+                <button type="button" onClick={() => removeFollowUp(i)} title="Remove row"
+                  style={{ background: '#fee2e2', border: 'none', borderRadius: 6, color: '#dc2626', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+              </div>
+            ))}
+            <button type="button" onClick={addFollowUp}
+              style={{ marginTop: 4, background: '#f0fdfa', border: '1.5px dashed #0d9488', borderRadius: 8, color: '#0d9488', fontWeight: 700, fontSize: '0.78rem', padding: '0.4rem 1rem', cursor: 'pointer' }}>
+              + Add Row
+            </button>
           </div>
           <div>
             <label className="label">3. Audit Schedule — 30 / 60 / 90 day checks</label>
@@ -234,7 +285,10 @@ function KaizenForm({ initial, onSave, onCancel, title: formTitle }) {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>
-          <button type="button" className="btn-primary" onClick={() => onSave(form)}>💾 Save Kaizen</button>
+          <button type="button" className="btn-primary" onClick={() => onSave({
+            ...form,
+            followUpActions: form.followUpActions.filter(r => r.action.trim() || r.owner.trim() || r.deadline),
+          })}>💾 Save Kaizen</button>
         </div>
       </div>
     </div>
@@ -256,7 +310,7 @@ function KaizenCard({ k, onEdit }) {
     { label: 'Implementation',   val: k.implementationNotes },
     { label: 'Standard Work',    val: k.standardWork },
     { label: 'Results Tracking', val: k.resultsTracking },
-    { label: 'Follow-Up Owners', val: k.followUpOwners },
+    { label: 'Follow-Up Owners', val: (k.followUpActions?.length ? 'y' : '') || k.followUpOwners },
     { label: 'Wins',             val: k.wins },
   ];
   const filled = phases2Check.filter(p => p.val).length;
@@ -326,13 +380,43 @@ function KaizenCard({ k, onEdit }) {
             </div>
           )}
           {/* Phase 3 */}
-          {(k.resultsTracking || k.followUpOwners || k.auditSchedule || k.wins) && (
+          {(k.resultsTracking || k.followUpOwners || k.followUpActions?.length || k.auditSchedule || k.wins) && (
             <div>
               <p style={{ fontSize: '0.72rem', fontWeight: 800, color: '#9333ea', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>📈 Phase 3: Sustain</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {[['Results', k.resultsTracking], ['Follow-Up', k.followUpOwners], ['Audit Schedule', k.auditSchedule], ['Wins', k.wins]].map(([lbl, val]) => val && (
-                  <div key={lbl}><span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>{lbl}: </span><span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{val}</span></div>
-                ))}
+                {k.resultsTracking && (
+                  <div><span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>Results: </span><span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{k.resultsTracking}</span></div>
+                )}
+                {/* Follow-up action grid */}
+                {k.followUpActions?.length > 0 && (
+                  <div>
+                    <span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>Follow-Up Owners:</span>
+                    <div style={{ marginTop: 4, border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 120px 110px', gap: 0, background: '#f8fafc', fontSize: '0.65rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase' }}>
+                        <span style={{ padding: '4px 8px' }}>Action</span>
+                        <span style={{ padding: '4px 8px' }}>Owner</span>
+                        <span style={{ padding: '4px 8px' }}>Deadline</span>
+                      </div>
+                      {k.followUpActions.map((r, i) => (
+                        <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 110px', gap: 0, fontSize: '0.76rem', color: 'var(--text-secondary)', borderTop: '1px solid #f1f5f9' }}>
+                          <span style={{ padding: '4px 8px' }}>{r.action || '—'}</span>
+                          <span style={{ padding: '4px 8px' }}>{r.owner || '—'}</span>
+                          <span style={{ padding: '4px 8px' }}>{r.deadline || '—'}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* Legacy free-text follow-up (older records) */}
+                {!k.followUpActions?.length && k.followUpOwners && (
+                  <div><span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>Follow-Up: </span><span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{k.followUpOwners}</span></div>
+                )}
+                {k.auditSchedule && (
+                  <div><span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>Audit Schedule: </span><span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{k.auditSchedule}</span></div>
+                )}
+                {k.wins && (
+                  <div><span style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)' }}>Wins: </span><span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{k.wins}</span></div>
+                )}
               </div>
             </div>
           )}
