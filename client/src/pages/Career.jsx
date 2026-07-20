@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { calculateScore, logPointEvent } from '../utils/scoring';
+import { generateCareerPDF } from '../utils/careerReport';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 
@@ -264,6 +265,15 @@ export default function Career() {
     setSaving(false);
   }
 
+  function downloadPDF() {
+    try {
+      generateCareerPDF(plan, {
+        userName: currentUser?.displayName || '',
+        skillsSummary: hasSkills ? summary : null,
+      });
+    } catch (e) { console.error(e); toast.error('Could not generate PDF'); }
+  }
+
   if (loading) return <div style={{ maxWidth: 860, margin: '0 auto' }}><PageHeader icon="🚀" title="Career Development Plan" subtitle="Loading…" /></div>;
 
   return (
@@ -291,9 +301,14 @@ export default function Career() {
             {' '}<strong>{essaysDone}/{essays.length}</strong> questions have 20+ words.
           </p>
         </div>
-        <button className="btn-primary" onClick={savePlan} disabled={saving} style={{ flexShrink: 0 }}>
-          {saving ? 'Saving…' : '💾 Save Plan'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button className="btn-secondary" onClick={downloadPDF} style={{ flexShrink: 0 }}>
+            🖨️ PDF
+          </button>
+          <button className="btn-primary" onClick={savePlan} disabled={saving} style={{ flexShrink: 0 }}>
+            {saving ? 'Saving…' : '💾 Save Plan'}
+          </button>
+        </div>
       </div>
 
       {/* SECTION 1 — Where am I now? (read from Skills Matrix) */}
@@ -564,8 +579,11 @@ export default function Career() {
         </p>
       </SectionCard>
 
-      {/* Save (bottom) */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10 }}>
+      {/* Save + PDF (bottom) */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
+        <button className="btn-secondary" onClick={downloadPDF} style={{ padding: '0.6rem 1.25rem' }}>
+          🖨️ Download / Print PDF
+        </button>
         <button className="btn-primary" onClick={savePlan} disabled={saving} style={{ padding: '0.6rem 1.5rem' }}>
           {saving ? 'Saving…' : '💾 Save Career Development Plan'}
         </button>
