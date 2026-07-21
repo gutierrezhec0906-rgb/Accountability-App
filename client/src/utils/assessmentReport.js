@@ -330,7 +330,10 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
   // ═══════════════════════════════════════════════════════════════════════════
   newPage();
 
-  function sectionHeader(label, fillColor, textColor) {
+  // reserveAfter: room the caller expects the section's first row/block to need,
+  // so the header band is never orphaned alone at the bottom of a page.
+  function sectionHeader(label, fillColor, textColor, reserveAfter = 44) {
+    checkSpace(34 + reserveAfter);
     drawRect(MARGIN, y, CW, 26, 6, fillColor);
     pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
@@ -378,7 +381,6 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
   top5.forEach((q, i) => questionRow(q, i + 1, [22, 163, 74]));
 
   y += 14;
-  checkSpace(40);
   sectionHeader('Top 5 Opportunities — Priority Development Areas', [254, 242, 242], [185, 28, 28]);
   bottom5.forEach((q, i) => questionRow(q, i + 1, [220, 38, 38]));
 
@@ -404,9 +406,26 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
     Exemplary:  [124, 58, 237 ],
   };
 
+  // Estimate how tall a question block will render (mirrors the layout math
+  // inside the loop below) so a category header never gets orphaned alone at
+  // the bottom of a page with its first question pushed to the next page.
+  function estimateQuestionBlockH(q) {
+    const guide = q.guide || {};
+    const guideKey = q.score >= 9 ? 'exemplary' : q.score >= 7 ? 'strong' : q.score >= 5 ? 'developing' : 'emerging';
+    const nextKey  = guideKey === 'emerging' ? 'developing' : guideKey === 'developing' ? 'strong' : 'exemplary';
+    const qLines       = pdf.splitTextToSize(q.text || '', CW - 92);
+    const currentLines = guide[guideKey] ? pdf.splitTextToSize(guide[guideKey], CW - 36) : [];
+    const targetLines  = (guide[nextKey] && nextKey !== guideKey) ? pdf.splitTextToSize(guide[nextKey], CW - 36) : [];
+    return qLines.length * 11 + currentLines.length * 10 + targetLines.length * 10 +
+      (currentLines.length ? 24 : 0) + (targetLines.length ? 20 : 0) + 22;
+  }
+
   CATEGORIES.forEach(cat => {
-    // Practice header
-    checkSpace(50);
+    // Practice header — reserve room for the header AND its first question
+    // together so the colored band never lands alone at the bottom of a page.
+    const catQsPreview = scoredQs.filter(q => q.cat === cat.id).sort((a, b) => a.id - b.id);
+    const firstBlockH = catQsPreview.length ? estimateQuestionBlockH(catQsPreview[0]) : 0;
+    checkSpace(36 + firstBlockH + 8);
     drawRect(MARGIN, y, CW, 28, 6, cat.color);
     pdf.setFontSize(11);
     pdf.setFont('helvetica', 'bold');
@@ -617,7 +636,9 @@ export function generateAssessmentReport(latest, personName = '', personRole = '
   y += 16;
 
   // ── Development Timeline ──────────────────────────────────────────────────
-  checkSpace(40);
+  // Reserve the header + its intro line together so the navy band never
+  // lands alone at the bottom of a page.
+  checkSpace(34 + 18);
   drawRect(MARGIN, y, CW, 26, 6, [15, 32, 68]);
   pdf.setFontSize(12);
   pdf.setFont('helvetica', 'bold');
