@@ -62,6 +62,30 @@ export const TOOL_WEIGHTS = {
 
 const TOTAL_TOOLS = Object.keys(TOOL_WEIGHTS).length;
 
+// Map a pointEvent.toolLabel to a tool key (keys match TOOL_WEIGHTS), so activity
+// that earned points counts toward tool diversity even without a recorded visit.
+export function toolKeyFromLabel(label = '') {
+  const l = label.toLowerCase();
+  if (l.startsWith('smart goal')) return 'smart-goals';
+  if (l.startsWith('urgency')) return 'urgency';
+  if (l.startsWith('skills')) return 'skills';
+  if (l.startsWith('career')) return 'career';
+  if (l.startsWith('lean') || l.startsWith('waste')) return 'lean';
+  if (l.startsWith('feedback')) return 'feedback';
+  if (l.startsWith('mindfulness')) return 'mindfulness';
+  if (l.startsWith('action closed')) return 'visual-board';
+  if (l.startsWith('coaching')) return 'coaching';
+  if (l.startsWith('problem') || l.includes('5 why') || l.includes('fishbone') || l.includes('a3')) return 'problem-solving';
+  if (l.startsWith('disc')) return 'disc';
+  if (l.startsWith('eq')) return 'eq-opex';
+  if (l.startsWith('vision')) return 'vision';
+  if (l.startsWith('mentor')) return 'mentoring';
+  if (l.startsWith('training')) return 'training';
+  if (l.startsWith('quote')) return 'quotes';
+  if (l.startsWith('line of balance') || l.startsWith('lob')) return 'lob';
+  return null;
+}
+
 function fieldQuality(text = '') {
   const words = text.trim().split(/\s+/).filter(Boolean).length;
   if (words === 0)  return 0;
@@ -171,9 +195,15 @@ export async function calculateScore(uid) {
   const penaltyPts = data.penaltyPoints || 0;
   const bonusPts   = data.bonusPoints   || 0;
 
-  // --- Breadth (0-20): distinct tools used, stored in toolSessions array on user doc ---
+  // --- Breadth (0-20): distinct tools used. Counts tool visits (toolSessions) UNION
+  //     tools inferred from point-earning activity (pointEvents), so active use counts
+  //     even when a visit wasn't recorded as a session. ---
   const toolSessions = data.toolSessions || [];
-  const uniqueTools  = new Set(toolSessions.map(s => s.tool));
+  const uniqueTools  = new Set(toolSessions.map(s => s.tool).filter(Boolean));
+  (data.pointEvents || []).forEach(e => {
+    const key = toolKeyFromLabel(e.toolLabel || '');
+    if (key) uniqueTools.add(key);
+  });
   const breadth = Math.min((uniqueTools.size / TOTAL_TOOLS) * 20 * 1.5, 20);
 
   // --- Frequency (0-20): sessions in last 30 days ---
