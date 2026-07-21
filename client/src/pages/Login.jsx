@@ -41,8 +41,8 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1e3a6e 50%, #0d9488 100%)' }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <div style={{ width: 72, height: 72, borderRadius: 18, overflow: 'hidden', background: '#0f2044', margin: '0 auto 1rem' }}>
-            <img src="/LFT_logo_square_300x300.png" alt="Leadership Flow" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+          <div style={{ width: 72, height: 72, margin: '0 auto 1rem' }}>
+            <img src="/LFT_logo_square_300x300.png" alt="Leadership Flow" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
           </div>
           <h1 className="text-3xl font-bold text-white">Accountability App</h1>
           <p className="text-teal-200 mt-1 text-sm">High-Performance Leadership Platform</p>
