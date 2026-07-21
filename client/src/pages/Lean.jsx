@@ -808,52 +808,6 @@ export default function Lean() {
             </div>
           </div>
 
-          {/* Areas of Opportunity — required for weekly 5S points */}
-          <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #0d9488' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
-              <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.95rem' }}>Areas of Opportunity</h3>
-              <span style={{
-                padding: '3px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 700,
-                background: weekPtsEarned ? '#f0fdf4' : oppsQualified ? '#eff6ff' : '#f1f5f9',
-                color: weekPtsEarned ? '#15803d' : oppsQualified ? '#1d4ed8' : '#94a3b8',
-                border: `1px solid ${weekPtsEarned ? '#86efac' : oppsQualified ? '#bfdbfe' : '#e2e8f0'}`,
-              }}>
-                {weekPtsEarned ? '✓ +5 pts earned this week' : `${describedOpps}/${MIN_OPPS} described → +5 pts`}
-              </span>
-            </div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 12px', lineHeight: 1.5 }}>
-              Describe at least {MIN_OPPS} areas of opportunity found during this audit (min {MIN_OPP_WORDS} words each).
-              A weekly audit with {MIN_OPPS}+ described areas earns <strong>+5 pts</strong> — the points reset each week, so run a fresh audit weekly to keep them.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-              {opportunities.map((opp, idx) => {
-                const wc = oppWordCount(opp);
-                const ok = wc >= MIN_OPP_WORDS;
-                return (
-                  <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
-                    <span style={{ flexShrink: 0, marginTop: 9, width: 20, height: 20, borderRadius: '50%', fontSize: '0.7rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      background: ok ? '#0d9488' : '#e2e8f0', color: ok ? 'white' : '#94a3b8' }}>
-                      {ok ? '✓' : idx + 1}
-                    </span>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <textarea className="input" rows={2} style={{ fontSize: '0.825rem', resize: 'vertical' }}
-                        placeholder={`Area of opportunity ${idx + 1} — what needs improvement and where?`}
-                        value={opp} onChange={e => updateOpportunity(idx, e.target.value)} />
-                      <span style={{ fontSize: '0.65rem', color: ok ? '#15803d' : '#94a3b8', fontWeight: 600 }}>
-                        {wc}/{MIN_OPP_WORDS} words {ok ? '✓' : ''}
-                      </span>
-                    </div>
-                    <button onClick={() => removeOpportunity(idx)} title="Remove"
-                      style={{ flexShrink: 0, marginTop: 6, background: 'none', border: '1px solid #e2e8f0', borderRadius: 7, padding: '3px 9px', fontSize: '0.72rem', color: '#94a3b8', cursor: 'pointer' }}>✕</button>
-                  </div>
-                );
-              })}
-            </div>
-            <button onClick={addOpportunity} className="btn-secondary" style={{ fontSize: '0.78rem', padding: '0.35rem 0.875rem', marginTop: 10 }}>
-              ＋ Add another area
-            </button>
-          </div>
-
           {fiveSItems.map(cat => (
             <div key={cat.category} className="card" style={{ overflow: 'hidden' }}>
               <div style={{ padding: '0.75rem 1.25rem', background: '#0f2044' }}>
@@ -930,6 +884,52 @@ export default function Lean() {
               })}
             </div>
           ))}
+          {/* Areas of Opportunity — required for weekly 5S points */}
+          <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #0d9488' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+              <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.95rem' }}>Areas of Opportunity</h3>
+              <span style={{
+                padding: '3px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 700,
+                background: weekPtsEarned ? '#f0fdf4' : oppsQualified ? '#eff6ff' : '#f1f5f9',
+                color: weekPtsEarned ? '#15803d' : oppsQualified ? '#1d4ed8' : '#94a3b8',
+                border: `1px solid ${weekPtsEarned ? '#86efac' : oppsQualified ? '#bfdbfe' : '#e2e8f0'}`,
+              }}>
+                {weekPtsEarned ? '✓ +5 pts earned this week' : `${describedOpps}/${MIN_OPPS} described → +5 pts`}
+              </span>
+            </div>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 12px', lineHeight: 1.5 }}>
+              Describe at least {MIN_OPPS} areas of opportunity found during this audit (min {MIN_OPP_WORDS} words each).
+              A weekly audit with {MIN_OPPS}+ described areas earns <strong>+5 pts</strong> — the points reset each week, so run a fresh audit weekly to keep them.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {opportunities.map((opp, idx) => {
+                const wc = oppWordCount(opp);
+                const ok = wc >= MIN_OPP_WORDS;
+                return (
+                  <div key={idx} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                    <span style={{ flexShrink: 0, marginTop: 9, width: 20, height: 20, borderRadius: '50%', fontSize: '0.7rem', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      background: ok ? '#0d9488' : '#e2e8f0', color: ok ? 'white' : '#94a3b8' }}>
+                      {ok ? '✓' : idx + 1}
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <textarea className="input" rows={2} style={{ fontSize: '0.825rem', resize: 'vertical' }}
+                        placeholder={`Area of opportunity ${idx + 1} — what needs improvement and where?`}
+                        value={opp} onChange={e => updateOpportunity(idx, e.target.value)} />
+                      <span style={{ fontSize: '0.65rem', color: ok ? '#15803d' : '#94a3b8', fontWeight: 600 }}>
+                        {wc}/{MIN_OPP_WORDS} words {ok ? '✓' : ''}
+                      </span>
+                    </div>
+                    <button onClick={() => removeOpportunity(idx)} title="Remove"
+                      style={{ flexShrink: 0, marginTop: 6, background: 'none', border: '1px solid #e2e8f0', borderRadius: 7, padding: '3px 9px', fontSize: '0.72rem', color: '#94a3b8', cursor: 'pointer' }}>✕</button>
+                  </div>
+                );
+              })}
+            </div>
+            <button onClick={addOpportunity} className="btn-secondary" style={{ fontSize: '0.78rem', padding: '0.35rem 0.875rem', marginTop: 10 }}>
+              ＋ Add another area
+            </button>
+          </div>
+
           </div>{/* end left checklist */}
 
           {/* ── Right: audit history ── */}
