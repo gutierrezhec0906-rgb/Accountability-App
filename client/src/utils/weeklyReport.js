@@ -1,7 +1,7 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { newDoc, C } from './pdfKit';
-import { localDateStr } from './scoring';
+import { localDateStr, toolKeyFromLabel } from './scoring';
 
 // The 17 practice tools (keys match the route path stored in toolSessions.tool).
 export const REPORT_TOOLS = [
@@ -26,29 +26,8 @@ export const REPORT_TOOLS = [
 export const TOTAL_TOOLS = REPORT_TOOLS.length;
 const TOOL_LABEL = Object.fromEntries(REPORT_TOOLS.map(t => [t.key, t]));
 
-// Map a pointEvent.toolLabel to a tool key, so activity that earned points counts
-// as tool usage even if the toolSessions collection has no record of the visit.
-function toolKeyFromLabel(label = '') {
-  const l = label.toLowerCase();
-  if (l.startsWith('smart goal')) return 'smart-goals';
-  if (l.startsWith('urgency')) return 'urgency';
-  if (l.startsWith('skills')) return 'skills';
-  if (l.startsWith('career')) return 'career';
-  if (l.startsWith('lean') || l.startsWith('waste')) return 'lean';
-  if (l.startsWith('feedback')) return 'feedback';
-  if (l.startsWith('mindfulness')) return 'mindfulness';
-  if (l.startsWith('action closed')) return 'visual-board';
-  if (l.startsWith('coaching')) return 'coaching';
-  if (l.startsWith('problem') || l.includes('5 why') || l.includes('fishbone') || l.includes('a3')) return 'problem-solving';
-  if (l.startsWith('disc')) return 'disc';
-  if (l.startsWith('eq')) return 'eq-opex';
-  if (l.startsWith('vision')) return 'vision';
-  if (l.startsWith('mentor')) return 'mentoring';
-  if (l.startsWith('training')) return 'training';
-  if (l.startsWith('quote')) return 'quotes';
-  if (l.startsWith('line of balance') || l.startsWith('lob')) return 'lob';
-  return null;
-}
+// toolKeyFromLabel is imported from scoring.js — single source of truth so the
+// score, this report, and the server-side email never drift out of sync again.
 
 const QUOTES = [
   '"The growth and development of people is the highest calling of leadership." — Harvey Firestone',

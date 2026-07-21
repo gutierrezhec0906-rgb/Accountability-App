@@ -64,25 +64,29 @@ const TOTAL_TOOLS = Object.keys(TOOL_WEIGHTS).length;
 
 // Map a pointEvent.toolLabel to a tool key (keys match TOOL_WEIGHTS), so activity
 // that earned points counts toward tool diversity even without a recorded visit.
+// Matched against the ACTUAL toolLabel strings logPointEvent is called with across
+// the app (checked against every pages/*.jsx call site) — do not guess prefixes,
+// verify against real labels, or entries silently fail to map (e.g. "Leadership
+// Quotes" does not start with "quote"; "Personal Vision" does not start with "vision").
 export function toolKeyFromLabel(label = '') {
   const l = label.toLowerCase();
-  if (l.startsWith('smart goal')) return 'smart-goals';
-  if (l.startsWith('urgency')) return 'urgency';
-  if (l.startsWith('skills')) return 'skills';
-  if (l.startsWith('career')) return 'career';
-  if (l.startsWith('lean') || l.startsWith('waste')) return 'lean';
-  if (l.startsWith('feedback')) return 'feedback';
-  if (l.startsWith('mindfulness')) return 'mindfulness';
-  if (l.startsWith('action closed')) return 'visual-board';
-  if (l.startsWith('coaching')) return 'coaching';
-  if (l.startsWith('problem') || l.includes('5 why') || l.includes('fishbone') || l.includes('a3')) return 'problem-solving';
-  if (l.startsWith('disc')) return 'disc';
-  if (l.startsWith('eq')) return 'eq-opex';
-  if (l.startsWith('vision')) return 'vision';
-  if (l.startsWith('mentor')) return 'mentoring';
-  if (l.startsWith('training')) return 'training';
-  if (l.startsWith('quote')) return 'quotes';
-  if (l.startsWith('line of balance') || l.startsWith('lob')) return 'lob';
+  if (l.includes('smart goal')) return 'smart-goals';
+  if (l.includes('urgency')) return 'urgency';
+  if (l.includes('skills')) return 'skills';
+  if (l.includes('career')) return 'career';
+  if (l.includes('lean') || l.includes('waste')) return 'lean';
+  if (l.includes('feedback')) return 'feedback';
+  if (l.includes('mindfulness')) return 'mindfulness';
+  if (l.includes('action closed') || l.includes('visual board') || l.includes('quick action')) return 'visual-board';
+  if (l.includes('coaching')) return 'coaching';
+  if (l.includes('problem') || l.includes('5 why') || l.includes('fishbone') || l.includes('a3')) return 'problem-solving';
+  if (l.includes('disc')) return 'disc';
+  if (l.includes('eq assessment') || l.includes('eq development') || l.includes('eq opex') || l.includes('opex')) return 'eq-opex';
+  if (l.includes('vision')) return 'vision';
+  if (l.includes('mentor')) return 'mentoring';
+  if (l.includes('training')) return 'training';
+  if (l.includes('quote')) return 'quotes';
+  if (l.includes('line of balance') || l.includes('lob')) return 'lob';
   return null;
 }
 
