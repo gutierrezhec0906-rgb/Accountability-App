@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import { generateMentoringPDF } from '../utils/mentoringReport';
+import { logPointEvent, calculateScore, isCompleteMentoringSession } from '../utils/scoring';
 
 const PILLARS = ['Leadership', 'Technical', 'Interpersonal'];
 const PILLAR_COLORS = { Leadership: '#0f2044', Technical: '#0891b2', Interpersonal: '#8b5cf6' };
@@ -187,7 +188,25 @@ export default function Mentoring() {
       await setDoc(doc(db, 'users', currentUser.uid), { mentoringPlan: toSave }, { merge: true });
       setPlan(toSave);
       setSessionForm(null);
-      toast.success('Session logged');
+
+      // +5 pts every time a session is logged in its totality — date, progress
+      // review, challenge, and action item all filled in. No decay, no cap per
+      // session (the overall mentoring score caps for display, not per-award).
+      if (isCompleteMentoringSession(entry)) {
+        const { awarded } = await logPointEvent(currentUser.uid, {
+          points: 5,
+          toolLabel: 'Mentoring Session Logged',
+          reason: `Logged mentoring session on ${entry.date}`,
+        });
+        if (awarded) {
+          await calculateScore(currentUser.uid);
+          toast.success('Session logged! +5 pts earned.', { duration: 4000 });
+        } else {
+          toast.success('Session logged.');
+        }
+      } else {
+        toast.success('Session logged — fill in progress review, challenge, and action item next time to earn +5 pts.', { duration: 5000 });
+      }
     } catch { toast.error('Save failed'); }
     setSavingSession(false);
   }
@@ -237,7 +256,7 @@ export default function Mentoring() {
   if (loading) return <div style={{ maxWidth: 860, margin: '0 auto' }}><PageHeader icon="🤝" title="Mentoring" subtitle="Loading…" /></div>;
 
   return (
-    <div style={{ maxWidth: 860, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
+    <div style={{ maxWidth: 1180, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
       <PageHeader icon="🤝" title="Mentoring" subtitle="Mentee-owned, mentor-guided. Pick who helps you grow, set goals across all three pillars, and track the journey." />
 
       {/* Status + actions banner */}
@@ -259,6 +278,10 @@ export default function Mentoring() {
           <button className="btn-primary" onClick={savePlan} disabled={saving}>{saving ? 'Saving…' : '💾 Save Plan'}</button>
         </div>
       </div>
+
+      {/* Main template (left) + Session Log sidebar (right) */}
+      <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+      <div style={{ flex: '1 1 480px', maxWidth: 860, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
       {/* SECTION 1 — Match & Commit */}
       <SectionCard n="1" title="Match & Commit" accent="#7c3aed"
@@ -361,33 +384,9 @@ export default function Mentoring() {
           <button className="btn-primary" onClick={openSessionForm}>+ Log Session</button>
         </div>
         {!planStarted && <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '0 0 10px' }}>Logging your first session starts the cycle automatically.</p>}
-
-        {plan.sessions.length > 0 && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {plan.sessions.map(s => {
-              const open = expandedSession === s.id;
-              return (
-                <div key={s.id} style={{ borderRadius: 10, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
-                  <button onClick={() => setExpandedSession(open ? null : s.id)}
-                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '0.6rem 0.875rem', background: '#f8fafc', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-primary)', flex: 1 }}>{s.date}</span>
-                    {s.challenge?.trim() && <span style={{ fontSize: '0.62rem', fontWeight: 700, background: '#fef9c3', color: '#b45309', borderRadius: 9999, padding: '1px 8px' }}>Challenge noted</span>}
-                    <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{open ? '▲' : '▼'}</span>
-                  </button>
-                  {open && (
-                    <div style={{ padding: '0.75rem 0.875rem', background: 'white', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.55 }}>
-                      {s.progressReview && <p style={{ margin: '0 0 6px' }}><strong style={{ color: '#0f2044' }}>Progress Review:</strong> {s.progressReview}</p>}
-                      {s.challenge && <p style={{ margin: '0 0 6px' }}><strong style={{ color: '#b45309' }}>Challenge:</strong> {s.challenge}</p>}
-                      {s.actionItem && <p style={{ margin: '0 0 6px' }}><strong style={{ color: '#0d9488' }}>Action Item:</strong> {s.actionItem}</p>}
-                      {s.notes && <p style={{ margin: '0 0 6px' }}><strong style={{ color: '#0f2044' }}>Notes:</strong> {s.notes}</p>}
-                      <button onClick={() => deleteSession(s.id)} style={{ background: 'none', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 7, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>🗑 Delete</button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        )}
+        <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>
+          Every fully-logged session (date, progress review, challenge, and action item all filled) earns <strong>+5 pts</strong>. Sessions are listed in the sidebar →
+        </p>
       </SectionCard>
 
       {/* SECTION 4 — Track Progress */}
@@ -462,6 +461,61 @@ export default function Mentoring() {
           <p style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Start the cycle above to unlock close-out.</p>
         )}
       </SectionCard>
+
+      </div>{/* end main column */}
+
+      {/* ── Sidebar: Session Log ── */}
+      <div style={{ width: 300, maxWidth: '100%', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div className="card" style={{ padding: '1.25rem' }}>
+          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 2px', fontSize: '0.95rem' }}>Session Log ({plan.sessions.length})</h3>
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: '0 0 12px', lineHeight: 1.5 }}>
+            Every logged session — tap to expand. +5 pts each time all 4 fields are filled.
+          </p>
+          {plan.sessions.length === 0 ? (
+            <p style={{ fontSize: '0.78rem', color: '#94a3b8', textAlign: 'center', margin: '16px 0' }}>No sessions logged yet.</p>
+          ) : (
+            <>
+              <style>{`
+                .mentoring-session-scroll::-webkit-scrollbar { width: 8px; -webkit-appearance: none; }
+                .mentoring-session-scroll::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 8px; }
+                .mentoring-session-scroll::-webkit-scrollbar-thumb { background: #64748b; border-radius: 8px; border: 1px solid #e2e8f0; }
+              `}</style>
+              <div className="mentoring-session-scroll" style={{
+                display: 'flex', flexDirection: 'column', gap: 8,
+                maxHeight: 520, overflowY: 'scroll', paddingRight: 6,
+                scrollbarWidth: 'thin', scrollbarColor: '#64748b #e2e8f0',
+              }}>
+                {plan.sessions.map(s => {
+                  const open = expandedSession === s.id;
+                  const complete = isCompleteMentoringSession(s);
+                  return (
+                    <div key={s.id} style={{ borderRadius: 10, border: '1px solid #e2e8f0', overflow: 'hidden', flexShrink: 0 }}>
+                      <button onClick={() => setExpandedSession(open ? null : s.id)}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 6, padding: '0.6rem 0.75rem', background: '#f8fafc', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.78rem', color: 'var(--text-primary)', flex: 1 }}>{s.date}</span>
+                        {complete && <span style={{ fontSize: '0.6rem', fontWeight: 700, background: '#f0fdf4', color: '#15803d', borderRadius: 9999, padding: '1px 6px', flexShrink: 0 }}>+5</span>}
+                        {s.challenge?.trim() && <span style={{ fontSize: '0.6rem', fontWeight: 700, background: '#fef9c3', color: '#b45309', borderRadius: 9999, padding: '1px 6px', flexShrink: 0 }}>⚠</span>}
+                        <span style={{ fontSize: '0.68rem', color: '#64748b', flexShrink: 0 }}>{open ? '▲' : '▼'}</span>
+                      </button>
+                      {open && (
+                        <div style={{ padding: '0.65rem 0.75rem', background: 'white', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                          {s.progressReview && <p style={{ margin: '0 0 5px' }}><strong style={{ color: '#0f2044' }}>Progress:</strong> {s.progressReview}</p>}
+                          {s.challenge && <p style={{ margin: '0 0 5px' }}><strong style={{ color: '#b45309' }}>Challenge:</strong> {s.challenge}</p>}
+                          {s.actionItem && <p style={{ margin: '0 0 5px' }}><strong style={{ color: '#0d9488' }}>Action:</strong> {s.actionItem}</p>}
+                          {s.notes && <p style={{ margin: '0 0 5px' }}><strong style={{ color: '#0f2044' }}>Notes:</strong> {s.notes}</p>}
+                          <button onClick={() => deleteSession(s.id)} style={{ background: 'none', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 7, padding: '2px 9px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer' }}>🗑 Delete</button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+
+      </div>{/* end main + sidebar row */}
 
       {/* Session log modal */}
       {sessionForm && (

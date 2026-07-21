@@ -109,6 +109,12 @@ export function weekMonday(dateStr) {
   return d.toISOString().split('T')[0];
 }
 
+// A mentoring session counts as "logged in its totality" — earning +5 pts —
+// when the date, progress review, challenge, and action item are all filled in.
+export function isCompleteMentoringSession(s) {
+  return !!(s.date && (s.progressReview || '').trim() && (s.challenge || '').trim() && (s.actionItem || '').trim());
+}
+
 // A coaching session counts as "complete" when it has coachee, goal, notes,
 // and at least one action item with a description.
 export function isCompleteCoachingSession(s) {
@@ -284,6 +290,12 @@ export async function calculateScore(uid) {
     .filter(e => e.toolLabel === 'Action Closed On Time' && e.date >= sevenDaysAgoStr && e.points > 0)
     .reduce((s, e) => s + e.points, 0);
 
+  // --- Mentoring (0-20): +5 pts per fully-logged session (date, progress review,
+  //     challenge, and action item all filled) — no decay, capped for display scale ---
+  const mentoringPoints = Math.min(20, allEvents
+    .filter(e => e.toolLabel === 'Mentoring Session Logged' && e.points > 0)
+    .reduce((s, e) => s + e.points, 0));
+
   // --- Skills Development (0-3): self-assessment +1, peer survey requested +1, peer survey received +1 — each max once per rolling 30 days ---
   const SKILLS_LABELS = ['Skills Self-Assessment', 'Skills Peer Survey Requested', 'Skills Peer Survey Received'];
   const skillsPoints = SKILLS_LABELS.reduce((sum, label) =>
@@ -331,7 +343,7 @@ export async function calculateScore(uid) {
   );
 
   const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + quality + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + urgencyPoints + skillsPoints + lean5sPoints + wastePoints + careerPoints + bonusPts - penaltyPts
+    breadth + frequency + quality + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + mentoringPoints + urgencyPoints + skillsPoints + lean5sPoints + wastePoints + careerPoints + bonusPts - penaltyPts
   )));
 
   // Persist score to user doc
@@ -357,6 +369,7 @@ export async function calculateScore(uid) {
     mindfulness:    Math.round(mindfulnessPoints),
     feedbackGiven:  Math.round(feedbackPoints),
     actionsClosed:  Math.round(actionsClosedPoints),
+    mentoring:      Math.round(mentoringPoints),
     urgency:        Math.round(urgencyPoints),
     skills:         Math.round(skillsPoints),
     lean5s:         Math.round(lean5sPoints),
