@@ -26,6 +26,30 @@ export const REPORT_TOOLS = [
 export const TOTAL_TOOLS = REPORT_TOOLS.length;
 const TOOL_LABEL = Object.fromEntries(REPORT_TOOLS.map(t => [t.key, t]));
 
+// Map a pointEvent.toolLabel to a tool key, so activity that earned points counts
+// as tool usage even if the toolSessions collection has no record of the visit.
+function toolKeyFromLabel(label = '') {
+  const l = label.toLowerCase();
+  if (l.startsWith('smart goal')) return 'smart-goals';
+  if (l.startsWith('urgency')) return 'urgency';
+  if (l.startsWith('skills')) return 'skills';
+  if (l.startsWith('career')) return 'career';
+  if (l.startsWith('lean') || l.startsWith('waste')) return 'lean';
+  if (l.startsWith('feedback')) return 'feedback';
+  if (l.startsWith('mindfulness')) return 'mindfulness';
+  if (l.startsWith('action closed')) return 'visual-board';
+  if (l.startsWith('coaching')) return 'coaching';
+  if (l.startsWith('problem') || l.includes('5 why') || l.includes('fishbone') || l.includes('a3')) return 'problem-solving';
+  if (l.startsWith('disc')) return 'disc';
+  if (l.startsWith('eq')) return 'eq-opex';
+  if (l.startsWith('vision')) return 'vision';
+  if (l.startsWith('mentor')) return 'mentoring';
+  if (l.startsWith('training')) return 'training';
+  if (l.startsWith('quote')) return 'quotes';
+  if (l.startsWith('line of balance') || l.startsWith('lob')) return 'lob';
+  return null;
+}
+
 const QUOTES = [
   '"The growth and development of people is the highest calling of leadership." — Harvey Firestone',
   '"A leader is one who knows the way, goes the way, and shows the way." — John C. Maxwell',
@@ -65,7 +89,9 @@ export async function fetchWeeklyReportData(uid) {
   const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
   const weekAgoStr = localDateStr(new Date(weekAgo));
 
-  // Tool usage this week + all-time from the toolSessions collection
+  // Tool usage — combine TWO signals so it's accurate even if one is empty:
+  //   1) the toolSessions collection (passive page visits)
+  //   2) pointEvents mapped to tools (activity that earned points)
   let usedThisWeek = new Set(), usedEver = new Set();
   try {
     const ts = await getDocs(query(collection(db, 'toolSessions'), where('uid', '==', uid)));
@@ -77,7 +103,15 @@ export async function fetchWeeklyReportData(uid) {
     });
   } catch (e) { console.warn('toolSessions query failed', e); }
 
-  const events = (data.pointEvents || []).filter(e => (e.date || '') >= weekAgoStr);
+  const allEvents = data.pointEvents || [];
+  allEvents.forEach(e => {
+    const key = toolKeyFromLabel(e.toolLabel || '');
+    if (!key || !TOOL_LABEL[key]) return;
+    usedEver.add(key);
+    if ((e.date || '') >= weekAgoStr) usedThisWeek.add(key);
+  });
+
+  const events = allEvents.filter(e => (e.date || '') >= weekAgoStr);
   const weekPoints = events.filter(e => e.points > 0).reduce((s, e) => s + e.points, 0);
   const score = data.calculatedScore || 0;
 
