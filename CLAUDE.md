@@ -129,6 +129,8 @@ Reference implementation: `DailyMovementFeed` + `DayRow` in `client/src/pages/Sc
   summed by scoring — no double count). Waste tab has a Pareto chart (`WasteParetoChart`)
   auto-built from the tally + an 80/20 lesson, per-card "+ Log this waste" → modal,
   weekly progress reminder, and a scrollable log history.
+- Mentoring: no scoring wired yet (structure only — see below). `TOOL_WEIGHTS.mentoring`
+  already exists for breadth/diversity credit on page visits.
 - Career Development (max 10): 10 pts for a 100%-complete `careerPlan` (all 11 narrative
   questions ≥20 words + committed coach + timeline + per-pillar resources/timeline).
   Computed live in `calculateScore` from `data.careerPlan` (NOT a pointEvent — it decays
