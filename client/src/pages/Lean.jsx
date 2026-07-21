@@ -452,6 +452,60 @@ function KaizenCard({ k, onEdit }) {
   );
 }
 
+// Pareto chart — bars sorted high→low + cumulative % line + 80% reference line.
+// Teaches the 80/20 rule: the few waste types on the left drive most of the problems.
+function WasteParetoChart({ tally }) {
+  const data = tally.filter(d => d.count > 0).sort((a, b) => b.count - a.count);
+  const total = data.reduce((s, d) => s + d.count, 0);
+  if (total === 0) return null;
+
+  const W = 640, H = 300, padL = 40, padR = 44, padT = 20, padB = 70;
+  const chartW = W - padL - padR, chartH = H - padT - padB;
+  const maxCount = Math.max(...data.map(d => d.count));
+  const bw = chartW / data.length;
+
+  let cum = 0;
+  const pts = data.map((d, i) => {
+    cum += d.count;
+    const cumPct = (cum / total) * 100;
+    return { ...d, cumPct, x: padL + bw * i + bw / 2, cy: padT + chartH - (cumPct / 100) * chartH };
+  });
+  const y80 = padT + chartH - 0.8 * chartH;
+
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', overflow: 'visible' }}>
+      {/* Y gridlines */}
+      {[0, 25, 50, 75, 100].map(p => {
+        const gy = padT + chartH - (p / 100) * chartH;
+        return <g key={p}>
+          <line x1={padL} y1={gy} x2={padL + chartW} y2={gy} stroke="#e2e8f0" strokeWidth="1" />
+          <text x={padL + chartW + 6} y={gy + 3} fontSize="9" fill="#94a3b8">{p}%</text>
+        </g>;
+      })}
+      {/* 80% reference line */}
+      <line x1={padL} y1={y80} x2={padL + chartW} y2={y80} stroke="#ef4444" strokeWidth="1.5" strokeDasharray="5 4" />
+      <text x={padL + 2} y={y80 - 4} fontSize="9" fontWeight="700" fill="#ef4444">80% line — focus here ↑</text>
+      {/* Bars */}
+      {pts.map((d, i) => {
+        const bh = (d.count / maxCount) * chartH;
+        const withinVital = d.cumPct <= 80 || i === 0;
+        return <g key={d.type}>
+          <rect x={d.x - bw * 0.35} y={padT + chartH - bh} width={bw * 0.7} height={bh}
+            fill={withinVital ? '#0f2044' : '#94a3b8'} rx="2" />
+          <text x={d.x} y={padT + chartH - bh - 4} fontSize="9" fontWeight="700" fill="#0f2044" textAnchor="middle">{d.count}</text>
+          <text x={d.x} y={padT + chartH + 14} fontSize="12" textAnchor="middle">{d.icon}</text>
+          <text x={d.x} y={padT + chartH + 30} fontSize="7.5" fill="#64748b" textAnchor="middle">
+            {d.type.length > 12 ? d.type.slice(0, 11) + '…' : d.type}
+          </text>
+        </g>;
+      })}
+      {/* Cumulative line */}
+      <polyline points={pts.map(d => `${d.x},${d.cy}`).join(' ')} fill="none" stroke="#0d9488" strokeWidth="2.5" />
+      {pts.map(d => <circle key={d.type} cx={d.x} cy={d.cy} r="3.5" fill="#0d9488" />)}
+    </svg>
+  );
+}
+
 export default function Lean() {
   const { currentUser } = useAuth();
   const [activeTab, setActiveTab] = useState('5s');
@@ -466,6 +520,12 @@ export default function Lean() {
   const [kaizen, setKaizen]       = useState([]);
   const [showForm, setShowForm]   = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
+
+  // Waste Walk
+  const [wasteLogs, setWasteLogs] = useState([]);
+  const [wasteForm, setWasteForm] = useState(null); // { type, location, description, impact, countermeasure }
+  const [savingWaste, setSavingWaste] = useState(false);
+  const [expandedWaste, setExpandedWaste] = useState(null);
 
   function toggle(cat, idx) { const k = `${cat}-${idx}`; setChecks(c => ({ ...c, [k]: !c[k] })); }
 
@@ -510,12 +570,71 @@ export default function Lean() {
       if (snap.exists()) {
         const data = snap.data();
         setAuditHistory(data.fiveSAudits || []);
+        setWasteLogs(data.wasteLogs || []);
         const cutoff = localDateStr(new Date(Date.now() - SEVEN_DAYS_MS));
         setWeekPtsEarned((data.pointEvents || []).some(
           e => e.toolLabel === 'Lean 5S Audit' && e.date >= cutoff && e.points > 0
         ));
       }
     } catch {}
+  }
+
+  const wasteCutoff = localDateStr(new Date(Date.now() - SEVEN_DAYS_MS));
+  // Distinct waste categories logged this week (each = 1 pt, max 5)
+  const wasteTypesThisWeek = new Set(wasteLogs.filter(l => (l.date || '') >= wasteCutoff && l.type).map(l => l.type));
+  const wastePtsThisWeek = Math.min(5, wasteTypesThisWeek.size);
+  // All-time tally per waste type for the Pareto chart
+  const wasteTally = wasteTypes.map(w => ({
+    type: w.type, icon: w.icon,
+    count: wasteLogs.filter(l => l.type === w.type).length,
+  }));
+
+  async function saveWasteLog() {
+    if (!wasteForm || !currentUser) return;
+    if (!wasteForm.location.trim() || !wasteForm.description.trim()) {
+      return toast.error('Please fill in the location and what you observed');
+    }
+    setSavingWaste(true);
+    try {
+      const now = new Date();
+      const entry = {
+        id: now.getTime().toString(),
+        type: wasteForm.type,
+        location: wasteForm.location.trim(),
+        description: wasteForm.description.trim(),
+        impact: (wasteForm.impact || '').trim(),
+        countermeasure: (wasteForm.countermeasure || '').trim(),
+        date: localDateStr(now),
+        savedAt: now.toISOString(),
+      };
+      // Is this a NEW distinct category for the current 7-day window? (drives the +1 point)
+      const isNewCategoryThisWeek = !wasteLogs.some(l => l.type === entry.type && (l.date || '') >= wasteCutoff);
+      const updated = [entry, ...wasteLogs].slice(0, 200);
+      await setDoc(doc(db, 'users', currentUser.uid), { wasteLogs: updated }, { merge: true });
+      setWasteLogs(updated);
+      setWasteForm(null);
+
+      if (isNewCategoryThisWeek && wastePtsThisWeek < 5) {
+        await logPointEvent(currentUser.uid, {
+          points: 1,
+          toolLabel: 'Waste Walk Log',
+          reason: `Logged ${entry.type} waste at ${entry.location}`,
+        });
+        await calculateScore(currentUser.uid);
+        toast.success(`${entry.type} logged! +1 pt — ${Math.min(5, wasteTypesThisWeek.size + 1)}/5 categories this week.`, { duration: 4000 });
+      } else {
+        await calculateScore(currentUser.uid);
+        toast.success(`${entry.type} logged. (Log a different waste type to earn more points this week.)`);
+      }
+    } catch (e) { console.error(e); toast.error('Save failed'); }
+    setSavingWaste(false);
+  }
+
+  async function deleteWasteLog(id) {
+    const updated = wasteLogs.filter(l => l.id !== id);
+    await setDoc(doc(db, 'users', currentUser.uid), { wasteLogs: updated }, { merge: true });
+    setWasteLogs(updated);
+    toast.success('Waste log deleted');
   }
 
   async function saveAudit() {
@@ -878,19 +997,150 @@ export default function Lean() {
         </div>
       )}
 
-      {/* Waste Types Tab */}
+      {/* Waste Types Tab — Waste Walk */}
       {activeTab === 'waste' && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(340px,1fr))', gap: '0.875rem' }}>
-          {wasteTypes.map(w => (
-            <div key={w.type} className="card" style={{ padding: '1.125rem', display: 'flex', gap: 12 }}>
-              <span style={{ fontSize: '1.75rem', flexShrink: 0 }}>{w.icon}</span>
-              <div>
-                <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.875rem', margin: '0 0 4px' }}>{w.type}</h4>
-                <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 6px', lineHeight: 1.5 }}>{w.desc}</p>
-                <p style={{ fontSize: '0.78rem', color: '#0d9488', fontStyle: 'italic', margin: 0 }}>Example: {w.example}</p>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+
+          {/* Weekly points reminder */}
+          <div className="card" style={{ padding: '1rem 1.25rem', borderLeft: '4px solid #0d9488', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ textAlign: 'center', flexShrink: 0 }}>
+              <div style={{ fontSize: '1.6rem', fontWeight: 900, lineHeight: 1, color: wastePtsThisWeek === 5 ? '#15803d' : '#0f2044' }}>{wastePtsThisWeek}<span style={{ fontSize: '0.8rem', color: '#94a3b8', fontWeight: 600 }}>/5</span></div>
+              <div style={{ fontSize: '0.58rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>pts this week</div>
+            </div>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <p style={{ fontWeight: 800, margin: '0 0 2px', fontSize: '0.9rem', color: 'var(--text-primary)' }}>
+                {wastePtsThisWeek === 5 ? '🏆 All 5 waste-walk points earned this week!' : 'Log 5 different wastes this week to earn 5 points'}
+              </p>
+              <p style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+                +1 pt per <strong>distinct</strong> waste category you log. Points reset every week — re-log fresh wastes to keep them.
+                {wasteTypesThisWeek.size < 5 && <> Still to log: <strong>{wasteTypes.filter(w => !wasteTypesThisWeek.has(w.type)).map(w => w.type).join(', ')}</strong>.</>}
+              </p>
+            </div>
+          </div>
+
+          {/* Pareto chart + 80/20 lesson */}
+          {wasteLogs.length > 0 && (
+            <div className="card" style={{ padding: '1.25rem' }}>
+              <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 2px', fontSize: '1rem' }}>📊 Waste Pareto Chart</h3>
+              <p style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', margin: '0 0 12px', lineHeight: 1.5 }}>
+                Auto-built from your logs — the tallest bars on the left are where most of your waste is coming from.
+              </p>
+              <WasteParetoChart tally={wasteTally} />
+              <div style={{ marginTop: 12, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '0.875rem 1rem' }}>
+                <p style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0f2044', margin: '0 0 4px' }}>💡 The 80/20 Rule (Pareto Principle)</p>
+                <p style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.55 }}>
+                  Vilfredo Pareto observed that roughly <strong>80% of results come from 20% of causes</strong>. In Lean, that means a small number of waste
+                  types usually drive most of your losses. The teal line shows the <strong>cumulative %</strong>; the tools/wastes to the left of where it
+                  crosses the red <strong>80% line</strong> are your "vital few" — fix those first for the biggest impact, instead of spreading effort thin
+                  across every problem equally.
+                </p>
               </div>
             </div>
-          ))}
+          )}
+
+          {/* Waste cards with Log buttons */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(340px,1fr))', gap: '0.875rem' }}>
+            {wasteTypes.map(w => {
+              const loggedThisWeek = wasteTypesThisWeek.has(w.type);
+              const total = wasteLogs.filter(l => l.type === w.type).length;
+              return (
+                <div key={w.type} className="card" style={{ padding: '1.125rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ display: 'flex', gap: 12 }}>
+                    <span style={{ fontSize: '1.75rem', flexShrink: 0 }}>{w.icon}</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                        <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.875rem', margin: 0 }}>{w.type}</h4>
+                        {loggedThisWeek && <span style={{ fontSize: '0.6rem', fontWeight: 700, background: '#f0fdf4', color: '#15803d', border: '1px solid #86efac', borderRadius: 9999, padding: '1px 7px' }}>✓ +1 this week</span>}
+                        {total > 0 && <span style={{ fontSize: '0.6rem', fontWeight: 700, color: '#64748b' }}>{total} logged all-time</span>}
+                      </div>
+                      <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '4px 0 4px', lineHeight: 1.5 }}>{w.desc}</p>
+                      <p style={{ fontSize: '0.76rem', color: '#0d9488', fontStyle: 'italic', margin: 0 }}>Example: {w.example}</p>
+                    </div>
+                  </div>
+                  <button className="btn-secondary" style={{ fontSize: '0.78rem', padding: '0.35rem 0.875rem', alignSelf: 'flex-start' }}
+                    onClick={() => setWasteForm({ type: w.type, location: '', description: '', impact: '', countermeasure: '' })}>
+                    + Log this waste
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Recent logs */}
+          {wasteLogs.length > 0 && (
+            <div className="card" style={{ padding: '1rem 1.25rem' }}>
+              <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.9rem' }}>Waste Walk Log ({wasteLogs.length})</h4>
+              <style>{`
+                .waste-scroll::-webkit-scrollbar { width: 8px; -webkit-appearance: none; }
+                .waste-scroll::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 8px; }
+                .waste-scroll::-webkit-scrollbar-thumb { background: #64748b; border-radius: 8px; border: 1px solid #e2e8f0; }
+              `}</style>
+              <div className="waste-scroll" style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 360, overflowY: 'scroll', paddingRight: 6, scrollbarWidth: 'thin', scrollbarColor: '#64748b #e2e8f0' }}>
+                {wasteLogs.map(l => {
+                  const wt = wasteTypes.find(w => w.type === l.type);
+                  const open = expandedWaste === l.id;
+                  return (
+                    <div key={l.id} style={{ borderRadius: 10, border: '1px solid #e2e8f0', overflow: 'hidden', flexShrink: 0 }}>
+                      <button onClick={() => setExpandedWaste(open ? null : l.id)}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '0.6rem 0.875rem', background: '#f8fafc', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                        <span style={{ fontSize: '1.1rem' }}>{wt?.icon || '🗑️'}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{l.type}</span>
+                          <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}> · {l.location} · {l.date}</span>
+                        </div>
+                        <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{open ? '▲' : '▼'}</span>
+                      </button>
+                      {open && (
+                        <div style={{ padding: '0.75rem 0.875rem', background: 'white', fontSize: '0.78rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
+                          <p style={{ margin: '0 0 6px' }}><strong style={{ color: '#0f2044' }}>What was seen:</strong> {l.description}</p>
+                          {l.impact && <p style={{ margin: '0 0 6px' }}><strong style={{ color: '#0f2044' }}>Impact:</strong> {l.impact}</p>}
+                          {l.countermeasure && <p style={{ margin: '0 0 6px' }}><strong style={{ color: '#0f2044' }}>Countermeasure:</strong> {l.countermeasure}</p>}
+                          <button onClick={() => deleteWasteLog(l.id)} style={{ background: 'none', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 7, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>🗑 Delete</button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Waste log entry modal */}
+      {wasteForm && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+          onClick={() => setWasteForm(null)}>
+          <div className="card" style={{ maxWidth: 460, width: '100%', padding: '1.5rem', borderRadius: 16 }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+              <span style={{ fontSize: '1.5rem' }}>{wasteTypes.find(w => w.type === wasteForm.type)?.icon}</span>
+              <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1rem' }}>Log {wasteForm.type} Waste</h3>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              <div>
+                <label className="label">Area / Location *</label>
+                <input className="input" value={wasteForm.location} onChange={e => setWasteForm(f => ({ ...f, location: e.target.value }))} placeholder="e.g. Assembly Line 3, Shipping dock…" />
+              </div>
+              <div>
+                <label className="label">What did you observe? *</label>
+                <textarea className="input" rows={2} value={wasteForm.description} onChange={e => setWasteForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the waste you saw…" />
+              </div>
+              <div>
+                <label className="label">Estimated impact (optional)</label>
+                <input className="input" value={wasteForm.impact} onChange={e => setWasteForm(f => ({ ...f, impact: e.target.value }))} placeholder="e.g. ~30 min/day, 5% scrap, delays shipments" />
+              </div>
+              <div>
+                <label className="label">Countermeasure idea (optional)</label>
+                <textarea className="input" rows={2} value={wasteForm.countermeasure} onChange={e => setWasteForm(f => ({ ...f, countermeasure: e.target.value }))} placeholder="What could reduce or eliminate it?" />
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
+              <button className="btn-primary" onClick={saveWasteLog} disabled={savingWaste} style={{ flex: 1 }}>
+                {savingWaste ? 'Saving…' : '💾 Save Waste Log'}
+              </button>
+              <button className="btn-secondary" onClick={() => setWasteForm(null)}>Cancel</button>
+            </div>
+          </div>
         </div>
       )}
 

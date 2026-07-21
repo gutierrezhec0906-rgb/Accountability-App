@@ -274,6 +274,14 @@ export async function calculateScore(uid) {
   //     Rolling 7-day window — the points expire after a week unless a new audit is saved. ---
   const lean5sPoints = allEvents.some(e => e.toolLabel === 'Lean 5S Audit' && e.date >= sevenDaysAgoStr && e.points > 0) ? 5 : 0;
 
+  // --- Waste Walk (0-5): +1 per DISTINCT waste category logged in the rolling 7-day
+  //     window, capped at 5. Points expire after a week — re-log fresh wastes to keep them. ---
+  const wasteLogs = data.wasteLogs || [];
+  const wasteTypesThisWeek = new Set(
+    wasteLogs.filter(l => (l.date || '') >= sevenDaysAgoStr && l.type).map(l => l.type)
+  );
+  const wastePoints = Math.min(5, wasteTypesThisWeek.size);
+
   // --- Career Development (0-10): 10 pts for a fully completed plan (100% of template,
   //     min 20 words per question). Sustained by milestone progress notes — the leader must
   //     return at each checkpoint and log notes or the points decay:
@@ -304,7 +312,7 @@ export async function calculateScore(uid) {
   );
 
   const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + urgencyPoints + skillsPoints + lean5sPoints + careerPoints + bonusPts - penaltyPts
+    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + urgencyPoints + skillsPoints + lean5sPoints + wastePoints + careerPoints + bonusPts - penaltyPts
   )));
 
   // Persist score to user doc
@@ -335,6 +343,7 @@ export async function calculateScore(uid) {
     urgency:        Math.round(urgencyPoints),
     skills:         Math.round(skillsPoints),
     lean5s:         Math.round(lean5sPoints),
+    waste:          Math.round(wastePoints),
     career:         Math.round(careerPoints),
     bonus:          Math.round(bonusPts),
   };
