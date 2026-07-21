@@ -158,18 +158,21 @@ export async function generateWeeklyReportPDF(uid) {
   });
   k.y += 72;
 
-  // ── Action Status Summary: 3 icon tiles (Red / Yellow / Green counts only) ──
+  // ── Action Status Summary: 3 tiles (Red / Yellow / Green counts only) ──
+  // Status indicators are drawn as filled circles, NOT emoji glyphs — jsPDF's
+  // built-in Helvetica font has no emoji support and renders them as garbled
+  // mojibake (e.g. "Ø=Ý4") in the PDF.
   k.sectionHeader('Action Status Summary', C.navy);
   const statusTiles = [
-    { icon: '🔴', label: 'RED — OVERDUE', count: r.redActions.length, color: C.red },
-    { icon: '🟡', label: 'YELLOW — DUE SOON', count: r.yellowActions.length, color: C.amber },
-    { icon: '🟢', label: 'GREEN — ON TRACK', count: r.greenCount, color: C.green },
+    { label: 'RED — OVERDUE', count: r.redActions.length, color: C.red },
+    { label: 'YELLOW — DUE SOON', count: r.yellowActions.length, color: C.amber },
+    { label: 'GREEN — ON TRACK', count: r.greenCount, color: C.green },
   ];
   const stw = (CW - 20) / 3;
   statusTiles.forEach((t, i) => {
     const x = MARGIN + i * (stw + 10);
     pdf.setFillColor(...C.light); pdf.roundedRect(x, k.y, stw, 58, 6, 6, 'F');
-    pdf.setFontSize(18); pdf.text(t.icon, x + 12, k.y + 24);
+    pdf.setFillColor(...t.color); pdf.circle(x + 18, k.y + 20, 6, 'F');
     pdf.setFontSize(20); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...t.color);
     pdf.text(String(t.count), x + stw - 16, k.y + 26, { align: 'right' });
     pdf.setFontSize(7); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.muted);
@@ -214,18 +217,22 @@ export async function generateWeeklyReportPDF(uid) {
     k.text('Full coverage — every tool has been touched recently. Excellent breadth.', MARGIN, 9.5, C.green, true, CW);
     k.y += 16;
   } else {
+    // Tool "icon" fields are emoji — drawn as a small colored dot instead of
+    // printed as text (see note above on jsPDF's font not supporting emoji).
     r.notUsedIn3Weeks.forEach(t => {
       k.space(14);
+      pdf.setFillColor(...C.red); pdf.circle(MARGIN + 3, k.y + 1, 2.5, 'F');
       pdf.setFontSize(9); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.red);
-      pdf.text(k.safe(`${t.icon}  ${t.label}`), MARGIN, k.y + 4);
+      pdf.text(k.safe(t.label), MARGIN + 10, k.y + 4);
       pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.muted);
       pdf.text('Not touched in 3 weeks', MARGIN + CW - 100, k.y + 4, { align: 'right' });
       k.y += 14;
     });
     recs.forEach(t => {
       k.space(14);
+      pdf.setFillColor(...C.muted); pdf.circle(MARGIN + 3, k.y + 1, 2.5, 'F');
       pdf.setFontSize(9); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.text);
-      pdf.text(k.safe(`${t.icon}  ${t.label}`), MARGIN, k.y + 4);
+      pdf.text(k.safe(t.label), MARGIN + 10, k.y + 4);
       pdf.setTextColor(...C.muted);
       pdf.text('Not used this week', MARGIN + CW - 100, k.y + 4, { align: 'right' });
       k.y += 14;
