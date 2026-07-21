@@ -211,18 +211,6 @@ export async function calculateScore(uid) {
   const recentSessions  = toolSessions.filter(s => (s.openedAt || 0) >= thirtyDaysAgo);
   const frequency = Math.min((recentSessions.length / 20) * 20, 20);
 
-  // --- Depth (0-15): avg time per session ---
-  function depthMult(sec) {
-    if (sec < 60)   return 0;
-    if (sec < 180)  return 0.2;
-    if (sec < 600)  return 0.6;
-    if (sec < 1800) return 1.0;
-    return 1.2;
-  }
-  const depthScores = toolSessions.map(s => depthMult(s.durationSeconds || 0));
-  const avgDepth = depthScores.length ? depthScores.reduce((a, b) => a + b, 0) / depthScores.length : 0;
-  const depth = avgDepth * 15;
-
   // --- Quality (0-25): SMART goal entry completeness ---
   const goals = data.smartGoals || [];
   const SMART_FIELDS = ['specific', 'measurable', 'achievable', 'relevant', 'timeBound'];
@@ -342,7 +330,7 @@ export async function calculateScore(uid) {
   );
 
   const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + depth + quality + evidence + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + urgencyPoints + skillsPoints + lean5sPoints + wastePoints + careerPoints + bonusPts - penaltyPts
+    breadth + frequency + quality + evidence + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + urgencyPoints + skillsPoints + lean5sPoints + wastePoints + careerPoints + bonusPts - penaltyPts
   )));
 
   // Persist score to user doc
@@ -359,7 +347,6 @@ export async function calculateScore(uid) {
   const breakdown = {
     breadth:        Math.round(breadth),
     frequency:      Math.round(frequency),
-    depth:          Math.round(depth),
     quality:        Math.round(quality),
     evidence:       Math.round(evidence),
     smart:          Math.round(smartScore),

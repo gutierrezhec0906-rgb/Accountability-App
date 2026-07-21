@@ -11,7 +11,6 @@ import PageHeader from '../components/PageHeader';
 const BREAKDOWN_CONFIG = [
   { key: 'breadth',   label: 'Tool Diversity',  max: 20, icon: '🗂',  desc: 'How many different tools you use' },
   { key: 'frequency', label: 'Consistency',      max: 20, icon: '📅',  desc: 'How regularly you use the app (last 30 days)' },
-  { key: 'depth',     label: 'Session Depth',    max: 15, icon: '⏱',  desc: 'Quality time spent per tool session' },
   { key: 'quality',   label: 'Entry Quality',    max: 25, icon: '✍️', desc: 'Completeness and depth of your entries' },
   { key: 'smart',     label: 'SMART Goals',      max: 15, icon: '🎯',  desc: '+1 pt per fully-filled goal created (max 5 per 6 months) · +2 pts per leader-approved completion · no decay on completions' },
   { key: 'coaching',  label: 'Coaching Log',     max: 20, icon: '📝',  desc: '5 pts per week with a complete coaching session (max 20/month)' },
