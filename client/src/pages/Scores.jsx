@@ -25,7 +25,6 @@ const BREAKDOWN_CONFIG = [
   { key: 'lean5s', label: 'Lean 5S Audit', max: 5, icon: '🏭', desc: '+5 pts for a weekly 5S audit that describes at least 3 areas of opportunity. Points expire after 7 days — run a new audit each week to keep them.' },
   { key: 'waste', label: 'Waste Walk', max: 5, icon: '🗑️', desc: '+1 pt per distinct waste category you log during a waste walk (Defects, Waiting, Motion, …), max 5. Points expire after 7 days — log 5 different wastes each week to keep all 5.' },
   { key: 'career', label: 'Career Development Plan', max: 10, icon: '🚀', desc: '10 pts for a fully completed plan (100% of the template, 20+ words per question). Sustain them with milestone progress notes: −2 if the 30-day note is missing, −3 more at 90 days, −2 more at 6 months, and lose all remaining if the 12-month note is missing. Add a note (even late) to restore that milestone’s points.' },
-  { key: 'evidence',  label: 'Evidence & AI',    max: 10, icon: '🤖',  desc: 'Attachments and AI-assessed purposefulness (coming soon)' },
   { key: 'bonus',     label: 'Bonus Points',     max: 20, icon: '🏆',  desc: 'Extra points from quote reflections and other daily actions' },
 ];
 
@@ -445,11 +444,9 @@ export default function Scores() {
               {[
                 { icon: '🗂',  tip: 'Use more tools across the app — diversity matters.' },
                 { icon: '📅',  tip: 'Log in consistently. Aim for daily or weekly sessions.' },
-                { icon: '⏱',  tip: 'Spend meaningful time per tool — 5+ minutes per session.' },
                 { icon: '✍️', tip: 'Fill SMART goal fields with detail — aim for 30+ words each.' },
                 { icon: '🎯',  tip: 'Create active SMART goals and mark them complete.' },
                 { icon: '📝',  tip: 'Log a complete coaching session every week — goal, notes, and at least one action item — to earn 5 pts/week.' },
-                { icon: '🤖',  tip: 'Attach evidence to entries (AI assessment coming soon).' },
               ].map((item, i) => (
                 <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '0.875rem', display: 'flex', gap: 10 }}>
                   <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>{item.icon}</span>

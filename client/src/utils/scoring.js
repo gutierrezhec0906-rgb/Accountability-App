@@ -225,9 +225,6 @@ export async function calculateScore(uid) {
   const avgQuality = goalQualities.length ? goalQualities.reduce((a, b) => a + b, 0) / goalQualities.length : 0;
   const quality = avgQuality * 25;
 
-  // --- Evidence (0-10) — placeholder ---
-  const evidence = 0;
-
   // --- pointEvents — declared here so all event-based scores below can use them ---
   const today = localDateStr();
   const allEvents = data.pointEvents || [];
@@ -334,7 +331,7 @@ export async function calculateScore(uid) {
   );
 
   const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + quality + evidence + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + urgencyPoints + skillsPoints + lean5sPoints + wastePoints + careerPoints + bonusPts - penaltyPts
+    breadth + frequency + quality + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + urgencyPoints + skillsPoints + lean5sPoints + wastePoints + careerPoints + bonusPts - penaltyPts
   )));
 
   // Persist score to user doc
@@ -352,7 +349,6 @@ export async function calculateScore(uid) {
     breadth:        Math.round(breadth),
     frequency:      Math.round(frequency),
     quality:        Math.round(quality),
-    evidence:       Math.round(evidence),
     smart:          Math.round(smartScore),
     coaching:       Math.round(coachingScore),
     problemSolving: Math.round(psScore),
