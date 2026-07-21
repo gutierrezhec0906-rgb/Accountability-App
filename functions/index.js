@@ -353,6 +353,29 @@ const REPORT_QUOTES = [
 
 function reportWeekAgoMs() { return Date.now() - 7 * 24 * 60 * 60 * 1000; }
 
+// Map a pointEvent.toolLabel to a module key (mirrors the client's weeklyReport.js).
+function toolKeyFromLabel(label = '') {
+  const l = label.toLowerCase();
+  if (l.startsWith('smart goal')) return 'smart-goals';
+  if (l.startsWith('urgency')) return 'urgency';
+  if (l.startsWith('skills')) return 'skills';
+  if (l.startsWith('career')) return 'career';
+  if (l.startsWith('lean') || l.startsWith('waste')) return 'lean';
+  if (l.startsWith('feedback')) return 'feedback';
+  if (l.startsWith('mindfulness')) return 'mindfulness';
+  if (l.startsWith('action closed')) return 'visual-board';
+  if (l.startsWith('coaching')) return 'coaching';
+  if (l.startsWith('problem') || l.includes('5 why') || l.includes('fishbone') || l.includes('a3')) return 'problem-solving';
+  if (l.startsWith('disc')) return 'disc';
+  if (l.startsWith('eq')) return 'eq-opex';
+  if (l.startsWith('vision')) return 'vision';
+  if (l.startsWith('mentor')) return 'mentoring';
+  if (l.startsWith('training')) return 'training';
+  if (l.startsWith('quote')) return 'quotes';
+  if (l.startsWith('line of balance') || l.startsWith('lob')) return 'lob';
+  return null;
+}
+
 // Build the motivational weekly report for one user's data. Returns { subject, html }
 // or null when there is nothing worth sending (never send an empty report to a
 // brand-new user with zero history).
@@ -368,6 +391,13 @@ function buildWeeklyReport(data) {
   const sessions = data.toolSessions || [];
   const usedThisWeekKeys = new Set(sessions.filter(s => (s.openedAt || 0) >= weekAgo).map(s => s.tool));
   const usedEverKeys = new Set(sessions.map(s => s.tool));
+  // Fallback: also count tools inferred from point-earning activity this week.
+  (data.pointEvents || []).forEach(e => {
+    const key = toolKeyFromLabel(e.toolLabel || '');
+    if (!key) return;
+    usedEverKeys.add(key);
+    if ((e.date || '') >= weekAgoStr) usedThisWeekKeys.add(key);
+  });
 
   const usedThisWeek = MODULES.filter(m => usedThisWeekKeys.has(m.key));
   const notUsedThisWeek = MODULES.filter(m => !usedThisWeekKeys.has(m.key));

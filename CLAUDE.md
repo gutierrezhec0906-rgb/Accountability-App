@@ -42,7 +42,14 @@ check permissions" toast almost always means a rule is missing `sameCompany` on 
 or `update`. `sameCompany` compares non-null `companyId` of requester and target.
 
 Primary data store is the `users/{uid}` document; most features persist arrays on it
-(`pointEvents`, `smartGoals`, `eqHistory`, `urgencyRecords`, `scoreHistory`, …).
+(`pointEvents`, `smartGoals`, `eqHistory`, `urgencyRecords`, `scoreHistory`,
+`toolSessions`, …). **Tool-usage tracking:** `Layout.jsx` appends each tool visit
+(10s+) to `users/{uid}.toolSessions` (capped 400) on navigate-away — this is the single
+source of truth read by scoring (breadth/frequency/depth) AND the weekly report. It used
+to write to a separate `toolSessions` *collection* that nothing read, which left the
+score and report showing 0 usage; do NOT reintroduce that split. The weekly report also
+unions in tools inferred from `pointEvents` labels (`toolKeyFromLabel`) so point-earning
+activity counts even for the last un-recorded visit.
 Most users are on **mobile** — always verify UI works on a narrow phone screen.
 
 ## Action-item grid pattern (Action / Owner-Responsible / Deadline)

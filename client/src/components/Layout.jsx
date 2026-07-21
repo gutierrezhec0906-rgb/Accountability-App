@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { collection, getDocs, addDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
 import WelcomeModal from './WelcomeModal';
@@ -112,15 +112,21 @@ export default function Layout({ children }) {
     async function endSession(prevTool, startTime) {
       const durationSeconds = Math.round((Date.now() - startTime) / 1000);
       if (durationSeconds < 10) return;
+      const session = {
+        tool: prevTool,
+        openedAt: startTime,
+        closedAt: Date.now(),
+        durationSeconds,
+        date: new Date().toISOString().split('T')[0],
+      };
       try {
-        await addDoc(collection(db, 'toolSessions'), {
-          uid: currentUser.uid,
-          tool: prevTool,
-          openedAt: startTime,
-          closedAt: Date.now(),
-          durationSeconds,
-          date: new Date().toISOString().split('T')[0],
-        });
+        // Source of truth: an array on the user doc — this is what the score
+        // (breadth/frequency/depth) and the weekly report read. Cap at 400.
+        const ref = doc(db, 'users', currentUser.uid);
+        const snap = await getDoc(ref);
+        const existing = snap.exists() ? (snap.data().toolSessions || []) : [];
+        const updated = [session, ...existing].slice(0, 400);
+        await setDoc(ref, { toolSessions: updated }, { merge: true });
       } catch {}
     }
 

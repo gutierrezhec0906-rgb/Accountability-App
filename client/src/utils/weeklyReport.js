@@ -1,4 +1,4 @@
-import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { newDoc, C } from './pdfKit';
 import { localDateStr } from './scoring';
@@ -90,18 +90,14 @@ export async function fetchWeeklyReportData(uid) {
   const weekAgoStr = localDateStr(new Date(weekAgo));
 
   // Tool usage — combine TWO signals so it's accurate even if one is empty:
-  //   1) the toolSessions collection (passive page visits)
+  //   1) the toolSessions array on the user doc (page visits, 10s+)
   //   2) pointEvents mapped to tools (activity that earned points)
   let usedThisWeek = new Set(), usedEver = new Set();
-  try {
-    const ts = await getDocs(query(collection(db, 'toolSessions'), where('uid', '==', uid)));
-    ts.forEach(d => {
-      const s = d.data();
-      if (!TOOL_LABEL[s.tool]) return;
-      usedEver.add(s.tool);
-      if ((s.openedAt || 0) >= weekAgo) usedThisWeek.add(s.tool);
-    });
-  } catch (e) { console.warn('toolSessions query failed', e); }
+  (data.toolSessions || []).forEach(s => {
+    if (!TOOL_LABEL[s.tool]) return;
+    usedEver.add(s.tool);
+    if ((s.openedAt || 0) >= weekAgo) usedThisWeek.add(s.tool);
+  });
 
   const allEvents = data.pointEvents || [];
   allEvents.forEach(e => {
