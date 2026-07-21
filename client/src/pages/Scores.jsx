@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { calculateScore, localDateStr } from '../utils/scoring';
 import { getFunctions, httpsCallable } from 'firebase/functions';
+import { generateWeeklyReportPDF } from '../utils/weeklyReport';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 
@@ -354,6 +355,19 @@ export default function Scores() {
     setCalculating(false);
   }
 
+  const [pdfLoading, setPdfLoading] = useState(false);
+  async function downloadWeeklyPDF() {
+    setPdfLoading(true);
+    try {
+      await generateWeeklyReportPDF(currentUser.uid);
+      toast.success('Weekly report PDF downloaded');
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not generate the report PDF.');
+    }
+    setPdfLoading(false);
+  }
+
   const [emailing, setEmailing] = useState(false);
   async function emailWeeklyReport() {
     setEmailing(true);
@@ -406,6 +420,10 @@ export default function Scores() {
                 <button onClick={emailWeeklyReport} disabled={emailing}
                   style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '0.6rem 1.25rem', fontWeight: 700, fontSize: '0.875rem', cursor: emailing ? 'not-allowed' : 'pointer' }}>
                   {emailing ? '⏳ Sending…' : '📧 Email My Weekly Report'}
+                </button>
+                <button onClick={downloadWeeklyPDF} disabled={pdfLoading}
+                  style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '0.6rem 1.25rem', fontWeight: 700, fontSize: '0.875rem', cursor: pdfLoading ? 'not-allowed' : 'pointer' }}>
+                  {pdfLoading ? '⏳ Building…' : '📄 Download Weekly Report PDF'}
                 </button>
                 {lastUpdated && <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem' }}>Last updated: {lastUpdated}</span>}
               </div>
