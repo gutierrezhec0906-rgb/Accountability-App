@@ -110,7 +110,7 @@ export default function TeamBoard() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#0b1120', fontFamily: 'Inter, system-ui, sans-serif', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ height: '100vh', overflow: 'hidden', background: '#0b1120', fontFamily: 'Inter, system-ui, sans-serif', display: 'flex', flexDirection: 'column' }}>
 
       {/* ── Header ── */}
       <div style={{ background: '#0f2044', borderBottom: '1px solid #1e3a6e', padding: '12px 32px', display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0 }}>
@@ -214,8 +214,13 @@ export default function TeamBoard() {
         </span>
       </div>
 
-      {/* ── Row list ── */}
-      <div style={{ flex: 1, padding: '16px 24px', overflowY: 'auto' }}>
+      {/* ── Row list — the only scrolling region; header and footer stay pinned ── */}
+      <style>{`
+        .tb-scroll::-webkit-scrollbar { width: 10px; -webkit-appearance: none; }
+        .tb-scroll::-webkit-scrollbar-track { background: #0f2044; border-radius: 8px; }
+        .tb-scroll::-webkit-scrollbar-thumb { background: #3b5b9a; border-radius: 8px; border: 1px solid #0f2044; }
+      `}</style>
+      <div className="tb-scroll" style={{ flex: 1, minHeight: 0, padding: '16px 24px', overflowY: 'scroll', scrollbarWidth: 'thin', scrollbarColor: '#3b5b9a #0f2044' }}>
         {loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 200 }}>
             <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '1rem' }}>Loading team actions…</p>
