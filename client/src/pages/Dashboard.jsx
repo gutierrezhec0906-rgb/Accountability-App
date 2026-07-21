@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { isLocked, TIER_LABELS, TIER_ICONS } from '../utils/subscription';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 
 const categories = [
@@ -90,9 +90,24 @@ export default function Dashboard() {
   const [score, setScore] = useState(null);
   const [teamMembers, setTeamMembers] = useState([]);
 
+  // Read the latest score straight from Firestore on mount — never trust the
+  // possibly-stale userProfile cache (it can lag behind a fresh Calculate on the
+  // Scores page). Seed from userProfile first so there's no flash of '—'.
   useEffect(() => {
     if (userProfile?.calculatedScore !== undefined) setScore(userProfile.calculatedScore);
   }, [userProfile]);
+
+  useEffect(() => {
+    if (!currentUser) return;
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, 'users', currentUser.uid));
+        if (snap.exists() && snap.data().calculatedScore !== undefined) {
+          setScore(snap.data().calculatedScore);
+        }
+      } catch (e) { console.warn('Could not load fresh score', e); }
+    })();
+  }, [currentUser]);
 
   useEffect(() => {
     async function loadTeam() {
