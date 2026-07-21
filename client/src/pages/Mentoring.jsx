@@ -171,8 +171,21 @@ export default function Mentoring() {
     try {
       const entry = { id: Date.now().toString(), ...sessionForm, loggedAt: new Date().toISOString() };
       const sessions = [entry, ...plan.sessions];
-      await setDoc(doc(db, 'users', currentUser.uid), { mentoringPlan: { ...plan, sessions } }, { merge: true });
-      setPlan(p => ({ ...p, sessions }));
+      // Logging the first session starts the cycle automatically — no separate
+      // "start" step required before sessions can be logged.
+      let startedAt = plan.startedAt;
+      let cycle = plan.cycle;
+      if (!startedAt) {
+        const now = new Date().toISOString();
+        startedAt = now;
+        const start = new Date();
+        const end = new Date(start);
+        end.setMonth(end.getMonth() + Number(cycle.lengthMonths || 6));
+        cycle = { ...cycle, startDate: cycle.startDate || start.toISOString().split('T')[0], endDate: cycle.endDate || end.toISOString().split('T')[0] };
+      }
+      const toSave = { ...plan, sessions, startedAt, cycle };
+      await setDoc(doc(db, 'users', currentUser.uid), { mentoringPlan: toSave }, { merge: true });
+      setPlan(toSave);
       setSessionForm(null);
       toast.success('Session logged');
     } catch { toast.error('Save failed'); }
@@ -345,9 +358,9 @@ export default function Mentoring() {
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
           <p style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-primary)', margin: 0 }}>Session Log</p>
-          <button className="btn-primary" onClick={openSessionForm} disabled={!planStarted} style={{ opacity: planStarted ? 1 : 0.5 }}>+ Log Session</button>
+          <button className="btn-primary" onClick={openSessionForm}>+ Log Session</button>
         </div>
-        {!planStarted && <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '0 0 10px' }}>Start the cycle (Section 1 & 2, then Save) to begin logging sessions.</p>}
+        {!planStarted && <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '0 0 10px' }}>Logging your first session starts the cycle automatically.</p>}
 
         {plan.sessions.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
