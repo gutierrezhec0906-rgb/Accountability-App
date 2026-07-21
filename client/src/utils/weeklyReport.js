@@ -1,7 +1,7 @@
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { newDoc, C } from './pdfKit';
-import { localDateStr, toolKeyFromLabel } from './scoring';
+import { localDateStr, toolKeyFromLabel, TOOL_WEIGHTS } from './scoring';
 
 // The 17 practice tools (keys match the route path stored in toolSessions.tool).
 export const REPORT_TOOLS = [
@@ -29,20 +29,14 @@ const TOOL_LABEL = Object.fromEntries(REPORT_TOOLS.map(t => [t.key, t]));
 // toolKeyFromLabel is imported from scoring.js — single source of truth so the
 // score, this report, and the server-side email never drift out of sync again.
 
-const QUOTES = [
-  '"The growth and development of people is the highest calling of leadership." — Harvey Firestone',
-  '"A leader is one who knows the way, goes the way, and shows the way." — John C. Maxwell',
-  '"Success is the sum of small efforts repeated day in and day out." — Robert Collier',
-  '"Excellence is not an act, but a habit." — Aristotle',
-];
-
-// Motivational note per action status.
+// Short, executive-tone note per action status — Red and Yellow only get a
+// written note in the report; Green is summarized as a count, no prose.
 function actionNote(status) {
   if (status === 'Red')
-    return { color: C.red, text: 'OVERDUE — recommit NOW. This needs your attention today. Set a firm new date, own it, and get it back on track immediately. Leaders close their loops — do not let this linger.' };
+    return { color: C.red, text: 'Recommit now — set a firm new date today and close the loop.' };
   if (status === 'Yellow')
-    return { color: C.amber, text: 'Due soon — make sure everything is in place to deliver on time. Confirm your resources, clear any blockers today, and protect this deadline. You have got this if you act now.' };
-  return { color: C.green, text: 'On track — excellent. Keep the momentum and finish strong. Your consistency here is exactly what strong leadership looks like.' };
+    return { color: C.amber, text: 'Due soon — confirm resources and clear blockers to protect this date.' };
+  return { color: C.green, text: '' };
 }
 
 function statusOf(item) {
@@ -106,19 +100,34 @@ export async function fetchWeeklyReportData(uid) {
   const newHistory = [snapshot, ...history].slice(0, 26);
   try { await setDoc(doc(db, 'users', uid), { weeklyReports: newHistory }, { merge: true }); } catch {}
 
-  // Trend: tools not used in ANY of the last 4 recorded weeks → focus recommendations
+  // Trend windows for recommendations: "not this week" vs. the more urgent
+  // "not touched in 2-3 weeks" (includes this week + the 2 prior recorded weeks).
+  const last3 = newHistory.slice(0, 3);
+  const usedInLast3 = new Set(last3.flatMap(h => h.usedKeys || []));
+  const notUsedIn3Weeks = REPORT_TOOLS.filter(t => !usedInLast3.has(t.key));
+
   const last4 = newHistory.slice(0, 4);
-  const usedInLast4 = new Set(last4.flatMap(h => h.usedKeys || []));
-  const consistentlyUnused = REPORT_TOOLS.filter(t => !usedInLast4.has(t.key));
   const avgDiversity = last4.length ? Math.round(last4.reduce((s, h) => s + (h.diversityPct || 0), 0) / last4.length) : diversityPct;
+
+  const usedThisWeekTools = REPORT_TOOLS.filter(t => usedThisWeek.has(t.key));
+  // Highest-value tools actually used this week, for the closing "keep it up" note.
+  const topUsedThisWeek = [...usedThisWeekTools]
+    .sort((a, b) => (TOOL_WEIGHTS[b.key] || 0) - (TOOL_WEIGHTS[a.key] || 0))
+    .slice(0, 3);
+
+  const redActions = actions.filter(a => a.status === 'Red');
+  const yellowActions = actions.filter(a => a.status === 'Yellow');
+  const greenCount = actions.filter(a => a.status === 'Green').length;
 
   return {
     name: (data.displayName || '').split(' ')[0] || 'Leader',
     weekPoints, score, diversityPct, everPct,
-    usedThisWeek: REPORT_TOOLS.filter(t => usedThisWeek.has(t.key)),
+    usedThisWeek: usedThisWeekTools,
     notUsedThisWeek: REPORT_TOOLS.filter(t => !usedThisWeek.has(t.key)),
-    events, actions,
-    weeksTracked: newHistory.length, avgDiversity, consistentlyUnused,
+    notUsedIn3Weeks,
+    topUsedThisWeek,
+    events, actions, redActions, yellowActions, greenCount,
+    weeksTracked: newHistory.length, avgDiversity,
   };
 }
 
@@ -149,66 +158,92 @@ export async function generateWeeklyReportPDF(uid) {
   });
   k.y += 72;
 
-  // Tools used this week
-  k.sectionHeader('Tools You Used This Week', C.teal);
-  if (r.usedThisWeek.length) {
-    k.field(`${r.usedThisWeek.length} of ${TOTAL_TOOLS} tools (${r.diversityPct}% diversity)`,
-      r.usedThisWeek.map(t => t.label).join(', '), { blanks: 0 });
-  } else {
-    k.text('No tools logged this week — a fresh start awaits! Aim for at least 5 different tools next week.', MARGIN, 10, C.muted, false, CW);
-    k.y += 18;
-  }
+  // ── Action Status Summary: 3 icon tiles (Red / Yellow / Green counts only) ──
+  k.sectionHeader('Action Status Summary', C.navy);
+  const statusTiles = [
+    { icon: '🔴', label: 'RED — OVERDUE', count: r.redActions.length, color: C.red },
+    { icon: '🟡', label: 'YELLOW — DUE SOON', count: r.yellowActions.length, color: C.amber },
+    { icon: '🟢', label: 'GREEN — ON TRACK', count: r.greenCount, color: C.green },
+  ];
+  const stw = (CW - 20) / 3;
+  statusTiles.forEach((t, i) => {
+    const x = MARGIN + i * (stw + 10);
+    pdf.setFillColor(...C.light); pdf.roundedRect(x, k.y, stw, 58, 6, 6, 'F');
+    pdf.setFontSize(18); pdf.text(t.icon, x + 12, k.y + 24);
+    pdf.setFontSize(20); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...t.color);
+    pdf.text(String(t.count), x + stw - 16, k.y + 26, { align: 'right' });
+    pdf.setFontSize(7); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.muted);
+    pdf.text(k.safe(t.label), x + 12, k.y + 46, { maxWidth: stw - 20 });
+  });
+  k.y += 74;
 
-  // Tools NOT used + trend
-  k.sectionHeader('Grow Next Week — Prioritize These', C.amber);
-  k.field('Not used this week', r.notUsedThisWeek.map(t => t.label).join(', ') || 'None — you touched every tool! 🌟', { blanks: 0 });
-  if (r.weeksTracked >= 2) {
-    k.field(`Consistently skipped (last ${Math.min(4, r.weeksTracked)} weeks)`,
-      r.consistentlyUnused.length ? r.consistentlyUnused.map(t => t.label).join(', ') : 'None — great all-round coverage!', { blanks: 0 });
-    k.field('Your average weekly diversity', `${r.avgDiversity}% — ${r.avgDiversity >= 50 ? 'strong, well-rounded leadership practice' : 'aim to broaden your toolkit for more balanced growth'}`, { blanks: 0 });
-  } else {
-    k.text('Your history starts building now — next week this report will analyze your trends and pinpoint the tools to focus on.', MARGIN, 9, C.muted, false, CW);
-    k.y += 16;
-  }
-
-  // Open actions with status + motivational notes
-  k.sectionHeader('Your Open Actions', C.navy);
-  if (!r.actions.length) {
-    k.text('No open actions on your Visual Management Board. Add your commitments there to track them here each week.', MARGIN, 10, C.muted, false, CW);
-    k.y += 16;
-  } else {
-    r.actions.forEach(a => {
-      k.space(60);
-      const badge = { Red: C.red, Yellow: C.amber, Green: C.green }[a.status];
-      // Title + status badge
-      pdf.setFontSize(11); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.text);
-      pdf.text(k.safe(a.title), MARGIN, k.y + 6, { maxWidth: CW - 90 });
-      pdf.setFillColor(...badge); pdf.roundedRect(MARGIN + CW - 70, k.y - 6, 70, 16, 8, 8, 'F');
-      pdf.setFontSize(8); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.white);
-      pdf.text(a.status.toUpperCase(), MARGIN + CW - 35, k.y + 5, { align: 'center' });
-      k.y += 16;
-      // Owner + due
-      pdf.setFontSize(9); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.muted);
-      pdf.text(k.safe(`Owner: ${a.owner || '—'}    ·    Due / ETA: ${a.dueDate || '—'}`), MARGIN, k.y + 4);
-      k.y += 16;
-      // Motivational note in status color
-      pdf.setFontSize(9.5); pdf.setFont('helvetica', a.status === 'Red' ? 'bold' : 'normal'); pdf.setTextColor(...a.note.color);
-      const lines = pdf.splitTextToSize(k.safe(a.note.text), CW - 8);
-      for (const ln of lines) { k.space(13); pdf.text(ln, MARGIN + 4, k.y + 4); k.y += 13; }
-      k.y += 8;
+  // Only Red and Yellow actions get written detail — Green is just the count above.
+  const flagged = [...r.redActions, ...r.yellowActions];
+  if (flagged.length) {
+    flagged.forEach(a => {
+      k.space(46);
+      const badge = a.status === 'Red' ? C.red : C.amber;
+      pdf.setFontSize(10); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.text);
+      pdf.text(k.safe(a.title), MARGIN, k.y + 6, { maxWidth: CW - 78 });
+      pdf.setFillColor(...badge); pdf.roundedRect(MARGIN + CW - 60, k.y - 6, 60, 15, 7, 7, 'F');
+      pdf.setFontSize(7.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.white);
+      pdf.text(a.status.toUpperCase(), MARGIN + CW - 30, k.y + 4, { align: 'center' });
+      k.y += 14;
+      pdf.setFontSize(8); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.muted);
+      pdf.text(k.safe(`Owner: ${a.owner || '—'}   ·   Due: ${a.dueDate || '—'}`), MARGIN, k.y + 4);
+      k.y += 13;
+      pdf.setFontSize(8.5); pdf.setFont('helvetica', a.status === 'Red' ? 'bold' : 'normal'); pdf.setTextColor(...a.note.color);
+      pdf.text(k.safe(a.note.text), MARGIN, k.y + 4, { maxWidth: CW });
+      k.y += 13;
       pdf.setDrawColor(...C.border); pdf.setLineWidth(0.5); pdf.line(MARGIN, k.y, MARGIN + CW, k.y);
-      k.y += 10;
+      k.y += 8;
+    });
+  } else if (r.actions.length) {
+    k.text('All open actions are on track. Nothing overdue or due soon.', MARGIN, 9, C.muted, false, CW);
+    k.y += 16;
+  } else {
+    k.text('No open actions on your Visual Management Board.', MARGIN, 9, C.muted, false, CW);
+    k.y += 16;
+  }
+
+  // ── Focus Next Week — compact recommendation list, no paragraphs ──
+  k.sectionHeader('Focus Next Week', C.amber);
+  const urgent = new Set(r.notUsedIn3Weeks.map(t => t.key));
+  const recs = r.notUsedThisWeek.filter(t => !urgent.has(t.key));
+  if (!recs.length && !r.notUsedIn3Weeks.length) {
+    k.text('Full coverage — every tool has been touched recently. Excellent breadth.', MARGIN, 9.5, C.green, true, CW);
+    k.y += 16;
+  } else {
+    r.notUsedIn3Weeks.forEach(t => {
+      k.space(14);
+      pdf.setFontSize(9); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.red);
+      pdf.text(k.safe(`${t.icon}  ${t.label}`), MARGIN, k.y + 4);
+      pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.muted);
+      pdf.text('Not touched in 3 weeks', MARGIN + CW - 100, k.y + 4, { align: 'right' });
+      k.y += 14;
+    });
+    recs.forEach(t => {
+      k.space(14);
+      pdf.setFontSize(9); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.text);
+      pdf.text(k.safe(`${t.icon}  ${t.label}`), MARGIN, k.y + 4);
+      pdf.setTextColor(...C.muted);
+      pdf.text('Not used this week', MARGIN + CW - 100, k.y + 4, { align: 'right' });
+      k.y += 14;
     });
   }
+  k.y += 4;
 
-  // Quote
+  // ── Closing note — personalized, replaces a generic quote ──
   k.space(50);
-  const q = QUOTES[today.getDate() % QUOTES.length];
-  pdf.setFillColor(240, 253, 250); pdf.roundedRect(MARGIN, k.y, CW, 36, 6, 6, 'F');
-  pdf.setFontSize(10); pdf.setFont('helvetica', 'italic'); pdf.setTextColor(...C.teal);
-  const ql = pdf.splitTextToSize(k.safe(q), CW - 24);
-  pdf.text(ql, MARGIN + 12, k.y + 16);
-  k.y += 48;
+  const hasWins = r.topUsedThisWeek.length > 0;
+  const closingText = hasWins
+    ? `Nice work this week, ${r.name}. You put real time into ${r.topUsedThisWeek.map(t => t.label).join(', ')}${r.topUsedThisWeek.length > 1 ? ' — ' : ' — '}keep that consistency going into next week.`
+    : `${r.name}, no tool activity logged this week — jump back in next week. Even one session moves your score.`;
+  pdf.setFillColor(240, 253, 250); pdf.roundedRect(MARGIN, k.y, CW, 40, 6, 6, 'F');
+  pdf.setFontSize(9.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.teal);
+  const cl = pdf.splitTextToSize(k.safe(closingText), CW - 24);
+  pdf.text(cl, MARGIN + 12, k.y + 16);
+  k.y += 52;
 
   k.finish(`Weekly_Report_${r.name.replace(/\s+/g, '_')}_${localDateStr()}.pdf`);
   return r;
