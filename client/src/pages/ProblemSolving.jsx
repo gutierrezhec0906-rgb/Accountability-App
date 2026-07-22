@@ -576,8 +576,9 @@ function CatCard({ cat, position, causes, onUpdate, effectText }) {
             <div key={i}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <span style={{ color: cat.color, fontSize: '0.68rem', fontWeight: 900, flexShrink: 0 }}>→</span>
-                <input
-                  style={{ flex: 1, border: `1px solid ${nudge || isSymptom ? '#fde047' : '#e2e8f0'}`, borderRadius: 6, padding: '3px 7px', fontSize: '0.75rem', outline: 'none', color: '#475569', background: 'white' }}
+                <textarea
+                  rows={1}
+                  style={{ flex: 1, border: `1px solid ${nudge || isSymptom ? '#fde047' : '#e2e8f0'}`, borderRadius: 6, padding: '3px 7px', fontSize: '0.75rem', outline: 'none', color: '#475569', background: 'white', resize: 'vertical', minHeight: 24, maxHeight: 90, overflowY: 'auto', fontFamily: 'inherit', lineHeight: 1.35 }}
                   value={v}
                   onChange={e => onUpdate(cat.id, i, e.target.value)}
                   placeholder={`Cause ${i + 1}...`}
