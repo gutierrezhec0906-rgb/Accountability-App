@@ -496,11 +496,36 @@ const FISHBONE_GUIDE = {
   },
 };
 
-const NAME_PATTERN = /\b([A-Z][a-z]+\s[A-Z][a-z]+|[A-Z][a-z]{2,})\b/;
+// Matching "two Title-Case words" alone is far too broad — ordinary phrases like
+// "External Circumstances" or "Software Update" false-positive as names. Instead,
+// only flag it when the FIRST word is an actual common first name (English + Spanish),
+// so generic capitalized phrases no longer trip the nudge.
+const COMMON_FIRST_NAMES = new Set([
+  'james','john','robert','michael','william','david','richard','joseph','thomas','charles',
+  'daniel','matthew','anthony','mark','paul','steven','andrew','kenneth','joshua','kevin',
+  'brian','george','edward','ronald','timothy','jason','jeffrey','ryan','jacob','gary',
+  'nicholas','eric','stephen','jonathan','larry','justin','scott','brandon','benjamin','samuel',
+  'mary','patricia','jennifer','linda','elizabeth','barbara','susan','jessica','sarah','karen',
+  'lisa','nancy','betty','sandra','margaret','ashley','kimberly','emily','donna','michelle',
+  'carol','amanda','melissa','deborah','stephanie','rebecca','laura','helen','sharon','cynthia',
+  'jose','juan','carlos','luis','miguel','antonio','francisco','manuel','pedro','javier',
+  'fernando','ricardo','eduardo','alberto','raul','oscar','sergio','victor','hector','jorge',
+  'roberto','alejandro','diego','rafael','gabriel','angel','arturo','ivan','marco','mario',
+  'maria','ana','laura','carmen','rosa','isabel','sofia','daniela','andrea','valentina',
+  'gabriela','patricia','claudia','veronica','monica','adriana','alejandra','paola','lucia','elena',
+]);
+function looksLikePersonName(value) {
+  const words = value.trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return false;
+  const first = words[0].toLowerCase().replace(/[^a-z]/g, '');
+  if (!COMMON_FIRST_NAMES.has(first)) return false;
+  if (words.length === 1) return true; // a bare common first name, e.g. "Maria"
+  return /^[A-Z][a-z]+$/.test(words[1]); // first name + capitalized second word looks like a surname
+}
 
 function fishboneCauseNudge(catId, value) {
   if (!value) return null;
-  if (catId === 'people' && NAME_PATTERN.test(value)) {
+  if (catId === 'people' && looksLikePersonName(value)) {
     return 'Looks like a name. Redirect: what about how this role is set up allowed the error to happen?';
   }
   return null;
