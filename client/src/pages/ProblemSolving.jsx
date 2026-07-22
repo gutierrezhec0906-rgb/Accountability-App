@@ -741,7 +741,7 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
             <div style={{ background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: 12, padding: '0.9rem' }}>
               <p style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.8rem', margin: '0 0 6px' }}>✅ Before you save — quick self-check</p>
               <ul style={{ margin: 0, paddingLeft: 18, fontSize: '0.74rem', color: '#0c4a6e', lineHeight: 1.8 }}>
-                <li>Every category has at least one entry (an empty category usually means the team didn't push hard enough, not that nothing is there)</li>
+                <li>At least {FISHBONE_MIN_CATEGORIES} of the 6 categories have an entry — that's the minimum to earn the +5 pts (a category left empty usually means the team didn't push hard enough, not that nothing is there)</li>
                 <li>No cause is just a restatement of the effect in different words</li>
                 <li>Any cause that appeared in more than one category is starred as a priority to investigate first</li>
                 <li>Each starred cause has a clear next step: verify with data, then test a fix</li>
