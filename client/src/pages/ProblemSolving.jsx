@@ -584,6 +584,14 @@ const BOTTOM_CATS = [
   { id: 'measurement', label: 'Measurement', color: '#f59e0b' },
 ];
 const ALL_CATS = [...TOP_CATS, ...BOTTOM_CATS];
+const FISHBONE_MIN_CATEGORIES = 4; // of 6 (People/Process/Materials/Machine/Environment/Measurement)
+
+// A fishbone earns its points only when at least FISHBONE_MIN_CATEGORIES of the
+// 6 categories each have at least one filled-in cause. Saving is always allowed —
+// this only gates the +5 pts, per the "at least one cause per category, 4 of 6" rule.
+function fishboneCategoriesFilled(causes = {}) {
+  return ALL_CATS.filter(c => (causes[c.id] || []).some(v => (v || '').trim())).length;
+}
 const emptyCauses = () => Object.fromEntries(ALL_CATS.map(c => [c.id, ['', '', '']]));
 
 function fishbonePrintHTML(entry) {
@@ -747,6 +755,25 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
             <p style={{ margin: '4px 0 0', fontSize: '0.74rem' }}>A specific, measurable effect statement prevents every category from filling up with guesses.</p>
           </div>
         )}
+
+        {(() => {
+          const filledCats = fishboneCategoriesFilled(causes);
+          const qualifies = filledCats >= FISHBONE_MIN_CATEGORIES;
+          return (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '0.6rem 0.875rem', borderRadius: 10,
+              background: qualifies ? '#f0fdf4' : '#f8fafc',
+              border: `1px solid ${qualifies ? '#86efac' : '#e2e8f0'}`,
+            }}>
+              <span style={{ fontSize: '0.95rem' }}>{qualifies ? '✅' : '🎯'}</span>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: qualifies ? '#15803d' : '#475569' }}>
+                {filledCats}/6 categories have a cause — {qualifies
+                  ? 'you qualify for +5 pts on save'
+                  : `fill in ${FISHBONE_MIN_CATEGORIES - filledCats} more to earn +5 pts`}
+              </span>
+            </div>
+          );
+        })()}
 
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>
@@ -1361,6 +1388,19 @@ export default function ProblemSolving() {
           createdAt: { seconds: Math.floor(Date.now() / 1000) },
         };
         updated = [newEntry, ...all];
+
+        // Fishbone only qualifies for points once at least 4 of the 6 cause
+        // categories each have a cause filled in — saving is always allowed either way.
+        if (type === 'fishbone') {
+          const filledCats = fishboneCategoriesFilled(data.causes);
+          if (filledCats < FISHBONE_MIN_CATEGORIES) {
+            toast.success(`Template saved. Fill in at least ${FISHBONE_MIN_CATEGORIES} of the 6 categories (currently ${filledCats}) to earn +5 pts.`, { duration: 6000 });
+            await persist(updated);
+            onSaved?.();
+            return;
+          }
+        }
+
         const earned = await maybeLogPSPoints(type);
         calculateScore(currentUser.uid).catch(() => {});
         if (earned === 'earned') {

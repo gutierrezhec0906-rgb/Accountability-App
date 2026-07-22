@@ -129,6 +129,12 @@ Reference implementation: `DailyMovementFeed` + `DayRow` in `client/src/pages/Sc
   summed by scoring — no double count). Waste tab has a Pareto chart (`WasteParetoChart`)
   auto-built from the tally + an 80/20 lesson, per-card "+ Log this waste" → modal,
   weekly progress reminder, and a scrollable log history.
+- Fishbone Diagram (part of Problem Solving, 5 pts/week): the +5 pts only awards when
+  at least 4 of the 6 cause categories (People, Process, Materials, Machine,
+  Environment, Measurement) each have ≥1 filled-in cause (`fishboneCategoriesFilled`
+  in `pages/ProblemSolving.jsx`). Saving with fewer categories filled is always
+  allowed — it just skips the point award and tells the user how many more
+  categories are needed. Live "X/6 categories" badge shown above the save button.
 - Mentoring (max 20, no decay): +5 pts per session logged in its totality — date,
   progress review, challenge, and action item all filled (`isCompleteMentoringSession`
   in scoring.js). `Mentoring Session Logged` event. Session list moved to a sidebar
