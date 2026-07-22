@@ -1424,8 +1424,7 @@ export default function ProblemSolving() {
           if (filledCats < FISHBONE_MIN_CATEGORIES) {
             toast.success(`Template saved. Fill in at least ${FISHBONE_MIN_CATEGORIES} of the 6 categories (currently ${filledCats}) to earn +5 pts.`, { duration: 6000 });
             await persist(updated);
-            onSaved?.();
-            return;
+            return; // keep the form filled — don't wipe the diagram (or any manual box resizing) after its first save
           }
         }
 
@@ -1439,9 +1438,10 @@ export default function ProblemSolving() {
         } else {
           toast.success('Template saved!');
         }
+        await persist(updated);
+        if (type !== 'fishbone') onSaved?.();
+        return;
       }
-      await persist(updated);
-      onSaved?.();
     } catch (e) { toast.error('Save failed: ' + (e?.message || e)); }
   }
 
