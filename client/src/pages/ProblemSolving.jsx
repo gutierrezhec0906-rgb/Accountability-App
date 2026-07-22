@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
@@ -558,6 +558,19 @@ function FishboneGuidePanel({ catId }) {
   );
 }
 
+// Auto-grows to fit its content — height comes from the text itself, so a
+// reloaded diagram always shows every note in full (no manual resizing to lose).
+function AutoGrowTextarea({ value, style, ...props }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight + 2}px`;
+  }, [value]);
+  return <textarea ref={ref} rows={1} value={value} style={{ ...style, overflow: 'hidden' }} {...props} />;
+}
+
 function CatCard({ cat, position, causes, onUpdate, effectText }) {
   const clip = position === 'top'
     ? 'polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%)'
@@ -576,9 +589,8 @@ function CatCard({ cat, position, causes, onUpdate, effectText }) {
             <div key={i}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <span style={{ color: cat.color, fontSize: '0.68rem', fontWeight: 900, flexShrink: 0 }}>→</span>
-                <textarea
-                  rows={1}
-                  style={{ flex: 1, border: `1px solid ${nudge || isSymptom ? '#fde047' : '#e2e8f0'}`, borderRadius: 6, padding: '3px 7px', fontSize: '0.75rem', outline: 'none', color: '#475569', background: 'white', resize: 'vertical', minHeight: 24, overflowY: 'auto', fontFamily: 'inherit', lineHeight: 1.35 }}
+                <AutoGrowTextarea
+                  style={{ flex: 1, border: `1px solid ${nudge || isSymptom ? '#fde047' : '#e2e8f0'}`, borderRadius: 6, padding: '3px 7px', fontSize: '0.75rem', outline: 'none', color: '#475569', background: 'white', resize: 'none', minHeight: 24, fontFamily: 'inherit', lineHeight: 1.35 }}
                   value={v}
                   onChange={e => onUpdate(cat.id, i, e.target.value)}
                   placeholder={`Cause ${i + 1}...`}
