@@ -716,11 +716,11 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
         </div>
 
         {/* Effect Gate */}
-        <div style={{ background: '#f8fafc', border: `2px solid ${effectReady ? '#ef4444' : '#e2e8f0'}`, borderRadius: 12, padding: '1rem', transition: 'border-color 0.2s' }}>
+        <div style={{ background: '#f8fafc', border: `2px solid ${effectReady ? '#0d9488' : '#e2e8f0'}`, borderRadius: 12, padding: '1rem', transition: 'border-color 0.2s' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <span style={{ fontSize: '1rem' }}>🐟</span>
             <label className="label" style={{ margin: 0, color: '#0f2044' }}>Effect / Problem (Fish Head)</label>
-            {effectReady && <span style={{ fontSize: '0.7rem', background: '#fee2e2', color: '#b91c1c', fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>Ready</span>}
+            {effectReady && <span style={{ fontSize: '0.7rem', background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>Ready</span>}
           </div>
           <p style={{ fontSize: '0.74rem', color: '#64748b', margin: '0 0 8px', lineHeight: 1.5 }}>
             Specific, factual, measurable — everything branches off this statement.<br />
