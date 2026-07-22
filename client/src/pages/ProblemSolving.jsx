@@ -1404,6 +1404,8 @@ export default function ProblemSolving() {
       if (existing) {
         updated = all.map(e => e.id === existing.id ? { ...e, title, data, updatedAt: { seconds: Math.floor(Date.now() / 1000) } } : e);
         toast.success('Template updated!');
+        await persist(updated);
+        return; // keep the form (and any manual textarea resizing) as-is — don't wipe an in-progress edit
       } else {
         const newEntry = {
           id: Date.now().toString(),
