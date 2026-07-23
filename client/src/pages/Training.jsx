@@ -93,14 +93,14 @@ export default function Training() {
     cancelForm();
   }
 
-  // Status level of a single training (completed / no-date count as on track).
+  // Status level of a still-open training (no due date = on track).
   function trainingLevel(t) {
-    if (t.completed) return 'ontrack';
     return t.dueDate ? getDateStatus(t.dueDate).level : 'ontrack';
   }
   function matchesStatus(t) {
     if (statusFilter === 'all') return true;
     if (statusFilter === 'completed') return !!t.completed;
+    if (t.completed) return false; // completed shows only under Completed
     return trainingLevel(t) === statusFilter;
   }
 
@@ -112,9 +112,11 @@ export default function Training() {
 
   // Accountability status counts (app-wide convention: red past-due / yellow due-soon / green on-track).
   // A completed training, or one with no due date, counts as On Track.
+  // Completed trainings are counted ONLY under "Completed" — the status windows
+  // (On Track / Due Soon / Past Due) describe the still-open trainings.
   const status = { ontrack: 0, warning: 0, overdue: 0 };
   trainings.forEach(t => {
-    if (t.completed) { status.ontrack++; return; }
+    if (t.completed) return;
     const s = t.dueDate ? getDateStatus(t.dueDate) : null;
     if (!s) { status.ontrack++; return; }
     status[s.level]++;
@@ -143,7 +145,7 @@ export default function Training() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: '1.5rem' }}>
         {[
           { key: 'completed', label: 'Completed', sub: 'finished trainings',       value: completedCount, icon: '🎓', color: '#0f766e', bg: '#ccfbf1', border: '#5eead4' },
-          { key: 'ontrack',   label: 'On Track',  sub: 'completed or >2 weeks out', value: status.ontrack, icon: '✅', color: '#15803d', bg: '#dcfce7', border: '#86efac' },
+          { key: 'ontrack',   label: 'On Track',  sub: 'open, >2 weeks out',        value: status.ontrack, icon: '✅', color: '#15803d', bg: '#dcfce7', border: '#86efac' },
           { key: 'warning',   label: 'Due Soon',  sub: 'within 2 weeks',           value: status.warning, icon: '⚠️', color: '#b45309', bg: '#fef9c3', border: '#fde68a' },
           { key: 'overdue',   label: 'Past Due',  sub: 'deadline passed',          value: status.overdue, icon: '🚨', color: '#dc2626', bg: '#fee2e2', border: '#fca5a5' },
         ].map(s => {
