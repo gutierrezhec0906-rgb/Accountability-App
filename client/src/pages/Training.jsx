@@ -105,9 +105,18 @@ export default function Training() {
       </div>
 
       {/* List */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <style>{`
+        .training-scroll::-webkit-scrollbar { width: 8px; -webkit-appearance: none; }
+        .training-scroll::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 8px; }
+        .training-scroll::-webkit-scrollbar-thumb { background: #64748b; border-radius: 8px; border: 1px solid #e2e8f0; }
+      `}</style>
+      <div className="training-scroll" style={{
+        display: 'flex', flexDirection: 'column', gap: 10,
+        maxHeight: 560, overflowY: 'scroll', paddingRight: 6,
+        scrollbarWidth: 'thin', scrollbarColor: '#64748b #e2e8f0',
+      }}>
         {filtered.map(t => (
-          <div key={t.id} className="card" style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: 14 }}>
+          <div key={t.id} className="card" style={{ flexShrink: 0, padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: 14 }}>
             <button onClick={() => toggleComplete(t.id)}
               style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, border: `2px solid ${t.completed ? '#0d9488' : '#e2e8f0'}`, background: t.completed ? '#0d9488' : 'transparent', color: t.completed ? 'white' : 'transparent', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
               ✓
