@@ -112,7 +112,8 @@ export default function Training() {
       `}</style>
       <div className="training-scroll" style={{
         display: 'flex', flexDirection: 'column', gap: 10,
-        maxHeight: 560, overflowY: 'scroll', paddingRight: 6,
+        maxHeight: 'clamp(260px, calc(100dvh - 470px), 560px)',
+        overflowY: 'scroll', paddingRight: 6, paddingBottom: 8,
         scrollbarWidth: 'thin', scrollbarColor: '#64748b #e2e8f0',
       }}>
         {filtered.map(t => (
