@@ -244,7 +244,6 @@ export default function LOB() {
   const [editing, setEditing] = useState(null);
   const [editingName, setEditingName] = useState(false);
   const [editingTask, setEditingTask] = useState(null); // { id, name, owner }
-  const [notesOpen, setNotesOpen] = useState({}); // { [taskId]: true } — expanded note editors
   const [saving, setSaving] = useState(false);
   const [pastDueConfirm, setPastDueConfirm] = useState(null); // { col, val }
 
@@ -632,7 +631,7 @@ export default function LOB() {
             <tbody>
               {(activeLob.tasks || []).map((task, ti) => (
                 <Fragment key={task.id}>
-                <tr style={{ borderBottom: (notesOpen[task.id] || task.note) ? 'none' : '1px solid var(--border)', background: ti % 2 === 0 ? '#fff' : '#fafbfd' }}>
+                <tr style={{ borderBottom: 'none', background: ti % 2 === 0 ? '#fff' : '#fafbfd' }}>
                   <td style={{ padding: '0.75rem 1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>{task.name}</td>
                   <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>{task.owner}</td>
                   {(() => {
@@ -684,14 +683,8 @@ export default function LOB() {
                   })()}
                   {/* Empty cell for + Col column */}
                   <td></td>
-                  {/* Note + Edit + Delete */}
+                  {/* Edit + Delete */}
                   <td style={{ padding: '0.5rem 0.75rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
-                    <button
-                      onClick={() => setNotesOpen(o => ({ ...o, [task.id]: !o[task.id] }))}
-                      title={task.note ? 'View / edit note' : 'Add a note'}
-                      style={{ background: 'none', border: 'none', color: task.note ? '#b45309' : '#94a3b8', cursor: 'pointer', fontSize: '0.85rem', marginRight: 6 }}>
-                      {task.note ? '📝' : '🗒️'}
-                    </button>
                     <button
                       onClick={() => setEditingTask({ id: task.id, name: task.name, owner: task.owner })}
                       title="Edit task"
@@ -705,23 +698,21 @@ export default function LOB() {
                   </td>
                 </tr>
 
-                {/* Notes / issues row — expanded via the note button, or shown when a note exists */}
-                {(notesOpen[task.id] || task.note) && (
-                  <tr style={{ borderBottom: '1px solid var(--border)', background: ti % 2 === 0 ? '#fff' : '#fafbfd' }}>
-                    <td colSpan={numCols + 4} style={{ padding: '0 1.25rem 0.75rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: '#fffdf5', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 10px' }}>
-                        <span style={{ fontSize: '0.85rem', flexShrink: 0, marginTop: 2 }} title="Notes / issues">📝</span>
-                        <textarea
-                          defaultValue={task.note || ''}
-                          placeholder={`Notes / issues for "${task.name || 'this task'}" — describe any problem, delay, or blocker…`}
-                          onBlur={e => updateNote(task.id, e.target.value)}
-                          rows={2}
-                          style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', resize: 'vertical', fontSize: '0.8rem', color: '#475569', lineHeight: 1.4, fontFamily: 'inherit', minHeight: 34 }}
-                        />
-                      </div>
-                    </td>
-                  </tr>
-                )}
+                {/* Notes / issues row — always visible under each task */}
+                <tr style={{ borderBottom: '1px solid var(--border)', background: ti % 2 === 0 ? '#fff' : '#fafbfd' }}>
+                  <td colSpan={numCols + 4} style={{ padding: '0 1.25rem 0.75rem' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: '#fffdf5', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 10px' }}>
+                      <span style={{ fontSize: '0.85rem', flexShrink: 0, marginTop: 2 }} title="Notes / issues">📝</span>
+                      <textarea
+                        defaultValue={task.note || ''}
+                        placeholder={`Notes / issues for "${task.name || 'this task'}" — describe any problem, delay, or blocker…`}
+                        onBlur={e => updateNote(task.id, e.target.value)}
+                        rows={2}
+                        style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', resize: 'vertical', fontSize: '0.8rem', color: '#475569', lineHeight: 1.4, fontFamily: 'inherit', minHeight: 34 }}
+                      />
+                    </div>
+                  </td>
+                </tr>
                 </Fragment>
               ))}
               {(activeLob.tasks || []).length === 0 && (
