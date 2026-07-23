@@ -457,8 +457,45 @@ export default function Layout({ children }) {
 
         <main style={{ flex: 1, overflowY: 'auto', padding: '1.75rem' }}>
           {children}
+          {/* Spacer so content clears the fixed mobile tab bar */}
+          <div className="lg:hidden" style={{ height: 78 }} />
         </main>
       </div>
+
+      {/* ── Mobile bottom tab bar (phones only) ── */}
+      <nav
+        className="lg:hidden"
+        style={{
+          position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 20,
+          background: '#0b3b2c',
+          borderTop: '1px solid rgba(255,255,255,0.08)',
+          display: 'flex', alignItems: 'stretch',
+          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          boxShadow: '0 -4px 20px rgba(11,59,44,0.25)',
+        }}
+      >
+        {[
+          { id: 'dashboard', label: 'Dashboard', icon: '🏠', action: () => { navigate('/dashboard'); setMobileOpen(false); }, active: location.pathname === '/dashboard' },
+          { id: 'goals',     label: 'Goals',     icon: '🎯', action: () => { navigate('/smart-goals'); setMobileOpen(false); }, active: location.pathname === '/smart-goals' },
+          { id: 'score',     label: 'Score',     icon: '🏆', action: () => { navigate('/scores'); setMobileOpen(false); }, active: location.pathname === '/scores' },
+          { id: 'people',    label: 'People',    icon: '👥', action: () => { navigate('/team'); setMobileOpen(false); }, active: location.pathname === '/team' },
+          { id: 'menu',      label: 'Menu',      icon: '☰',  action: () => setMobileOpen(o => !o), active: mobileOpen },
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={tab.action}
+            style={{
+              flex: 1, background: 'none', border: 'none', cursor: 'pointer',
+              display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+              gap: 3, padding: '9px 2px 8px',
+              color: tab.active ? '#6ee7b7' : 'rgba(255,255,255,0.6)',
+            }}
+          >
+            <span style={{ fontSize: '1.15rem', lineHeight: 1 }}>{tab.icon}</span>
+            <span style={{ fontSize: '0.62rem', fontWeight: tab.active ? 800 : 600, letterSpacing: '0.01em' }}>{tab.label}</span>
+          </button>
+        ))}
+      </nav>
 
       <WelcomeModal />
       <ToolVideoModal
