@@ -1,0 +1,16 @@
+{
+  "name": "Accountability App",
+  "short_name": "Accountability",
+  "description": "The complete leadership development system — track your accountability score, SMART goals, and growth.",
+  "start_url": "/?source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0f2044",
+  "theme_color": "#0f2044",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
