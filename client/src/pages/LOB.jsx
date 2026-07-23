@@ -283,7 +283,6 @@ export default function LOB() {
   const [editing, setEditing] = useState(null);
   const [editingName, setEditingName] = useState(false);
   const [editingTask, setEditingTask] = useState(null); // { id, name, owner }
-  const [notesCollapsed, setNotesCollapsed] = useState({}); // { [taskId]: true } — hidden note boxes
   const [saving, setSaving] = useState(false);
   const [pastDueConfirm, setPastDueConfirm] = useState(null); // { col, val }
 
@@ -438,6 +437,11 @@ export default function LOB() {
 
   function updateNoteHeight(taskId, height) {
     const tasks = activeLob.tasks.map(t => t.id !== taskId ? t : { ...t, noteHeight: height });
+    patchActive({ tasks });
+  }
+
+  function toggleNoteCollapsed(taskId) {
+    const tasks = activeLob.tasks.map(t => t.id !== taskId ? t : { ...t, noteCollapsed: !t.noteCollapsed });
     patchActive({ tasks });
   }
 
@@ -785,10 +789,10 @@ export default function LOB() {
                   {/* Note toggle + Edit + Delete */}
                   <td style={{ padding: '0.5rem 0.75rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
                     <button
-                      onClick={() => setNotesCollapsed(c => ({ ...c, [task.id]: !c[task.id] }))}
-                      title={notesCollapsed[task.id] ? 'Show note' : 'Hide note'}
+                      onClick={() => toggleNoteCollapsed(task.id)}
+                      title={task.noteCollapsed ? 'Show note' : 'Hide note'}
                       style={{ background: 'none', border: 'none', color: task.note ? '#b45309' : '#94a3b8', cursor: 'pointer', fontSize: '0.85rem', marginRight: 6 }}>
-                      {notesCollapsed[task.id] ? '🗒️' : '📝'}
+                      {task.noteCollapsed ? '🗒️' : '📝'}
                     </button>
                     <button
                       onClick={() => setEditingTask({ id: task.id, name: task.name, owner: task.owner })}
@@ -804,7 +808,7 @@ export default function LOB() {
                 </tr>
 
                 {/* Notes / issues row — aligned under the progress columns, collapsible */}
-                {!notesCollapsed[task.id] && (
+                {!task.noteCollapsed && (
                   <tr style={{ borderBottom: '1px solid var(--border)', background: ti % 2 === 0 ? '#fff' : '#fafbfd' }}>
                     {/* empty cells so the box starts under the % columns, not the task title */}
                     <td /><td />
