@@ -125,9 +125,10 @@ export default function Training() {
         </div>
       </div>
 
-      {/* Accountability windows: On Track (green) · Due Soon (yellow) · Past Due (red) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: '1.5rem' }}>
+      {/* Accountability windows: Completed · On Track (green) · Due Soon (yellow) · Past Due (red) */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: '1.5rem' }}>
         {[
+          { label: 'Completed', sub: 'finished trainings',       value: completedCount, icon: '🎓', color: '#0f766e', bg: '#ccfbf1', border: '#5eead4' },
           { label: 'On Track',  sub: 'completed or >2 weeks out', value: status.ontrack, icon: '✅', color: '#15803d', bg: '#dcfce7', border: '#86efac' },
           { label: 'Due Soon',  sub: 'within 2 weeks',           value: status.warning, icon: '⚠️', color: '#b45309', bg: '#fef9c3', border: '#fde68a' },
           { label: 'Past Due',  sub: 'deadline passed',          value: status.overdue, icon: '🚨', color: '#dc2626', bg: '#fee2e2', border: '#fca5a5' },
