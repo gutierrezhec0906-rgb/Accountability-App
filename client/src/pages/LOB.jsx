@@ -748,6 +748,33 @@ export default function LOB() {
         </div>
       </div>
 
+      {/* Collision warning — placed right under the table so it's always visible */}
+      {(activeLob.tasks || []).length > 1 && (() => {
+        // Collision detector: warn if any row's latest filled % >= the row above it at the same column
+        const tasks = activeLob.tasks;
+        let collisionWarning = false;
+        for (let ci = 0; ci < activeLob.dates.length; ci++) {
+          for (let ti = 1; ti < tasks.length; ti++) {
+            const above = parseFloat(tasks[ti - 1].cells[ci]);
+            const below = parseFloat(tasks[ti].cells[ci]);
+            if (!isNaN(above) && !isNaN(below) && below >= above && above > 0) {
+              collisionWarning = true;
+            }
+          }
+        }
+        return collisionWarning ? (
+          <div style={{ marginBottom: '1rem', background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 10, padding: '0.75rem 1rem', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>⚠️</span>
+            <div>
+              <p style={{ fontWeight: 700, color: '#b91c1c', fontSize: '0.82rem', margin: '0 0 3px' }}>Possible Collision Detected</p>
+              <p style={{ fontSize: '0.75rem', color: '#7f1d1d', margin: 0, lineHeight: 1.55 }}>
+                At least one activity's % complete is reaching or exceeding the activity above it at the same date column — a sign that a faster activity is catching up to a slower one. Consider adding buffer, adjusting the start date, or increasing the upstream activity's rate.
+              </p>
+            </div>
+          </div>
+        ) : null;
+      })()}
+
       {/* Add task row */}
       {showTaskForm ? (
         <div className="card" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
@@ -780,31 +807,6 @@ export default function LOB() {
       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
         Click any date header to set a due date · Click "+ Col" to add more date columns · Click ✏️ to edit a task · Click the LOB name above to rename
       </p>
-      {(activeLob.tasks || []).length > 1 && (() => {
-        // Collision detector: warn if any row's latest filled % >= the row above it at the same column
-        const tasks = activeLob.tasks;
-        let collisionWarning = false;
-        for (let ci = 0; ci < activeLob.dates.length; ci++) {
-          for (let ti = 1; ti < tasks.length; ti++) {
-            const above = parseFloat(tasks[ti - 1].cells[ci]);
-            const below = parseFloat(tasks[ti].cells[ci]);
-            if (!isNaN(above) && !isNaN(below) && below >= above && above > 0) {
-              collisionWarning = true;
-            }
-          }
-        }
-        return collisionWarning ? (
-          <div style={{ marginTop: '0.75rem', background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 10, padding: '0.75rem 1rem', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-            <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>⚠️</span>
-            <div>
-              <p style={{ fontWeight: 700, color: '#b91c1c', fontSize: '0.82rem', margin: '0 0 3px' }}>Possible Collision Detected</p>
-              <p style={{ fontSize: '0.75rem', color: '#7f1d1d', margin: 0, lineHeight: 1.55 }}>
-                At least one activity's % complete is reaching or exceeding the activity above it at the same date column — a sign that a faster activity is catching up to a slower one. Consider adding buffer, adjusting the start date, or increasing the upstream activity's rate.
-              </p>
-            </div>
-          </div>
-        ) : null;
-      })()}
     </div>
   );
 }
