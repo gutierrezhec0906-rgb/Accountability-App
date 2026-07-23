@@ -338,7 +338,7 @@ export default function Vision() {
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-      <PageHeader icon="🔭" title="Vision Builder" subtitle="Create a compelling personal or team vision statement" />
+      <PageHeader icon="🔭" title="Vision Builder — The Framework (Our Purpose)" subtitle="Create a compelling personal or team vision statement" />
 
       {/* Edit saved vision modal */}
       {editingId && editingId !== 'current' && (
