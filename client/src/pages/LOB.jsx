@@ -516,7 +516,7 @@ export default function LOB() {
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <PageHeader
         icon="📈"
-        title="Line of Balance"
+        title="Line of Balance — Track to the detail when you cannot fail"
         subtitle="Visual production planning and schedule tracking"
         action={
           <button className="btn-primary" onClick={() => setShowNewForm(s => !s)}>
