@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from '../firebase';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import DateStatus from '../components/DateStatus';
@@ -17,23 +20,76 @@ const sampleTrainings = [
 const categories = ['All', 'Lean', 'Leadership', 'Safety', 'Soft Skills', 'Analytics', 'Quality'];
 const catColors = { Lean: '#0d9488', Leadership: '#0f2044', Safety: '#ef4444', 'Soft Skills': '#8b5cf6', Analytics: '#0891b2', Quality: '#f59e0b' };
 
+const emptyForm = { title: '', category: 'Leadership', duration: '', dueDate: '', mandatory: false };
+
 export default function Training() {
-  const [trainings, setTrainings] = useState(sampleTrainings);
+  const { currentUser } = useAuth();
+  const [trainings, setTrainings] = useState([]);
   const [filter, setFilter] = useState('All');
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ title: '', category: 'Leadership', duration: '', dueDate: '', mandatory: false });
+  const [editingId, setEditingId] = useState(null);
+  const [form, setForm] = useState(emptyForm);
 
-  function toggleComplete(id) {
-    setTrainings(t => t.map(x => x.id === id ? { ...x, completed: !x.completed, completedDate: !x.completed ? new Date().toISOString().split('T')[0] : null } : x));
-    toast.success('Training status updated');
+  // Load saved trainings; first-time users are seeded with the sample list.
+  useEffect(() => {
+    if (!currentUser) return;
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, 'users', currentUser.uid));
+        const saved = snap.exists() ? snap.data().trainings : null;
+        setTrainings(Array.isArray(saved) ? saved : sampleTrainings);
+      } catch {
+        setTrainings(sampleTrainings);
+      }
+    })();
+  }, [currentUser]);
+
+  async function persist(next) {
+    setTrainings(next);
+    if (!currentUser) return;
+    try {
+      await setDoc(doc(db, 'users', currentUser.uid), { trainings: next }, { merge: true });
+    } catch {
+      toast.error('Could not save changes');
+    }
   }
 
-  function addTraining(e) {
-    e.preventDefault();
-    setTrainings(t => [...t, { ...form, id: Date.now(), completed: false }]);
-    setForm({ title: '', category: 'Leadership', duration: '', dueDate: '', mandatory: false });
+  function toggleComplete(id) {
+    persist(trainings.map(x => x.id === id
+      ? { ...x, completed: !x.completed, completedDate: !x.completed ? new Date().toISOString().split('T')[0] : null }
+      : x));
+  }
+
+  function startEdit(t) {
+    setEditingId(t.id);
+    setForm({ title: t.title, category: t.category, duration: t.duration || '', dueDate: t.dueDate || '', mandatory: !!t.mandatory });
+    setShowForm(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function deleteTraining(id) {
+    const t = trainings.find(x => x.id === id);
+    if (!window.confirm(`Delete "${t?.title || 'this training'}"? This cannot be undone.`)) return;
+    persist(trainings.filter(x => x.id !== id));
+    toast.success('Training deleted');
+  }
+
+  function cancelForm() {
     setShowForm(false);
-    toast.success('Training added');
+    setEditingId(null);
+    setForm(emptyForm);
+  }
+
+  function submitTraining(e) {
+    e.preventDefault();
+    if (editingId != null) {
+      persist(trainings.map(x => x.id === editingId ? { ...x, ...form } : x));
+      toast.success('Training updated');
+    } else {
+      persist([...trainings, { ...form, id: Date.now(), completed: false }]);
+      toast.success('Training added');
+    }
+    cancelForm();
   }
 
   const filtered = filter === 'All' ? trainings : trainings.filter(t => t.category === filter);
@@ -43,7 +99,7 @@ export default function Training() {
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }}>
       <PageHeader icon="🎓" title="Training Center" subtitle="Track learning progress and certifications"
-        action={<button className="btn-primary" onClick={() => setShowForm(s => !s)}>+ Add Training</button>} />
+        action={<button className="btn-primary" onClick={() => { if (showForm) { cancelForm(); } else { setEditingId(null); setForm(emptyForm); setShowForm(true); } }}>+ Add Training</button>} />
 
       {/* Progress hero */}
       <div style={{ background: 'linear-gradient(135deg,#0f2044,#1e3a6e)', borderRadius: 16, padding: '1.5rem', marginBottom: '1.5rem', color: 'white' }}>
@@ -75,8 +131,8 @@ export default function Training() {
 
       {showForm && (
         <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>Add Training</h3>
-          <form onSubmit={addTraining} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>{editingId != null ? 'Edit Training' : 'Add Training'}</h3>
+          <form onSubmit={submitTraining} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div style={{ gridColumn: '1/-1' }}><label className="label">Training Title</label><input className="input" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Six Sigma Green Belt" /></div>
             <div><label className="label">Category</label><select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>{categories.filter(c => c !== 'All').map(c => <option key={c}>{c}</option>)}</select></div>
             <div><label className="label">Duration</label><input className="input" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))} placeholder="e.g. 2h" /></div>
@@ -86,8 +142,8 @@ export default function Training() {
               <label htmlFor="mandatory" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Mandatory</label>
             </div>
             <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10 }}>
-              <button className="btn-primary" type="submit">Add Training</button>
-              <button className="btn-secondary" type="button" onClick={() => setShowForm(false)}>Cancel</button>
+              <button className="btn-primary" type="submit">{editingId != null ? 'Save Changes' : 'Add Training'}</button>
+              <button className="btn-secondary" type="button" onClick={cancelForm}>Cancel</button>
             </div>
           </form>
         </div>
@@ -135,8 +191,24 @@ export default function Training() {
                 {t.completedDate && <span style={{ color: '#0d9488', fontWeight: 600 }}>✅ {t.completedDate}</span>}
               </div>
             </div>
+            {/* Edit + Delete */}
+            <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+              <button onClick={() => startEdit(t)} title="Edit training"
+                style={{ background: 'none', border: 'none', color: '#0d9488', cursor: 'pointer', fontSize: '0.95rem', padding: '4px 6px' }}>
+                ✏️
+              </button>
+              <button onClick={() => deleteTraining(t.id)} title="Delete training"
+                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.95rem', padding: '4px 6px' }}>
+                🗑️
+              </button>
+            </div>
           </div>
         ))}
+        {filtered.length === 0 && (
+          <div className="card" style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+            No trainings{filter !== 'All' ? ` in "${filter}"` : ''} yet — click "+ Add Training" to create one.
+          </div>
+        )}
       </div>
     </div>
   );
