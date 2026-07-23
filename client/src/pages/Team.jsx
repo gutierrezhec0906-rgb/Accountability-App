@@ -59,6 +59,7 @@ export default function Team() {
   const [search, setSearch] = useState('');
   const [view, setView] = useState('grid');
   const [orgDefaulted, setOrgDefaulted] = useState(false);
+  const [collapsedCos, setCollapsedCos] = useState({}); // { [companyName]: true } — collapsed companies
 
   const isAdmin = currentUser?.email === 'hectorg@accountability-app.com' || userProfile?.isAdmin;
 
@@ -183,9 +184,31 @@ export default function Team() {
         if (companies.length === 0) {
           return <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No members match your search.</div>;
         }
+        const allCollapsed = companies.every(c => collapsedCos[c]);
         return (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div>
+            <style>{`
+              .org-scroll::-webkit-scrollbar { width: 10px; -webkit-appearance: none; }
+              .org-scroll::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 8px; }
+              .org-scroll::-webkit-scrollbar-thumb { background: #64748b; border-radius: 8px; border: 2px solid #e2e8f0; }
+            `}</style>
+            {/* Expand / collapse all */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
+              <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>{companies.length} compan{companies.length === 1 ? 'y' : 'ies'}</span>
+              <button
+                onClick={() => setCollapsedCos(allCollapsed ? {} : Object.fromEntries(companies.map(c => [c, true])))}
+                className="btn-secondary" style={{ padding: '0.3rem 0.75rem', fontSize: '0.75rem' }}>
+                {allCollapsed ? '⊕ Expand all' : '⊖ Collapse all'}
+              </button>
+            </div>
+            <div className="org-scroll" style={{
+              display: 'flex', flexDirection: 'column', gap: 16,
+              maxHeight: 'clamp(360px, calc(100dvh - 320px), 900px)',
+              overflowY: 'scroll', paddingRight: 8,
+              scrollbarWidth: 'thin', scrollbarColor: '#64748b #e2e8f0',
+            }}>
             {companies.map(company => {
+              const collapsed = !!collapsedCos[company];
               // Group this company's members by role, ordered by rank (top → bottom).
               const members = [...byCompany[company]].sort(
                 (a, b) => (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9) || (a.displayName || '').localeCompare(b.displayName || '')
@@ -198,14 +221,18 @@ export default function Team() {
                 lvl.members.push(m);
               });
               return (
-                <div key={company} className="card" style={{ padding: '1.25rem 1rem 1.5rem', overflowX: 'auto' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingLeft: 4 }}>
+                <div key={company} className="card" style={{ flexShrink: 0, padding: collapsed ? '0.9rem 1rem' : '1.25rem 1rem 1.5rem', overflowX: collapsed ? 'visible' : 'auto' }}>
+                  <button
+                    onClick={() => setCollapsedCos(prev => ({ ...prev, [company]: !prev[company] }))}
+                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, marginBottom: collapsed ? 0 : 16, paddingLeft: 4, background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                    <span style={{ fontSize: '0.8rem', color: '#94a3b8', width: 14, flexShrink: 0 }}>{collapsed ? '▸' : '▾'}</span>
                     <span style={{ fontSize: '1.1rem' }}>🏢</span>
                     <h3 style={{ fontWeight: 800, color: '#0f2044', margin: 0, fontSize: '1rem' }}>{company}</h3>
                     <span style={{ fontSize: '0.72rem', color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: 9999, fontWeight: 700 }}>
                       {byCompany[company].length} member{byCompany[company].length !== 1 ? 's' : ''}
                     </span>
-                  </div>
+                  </button>
+                  {!collapsed && (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 'fit-content' }}>
                     {levels.map((lvl, li) => (
                       <div key={lvl.rank} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
@@ -237,9 +264,11 @@ export default function Team() {
                       </div>
                     ))}
                   </div>
+                  )}
                 </div>
               );
             })}
+            </div>
           </div>
         );
       })()}
