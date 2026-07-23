@@ -618,9 +618,29 @@ export default function LOB() {
                 <tr key={task.id} style={{ borderBottom: '1px solid var(--border)', background: ti % 2 === 0 ? '#fff' : '#fafbfd' }}>
                   <td style={{ padding: '0.75rem 1.25rem', fontWeight: 700, color: 'var(--text-primary)' }}>{task.name}</td>
                   <td style={{ padding: '0.75rem 1rem', color: 'var(--text-muted)', fontSize: '0.8rem' }}>{task.owner}</td>
-                  {task.cells.map((cell, ci) => {
+                  {(() => {
+                    // Once an activity reaches 100% in a column, it is complete: every
+                    // LATER column for that row is grayed out and shown as done (green ✓).
+                    const doneIdx = task.cells.findIndex(c => parseFloat(c) >= 100);
+                    return task.cells.map((cell, ci) => {
                     const s = dateCellStyle(activeLob.dates[ci], cell);
                     const key = `${task.id}-${ci}`;
+                    const isCompleted = doneIdx !== -1 && ci > doneIdx;
+                    if (isCompleted) {
+                      // Completed (post-100%) cell: muted grayed-green, non-editable.
+                      return (
+                        <td key={ci} style={{ padding: '0.4rem 0.25rem', textAlign: 'center' }}>
+                          <div title="Activity already completed 100%" style={{
+                            width: 72, minHeight: 30, borderRadius: 8,
+                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
+                            background: '#e8f2ec', color: '#5a9d78', border: '1px dashed #b6d8c4',
+                            fontWeight: 700, fontSize: '0.72rem', margin: '0 auto', lineHeight: 1.2,
+                          }}>
+                            ✓ 100%
+                          </div>
+                        </td>
+                      );
+                    }
                     return (
                       <td key={ci} style={{ padding: '0.4rem 0.25rem', textAlign: 'center' }}>
                         {editing === key ? (
@@ -642,7 +662,8 @@ export default function LOB() {
                         )}
                       </td>
                     );
-                  })}
+                    });
+                  })()}
                   {/* Empty cell for + Col column */}
                   <td></td>
                   {/* Edit + Delete */}
