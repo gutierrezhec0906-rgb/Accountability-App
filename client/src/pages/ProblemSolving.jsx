@@ -1468,7 +1468,7 @@ export default function ProblemSolving() {
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-      <PageHeader icon="🔍" title="Problem-Solving Tools" subtitle="5 Whys, Fishbone Diagram, and A3 Template" />
+      <PageHeader icon="🔍" title="Problem-Solving Tools — We are here to solve problems" subtitle="5 Whys, Fishbone Diagram, and A3 Template" />
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
         {TOOLS.map(t => (
