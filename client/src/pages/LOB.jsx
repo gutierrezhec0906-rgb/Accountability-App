@@ -244,6 +244,7 @@ export default function LOB() {
   const [editing, setEditing] = useState(null);
   const [editingName, setEditingName] = useState(false);
   const [editingTask, setEditingTask] = useState(null); // { id, name, owner }
+  const [notesCollapsed, setNotesCollapsed] = useState({}); // { [taskId]: true } — hidden note boxes
   const [saving, setSaving] = useState(false);
   const [pastDueConfirm, setPastDueConfirm] = useState(null); // { col, val }
 
@@ -683,8 +684,14 @@ export default function LOB() {
                   })()}
                   {/* Empty cell for + Col column */}
                   <td></td>
-                  {/* Edit + Delete */}
+                  {/* Note toggle + Edit + Delete */}
                   <td style={{ padding: '0.5rem 0.75rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                    <button
+                      onClick={() => setNotesCollapsed(c => ({ ...c, [task.id]: !c[task.id] }))}
+                      title={notesCollapsed[task.id] ? 'Show note' : 'Hide note'}
+                      style={{ background: 'none', border: 'none', color: task.note ? '#b45309' : '#94a3b8', cursor: 'pointer', fontSize: '0.85rem', marginRight: 6 }}>
+                      {notesCollapsed[task.id] ? '🗒️' : '📝'}
+                    </button>
                     <button
                       onClick={() => setEditingTask({ id: task.id, name: task.name, owner: task.owner })}
                       title="Edit task"
@@ -698,21 +705,25 @@ export default function LOB() {
                   </td>
                 </tr>
 
-                {/* Notes / issues row — always visible under each task */}
-                <tr style={{ borderBottom: '1px solid var(--border)', background: ti % 2 === 0 ? '#fff' : '#fafbfd' }}>
-                  <td colSpan={numCols + 4} style={{ padding: '0 1.25rem 0.75rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8, background: '#fffdf5', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 10px' }}>
-                      <span style={{ fontSize: '0.85rem', flexShrink: 0, marginTop: 2 }} title="Notes / issues">📝</span>
-                      <textarea
-                        defaultValue={task.note || ''}
-                        placeholder={`Notes / issues for "${task.name || 'this task'}" — describe any problem, delay, or blocker…`}
-                        onBlur={e => updateNote(task.id, e.target.value)}
-                        rows={2}
-                        style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', resize: 'vertical', fontSize: '0.8rem', color: '#475569', lineHeight: 1.4, fontFamily: 'inherit', minHeight: 34 }}
-                      />
-                    </div>
-                  </td>
-                </tr>
+                {/* Notes / issues row — aligned under the progress columns, collapsible */}
+                {!notesCollapsed[task.id] && (
+                  <tr style={{ borderBottom: '1px solid var(--border)', background: ti % 2 === 0 ? '#fff' : '#fafbfd' }}>
+                    {/* empty cells so the box starts under the % columns, not the task title */}
+                    <td /><td />
+                    <td colSpan={numCols + 2} style={{ padding: '0 1rem 0.6rem 0.25rem' }}>
+                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, background: '#fffdf5', border: '1px solid #fde68a', borderRadius: 7, padding: '5px 8px' }}>
+                        <span style={{ fontSize: '0.78rem', flexShrink: 0, marginTop: 1 }} title="Notes / issues">📝</span>
+                        <textarea
+                          defaultValue={task.note || ''}
+                          placeholder={`Notes / issues for "${task.name || 'this task'}"…`}
+                          onBlur={e => updateNote(task.id, e.target.value)}
+                          rows={1}
+                          style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', resize: 'vertical', overflowY: 'auto', fontSize: '0.78rem', color: '#475569', lineHeight: 1.35, fontFamily: 'inherit', minHeight: 26, maxHeight: 200 }}
+                        />
+                      </div>
+                    </td>
+                  </tr>
+                )}
                 </Fragment>
               ))}
               {(activeLob.tasks || []).length === 0 && (
