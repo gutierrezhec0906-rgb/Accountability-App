@@ -77,6 +77,41 @@ const categories = [
 
 const allModules = categories.flatMap(c => c.modules);
 
+// Rising trend line under the score (mockup). Takes newest-first scoreHistory,
+// plots the last ~14 points chronologically. Falls back to a gentle flat line.
+function Sparkline({ history, width = 300, height = 56 }) {
+  const pts = [...(history || [])]
+    .filter(h => typeof h.score === 'number')
+    .reverse()
+    .slice(-14);
+  const vals = pts.length >= 2 ? pts.map(p => p.score) : [Math.max(0, (pts[0]?.score ?? 0) - 4), pts[0]?.score ?? 0];
+  const min = Math.min(...vals), max = Math.max(...vals);
+  const span = max - min || 1;
+  const pad = 4;
+  const stepX = (width - pad * 2) / (vals.length - 1);
+  const coords = vals.map((v, i) => {
+    const x = pad + i * stepX;
+    const y = height - pad - ((v - min) / span) * (height - pad * 2);
+    return [x, y];
+  });
+  const line = coords.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const area = `${line} L${coords[coords.length - 1][0].toFixed(1)},${height} L${coords[0][0].toFixed(1)},${height} Z`;
+  const [ex, ey] = coords[coords.length - 1];
+  return (
+    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: 'block', width: '100%', height }}>
+      <defs>
+        <linearGradient id="sparkFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#34d399" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="#34d399" stopOpacity="0" />
+        </linearGradient>
+      </defs>
+      <path d={area} fill="url(#sparkFill)" />
+      <path d={line} fill="none" stroke="#34d399" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+      <circle cx={ex} cy={ey} r="4.5" fill="#6ee7b7" stroke="#052e22" strokeWidth="2" />
+    </svg>
+  );
+}
+
 const quickActions = [
   { label: 'Log Coaching Session', icon: '📝', path: '/coaching' },
   { label: 'Submit Feedback',       icon: '📬', path: '/feedback' },
@@ -88,6 +123,7 @@ export default function Dashboard() {
   const { currentUser, userProfile } = useAuth();
   const navigate = useNavigate();
   const [score, setScore] = useState(null);
+  const [history, setHistory] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
 
   // Read the latest score straight from Firestore on mount — never trust the
@@ -102,8 +138,10 @@ export default function Dashboard() {
     (async () => {
       try {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
-        if (snap.exists() && snap.data().calculatedScore !== undefined) {
-          setScore(snap.data().calculatedScore);
+        if (snap.exists()) {
+          const d = snap.data();
+          if (d.calculatedScore !== undefined) setScore(d.calculatedScore);
+          if (Array.isArray(d.scoreHistory)) setHistory(d.scoreHistory);
         }
       } catch (e) { console.warn('Could not load fresh score', e); }
     })();
@@ -164,71 +202,73 @@ export default function Dashboard() {
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.75rem' }}>
 
-      {/* ── Hero banner ── */}
+      {/* ── Hero banner (forest-green, app-style) ── */}
       <div style={{
-        borderRadius: 20,
-        background: 'linear-gradient(135deg, #0b1a38 0%, #0f2044 50%, #0d9488 140%)',
-        padding: '2rem 2.25rem',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-        gap: 24, flexWrap: 'wrap',
-        boxShadow: '0 8px 40px rgba(15,32,68,0.2)',
+        borderRadius: 22,
+        background: 'linear-gradient(160deg, #0b3b2c 0%, #0f4d38 55%, #0a5a42 120%)',
+        padding: '1.75rem 2rem',
+        display: 'flex', alignItems: 'stretch', justifyContent: 'space-between',
+        gap: 28, flexWrap: 'wrap',
+        boxShadow: '0 10px 40px rgba(11,59,44,0.28)',
         position: 'relative', overflow: 'hidden',
       }}>
         {/* decorative circles */}
-        <div style={{ position: 'absolute', right: -40, top: -40, width: 220, height: 220, borderRadius: '50%', background: 'rgba(13,148,136,0.12)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', right: 60, bottom: -60, width: 160, height: 160, borderRadius: '50%', background: 'rgba(13,148,136,0.08)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', right: -50, top: -50, width: 220, height: 220, borderRadius: '50%', background: 'rgba(52,211,153,0.10)', pointerEvents: 'none' }} />
+        <div style={{ position: 'absolute', right: 80, bottom: -70, width: 170, height: 170, borderRadius: '50%', background: 'rgba(52,211,153,0.07)', pointerEvents: 'none' }} />
 
-        <div style={{ position: 'relative' }}>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem', fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 6px' }}>{greeting}</p>
-          <h1 style={{ color: 'white', fontSize: '1.75rem', fontWeight: 900, margin: '0 0 6px', lineHeight: 1.2 }}>
-            {firstName} 👋
+        <div style={{ position: 'relative', flex: '1 1 300px', minWidth: 260 }}>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.9rem', fontWeight: 500, margin: '0 0 2px' }}>Welcome back,</p>
+          <h1 style={{ color: 'white', fontSize: '2rem', fontWeight: 900, margin: '0 0 6px', lineHeight: 1.15 }}>
+            {firstName} <span style={{ fontWeight: 400 }}>👋</span>
           </h1>
-          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.9rem', margin: '0 0 20px', fontWeight: 400 }}>
+          <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', margin: '0 0 20px', fontWeight: 400 }}>
             {userProfile?.role || 'Leader'} · Track your accountability and growth
           </p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <button
               onClick={() => navigate('/scores')}
-              style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 10, padding: '0.5rem 1.25rem', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer' }}
+              style={{ background: '#10b981', color: 'white', border: 'none', borderRadius: 12, padding: '0.6rem 1.3rem', fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(16,185,129,0.35)' }}
             >
               View My Score
             </button>
             <button
               onClick={() => navigate('/smart-goals')}
-              style={{ background: 'rgba(255,255,255,0.1)', color: 'white', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 10, padding: '0.5rem 1.25rem', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer' }}
+              style={{ background: 'white', color: '#0b3b2c', border: 'none', borderRadius: 12, padding: '0.6rem 1.3rem', fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer' }}
             >
               My SMART Goals
             </button>
             <button
               onClick={() => navigate('/self-assessment')}
-              style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '0.5rem 1rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}
+              style={{ background: 'rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: '0.6rem 1rem', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}
             >
               📋 Self-Assessment
             </button>
             <button
               onClick={() => navigate('/pricing')}
-              style={{ background: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.8)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 10, padding: '0.5rem 1rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}
+              style={{ background: 'rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: '0.6rem 1rem', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}
             >
               {TIER_ICONS[userTier]} {TIER_LABELS[userTier]} Plan
             </button>
           </div>
         </div>
 
-        {/* Score pill */}
-        <div style={{ position: 'relative', textAlign: 'center' }}>
-          <div style={{
-            background: 'rgba(255,255,255,0.08)',
-            border: '1px solid rgba(255,255,255,0.12)',
-            borderRadius: 16, padding: '1.25rem 2rem',
-            backdropFilter: 'blur(10px)',
-          }}>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', margin: '0 0 4px' }}>Accountability Score</p>
-            <p style={{ color: 'white', fontSize: '3rem', fontWeight: 900, margin: 0, lineHeight: 1 }}>
-              {score ?? '—'}
-            </p>
-            <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.72rem', margin: '4px 0 0' }}>out of 100</p>
-          </div>
-        </div>
+        {/* Score card with trend sparkline */}
+        <button
+          onClick={() => navigate('/scores')}
+          style={{
+            position: 'relative', textAlign: 'center', flex: '1 1 260px', maxWidth: 340,
+            background: 'rgba(3,26,19,0.55)', border: '1px solid rgba(255,255,255,0.10)',
+            borderRadius: 18, padding: '1.1rem 1.5rem 0.75rem', cursor: 'pointer',
+            display: 'flex', flexDirection: 'column', justifyContent: 'center',
+          }}
+        >
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', margin: '0 0 2px' }}>Accountability Score</p>
+          <p style={{ color: 'white', fontSize: '3.25rem', fontWeight: 900, margin: 0, lineHeight: 1 }}>
+            {score ?? '—'}
+          </p>
+          <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.72rem', margin: '2px 0 6px' }}>out of 100</p>
+          <Sparkline history={history} />
+        </button>
       </div>
 
       {/* ── Action needed: incoming skills peer-assessment requests ── */}
