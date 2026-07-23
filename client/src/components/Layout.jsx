@@ -458,7 +458,7 @@ export default function Layout({ children }) {
         <main style={{ flex: 1, overflowY: 'auto', padding: '1.75rem' }}>
           {children}
           {/* Spacer so content clears the fixed mobile tab bar (incl. iOS safe area) */}
-          <div className="lg:hidden" style={{ height: 'calc(96px + env(safe-area-inset-bottom, 0px))' }} />
+          <div className="lg:hidden" style={{ height: 'calc(130px + env(safe-area-inset-bottom, 0px))' }} />
         </main>
       </div>
 
