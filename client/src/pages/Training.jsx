@@ -29,6 +29,7 @@ export default function Training() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [statusFilter, setStatusFilter] = useState('all'); // all | completed | ontrack | warning | overdue
 
   // Load saved trainings; first-time users are seeded with the sample list.
   useEffect(() => {
@@ -92,7 +93,20 @@ export default function Training() {
     cancelForm();
   }
 
-  const filtered = filter === 'All' ? trainings : trainings.filter(t => t.category === filter);
+  // Status level of a single training (completed / no-date count as on track).
+  function trainingLevel(t) {
+    if (t.completed) return 'ontrack';
+    return t.dueDate ? getDateStatus(t.dueDate).level : 'ontrack';
+  }
+  function matchesStatus(t) {
+    if (statusFilter === 'all') return true;
+    if (statusFilter === 'completed') return !!t.completed;
+    return trainingLevel(t) === statusFilter;
+  }
+
+  const filtered = trainings
+    .filter(t => filter === 'All' || t.category === filter)
+    .filter(matchesStatus);
   const completedCount = trainings.filter(t => t.completed).length;
   const pct = trainings.length ? Math.round((completedCount / trainings.length) * 100) : 0;
 
@@ -128,18 +142,29 @@ export default function Training() {
       {/* Accountability windows: Completed · On Track (green) · Due Soon (yellow) · Past Due (red) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: '1.5rem' }}>
         {[
-          { label: 'Completed', sub: 'finished trainings',       value: completedCount, icon: '🎓', color: '#0f766e', bg: '#ccfbf1', border: '#5eead4' },
-          { label: 'On Track',  sub: 'completed or >2 weeks out', value: status.ontrack, icon: '✅', color: '#15803d', bg: '#dcfce7', border: '#86efac' },
-          { label: 'Due Soon',  sub: 'within 2 weeks',           value: status.warning, icon: '⚠️', color: '#b45309', bg: '#fef9c3', border: '#fde68a' },
-          { label: 'Past Due',  sub: 'deadline passed',          value: status.overdue, icon: '🚨', color: '#dc2626', bg: '#fee2e2', border: '#fca5a5' },
-        ].map(s => (
-          <div key={s.label} style={{ textAlign: 'center', background: s.bg, border: `1.5px solid ${s.border}`, borderRadius: 14, padding: '1rem 0.75rem' }}>
-            <div style={{ fontSize: '1.1rem', lineHeight: 1 }}>{s.icon}</div>
-            <p style={{ fontSize: '2rem', fontWeight: 900, color: s.color, margin: '4px 0 0', lineHeight: 1 }}>{s.value}</p>
-            <p style={{ fontSize: '0.8rem', color: s.color, margin: '4px 0 0', fontWeight: 800 }}>{s.label}</p>
-            <p style={{ fontSize: '0.68rem', color: s.color, opacity: 0.8, margin: '2px 0 0', fontWeight: 600 }}>{s.sub}</p>
-          </div>
-        ))}
+          { key: 'completed', label: 'Completed', sub: 'finished trainings',       value: completedCount, icon: '🎓', color: '#0f766e', bg: '#ccfbf1', border: '#5eead4' },
+          { key: 'ontrack',   label: 'On Track',  sub: 'completed or >2 weeks out', value: status.ontrack, icon: '✅', color: '#15803d', bg: '#dcfce7', border: '#86efac' },
+          { key: 'warning',   label: 'Due Soon',  sub: 'within 2 weeks',           value: status.warning, icon: '⚠️', color: '#b45309', bg: '#fef9c3', border: '#fde68a' },
+          { key: 'overdue',   label: 'Past Due',  sub: 'deadline passed',          value: status.overdue, icon: '🚨', color: '#dc2626', bg: '#fee2e2', border: '#fca5a5' },
+        ].map(s => {
+          const active = statusFilter === s.key;
+          return (
+            <button key={s.label}
+              onClick={() => setStatusFilter(active ? 'all' : s.key)}
+              title={active ? 'Show all trainings' : `Show ${s.label} trainings`}
+              style={{
+                textAlign: 'center', background: s.bg, borderRadius: 14, padding: '1rem 0.75rem', cursor: 'pointer',
+                border: `2px solid ${active ? s.color : s.border}`,
+                boxShadow: active ? `0 0 0 3px ${s.border}` : 'none',
+                transition: 'all 0.15s',
+              }}>
+              <div style={{ fontSize: '1.1rem', lineHeight: 1 }}>{s.icon}</div>
+              <p style={{ fontSize: '2rem', fontWeight: 900, color: s.color, margin: '4px 0 0', lineHeight: 1 }}>{s.value}</p>
+              <p style={{ fontSize: '0.8rem', color: s.color, margin: '4px 0 0', fontWeight: 800 }}>{s.label}</p>
+              <p style={{ fontSize: '0.68rem', color: s.color, opacity: 0.8, margin: '2px 0 0', fontWeight: 600 }}>{active ? 'tap to clear' : s.sub}</p>
+            </button>
+          );
+        })}
       </div>
 
       {showForm && (
