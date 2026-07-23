@@ -19,6 +19,9 @@ const roleIcons = {
 
 const allRoles = ['All', 'Leader', 'Manager', 'Supervisor', 'Individual Contributor'];
 
+// Org-chart hierarchy: lower rank = higher in the chart.
+const ROLE_RANK = { Leader: 0, Manager: 1, Supervisor: 2, 'Individual Contributor': 3 };
+
 function Avatar({ name, photoURL, size = 40 }) {
   const initials = name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
   const colors = ['#0d9488', '#0f2044', '#7c3aed', '#be185d', '#b45309', '#065f46'];
@@ -55,8 +58,14 @@ export default function Team() {
   const [filter, setFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [view, setView] = useState('grid');
+  const [orgDefaulted, setOrgDefaulted] = useState(false);
 
   const isAdmin = currentUser?.email === 'hectorg@accountability-app.com' || userProfile?.isAdmin;
+
+  // Admins land on the org-chart view by default (once).
+  useEffect(() => {
+    if (isAdmin && !orgDefaulted) { setView('org'); setOrgDefaulted(true); }
+  }, [isAdmin, orgDefaulted]);
   const isLeader = userProfile?.role === 'Leader';
   const canSeeScores = isAdmin || isLeader;
 
@@ -123,6 +132,7 @@ export default function Team() {
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          {isAdmin && <button onClick={() => setView('org')} className={view === 'org' ? 'btn-primary' : 'btn-secondary'} style={{ padding: '0.4rem 0.75rem' }}>🗂 Org Chart</button>}
           <button onClick={() => setView('grid')} className={view === 'grid' ? 'btn-primary' : 'btn-secondary'} style={{ padding: '0.4rem 0.75rem' }}>⊞ Grid</button>
           <button onClick={() => setView('list')} className={view === 'list' ? 'btn-primary' : 'btn-secondary'} style={{ padding: '0.4rem 0.75rem' }}>≡ List</button>
         </div>
@@ -161,6 +171,78 @@ export default function Team() {
           ))}
         </div>
       </div>
+
+      {/* Org Chart View (admin only) — grouped by company, ranked top-down */}
+      {isAdmin && view === 'org' && (() => {
+        const byCompany = {};
+        filtered.forEach(m => {
+          const c = m.companyName || 'No Company';
+          (byCompany[c] = byCompany[c] || []).push(m);
+        });
+        const companies = Object.keys(byCompany).sort((a, b) => a.localeCompare(b));
+        if (companies.length === 0) {
+          return <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No members match your search.</div>;
+        }
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
+            {companies.map(company => {
+              // Group this company's members by role, ordered by rank (top → bottom).
+              const members = [...byCompany[company]].sort(
+                (a, b) => (ROLE_RANK[a.role] ?? 9) - (ROLE_RANK[b.role] ?? 9) || (a.displayName || '').localeCompare(b.displayName || '')
+              );
+              const levels = [];
+              members.forEach(m => {
+                const rank = ROLE_RANK[m.role] ?? 9;
+                let lvl = levels.find(l => l.rank === rank);
+                if (!lvl) { lvl = { rank, members: [] }; levels.push(lvl); }
+                lvl.members.push(m);
+              });
+              return (
+                <div key={company} className="card" style={{ padding: '1.25rem 1rem 1.5rem', overflowX: 'auto' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16, paddingLeft: 4 }}>
+                    <span style={{ fontSize: '1.1rem' }}>🏢</span>
+                    <h3 style={{ fontWeight: 800, color: '#0f2044', margin: 0, fontSize: '1rem' }}>{company}</h3>
+                    <span style={{ fontSize: '0.72rem', color: '#64748b', background: '#f1f5f9', padding: '2px 8px', borderRadius: 9999, fontWeight: 700 }}>
+                      {byCompany[company].length} member{byCompany[company].length !== 1 ? 's' : ''}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 'fit-content' }}>
+                    {levels.map((lvl, li) => (
+                      <div key={lvl.rank} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                        {li > 0 && <div style={{ width: 2, height: 22, background: '#cbd5e1' }} />}
+                        <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', justifyContent: 'center' }}>
+                          {lvl.members.map(member => {
+                            const rc = roleColors[member.role] || roleColors['Individual Contributor'];
+                            const score = member.calculatedScore ?? null;
+                            return (
+                              <div key={member.uid} style={{
+                                width: 210, background: 'white', border: `1px solid ${rc.border}`,
+                                borderTop: `3px solid ${rc.text}`, borderRadius: 12, padding: '0.9rem',
+                                boxShadow: '0 1px 6px rgba(15,32,68,0.06)',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', gap: 6,
+                              }}>
+                                <Avatar name={member.displayName} photoURL={member.photoURL} size={48} />
+                                <p style={{ fontWeight: 700, color: '#1e293b', margin: 0, fontSize: '0.9rem' }}>{member.displayName || 'Unknown'}</p>
+                                <span style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, padding: '0.15rem 0.6rem', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 700 }}>
+                                  {roleIcons[member.role]} {member.role}
+                                </span>
+                                {canSeeScores && (score !== null
+                                  ? <div style={{ width: '100%' }}><ScoreBar score={score} /></div>
+                                  : <p style={{ fontSize: '0.68rem', color: '#cbd5e1', margin: 0 }}>No score yet</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* Grid View */}
       {view === 'grid' && (
