@@ -26,6 +26,7 @@ const BREAKDOWN_CONFIG = [
   { key: 'lean5s', label: 'Lean 5S Audit', max: 5, icon: '🏭', desc: '+5 pts for a weekly 5S audit that describes at least 3 areas of opportunity. Points expire after 7 days — run a new audit each week to keep them.' },
   { key: 'waste', label: 'Waste Walk', max: 5, icon: '🗑️', desc: '+1 pt per distinct waste category you log during a waste walk (Defects, Waiting, Motion, …), max 5. Points expire after 7 days — log 5 different wastes each week to keep all 5.' },
   { key: 'career', label: 'Career Development Plan', max: 10, icon: '🚀', desc: '10 pts for a fully completed plan (100% of the template, 20+ words per question). Sustain them with milestone progress notes: −2 if the 30-day note is missing, −3 more at 90 days, −2 more at 6 months, and lose all remaining if the 12-month note is missing. Add a note (even late) to restore that milestone’s points.' },
+  { key: 'lob', label: 'Line of Balance', max: 8, icon: '📈', desc: '+1 pt for setting up a Line of Balance (4+ task rows and 4+ dates), +5 pts when every activity reaches 100% completion, and +2 bonus pts if you finish with no past-due (red) slips — 7 pts total if an activity ran late, 8 if it was flawless.' },
   { key: 'bonus',     label: 'Bonus Points',     max: 20, icon: '🏆',  desc: 'Extra points from quote reflections and other daily actions' },
 ];
 

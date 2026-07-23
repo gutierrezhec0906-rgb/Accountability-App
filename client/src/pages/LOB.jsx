@@ -4,6 +4,45 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
+import { logPointEvent, calculateScore } from '../utils/scoring';
+
+const LOB_MIN_TASKS = 4;   // named task rows required for the setup point
+const LOB_MIN_DATES = 4;   // date columns required for the setup point
+
+// A row is "complete" once any of its cells reaches 100% (the ✓100% carry-forward).
+function taskReaches100(task) {
+  return (task.cells || []).some(c => parseFloat(c) >= 100);
+}
+// Structure done: at least 4 named tasks AND at least 4 dates set.
+function lobStructureComplete(lob) {
+  if (!lob) return false;
+  const namedTasks = (lob.tasks || []).filter(t => (t.name || '').trim());
+  const setDates = (lob.dates || []).filter(Boolean);
+  return namedTasks.length >= LOB_MIN_TASKS && setDates.length >= LOB_MIN_DATES;
+}
+// Fully complete: every named task reaches 100% (all activities finished).
+function lobFullyComplete(lob) {
+  if (!lobStructureComplete(lob)) return false;
+  const namedTasks = (lob.tasks || []).filter(t => (t.name || '').trim());
+  return namedTasks.length > 0 && namedTasks.every(taskReaches100);
+}
+// A "red slip" = a task still incomplete at a date column that is already past due.
+function lobHasRedSlip(lob) {
+  if (!lob) return false;
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  for (const t of (lob.tasks || [])) {
+    if (!(t.name || '').trim()) continue;
+    const doneIdx = (t.cells || []).findIndex(c => parseFloat(c) >= 100);
+    for (let ci = 0; ci < (lob.dates || []).length; ci++) {
+      const d = lob.dates[ci];
+      if (!d) continue;
+      const due = new Date(d + 'T00:00:00');
+      // past-due column: red if this task hadn't reached 100% by here
+      if (due < today && (doneIdx === -1 || ci < doneIdx)) return true;
+    }
+  }
+  return false;
+}
 
 function blankLOB(name) {
   return {
@@ -290,6 +329,60 @@ export default function LOB() {
   function patchActive(patch) {
     updateLobs(prev => prev.map(l => l.id === activeLob.id ? { ...l, ...patch } : l));
   }
+
+  // ── LOB scoring ──────────────────────────────────────────────────────────
+  // +1  setup: >=4 named tasks AND >=4 dates set
+  // +5  completion: every named task reaches 100%
+  // +2  on-time bonus: completed with no red slip ever recorded on this LOB
+  // Each award fires once per LOB (guarded by flags stored on the record). A red
+  // slip seen at any point sets everRed=true permanently, which blocks the bonus.
+  useEffect(() => {
+    if (!currentUser || !activeLob) return;
+    (async () => {
+      const patch = {};
+      let awarded = false;
+
+      // Track whether this LOB ever had a red slip (checked on every load/edit).
+      if (!activeLob.everRed && lobHasRedSlip(activeLob)) {
+        patch.everRed = true;
+      }
+      const everRed = activeLob.everRed || patch.everRed;
+
+      // +1 setup point
+      if (!activeLob.scoredSetup && lobStructureComplete(activeLob)) {
+        const r = await logPointEvent(currentUser.uid, {
+          points: 1, toolLabel: 'Line of Balance Setup',
+          reason: `${activeLob.name}: 4+ tasks and 4+ dates set`,
+        });
+        if (r?.awarded) { patch.scoredSetup = true; awarded = true; toast.success('⭐ +1 pt — Line of Balance set up (4+ tasks & dates)!', { duration: 5000 }); }
+      }
+
+      // +5 completion (and +2 on-time bonus)
+      if (!activeLob.scoredComplete && lobFullyComplete(activeLob)) {
+        const r = await logPointEvent(currentUser.uid, {
+          points: 5, toolLabel: 'Line of Balance Completed',
+          reason: `${activeLob.name}: all activities reached 100%`,
+        });
+        if (r?.awarded) {
+          patch.scoredComplete = true; awarded = true;
+          if (!everRed) {
+            const b = await logPointEvent(currentUser.uid, {
+              points: 2, toolLabel: 'Line of Balance On-Time Bonus',
+              reason: `${activeLob.name}: completed with no past-due slips`,
+            });
+            if (b?.awarded) toast.success('🏆 +5 pts complete + 2 pts on-time bonus — flawless LOB!', { duration: 6000 });
+            else toast.success('🏆 +5 pts — Line of Balance completed!', { duration: 6000 });
+          } else {
+            toast('🏆 +5 pts — LOB completed. (No on-time bonus — an activity slipped past its date.)', { duration: 6000, icon: '✅' });
+          }
+        }
+      }
+
+      if (Object.keys(patch).length) patchActive(patch);
+      if (awarded) calculateScore(currentUser.uid).catch(() => {});
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeLob, currentUser]);
 
   function createLOB(e) {
     e.preventDefault();

@@ -342,8 +342,18 @@ export async function calculateScore(uid) {
       .reduce((s, e) => s + e.points, 0)
   );
 
+  // --- Line of Balance (0-8): +1 setup (4+ tasks & 4+ dates), +5 full completion
+  //     (every activity 100%), +2 on-time bonus (completed with no past-due slips).
+  //     Permanent achievement points (no decay); capped at 8. ---
+  const LOB_LABELS = ['Line of Balance Setup', 'Line of Balance Completed', 'Line of Balance On-Time Bonus'];
+  const lobPoints = Math.min(8,
+    allEvents
+      .filter(e => LOB_LABELS.includes(e.toolLabel) && e.points > 0)
+      .reduce((s, e) => s + e.points, 0)
+  );
+
   const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + quality + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + mentoringPoints + urgencyPoints + skillsPoints + lean5sPoints + wastePoints + careerPoints + bonusPts - penaltyPts
+    breadth + frequency + quality + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + mentoringPoints + urgencyPoints + skillsPoints + lean5sPoints + wastePoints + careerPoints + lobPoints + bonusPts - penaltyPts
   )));
 
   // Persist score to user doc
@@ -375,6 +385,7 @@ export async function calculateScore(uid) {
     lean5s:         Math.round(lean5sPoints),
     waste:          Math.round(wastePoints),
     career:         Math.round(careerPoints),
+    lob:            Math.round(lobPoints),
     bonus:          Math.round(bonusPts),
   };
 
