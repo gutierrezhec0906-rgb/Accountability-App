@@ -238,13 +238,20 @@ function DailyMovementFeed({ logs }) {
 
   const today = localDateStr();
 
+  // Rolling 7-day window: only show today + the previous 6 calendar days.
+  // On the 8th day the oldest day drops off automatically.
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 6);
+  const cutoffStr = localDateStr(cutoff);
+
   // Group events by date, newest first
   const byDate = {};
   logs.forEach(e => {
+    if (e.date < cutoffStr) return; // older than 7 days — hide
     if (!byDate[e.date]) byDate[e.date] = [];
     byDate[e.date].push(e);
   });
-  const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a)).slice(0, 30);
+  const dates = Object.keys(byDate).sort((a, b) => b.localeCompare(a)).slice(0, 7);
 
   return (
     <>
