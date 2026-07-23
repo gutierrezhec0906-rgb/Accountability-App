@@ -188,7 +188,7 @@ export default function Survey360Manager() {
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }} className="space-y-6">
-      <PageHeader icon="🔄" title="360° Peer Feedback" subtitle="Share a survey link with peers and reports — no app account needed." />
+      <PageHeader icon="🔄" title="360° Peer Feedback — Be humble" subtitle="Share a survey link with peers and reports — no app account needed." />
 
       {/* Create survey */}
       <div className="card" style={{ padding: '1.5rem' }}>
