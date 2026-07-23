@@ -321,8 +321,18 @@ export default function LOB() {
   }
 
   function updateCell(taskId, col, val) {
+    // Cells only accept a percentage from 0 to 100. Blank clears the cell;
+    // anything else is parsed to a number and clamped into the 0–100 range.
+    let clean = '';
+    if (val !== '' && val != null) {
+      let n = parseFloat(String(val).replace(/[^0-9.]/g, ''));
+      if (isNaN(n)) { toast.error('Enter a number from 0 to 100'); return; }
+      if (n > 100) { n = 100; toast('Progress is capped at 100%', { icon: '⚠️' }); }
+      if (n < 0) n = 0;
+      clean = String(Math.round(n));
+    }
     const tasks = activeLob.tasks.map(t =>
-      t.id !== taskId ? t : { ...t, cells: t.cells.map((c, i) => i === col ? val : c) }
+      t.id !== taskId ? t : { ...t, cells: t.cells.map((c, i) => i === col ? clean : c) }
     );
     patchActive({ tasks });
   }
@@ -645,6 +655,7 @@ export default function LOB() {
                       <td key={ci} style={{ padding: '0.4rem 0.25rem', textAlign: 'center' }}>
                         {editing === key ? (
                           <input autoFocus defaultValue={cell}
+                            type="number" min="0" max="100" step="1" inputMode="numeric"
                             style={{ width: 72, textAlign: 'center', border: '2px solid #0d9488', borderRadius: 7, padding: '4px', fontSize: '0.78rem', outline: 'none' }}
                             onBlur={e => { updateCell(task.id, ci, e.target.value); setEditing(null); }}
                             onKeyDown={e => e.key === 'Enter' && e.target.blur()} />
