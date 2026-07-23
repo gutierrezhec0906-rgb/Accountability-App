@@ -343,6 +343,11 @@ export default function LOB() {
     patchActive({ tasks });
   }
 
+  function updateNoteHeight(taskId, height) {
+    const tasks = activeLob.tasks.map(t => t.id !== taskId ? t : { ...t, noteHeight: height });
+    patchActive({ tasks });
+  }
+
   function applyDate(col, val) {
     const dates = activeLob.dates.map((d, i) => i === col ? val : d);
     patchActive({ dates });
@@ -717,8 +722,13 @@ export default function LOB() {
                           defaultValue={task.note || ''}
                           placeholder={`Notes / issues for "${task.name || 'this task'}"…`}
                           onBlur={e => updateNote(task.id, e.target.value)}
+                          onMouseUp={e => {
+                            // Persist a manual drag-resize so the height survives reloads
+                            const h = e.currentTarget.style.height;
+                            if (h && h !== task.noteHeight) updateNoteHeight(task.id, h);
+                          }}
                           rows={1}
-                          style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', resize: 'vertical', overflowY: 'auto', fontSize: '0.78rem', color: '#475569', lineHeight: 1.35, fontFamily: 'inherit', minHeight: 26, maxHeight: 200 }}
+                          style={{ flex: 1, border: 'none', background: 'transparent', outline: 'none', resize: 'vertical', overflowY: 'auto', fontSize: '0.78rem', color: '#475569', lineHeight: 1.35, fontFamily: 'inherit', minHeight: 26, height: task.noteHeight || undefined }}
                         />
                       </div>
                     </td>
