@@ -6,9 +6,11 @@ export function getDateStatus(dateStr) {
   const due = new Date(dateStr + 'T00:00:00');
   const diffDays = Math.round((due - today) / 86400000);
 
-  if (diffDays < 0)  return { level: 'overdue',   color: '#dc2626', bg: '#fee2e2', border: '#fca5a5', icon: '🚨', label: 'Past Due' };
-  if (diffDays <= 15) return { level: 'warning',   color: '#b45309', bg: '#fef9c3', border: '#fde68a', icon: '⚠️', label: 'Almost There?' };
-  return               { level: 'ontrack',   color: '#15803d', bg: '#dcfce7', border: '#86efac', icon: '✅', label: 'In Process' };
+  // App-wide accountability convention:
+  //   red   = past due, yellow = coming due within 2 weeks, green = on track (>2 weeks out)
+  if (diffDays < 0)   return { level: 'overdue', color: '#dc2626', bg: '#fee2e2', border: '#fca5a5', icon: '🚨', label: 'Past Due' };
+  if (diffDays <= 14) return { level: 'warning', color: '#b45309', bg: '#fef9c3', border: '#fde68a', icon: '⚠️', label: 'Due Soon' };
+  return                     { level: 'ontrack', color: '#15803d', bg: '#dcfce7', border: '#86efac', icon: '✅', label: 'On Track' };
 }
 
 // Inline badge: shows icon + label + date

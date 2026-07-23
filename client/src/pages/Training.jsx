@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import DateStatus from '../components/DateStatus';
+import DateStatus, { getDateStatus } from '../components/DateStatus';
 
 const sampleTrainings = [
   { id: 1, title: 'Lean Manufacturing Fundamentals', category: 'Lean',       duration: '4h',   dueDate: '2024-08-31', completed: true,  completedDate: '2024-07-20', mandatory: true  },
@@ -94,7 +94,17 @@ export default function Training() {
 
   const filtered = filter === 'All' ? trainings : trainings.filter(t => t.category === filter);
   const completedCount = trainings.filter(t => t.completed).length;
-  const pct = Math.round((completedCount / trainings.length) * 100);
+  const pct = trainings.length ? Math.round((completedCount / trainings.length) * 100) : 0;
+
+  // Accountability status counts (app-wide convention: red past-due / yellow due-soon / green on-track).
+  // A completed training, or one with no due date, counts as On Track.
+  const status = { ontrack: 0, warning: 0, overdue: 0 };
+  trainings.forEach(t => {
+    if (t.completed) { status.ontrack++; return; }
+    const s = t.dueDate ? getDateStatus(t.dueDate) : null;
+    if (!s) { status.ontrack++; return; }
+    status[s.level]++;
+  });
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }}>
@@ -115,16 +125,18 @@ export default function Training() {
         </div>
       </div>
 
-      {/* Stat tiles */}
+      {/* Accountability windows: On Track (green) · Due Soon (yellow) · Past Due (red) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: '1.5rem' }}>
         {[
-          { label: 'Total',     value: trainings.length,                                 color: '#0f2044' },
-          { label: 'Mandatory', value: trainings.filter(t => t.mandatory).length,        color: '#ef4444' },
-          { label: 'Completed', value: completedCount,                                   color: '#0d9488' },
+          { label: 'On Track',  sub: 'completed or >2 weeks out', value: status.ontrack, icon: '✅', color: '#15803d', bg: '#dcfce7', border: '#86efac' },
+          { label: 'Due Soon',  sub: 'within 2 weeks',           value: status.warning, icon: '⚠️', color: '#b45309', bg: '#fef9c3', border: '#fde68a' },
+          { label: 'Past Due',  sub: 'deadline passed',          value: status.overdue, icon: '🚨', color: '#dc2626', bg: '#fee2e2', border: '#fca5a5' },
         ].map(s => (
-          <div key={s.label} className="stat-tile" style={{ textAlign: 'center' }}>
-            <p style={{ fontSize: '2rem', fontWeight: 900, color: s.color, margin: 0, lineHeight: 1 }}>{s.value}</p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '4px 0 0', fontWeight: 600 }}>{s.label}</p>
+          <div key={s.label} style={{ textAlign: 'center', background: s.bg, border: `1.5px solid ${s.border}`, borderRadius: 14, padding: '1rem 0.75rem' }}>
+            <div style={{ fontSize: '1.1rem', lineHeight: 1 }}>{s.icon}</div>
+            <p style={{ fontSize: '2rem', fontWeight: 900, color: s.color, margin: '4px 0 0', lineHeight: 1 }}>{s.value}</p>
+            <p style={{ fontSize: '0.8rem', color: s.color, margin: '4px 0 0', fontWeight: 800 }}>{s.label}</p>
+            <p style={{ fontSize: '0.68rem', color: s.color, opacity: 0.8, margin: '2px 0 0', fontWeight: 600 }}>{s.sub}</p>
           </div>
         ))}
       </div>

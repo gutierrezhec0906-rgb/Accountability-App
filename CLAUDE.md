@@ -89,6 +89,23 @@ scrollbar silently fails (content compresses instead of scrolling, rows become u
 
 Reference implementation: `DailyMovementFeed` + `DayRow` in `client/src/pages/Scores.jsx`.
 
+## Deadline status color convention (APP-WIDE — always use this)
+
+Any due-date/deadline UI across the whole app must use the same three-tier color code,
+driven by `getDateStatus(dateStr)` in `client/src/components/DateStatus.jsx` (the single
+source of truth — do NOT hardcode thresholds elsewhere):
+
+- **RED — Past Due** (`level:'overdue'`, `#dc2626` / bg `#fee2e2`): deadline already passed.
+- **YELLOW — Due Soon** (`level:'warning'`, `#b45309` / bg `#fef9c3`): due within **2 weeks**
+  (`diffDays <= 14`).
+- **GREEN — On Track** (`level:'ontrack'`, `#15803d` / bg `#dcfce7`): more than 2 weeks out.
+
+A completed item, or one with no due date, counts as **On Track (green)**. When a page needs
+count summaries, build three windows (On Track / Due Soon / Past Due) tallied via
+`getDateStatus(t.dueDate).level` (see the accountability windows in `pages/Training.jsx` for the
+reference implementation). Reuse `<DateStatus date=… />` for inline per-item badges. This must be
+applied consistently to every deadline-bearing feature (trainings, SMART goals, LOB, actions, etc.).
+
 ## Scoring system (`client/src/utils/scoring.js`)
 
 - `logPointEvent(uid, { points, toolLabel, reason })` appends to `users/{uid}.pointEvents`
