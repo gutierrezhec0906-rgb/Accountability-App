@@ -1,11 +1,35 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, updateDoc, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, addDoc, serverTimestamp, getDoc, setDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
-import { db } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const MASTER_ADMIN = 'hectorg@accountability-app.com';
+
+// Tools that support a "How to use" walkthrough video (id must match the route/toolId).
+const VIDEO_TOOLS = [
+  { id: 'dashboard', label: 'Dashboard' },
+  { id: 'vision', label: 'Vision Builder' },
+  { id: 'smart-goals', label: 'SMART Goals' },
+  { id: 'visual-board', label: 'Visual Management Board' },
+  { id: 'lob', label: 'Line of Balance' },
+  { id: 'urgency', label: 'Sense of Urgency' },
+  { id: 'eq-opex', label: 'EQ & OpEx Tools' },
+  { id: 'mindfulness', label: 'Breathing & Mindfulness' },
+  { id: 'lean', label: 'Lean Toolkit' },
+  { id: 'problem-solving', label: 'Problem-Solving Tools' },
+  { id: 'disc', label: 'DISC Assessment' },
+  { id: 'skills', label: 'Skills Assessment' },
+  { id: 'training', label: 'Training Center' },
+  { id: 'mentoring', label: 'Mentoring Tracker' },
+  { id: 'career', label: 'Career Development' },
+  { id: 'feedback', label: 'Feedback Box' },
+  { id: 'coaching', label: 'Coaching Log' },
+  { id: 'quotes', label: 'Leadership Quotes' },
+  { id: 'scores', label: 'Score Dashboard' },
+];
 
 const ROLE_COLORS = {
   Leader: { bg: '#eff6ff', text: '#1d4ed8' },
@@ -33,13 +57,52 @@ export default function AdminPanel() {
   const [newCompany, setNewCompany] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedCompany, setExpandedCompany] = useState(null);
+  const [toolVideos, setToolVideos] = useState({});
+  const [uploadingTool, setUploadingTool] = useState(null);
 
   const isMasterAdmin = currentUser?.email === MASTER_ADMIN;
 
   useEffect(() => {
     if (!isMasterAdmin) return;
-    Promise.all([fetchUsers(), fetchCompanies()]).finally(() => setLoading(false));
+    Promise.all([fetchUsers(), fetchCompanies(), fetchToolVideos()]).finally(() => setLoading(false));
   }, [isMasterAdmin]);
+
+  async function fetchToolVideos() {
+    try {
+      const snap = await getDoc(doc(db, 'appConfig', 'toolVideos'));
+      if (snap.exists()) setToolVideos(snap.data());
+    } catch {}
+  }
+
+  async function uploadToolVideo(toolId, file) {
+    if (!file) return;
+    if (!file.type.startsWith('video/')) { toast.error('Please choose a video file'); return; }
+    if (file.size > 200 * 1024 * 1024) { toast.error('Video must be under 200 MB'); return; }
+    setUploadingTool(toolId);
+    try {
+      const ext = (file.name.split('.').pop() || 'mp4').toLowerCase();
+      const storageRef = ref(storage, `toolVideos/${toolId}.${ext}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      await setDoc(doc(db, 'appConfig', 'toolVideos'), { [toolId]: url }, { merge: true });
+      setToolVideos(prev => ({ ...prev, [toolId]: url }));
+      toast.success('Video uploaded — it will show as the "How to use" walkthrough.');
+    } catch (e) {
+      toast.error('Upload failed: ' + (e?.code || e?.message || 'check Storage rules'));
+    } finally {
+      setUploadingTool(null);
+    }
+  }
+
+  async function removeToolVideo(toolId) {
+    try {
+      await setDoc(doc(db, 'appConfig', 'toolVideos'), { [toolId]: '' }, { merge: true });
+      setToolVideos(prev => ({ ...prev, [toolId]: '' }));
+      toast.success('Video removed');
+    } catch (e) {
+      toast.error('Could not remove: ' + (e?.message || e));
+    }
+  }
 
   async function fetchUsers() {
     const snap = await getDocs(collection(db, 'users'));
@@ -163,7 +226,7 @@ export default function AdminPanel() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 8 }}>
-        {[['overview', '🏢 Org View'], ['pending', `⏳ Pending (${pendingUsers.length})`], ['companies', '⚙️ Companies']].map(([id, label]) => (
+        {[['overview', '🏢 Org View'], ['pending', `⏳ Pending (${pendingUsers.length})`], ['companies', '⚙️ Companies'], ['videos', '🎬 Tool Videos']].map(([id, label]) => (
           <button key={id} onClick={() => setActiveTab(id)}
             style={{
               padding: '8px 18px', borderRadius: 9999, fontSize: 13, fontWeight: 700,
@@ -343,6 +406,49 @@ export default function AdminPanel() {
                 );
               })
             )}
+          </div>
+        </div>
+      )}
+
+      {/* TOOL VIDEOS */}
+      {!loading && activeTab === 'videos' && (
+        <div className="space-y-3">
+          <div className="card p-4" style={{ background: '#f0fdfa', border: '1px solid #99f6e4' }}>
+            <p style={{ fontWeight: 700, color: '#0f766e', margin: '0 0 4px', fontSize: 14 }}>🎬 "How to use" walkthrough videos</p>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+              Upload a short video for any tool. It plays automatically the first time a user opens that tool,
+              and any time they click the <strong>▶ How to use</strong> button. Max 200 MB, MP4 recommended.
+            </p>
+          </div>
+          <div className="space-y-2">
+            {VIDEO_TOOLS.map(tool => {
+              const url = toolVideos[tool.id];
+              const busy = uploadingTool === tool.id;
+              return (
+                <div key={tool.id} className="card p-4" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 20 }}>{url ? '✅' : '🎬'}</span>
+                  <div style={{ flex: 1, minWidth: 160 }}>
+                    <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{tool.label}</div>
+                    <div style={{ fontSize: 12, color: url ? '#0d9488' : 'var(--text-secondary)' }}>
+                      {busy ? 'Uploading…' : url ? 'Video set' : 'No video yet'}
+                    </div>
+                  </div>
+                  {url && !busy && (
+                    <a href={url} target="_blank" rel="noreferrer"
+                      style={{ fontSize: 13, fontWeight: 700, color: '#0f2044', textDecoration: 'none' }}>Preview</a>
+                  )}
+                  <label className="btn-secondary" style={{ cursor: busy ? 'wait' : 'pointer', margin: 0, opacity: busy ? 0.6 : 1 }}>
+                    {url ? 'Replace' : 'Upload'}
+                    <input type="file" accept="video/*" disabled={busy} style={{ display: 'none' }}
+                      onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; uploadToolVideo(tool.id, f); }} />
+                  </label>
+                  {url && !busy && (
+                    <button onClick={() => removeToolVideo(tool.id)}
+                      style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>Remove</button>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
