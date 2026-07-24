@@ -84,6 +84,17 @@ export async function fetchWeeklyReportData(uid) {
   const weekPoints = events.filter(e => e.points > 0).reduce((s, e) => s + e.points, 0);
   const score = data.calculatedScore || 0;
 
+  // Points earned this week, grouped by activity (toolLabel) and summed —
+  // for the "Well done, you earned these points" section of the report.
+  const pointsByLabel = {};
+  events.filter(e => e.points > 0).forEach(e => {
+    const label = e.toolLabel || 'App activity';
+    pointsByLabel[label] = (pointsByLabel[label] || 0) + e.points;
+  });
+  const pointsBreakdown = Object.entries(pointsByLabel)
+    .map(([label, points]) => ({ label, points }))
+    .sort((a, b) => b.points - a.points);
+
   const diversityPct = Math.round((usedThisWeek.size / TOTAL_TOOLS) * 100);
   const everPct = Math.round((usedEver.size / TOTAL_TOOLS) * 100);
 
@@ -126,7 +137,7 @@ export async function fetchWeeklyReportData(uid) {
     notUsedThisWeek: REPORT_TOOLS.filter(t => !usedThisWeek.has(t.key)),
     notUsedIn3Weeks,
     topUsedThisWeek,
-    events, actions, redActions, yellowActions, greenCount,
+    events, pointsBreakdown, actions, redActions, yellowActions, greenCount,
     weeksTracked: newHistory.length, avgDiversity,
   };
 }
@@ -157,6 +168,34 @@ export async function generateWeeklyReportPDF(uid) {
     pdf.text(k.safe(t.label.toUpperCase()), x + 12, k.y + 44);
   });
   k.y += 72;
+
+  // ── Well done — points earned this week, itemized ──
+  k.sectionHeader('Well Done — Points You Earned This Week', C.teal);
+  if (r.pointsBreakdown.length) {
+    k.text(`Great work, ${r.name}! You earned ${r.weekPoints} point${r.weekPoints === 1 ? '' : 's'} this week across these activities:`, MARGIN, 9, C.text, false, CW);
+    k.y += 16;
+    r.pointsBreakdown.forEach(p => {
+      k.space(14);
+      pdf.setFillColor(...C.teal); pdf.circle(MARGIN + 3, k.y + 1, 2.5, 'F');
+      pdf.setFontSize(9); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.text);
+      pdf.text(k.safe(p.label), MARGIN + 10, k.y + 4, { maxWidth: CW - 60 });
+      pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.teal);
+      pdf.text(`+${p.points} pt${p.points === 1 ? '' : 's'}`, MARGIN + CW, k.y + 4, { align: 'right' });
+      k.y += 14;
+    });
+    // Total line
+    k.space(16);
+    pdf.setDrawColor(...C.border); pdf.setLineWidth(0.5); pdf.line(MARGIN, k.y, MARGIN + CW, k.y);
+    k.y += 12;
+    pdf.setFontSize(10); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.text);
+    pdf.text('Total earned this week', MARGIN + 10, k.y + 4);
+    pdf.setTextColor(...C.teal);
+    pdf.text(`+${r.weekPoints} pt${r.weekPoints === 1 ? '' : 's'}`, MARGIN + CW, k.y + 4, { align: 'right' });
+    k.y += 20;
+  } else {
+    k.text('No points earned this week yet — use a tool or complete an activity to start earning. Every action counts.', MARGIN, 9, C.muted, false, CW);
+    k.y += 18;
+  }
 
   // ── Action Status Summary: 3 tiles (Red / Yellow / Green counts only) ──
   // Status indicators are drawn as filled circles, NOT emoji glyphs — jsPDF's

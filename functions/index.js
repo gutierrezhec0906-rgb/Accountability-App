@@ -432,13 +432,24 @@ function buildWeeklyReport(data) {
        </p>
      </div>`).join('');
 
-  // Activity list — this week's point events (most recent up to 12)
-  const activityRows = events.slice(0, 12).map(e =>
+  // Points earned this week, grouped by activity and summed (highest first).
+  const pointsByLabel = {};
+  events.filter(e => e.points > 0).forEach(e => {
+    const label = e.toolLabel || 'App activity';
+    pointsByLabel[label] = (pointsByLabel[label] || 0) + e.points;
+  });
+  const pointsBreakdown = Object.entries(pointsByLabel)
+    .map(([label, points]) => ({ label, points }))
+    .sort((a, b) => b.points - a.points);
+  const activityRows = pointsBreakdown.map(p =>
     `<tr>
-       <td style="padding:6px 10px;font-weight:800;color:${e.points >= 0 ? '#15803d' : '#dc2626'};white-space:nowrap;">${e.points >= 0 ? '+' : ''}${e.points}</td>
-       <td style="padding:6px 10px;color:#0f2044;font-weight:600;">${e.toolLabel || 'Activity'}</td>
-       <td style="padding:6px 10px;color:#64748b;font-size:12px;">${e.date}</td>
-     </tr>`).join('');
+       <td style="padding:8px 12px;color:#0f2044;font-weight:600;border-bottom:1px solid #eef2f7;">${p.label}</td>
+       <td style="padding:8px 12px;font-weight:800;color:#0d9488;white-space:nowrap;text-align:right;border-bottom:1px solid #eef2f7;">+${p.points} pt${p.points === 1 ? '' : 's'}</td>
+     </tr>`).join('') +
+    `<tr>
+       <td style="padding:10px 12px;color:#0f2044;font-weight:800;">Total earned this week</td>
+       <td style="padding:10px 12px;font-weight:900;color:#0d9488;white-space:nowrap;text-align:right;">+${weekPoints} pt${weekPoints === 1 ? '' : 's'}</td>
+     </tr>`;
 
   const usedBadges = usedThisWeek.length
     ? usedThisWeek.map(m => `<span style="display:inline-block;background:#f0fdf4;color:#15803d;border:1px solid #86efac;border-radius:9999px;padding:3px 10px;font-size:12px;font-weight:700;margin:2px;">${m.icon} ${m.label}</span>`).join('')
@@ -475,8 +486,9 @@ function buildWeeklyReport(data) {
         <p style="font-size:13px;color:#64748b;margin:0 0 6px;">You have not touched these yet this week. Pick one or two — small, consistent steps compound into big growth:</p>
         ${recommendations || '<p style="font-size:14px;color:#15803d;font-weight:700;">Incredible — you touched every tool this week! You are setting the standard. 🌟</p>'}
 
-        ${activityRows ? `
-        <h2 style="font-size:15px;color:#0f2044;margin:24px 0 6px;">📋 This week's movement</h2>
+        ${pointsBreakdown.length ? `
+        <h2 style="font-size:15px;color:#0f2044;margin:24px 0 6px;">🎉 Well done — points you earned this week</h2>
+        <p style="font-size:13px;color:#475569;margin:0 0 8px;">Great work, ${name}! Here's every point you earned this week:</p>
         <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;font-size:13px;">
           ${activityRows}
         </table>` : ''}
