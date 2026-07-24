@@ -222,7 +222,7 @@ function NextStepRecommendation({ title, problem, rootCause, onGoToA3 }) {
       {/* Action path */}
       {choice === 'action' && (
         <div style={{ background: 'rgba(13,148,136,0.15)', border: '1.5px solid #0d9488', borderRadius: 12, padding: '1rem' }}>
-          <p style={{ fontWeight: 700, color: '#5eead4', fontSize: '0.85rem', margin: '0 0 6px' }}>Go to Visual Management Board</p>
+          <p style={{ fontWeight: 700, color: '#5eead4', fontSize: '0.85rem', margin: '0 0 6px' }}>Go to The Accountability Board</p>
           <p style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.8)', margin: '0 0 12px', lineHeight: 1.6 }}>
             Create a new action card directly tied to your root cause. Set an owner, due date, and track it to completion on your board.
           </p>
@@ -231,7 +231,7 @@ function NextStepRecommendation({ title, problem, rootCause, onGoToA3 }) {
           </div>
           <button onClick={() => navigate('/visual-board')}
             style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 9, padding: '0.55rem 1.25rem', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', width: '100%' }}>
-            Open Visual Management Board →
+            Open The Accountability Board →
           </button>
         </div>
       )}

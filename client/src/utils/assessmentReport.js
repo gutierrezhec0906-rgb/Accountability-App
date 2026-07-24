@@ -10,8 +10,9 @@ const CATEGORIES = [
 
 // Map tool string mentions to app module paths/labels
 const TOOL_MODULE_MAP = {
-  'Visual Management Board':  { label: 'Visual Management Board', path: '/visual-board' },
-  'Visual Mgmt Board':        { label: 'Visual Management Board', path: '/visual-board' },
+  'Visual Management Board':  { label: 'The Accountability Board', path: '/visual-board' },
+  'Visual Mgmt Board':        { label: 'The Accountability Board', path: '/visual-board' },
+  'Accountability Board':     { label: 'The Accountability Board', path: '/visual-board' },
   'Line of Balance':          { label: 'Line of Balance',         path: '/lob'          },
   'Sense of Urgency':         { label: 'Sense of Urgency',        path: '/urgency'      },
   'EQ Assessment':            { label: 'EQ & OpEx Tools',         path: '/eq-opex'      },

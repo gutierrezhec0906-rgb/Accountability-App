@@ -19,12 +19,12 @@ const QUESTIONS = [
   {
     id: 1, cat: 'model',
     text: 'I set a personal example of what I expect of others.',
-    tools: 'EQ Assessment · Visual Management Board',
+    tools: 'EQ Assessment · Accountability Board',
     guide: {
       emerging:   'Team members can point to specific instances where your own actions (attendance, deadlines, quality checks) did not match the standard you asked others to meet in the last month.',
       developing: 'You generally follow the standards you set, but have not documented or displayed what "the standard" looks like — expectations live in your head rather than on a board or written list.',
-      strong:     'You have a written or visual reference (e.g., a Visual Management Board) showing the standards you hold yourself to, and can cite at least one recent situation where you took the harder, correct action instead of a shortcut.',
-      exemplary:  'Your Visual Management Board and personal commitments are visible to the team, updated weekly, and team members independently cite you as the person who "walks the talk" without being asked.',
+      strong:     'You have a written or visual reference (e.g., an Accountability Board) showing the standards you hold yourself to, and can cite at least one recent situation where you took the harder, correct action instead of a shortcut.',
+      exemplary:  'Your Accountability Board and personal commitments are visible to the team, updated weekly, and team members independently cite you as the person who "walks the talk" without being asked.',
     },
   },
   {
@@ -74,11 +74,11 @@ const QUESTIONS = [
   {
     id: 6, cat: 'model',
     text: 'I spend time and energy making certain that the people I work with adhere to the principles and standards we have agreed on.',
-    tools: 'Visual Management Board · Line of Balance',
+    tools: 'Accountability Board · Line of Balance',
     guide: {
       emerging:   'There is no tracking mechanism for team standards; deviations from agreed-upon principles go unaddressed for weeks.',
       developing: 'You address standard violations when they are pointed out by someone else, but do not proactively monitor adherence.',
-      strong:     'You maintain a Visual Management Board or Line of Balance reviewed at least weekly, and follow up directly when items turn yellow or red.',
+      strong:     'You maintain an Accountability Board or Line of Balance reviewed at least weekly, and follow up directly when items turn yellow or red.',
       exemplary:  'The board is reviewed on a set cadence (e.g., daily huddle), overdue items are addressed within 24–48 hours, and the recommitment process is used consistently rather than dismissed.',
     },
   },
@@ -129,9 +129,9 @@ const QUESTIONS = [
   {
     id: 11, cat: 'model',
     text: 'I follow through on the promises and commitments that I make.',
-    tools: 'Visual Management Board',
+    tools: 'Accountability Board',
     guide: {
-      emerging:   'Multiple overdue action items sit in the Visual Management Board without a new commitment date or explanation, and team members can cite a broken promise from you in the last month.',
+      emerging:   'Multiple overdue action items sit in the Accountability Board without a new commitment date or explanation, and team members can cite a broken promise from you in the last month.',
       developing: 'You follow through on most commitments but have at least one open item that has slipped past its date without a recommitment.',
       strong:     'Overdue items are addressed through the recommitment process within a few days, and you can point to zero unresolved broken promises in the last month.',
       exemplary:  'You have a documented pattern of on-time follow-through, use the recommitment modal consistently when a date is missed, and proactively communicate before a commitment slips rather than after.',
@@ -239,11 +239,11 @@ const QUESTIONS = [
   {
     id: 21, cat: 'model',
     text: 'I build consensus around a common set of values for running our organization.',
-    tools: 'Visual Management Board',
+    tools: 'Accountability Board',
     guide: {
       emerging:   'There is no documented or agreed-upon set of team values or operating principles; when asked, team members give different answers.',
       developing: 'Values exist informally (understood but not written down or discussed as a group), so alignment varies by individual.',
-      strong:     'A written set of team values or standards exists (e.g., posted on the Visual Management Board) and was built with team input rather than handed down.',
+      strong:     'A written set of team values or standards exists (e.g., posted on the Accountability Board) and was built with team input rather than handed down.',
       exemplary:  'Team values are documented, visible, revisited periodically with the team, and team members can recite them consistently when asked individually.',
     },
   },

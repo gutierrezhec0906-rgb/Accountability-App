@@ -5,7 +5,7 @@ import { localDateStr, toolKeyFromLabel, TOOL_WEIGHTS } from './scoring';
 
 // The 17 practice tools (keys match the route path stored in toolSessions.tool).
 export const REPORT_TOOLS = [
-  { key: 'visual-board',    label: 'Visual Mgmt Board', icon: '🔴' },
+  { key: 'visual-board',    label: 'The Accountability Board', icon: '🔴' },
   { key: 'lob',             label: 'Line of Balance',   icon: '📈' },
   { key: 'urgency',         label: 'Sense of Urgency',  icon: '⚡' },
   { key: 'eq-opex',         label: 'EQ & OpEx Tools',   icon: '💡' },
@@ -205,7 +205,7 @@ export async function generateWeeklyReportPDF(uid) {
     k.text('All open actions are on track. Nothing overdue or due soon.', MARGIN, 9, C.muted, false, CW);
     k.y += 16;
   } else {
-    k.text('No open actions on your Visual Management Board.', MARGIN, 9, C.muted, false, CW);
+    k.text('No open actions on your Accountability Board.', MARGIN, 9, C.muted, false, CW);
     k.y += 16;
   }
 

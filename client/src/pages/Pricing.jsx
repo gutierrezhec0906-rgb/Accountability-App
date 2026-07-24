@@ -41,7 +41,7 @@ const plans = [
     ctaStyle: { background: '#2563eb', color: 'white' },
     features: [
       '✅ Everything in Free',
-      '✅ Visual Management Board',
+      '✅ The Accountability Board',
       '✅ Line of Balance',
       '✅ Sense of Urgency',
       '✅ EQ & OpEx Tools',

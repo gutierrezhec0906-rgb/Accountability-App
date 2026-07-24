@@ -13,7 +13,7 @@ const VIDEO_TOOLS = [
   { id: 'dashboard', label: 'Dashboard' },
   { id: 'vision', label: 'Vision Builder' },
   { id: 'smart-goals', label: 'SMART Goals' },
-  { id: 'visual-board', label: 'Visual Management Board' },
+  { id: 'visual-board', label: 'The Accountability Board' },
   { id: 'lob', label: 'Line of Balance' },
   { id: 'urgency', label: 'Sense of Urgency' },
   { id: 'eq-opex', label: 'EQ & OpEx Tools' },

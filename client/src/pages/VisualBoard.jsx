@@ -288,7 +288,7 @@ export default function VisualBoard() {
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto' }}>
-      <PageHeader icon="🔴" title="Visual Management Board — Get it done" subtitle="Escalation tracker — status updates automatically based on due date"
+      <PageHeader icon="🔴" title="The Accountability Board — Get it done" subtitle="Escalation tracker — status updates automatically based on due date"
         action={
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn-secondary" onClick={() => navigate('/team-board')}
