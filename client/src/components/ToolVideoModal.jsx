@@ -15,12 +15,15 @@ export default function ToolVideoModal({ toolId, toolLabel, open, onClose }) {
   useEffect(() => {
     if (!open || !toolId) return;
     async function load() {
-      if (!videoUrlCache) {
+      // Re-fetch when we have no cache yet, OR the requested tool has no cached
+      // URL — this picks up a video that was uploaded after the cache was first
+      // populated this session (otherwise a fresh upload wouldn't show).
+      if (!videoUrlCache || !videoUrlCache[toolId]) {
         try {
           const snap = await getDoc(doc(db, 'appConfig', 'toolVideos'));
           videoUrlCache = snap.exists() ? snap.data() : {};
         } catch {
-          videoUrlCache = {};
+          videoUrlCache = videoUrlCache || {};
         }
       }
       const url = videoUrlCache[toolId] || '';
@@ -80,6 +83,8 @@ export default function ToolVideoModal({ toolId, toolLabel, open, onClose }) {
             src={videoUrl}
             controls
             autoPlay
+            playsInline
+            preload="auto"
             style={{ width: '100%', height: '100%', display: 'block' }}
             onEnded={dismiss}
           />
