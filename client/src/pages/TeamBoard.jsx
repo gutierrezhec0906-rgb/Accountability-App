@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
@@ -45,7 +45,7 @@ export default function TeamBoard() {
         const data = docSnap.data();
         const name = data.displayName || data.email || 'Unknown';
         (data.visualBoard || []).forEach(item => {
-          if (!item.closed) all.push({ ...item, ownerName: name });
+          if (!item.closed) all.push({ ...item, ownerName: name, ownerUid: docSnap.id });
         });
       });
       setActions(all);
@@ -62,6 +62,24 @@ export default function TeamBoard() {
     const interval = setInterval(fetchAll, REFRESH_INTERVAL * 1000);
     return () => clearInterval(interval);
   }, [fetchAll]);
+
+  // Leaders/managers/admins can remove any team action from the monitor. Actions
+  // live in their CREATOR's user doc, so we delete from the owner's document —
+  // this fixes the case where an action created by another teammate lingers here.
+  const canManage = userProfile?.isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager';
+  async function deleteAction(item) {
+    if (!window.confirm(`Delete "${item.title}" from ${item.ownerName}'s board? This removes it for everyone and cannot be undone.`)) return;
+    try {
+      const ref = doc(db, 'users', item.ownerUid);
+      const snap = await getDoc(ref);
+      const board = snap.exists() ? (snap.data().visualBoard || []) : [];
+      await setDoc(ref, { visualBoard: board.filter(i => i.id !== item.id) }, { merge: true });
+      setActions(prev => prev.filter(a => !(a.ownerUid === item.ownerUid && a.id === item.id)));
+    } catch (e) {
+      console.error('Delete failed', e);
+      alert('Could not delete this action (check permissions): ' + (e?.message || e));
+    }
+  }
 
   useEffect(() => {
     const tick = setInterval(() => setCountdown(c => (c <= 1 ? REFRESH_INTERVAL : c - 1)), 1000);
@@ -312,12 +330,18 @@ export default function TeamBoard() {
                     )}
                   </div>
 
-                  {/* Right: status badge */}
-                  <div style={{ flexShrink: 0 }}>
+                  {/* Right: status badge + (admin) delete */}
+                  <div style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10 }}>
                     <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '5px 14px', borderRadius: 9999, fontSize: '0.8rem', fontWeight: 900, background: st.bg, color: st.text, whiteSpace: 'nowrap' }}>
                       {st.label === 'Red' ? '🔴' : st.label === 'Yellow' ? '🟡' : '🟢'}
                       {daysLabel && <span>{daysLabel}</span>}
                     </span>
+                    {canManage && (
+                      <button onClick={() => deleteAction(item)} title={`Delete this action (from ${item.ownerName}'s board)`}
+                        style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#f87171', borderRadius: 8, width: 28, height: 28, cursor: 'pointer', fontSize: '0.9rem', lineHeight: 1, flexShrink: 0 }}>
+                        ✕
+                      </button>
+                    )}
                   </div>
                 </div>
               );
