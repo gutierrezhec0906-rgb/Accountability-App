@@ -3,9 +3,6 @@ import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
-// Module-level cache so we only fetch appConfig/toolVideos once per session
-let videoUrlCache = null;
-
 export default function ToolVideoModal({ toolId, toolLabel, open, onClose }) {
   const { currentUser } = useAuth();
   const [videoUrl, setVideoUrl] = useState('');
@@ -13,24 +10,23 @@ export default function ToolVideoModal({ toolId, toolLabel, open, onClose }) {
   const videoRef = useRef(null);
 
   useEffect(() => {
-    if (!open || !toolId) return;
-    async function load() {
-      // Re-fetch when we have no cache yet, OR the requested tool has no cached
-      // URL — this picks up a video that was uploaded after the cache was first
-      // populated this session (otherwise a fresh upload wouldn't show).
-      if (!videoUrlCache || !videoUrlCache[toolId]) {
-        try {
-          const snap = await getDoc(doc(db, 'appConfig', 'toolVideos'));
-          videoUrlCache = snap.exists() ? snap.data() : {};
-        } catch {
-          videoUrlCache = videoUrlCache || {};
-        }
+    if (!open || !toolId) { setReady(false); return; }
+    let active = true;
+    // Always fetch the latest config on open so a freshly uploaded video shows
+    // immediately (no stale session cache).
+    (async () => {
+      let url = '';
+      try {
+        const snap = await getDoc(doc(db, 'appConfig', 'toolVideos'));
+        url = (snap.exists() && snap.data()[toolId]) || '';
+      } catch (e) {
+        console.warn('Could not load tool video config', e);
       }
-      const url = videoUrlCache[toolId] || '';
+      if (!active) return;
       setVideoUrl(url);
       setReady(!!url);
-    }
-    load();
+    })();
+    return () => { active = false; };
   }, [open, toolId]);
 
   async function dismiss() {
@@ -87,6 +83,7 @@ export default function ToolVideoModal({ toolId, toolLabel, open, onClose }) {
             preload="auto"
             style={{ width: '100%', height: '100%', display: 'block' }}
             onEnded={dismiss}
+            onError={() => console.warn('Tool video failed to load:', videoUrl)}
           />
         </div>
 
