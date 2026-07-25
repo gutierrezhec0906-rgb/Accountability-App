@@ -391,7 +391,7 @@ export default function Skills() {
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      <PageHeader icon="⭐" title="Skills Assessment — Better than yesterday" subtitle="Self-assessment and peer ratings across skill domains"
+      <PageHeader icon="⭐" title="Skills Assessment — Awareness of Accountability" subtitle="Self-assessment and peer ratings across skill domains"
         action={
           <div style={{ display: 'flex', gap: 10 }}>
             <button className={editMode ? 'btn-primary' : 'btn-secondary'} disabled={saving}
