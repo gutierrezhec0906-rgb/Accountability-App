@@ -36,12 +36,12 @@ export default function GlobalPastDueModal() {
   const [dates, setDates] = useState({});       // { [key]: 'YYYY-MM-DD' }
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(null);
-  const [dismissed, setDismissed] = useState(() => !!sessionStorage.getItem('pastDueDismissed'));
 
-  // Re-check whenever the user navigates to a new module. Keeps reminding until
-  // every past-due item is recommitted or the user chooses "Later" for the session.
+  // Re-check whenever the user navigates to a new module, and keep reminding on
+  // every module open until EVERY past-due item has been recommitted. "Later"
+  // only closes the current popup — it reappears on the next navigation.
   useEffect(() => {
-    if (!currentUser || dismissed) return;
+    if (!currentUser) return;
     (async () => {
       try {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
@@ -62,13 +62,7 @@ export default function GlobalPastDueModal() {
         if (items.length) setOpen(true);
       } catch { /* ignore */ }
     })();
-  }, [currentUser, location.pathname, dismissed]);
-
-  function later() {
-    setDismissed(true);
-    sessionStorage.setItem('pastDueDismissed', '1');
-    setOpen(false);
-  }
+  }, [currentUser, location.pathname]);
 
   async function recommit(item) {
     const newDate = dates[item.key];
@@ -164,9 +158,10 @@ export default function GlobalPastDueModal() {
         </div>
 
         {/* Footer */}
-        <div style={{ padding: '0.875rem 1.25rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
-          <button onClick={later}
-            style={{ padding: '0.5rem 1.1rem', borderRadius: 8, background: '#f1f5f9', color: '#64748b', fontWeight: 700, fontSize: '0.82rem', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+        <div style={{ padding: '0.875rem 1.25rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>This reminder keeps appearing until every item is recommitted.</span>
+          <button onClick={() => setOpen(false)}
+            style={{ padding: '0.5rem 1.1rem', borderRadius: 8, background: '#f1f5f9', color: '#64748b', fontWeight: 700, fontSize: '0.82rem', border: '1px solid #e2e8f0', cursor: 'pointer', flexShrink: 0 }}>
             Later
           </button>
         </div>
