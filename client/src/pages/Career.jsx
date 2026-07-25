@@ -278,7 +278,7 @@ export default function Career() {
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <PageHeader icon="🚀" title="Career Development Plan — Preparing myself and others"
+      <PageHeader icon="🚀" title="Career Development — Accountability for Growth"
         subtitle="Employee-owned, company-aligned. Start with where you are, define where you want to go, and build the plan at the intersection." />
 
       {/* Completeness + points banner */}
