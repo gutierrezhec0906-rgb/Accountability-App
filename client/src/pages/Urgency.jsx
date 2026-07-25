@@ -281,7 +281,7 @@ export default function Urgency() {
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      <PageHeader icon="⚡" title="Sense of Urgency Guide — The Rhythm" subtitle="Tools and reflection for individual and team urgency" />
+      <PageHeader icon="⚡" title="Sense of Urgency — The Rhythm of Accountability" subtitle="Tools and reflection for individual and team urgency" />
 
       {/* Toast */}
       {toastMsg && (
