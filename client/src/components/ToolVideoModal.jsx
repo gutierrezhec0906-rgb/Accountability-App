@@ -80,7 +80,7 @@ export default function ToolVideoModal({ toolId, toolLabel, open, onClose }) {
               </svg>
             </div>
             <div>
-              <p style={{ color: 'white', fontWeight: 800, fontSize: '0.95rem', margin: 0 }}>How to Use: {toolLabel}</p>
+              <p style={{ color: 'white', fontWeight: 800, fontSize: '0.95rem', margin: 0 }}>See Why: {toolLabel}</p>
               <p style={{ color: '#99f6e4', fontSize: '0.72rem', margin: 0, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>Quick Walkthrough</p>
             </div>
           </div>
@@ -107,7 +107,7 @@ export default function ToolVideoModal({ toolId, toolLabel, open, onClose }) {
         {/* Footer */}
         <div style={{ padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', margin: 0 }}>
-            You can replay this anytime using the "▶ How to use" button.
+            You can replay this anytime using the "▶ See Why" button.
           </p>
           <button
             onClick={dismiss}

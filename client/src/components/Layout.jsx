@@ -438,7 +438,7 @@ export default function Layout({ children }) {
                   cursor: 'pointer', letterSpacing: '0.01em',
                 }}
               >
-                ▶ How to use
+                ▶ See Why
               </button>
             )}
 

@@ -417,7 +417,7 @@ export default function AdminPanel() {
             <p style={{ fontWeight: 700, color: '#0f766e', margin: '0 0 4px', fontSize: 14 }}>🎬 "How to use" walkthrough videos</p>
             <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
               Upload a short video for any tool. It plays automatically the first time a user opens that tool,
-              and any time they click the <strong>▶ How to use</strong> button. Max 200 MB, MP4 recommended.
+              and any time they click the <strong>▶ See Why</strong> button. Max 200 MB, MP4 recommended.
             </p>
           </div>
           <div className="space-y-2">
