@@ -308,12 +308,14 @@ export async function generateWeeklyReportPDF(uid) {
 
   // ── Closing note — personalized message tiered by the week's points ──
   const enc = weeklyEncouragement(r.weekPoints, r.name);
-  const cl = pdf.splitTextToSize(k.safe(enc.message), CW - 24);
-  const boxH = 22 + cl.length * 12;
-  k.space(boxH + 8);
+  const FS = 12, LH = 17, PAD = 16;                 // font size, line height, box padding (pt)
+  pdf.setFontSize(FS); pdf.setFont('helvetica', 'bold');
+  const cl = pdf.splitTextToSize(k.safe(enc.message), CW - PAD * 2);
+  const boxH = PAD * 2 + cl.length * LH;
+  k.space(boxH + 10);
   pdf.setFillColor(240, 253, 250); pdf.roundedRect(MARGIN, k.y, CW, boxH, 6, 6, 'F');
-  pdf.setFontSize(9.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.teal);
-  pdf.text(cl, MARGIN + 12, k.y + 16);
+  pdf.setTextColor(...C.teal);
+  cl.forEach((line, i) => pdf.text(line, MARGIN + PAD, k.y + PAD + FS - 2 + i * LH));
   k.y += boxH + 12;
 
   k.finish(`Weekly_Report_${r.name.replace(/\s+/g, '_')}_${localDateStr()}.pdf`);
