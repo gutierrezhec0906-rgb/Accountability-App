@@ -135,6 +135,10 @@ export default function Layout({ children }) {
     sessionRef.current = { tool, startTime: Date.now() };
   }, [location.pathname, currentUser]);
 
+  // Close any open video when the route changes — otherwise a modal left open
+  // would carry over and replay the next module's (already-seen) video.
+  useEffect(() => { setToolVideoOpen(false); }, [location.pathname]);
+
   // Auto-show tool help video on first visit
   useEffect(() => {
     if (!currentUser || !userProfile) return;
