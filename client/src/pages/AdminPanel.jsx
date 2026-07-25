@@ -59,6 +59,7 @@ export default function AdminPanel() {
   const [expandedCompany, setExpandedCompany] = useState(null);
   const [toolVideos, setToolVideos] = useState({});
   const [uploadingTool, setUploadingTool] = useState(null);
+  const [previewTool, setPreviewTool] = useState(null);
 
   const isMasterAdmin = currentUser?.email === MASTER_ADMIN;
 
@@ -78,10 +79,18 @@ export default function AdminPanel() {
     if (!file) return;
     if (!file.type.startsWith('video/')) { toast.error('Please choose a video file'); return; }
     if (file.size > 200 * 1024 * 1024) { toast.error('Video must be under 200 MB'); return; }
+    // Browsers can't play .mov/.mkv/.avi or HEVC/H.265 inline even though a
+    // desktop player can — warn before uploading so the video isn't blank in-app.
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const risky = ['mov', 'mkv', 'avi', 'wmv', 'flv', 'm4v', 'hevc'];
+    if (risky.includes(ext) || file.type === 'video/quicktime') {
+      if (!window.confirm(`This looks like a .${ext || 'mov'} file, which most browsers can't play inside the app (it may show blank even though it plays on your computer). For reliable playback, upload an MP4 (H.264 + AAC). Upload anyway?`)) {
+        return;
+      }
+    }
     setUploadingTool(toolId);
     try {
-      const ext = (file.name.split('.').pop() || 'mp4').toLowerCase();
-      const storageRef = ref(storage, `toolVideos/${toolId}.${ext}`);
+      const storageRef = ref(storage, `toolVideos/${toolId}.${ext || 'mp4'}`);
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
       await setDoc(doc(db, 'appConfig', 'toolVideos'), { [toolId]: url }, { merge: true });
@@ -434,8 +443,10 @@ export default function AdminPanel() {
                     </div>
                   </div>
                   {url && !busy && (
-                    <a href={url} target="_blank" rel="noreferrer"
-                      style={{ fontSize: 13, fontWeight: 700, color: '#0f2044', textDecoration: 'none' }}>Preview</a>
+                    <button onClick={() => setPreviewTool(p => p === tool.id ? null : tool.id)}
+                      style={{ background: 'none', border: 'none', color: '#0f2044', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
+                      {previewTool === tool.id ? 'Hide' : 'Preview'}
+                    </button>
                   )}
                   <label className="btn-secondary" style={{ cursor: busy ? 'wait' : 'pointer', margin: 0, opacity: busy ? 0.6 : 1 }}>
                     {url ? 'Replace' : 'Upload'}
@@ -445,6 +456,14 @@ export default function AdminPanel() {
                   {url && !busy && (
                     <button onClick={() => removeToolVideo(tool.id)}
                       style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>Remove</button>
+                  )}
+                  {url && previewTool === tool.id && (
+                    <div style={{ flexBasis: '100%', width: '100%', marginTop: 8 }}>
+                      <video src={url} controls playsInline preload="metadata"
+                        style={{ width: '100%', maxHeight: 320, borderRadius: 8, background: '#000' }}
+                        onError={() => toast.error(`This video can't play in the browser — it's likely a .mov/HEVC file. Re-upload as MP4 (H.264).`)} />
+                      <a href={url} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#64748b' }}>Open in new tab ↗</a>
+                    </div>
                   )}
                 </div>
               );
