@@ -293,7 +293,7 @@ export default function Coaching() {
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }}>
-      <PageHeader icon="📝" title="Coaching Log — Servant's heart" subtitle="Document sessions, notes, and action items"
+      <PageHeader icon="📝" title="Coaching Log — Accountability that Supports" subtitle="Document sessions, notes, and action items"
         action={<button className="btn-primary" onClick={() => setShowForm(s => !s)}>+ Log Session</button>} />
 
       {/* Stats */}
