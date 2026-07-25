@@ -436,8 +436,8 @@ function buildWeeklyReport(data) {
   const everPct = Math.round((usedEverKeys.size / TOTAL_MODULES) * 100);
 
   const score = data.calculatedScore != null ? data.calculatedScore : 0;
-  const hasHistory = (data.pointEvents || []).length > 0 || sessions.length > 0;
-  if (!hasHistory) return null;
+  // Every approved user gets a report — even with zero activity, so inactive
+  // users receive the encouraging 0–20 nudge rather than being silently skipped.
 
   const quote = REPORT_QUOTES[new Date().getDate() % REPORT_QUOTES.length];
 
