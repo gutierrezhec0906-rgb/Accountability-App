@@ -261,7 +261,7 @@ export default function SmartGoals() {
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }} className="space-y-6">
-      <PageHeader icon="🎯" title="SMART Goals — Are we winning?" subtitle="Set purposeful goals that drive accountability. Each goal contributes to your Accountability Score."
+      <PageHeader icon="🎯" title="SMART Goals — Are we winning? Measuring Accountability" subtitle="Set purposeful goals that drive accountability. Each goal contributes to your Accountability Score."
         action={
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn-secondary" onClick={() => generateSmartGoalsPDF(goals, { userName: currentUser?.displayName || '' })}>🖨️ PDF</button>
