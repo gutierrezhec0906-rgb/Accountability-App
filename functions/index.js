@@ -383,6 +383,32 @@ function toolKeyFromLabel(label = '') {
 // Build the motivational weekly report for one user's data. Returns { subject, html }
 // or null when there is nothing worth sending (never send an empty report to a
 // brand-new user with zero history).
+// Personalized closing message tiered by the week's points earned.
+function weeklyEncouragement(points, name) {
+  if (points <= 20) {
+    return {
+      headline: `You've got more in you, ${name} 💪`,
+      message: `${name}, I know how much your daily responsibilities pull at your time — and I believe in you. You can do better, and your development depends on no one but you. ${points} point${points === 1 ? '' : 's'} this week is a start, not your ceiling. Keep going, and let's aim for at least 35 points next week.`,
+    };
+  }
+  if (points <= 40) {
+    return {
+      headline: `Nice job, ${name}! 👏`,
+      message: `Nice job, ${name}! You're taking your leadership development seriously and it shows — ${points} points this week. Keep up the good work and carry this momentum into next week.`,
+    };
+  }
+  if (points <= 60) {
+    return {
+      headline: `You crushed it, ${name}! 🔥`,
+      message: `You crushed it, ${name}! ${points} points this week is a genuinely amazing performance. Keep operating at this level and you'll achieve great things in your career.`,
+    };
+  }
+  return {
+    headline: `Outstanding job, ${name}! 🏆`,
+    message: `Outstanding job, ${name}! At ${points} points this week you're well above the average in leadership development. Keep this up and you'll be ready for your next challenge very soon.`,
+  };
+}
+
 function buildWeeklyReport(data) {
   const name = (data.displayName || '').split(' ')[0] || 'Leader';
   const weekAgo = reportWeekAgoMs();
@@ -391,6 +417,7 @@ function buildWeeklyReport(data) {
   const events = (data.pointEvents || []).filter(e => e.date >= weekAgoStr);
   const weekPoints = events.filter(e => e.points > 0).reduce((s, e) => s + e.points, 0);
   const netPoints = events.reduce((s, e) => s + (e.points || 0), 0);
+  const enc = weeklyEncouragement(weekPoints, name);
 
   const sessions = data.toolSessions || [];
   const usedThisWeekKeys = new Set(sessions.filter(s => (s.openedAt || 0) >= weekAgo).map(s => s.tool));
@@ -459,7 +486,7 @@ function buildWeeklyReport(data) {
     <div style="font-family:Arial,sans-serif;max-width:640px;margin:0 auto;background:#f8fafc;">
       <div style="background:linear-gradient(135deg,#0b1a38,#0f2044 60%,#0d9488 140%);padding:32px;text-align:center;">
         <p style="color:#93c5fd;margin:0 0 6px;font-size:13px;letter-spacing:0.08em;text-transform:uppercase;">Your Weekly Accountability Report</p>
-        <h1 style="color:#fff;margin:0;font-size:24px;">Great week, ${name}! 🎉</h1>
+        <h1 style="color:#fff;margin:0;font-size:24px;">${enc.headline}</h1>
         <div style="margin-top:18px;display:inline-block;background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.18);border-radius:14px;padding:14px 28px;">
           <span style="color:#fff;font-size:36px;font-weight:900;">${weekPoints}</span>
           <span style="color:#cbd5e1;font-size:14px;"> points earned this week</span>
@@ -494,7 +521,7 @@ function buildWeeklyReport(data) {
         </table>` : ''}
 
         <div style="margin:26px 0 6px;padding:16px;background:#f0fdfa;border-left:4px solid #0d9488;border-radius:8px;">
-          <p style="margin:0;font-size:14px;color:#0f766e;font-style:italic;line-height:1.6;">${quote}</p>
+          <p style="margin:0;font-size:14px;color:#0f766e;font-weight:700;line-height:1.6;">${enc.message}</p>
         </div>
 
         <div style="text-align:center;margin:26px 0 4px;">

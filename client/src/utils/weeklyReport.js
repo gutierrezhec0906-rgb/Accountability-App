@@ -29,6 +29,33 @@ const TOOL_LABEL = Object.fromEntries(REPORT_TOOLS.map(t => [t.key, t]));
 // toolKeyFromLabel is imported from scoring.js — single source of truth so the
 // score, this report, and the server-side email never drift out of sync again.
 
+// Personalized closing message tiered by the week's points earned — from a
+// gentle "you can do better" nudge up to "outstanding, above average."
+export function weeklyEncouragement(points, name) {
+  if (points <= 20) {
+    return {
+      headline: `You've got more in you, ${name}`,
+      message: `${name}, I know how much your daily responsibilities pull at your time — and I believe in you. You can do better, and your development depends on no one but you. ${points} point${points === 1 ? '' : 's'} this week is a start, not your ceiling. Keep going, and let's aim for at least 35 points next week.`,
+    };
+  }
+  if (points <= 40) {
+    return {
+      headline: `Nice job, ${name}!`,
+      message: `Nice job, ${name}! You're taking your leadership development seriously and it shows — ${points} points this week. Keep up the good work and carry this momentum into next week.`,
+    };
+  }
+  if (points <= 60) {
+    return {
+      headline: `You crushed it, ${name}!`,
+      message: `You crushed it, ${name}! ${points} points this week is a genuinely amazing performance. Keep operating at this level and you'll achieve great things in your career.`,
+    };
+  }
+  return {
+    headline: `Outstanding job, ${name}!`,
+    message: `Outstanding job, ${name}! At ${points} points this week you're well above the average in leadership development. Keep this up and you'll be ready for your next challenge very soon.`,
+  };
+}
+
 // Short, executive-tone note per action status — Red and Yellow only get a
 // written note in the report; Green is summarized as a count, no prose.
 function actionNote(status) {
@@ -279,17 +306,15 @@ export async function generateWeeklyReportPDF(uid) {
   }
   k.y += 4;
 
-  // ── Closing note — personalized, replaces a generic quote ──
-  k.space(50);
-  const hasWins = r.topUsedThisWeek.length > 0;
-  const closingText = hasWins
-    ? `Nice work this week, ${r.name}. You put real time into ${r.topUsedThisWeek.map(t => t.label).join(', ')}${r.topUsedThisWeek.length > 1 ? ' — ' : ' — '}keep that consistency going into next week.`
-    : `${r.name}, no tool activity logged this week — jump back in next week. Even one session moves your score.`;
-  pdf.setFillColor(240, 253, 250); pdf.roundedRect(MARGIN, k.y, CW, 40, 6, 6, 'F');
+  // ── Closing note — personalized message tiered by the week's points ──
+  const enc = weeklyEncouragement(r.weekPoints, r.name);
+  const cl = pdf.splitTextToSize(k.safe(enc.message), CW - 24);
+  const boxH = 22 + cl.length * 12;
+  k.space(boxH + 8);
+  pdf.setFillColor(240, 253, 250); pdf.roundedRect(MARGIN, k.y, CW, boxH, 6, 6, 'F');
   pdf.setFontSize(9.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.teal);
-  const cl = pdf.splitTextToSize(k.safe(closingText), CW - 24);
   pdf.text(cl, MARGIN + 12, k.y + 16);
-  k.y += 52;
+  k.y += boxH + 12;
 
   k.finish(`Weekly_Report_${r.name.replace(/\s+/g, '_')}_${localDateStr()}.pdf`);
   return r;
