@@ -257,7 +257,7 @@ export default function Mentoring() {
 
   return (
     <div style={{ maxWidth: 1180, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <PageHeader icon="🤝" title="Mentoring" subtitle="Mentee-owned, mentor-guided. Pick who helps you grow, set goals across all three pillars, and track the journey." />
+      <PageHeader icon="🤝" title="Mentoring — Accountability, Multiplied" subtitle="Mentee-owned, mentor-guided. Pick who helps you grow, set goals across all three pillars, and track the journey." />
 
       {/* Status + actions banner */}
       <div style={{ borderRadius: 12, padding: '0.875rem 1.125rem', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
