@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -29,16 +30,18 @@ const SECTIONS = [
 // and asks for a new commitment date per item. Fires once per browser session.
 export default function GlobalPastDueModal() {
   const { currentUser } = useAuth();
+  const location = useLocation();
   const [data, setData] = useState({});        // { visualBoard, trainings, smartGoals }
   const [pending, setPending] = useState([]);  // unified past-due items
   const [dates, setDates] = useState({});       // { [key]: 'YYYY-MM-DD' }
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(null);
+  const [dismissed, setDismissed] = useState(() => !!sessionStorage.getItem('pastDueDismissed'));
 
+  // Re-check whenever the user navigates to a new module. Keeps reminding until
+  // every past-due item is recommitted or the user chooses "Later" for the session.
   useEffect(() => {
-    if (!currentUser) return;
-    if (sessionStorage.getItem('pastDueReminderShown')) return;
-    sessionStorage.setItem('pastDueReminderShown', '1');
+    if (!currentUser || dismissed) return;
     (async () => {
       try {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
@@ -55,10 +58,17 @@ export default function GlobalPastDueModal() {
         (d.smartGoals || []).forEach(g => {
           if (g && g.status !== 'completed' && g.status !== 'deleted' && overdue(g.dueDate)) items.push({ key: `goal-${g.id}`, kind: 'goal', id: g.id, title: g.title || 'Untitled goal', due: g.dueDate });
         });
-        if (items.length) { setPending(items); setOpen(true); }
+        setPending(items);
+        if (items.length) setOpen(true);
       } catch { /* ignore */ }
     })();
-  }, [currentUser]);
+  }, [currentUser, location.pathname, dismissed]);
+
+  function later() {
+    setDismissed(true);
+    sessionStorage.setItem('pastDueDismissed', '1');
+    setOpen(false);
+  }
 
   async function recommit(item) {
     const newDate = dates[item.key];
@@ -155,7 +165,7 @@ export default function GlobalPastDueModal() {
 
         {/* Footer */}
         <div style={{ padding: '0.875rem 1.25rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'flex-end' }}>
-          <button onClick={() => setOpen(false)}
+          <button onClick={later}
             style={{ padding: '0.5rem 1.1rem', borderRadius: 8, background: '#f1f5f9', color: '#64748b', fontWeight: 700, fontSize: '0.82rem', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
             Later
           </button>

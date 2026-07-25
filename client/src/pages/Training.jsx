@@ -38,7 +38,14 @@ export default function Training() {
       try {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
         const saved = snap.exists() ? snap.data().trainings : null;
-        setTrainings(Array.isArray(saved) ? saved : sampleTrainings);
+        if (Array.isArray(saved)) {
+          setTrainings(saved);
+        } else {
+          // First-time users: seed the sample list AND persist it, so other
+          // features (e.g. the app-wide past-due reminder) can read the trainings.
+          setTrainings(sampleTrainings);
+          try { await setDoc(doc(db, 'users', currentUser.uid), { trainings: sampleTrainings }, { merge: true }); } catch { /* ignore */ }
+        }
       } catch {
         setTrainings(sampleTrainings);
       }
