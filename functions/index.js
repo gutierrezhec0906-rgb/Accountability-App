@@ -393,7 +393,9 @@ function smartGoalQ(g) {
   return Math.round(SMART_KEYS.reduce((a, k) => a + smartFieldQ(g[k]), 0) / SMART_KEYS.length);
 }
 function smartGoalsNote(total, high, opp) {
-  if (total === 0) return null;
+  if (total === 0) {
+    return { kudos: false, text: `You don't have any SMART goals yet — and that's the most important place to start. Please set at least 1 or 2 SMART goals this coming week. Clear, written goals are what turn effort into real, measurable leadership growth. Take 10 minutes and define where you're headed.` };
+  }
   if (opp === 0) {
     return { kudos: true, text: `Kudos — great job with the quality of your SMART goals! All ${total} ${total === 1 ? 'goal is' : 'goals are'} High Quality. That clarity will keep you focused and moving.` };
   }
