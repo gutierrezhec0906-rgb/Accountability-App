@@ -388,6 +388,26 @@ function toolKeyFromLabel(label = '') {
 // Build the motivational weekly report for one user's data. Returns { subject, html }
 // or null when there is nothing worth sending (never send an empty report to a
 // brand-new user with zero history).
+// Five leadership pillars (mirror the sidebar categories + colors).
+const PILLARS = [
+  { id: 'model',     label: 'Set the Bar',            color: '96,165,250',  keys: ['visual-board', 'lob', 'urgency', 'eq-opex'] },
+  { id: 'inspire',   label: 'Spark the Vision',        color: '52,211,153',  keys: ['vision', 'smart-goals', 'mindfulness'] },
+  { id: 'challenge', label: 'Improve the Flow',        color: '251,191,36',  keys: ['lean', 'problem-solving', 'disc'] },
+  { id: 'enable',    label: 'Enable the Team',         color: '167,139,250', keys: ['skills', 'training', 'mentoring', 'career'] },
+  { id: 'encourage', label: 'Winning with Compassion', color: '251,113,133', keys: ['feedback', 'coaching', 'quotes'] },
+];
+const KEY_TO_PILLAR = {};
+PILLARS.forEach(p => p.keys.forEach(k => { KEY_TO_PILLAR[k] = p.id; }));
+function buildPillars(pointsBreakdown) {
+  const idx = Object.fromEntries(PILLARS.map((p, i) => [p.id, i]));
+  const out = PILLARS.map(p => ({ label: p.label, color: p.color, items: [], total: 0 }));
+  pointsBreakdown.forEach(pb => {
+    const pid = KEY_TO_PILLAR[toolKeyFromLabel(pb.label)];
+    if (pid != null && idx[pid] != null) { out[idx[pid]].items.push(pb); out[idx[pid]].total += pb.points; }
+  });
+  return out;
+}
+
 // SMART goal quality — mirrors goalQualityPct in the client.
 const SMART_KEYS = ['specific', 'measurable', 'achievable', 'relevant', 'timeBound'];
 function smartFieldQ(text = '') {
@@ -496,15 +516,18 @@ function buildWeeklyReport(data) {
   const pointsBreakdown = Object.entries(pointsByLabel)
     .map(([label, points]) => ({ label, points }))
     .sort((a, b) => b.points - a.points);
-  const activityRows = pointsBreakdown.map(p =>
-    `<tr>
-       <td style="padding:8px 12px;color:#0f2044;font-weight:600;border-bottom:1px solid #eef2f7;">${p.label}</td>
-       <td style="padding:8px 12px;font-weight:800;color:#0d9488;white-space:nowrap;text-align:right;border-bottom:1px solid #eef2f7;">+${p.points} pt${p.points === 1 ? '' : 's'}</td>
-     </tr>`).join('') +
-    `<tr>
-       <td style="padding:10px 12px;color:#0f2044;font-weight:800;">Total earned this week</td>
-       <td style="padding:10px 12px;font-weight:900;color:#0d9488;white-space:nowrap;text-align:right;">+${weekPoints} pt${weekPoints === 1 ? '' : 's'}</td>
-     </tr>`;
+  // Points grouped into the five leadership pillars (sidebar colors).
+  const pillars = buildPillars(pointsBreakdown);
+  const pillarsHtml = pillars.map(p => `
+    <div style="margin:12px 0;">
+      <div style="display:flex;justify-content:space-between;align-items:center;border-left:4px solid rgb(${p.color});background:#f8fafc;padding:6px 12px;border-radius:4px;">
+        <span style="font-weight:800;font-size:14px;color:rgb(${p.color});">${p.label}</span>
+        <span style="font-weight:800;font-size:14px;color:rgb(${p.color});">${p.total > 0 ? `+${p.total} pt${p.total === 1 ? '' : 's'}` : '—'}</span>
+      </div>
+      ${p.items.length
+        ? p.items.map(it => `<div style="display:flex;justify-content:space-between;padding:5px 14px;font-size:13px;color:#334155;"><span>${it.label}</span><span style="font-weight:700;color:#0f2044;">+${it.points}</span></div>`).join('')
+        : '<div style="padding:5px 14px;font-size:12px;color:#94a3b8;">No points earned in this pillar this week.</div>'}
+    </div>`).join('');
 
   const usedBadges = usedThisWeek.length
     ? usedThisWeek.map(m => `<span style="display:inline-block;background:#f0fdf4;color:#15803d;border:1px solid #86efac;border-radius:9999px;padding:3px 10px;font-size:12px;font-weight:700;margin:2px;">${m.icon} ${m.label}</span>`).join('')
@@ -541,12 +564,10 @@ function buildWeeklyReport(data) {
         <p style="font-size:13px;color:#64748b;margin:0 0 6px;">You have not touched these yet this week. Pick one or two — small, consistent steps compound into big growth:</p>
         ${recommendations || '<p style="font-size:14px;color:#15803d;font-weight:700;">Incredible — you touched every tool this week! You are setting the standard. 🌟</p>'}
 
-        ${pointsBreakdown.length ? `
-        <h2 style="font-size:15px;color:#0f2044;margin:24px 0 6px;">🎉 Well done — points you earned this week</h2>
-        <p style="font-size:13px;color:#475569;margin:0 0 8px;">Great work, ${name}! Here's every point you earned this week:</p>
-        <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;font-size:13px;">
-          ${activityRows}
-        </table>` : ''}
+        ${weekPoints > 0 ? `
+        <h2 style="font-size:15px;color:#0f2044;margin:24px 0 6px;">🎉 Points you earned this week</h2>
+        <p style="font-size:13px;color:#475569;margin:0 0 8px;">Great work, ${name}! You earned ${weekPoints} point${weekPoints === 1 ? '' : 's'} this week across the five leadership pillars:</p>
+        ${pillarsHtml}` : ''}
 
         ${sgNote ? `
         <h2 style="font-size:15px;color:#0f2044;margin:24px 0 6px;">🎯 SMART Goals Quality</h2>

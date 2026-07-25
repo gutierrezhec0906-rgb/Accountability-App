@@ -29,6 +29,29 @@ const TOOL_LABEL = Object.fromEntries(REPORT_TOOLS.map(t => [t.key, t]));
 // toolKeyFromLabel is imported from scoring.js — single source of truth so the
 // score, this report, and the server-side email never drift out of sync again.
 
+// The five leadership pillars (mirror the sidebar categories + colors), and
+// which tool keys roll up into each one.
+const PILLARS = [
+  { id: 'model',     label: 'Set the Bar',            color: [96, 165, 250],  keys: ['visual-board', 'lob', 'urgency', 'eq-opex'] },
+  { id: 'inspire',   label: 'Spark the Vision',        color: [52, 211, 153],  keys: ['vision', 'smart-goals', 'mindfulness'] },
+  { id: 'challenge', label: 'Improve the Flow',        color: [251, 191, 36],  keys: ['lean', 'problem-solving', 'disc'] },
+  { id: 'enable',    label: 'Enable the Team',         color: [167, 139, 250], keys: ['skills', 'training', 'mentoring', 'career'] },
+  { id: 'encourage', label: 'Winning with Compassion', color: [251, 113, 133], keys: ['feedback', 'coaching', 'quotes'] },
+];
+const KEY_TO_PILLAR = {};
+PILLARS.forEach(p => p.keys.forEach(k => { KEY_TO_PILLAR[k] = p.id; }));
+
+// Group this week's point events (already grouped by label) into the 5 pillars.
+function buildPillars(pointsBreakdown) {
+  const idx = Object.fromEntries(PILLARS.map((p, i) => [p.id, i]));
+  const out = PILLARS.map(p => ({ label: p.label, color: p.color, items: [], total: 0 }));
+  pointsBreakdown.forEach(pb => {
+    const pid = KEY_TO_PILLAR[toolKeyFromLabel(pb.label)];
+    if (pid != null && idx[pid] != null) { out[idx[pid]].items.push(pb); out[idx[pid]].total += pb.points; }
+  });
+  return out;
+}
+
 // SMART goal quality — mirrors goalQualityPct in pages/SmartGoals.jsx.
 const SMART_KEYS = ['specific', 'measurable', 'achievable', 'relevant', 'timeBound'];
 function smartFieldQ(text = '') {
@@ -194,7 +217,8 @@ export async function fetchWeeklyReportData(uid) {
     notUsedThisWeek: REPORT_TOOLS.filter(t => !usedThisWeek.has(t.key)),
     notUsedIn3Weeks,
     topUsedThisWeek,
-    events, pointsBreakdown, actions, redActions, yellowActions, greenCount,
+    events, pointsBreakdown, pillars: buildPillars(pointsBreakdown),
+    actions, redActions, yellowActions, greenCount,
     smartQuality, skillsPeerPending,
     weeksTracked: newHistory.length, avgDiversity,
   };
@@ -227,29 +251,34 @@ export async function generateWeeklyReportPDF(uid) {
   });
   k.y += 72;
 
-  // ── Well done — points earned this week, itemized ──
-  k.sectionHeader('Well Done — Points You Earned This Week', C.teal);
-  if (r.pointsBreakdown.length) {
-    k.text(`Great work, ${r.name}! You earned ${r.weekPoints} point${r.weekPoints === 1 ? '' : 's'} this week across these activities:`, MARGIN, 9, C.text, false, CW);
-    k.y += 16;
-    r.pointsBreakdown.forEach(p => {
-      k.space(14);
-      pdf.setFillColor(...C.teal); pdf.circle(MARGIN + 3, k.y + 1, 2.5, 'F');
-      pdf.setFontSize(9); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.text);
-      pdf.text(k.safe(p.label), MARGIN + 10, k.y + 4, { maxWidth: CW - 60 });
-      pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.teal);
-      pdf.text(`+${p.points} pt${p.points === 1 ? '' : 's'}`, MARGIN + CW, k.y + 4, { align: 'right' });
-      k.y += 14;
+  // ── Total points this week, broken out across the 5 leadership pillars ──
+  k.sectionHeader('Points You Earned This Week', C.teal);
+  if (r.weekPoints > 0) {
+    k.text(`Great work, ${r.name}! You earned ${r.weekPoints} point${r.weekPoints === 1 ? '' : 's'} this week across the five leadership pillars:`, MARGIN, 9, C.text, false, CW);
+    k.y += 14;
+    r.pillars.forEach(p => {
+      k.space(24 + Math.max(1, p.items.length) * 13);
+      // Pillar header: color swatch + label + pillar total (sidebar colors)
+      pdf.setFillColor(...p.color); pdf.roundedRect(MARGIN, k.y, 4, 15, 1, 1, 'F');
+      pdf.setFontSize(10.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...p.color);
+      pdf.text(k.safe(p.label), MARGIN + 10, k.y + 11);
+      pdf.text(p.total > 0 ? `+${p.total} pt${p.total === 1 ? '' : 's'}` : '—', MARGIN + CW, k.y + 11, { align: 'right' });
+      k.y += 19;
+      if (p.items.length) {
+        p.items.forEach(it => {
+          pdf.setFontSize(9); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.text);
+          pdf.text(k.safe(it.label), MARGIN + 14, k.y + 3, { maxWidth: CW - 60 });
+          pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.text);
+          pdf.text(`+${it.points}`, MARGIN + CW, k.y + 3, { align: 'right' });
+          k.y += 13;
+        });
+      } else {
+        pdf.setFontSize(8.5); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.muted);
+        pdf.text('No points earned in this pillar this week.', MARGIN + 14, k.y + 3);
+        k.y += 13;
+      }
+      k.y += 6;
     });
-    // Total line
-    k.space(16);
-    pdf.setDrawColor(...C.border); pdf.setLineWidth(0.5); pdf.line(MARGIN, k.y, MARGIN + CW, k.y);
-    k.y += 12;
-    pdf.setFontSize(10); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.text);
-    pdf.text('Total earned this week', MARGIN + 10, k.y + 4);
-    pdf.setTextColor(...C.teal);
-    pdf.text(`+${r.weekPoints} pt${r.weekPoints === 1 ? '' : 's'}`, MARGIN + CW, k.y + 4, { align: 'right' });
-    k.y += 20;
   } else {
     k.text('No points earned this week yet — use a tool or complete an activity to start earning. Every action counts.', MARGIN, 9, C.muted, false, CW);
     k.y += 18;
