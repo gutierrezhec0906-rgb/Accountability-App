@@ -127,7 +127,7 @@ export default function Quotes() {
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }}>
-      <PageHeader icon="💬" title="Leadership Quotes — Inspire others" subtitle="Daily inspiration for high-performance leaders"
+      <PageHeader icon="💬" title="Leadership Quotes — Accountability Inspires" subtitle="Daily inspiration for high-performance leaders"
         action={
           <button onClick={() => setShowFavs(s => !s)} className={showFavs ? 'btn-primary' : 'btn-secondary'}>
             ⭐ {showFavs ? 'All Quotes' : `Favorites (${favorites.length})`}
