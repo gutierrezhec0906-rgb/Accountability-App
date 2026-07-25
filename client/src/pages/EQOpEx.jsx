@@ -624,7 +624,7 @@ export default function EQOpEx() {
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-      <PageHeader icon="💡" title="EQ & OpEx Tools" subtitle="Emotional Intelligence self-assessment and Operational Excellence checklist" />
+      <PageHeader icon="💡" title="EQ & OpEx Tools — Accountability in Action" subtitle="Emotional Intelligence self-assessment and Operational Excellence checklist" />
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
         {[{ id: 'eq', label: '💡 EQ Assessment' }, { id: 'opex', label: '⚙️ OpEx Checklist' }].map(t => (
