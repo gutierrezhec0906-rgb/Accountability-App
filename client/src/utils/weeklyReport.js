@@ -29,6 +29,25 @@ const TOOL_LABEL = Object.fromEntries(REPORT_TOOLS.map(t => [t.key, t]));
 // toolKeyFromLabel is imported from scoring.js — single source of truth so the
 // score, this report, and the server-side email never drift out of sync again.
 
+// SMART goal quality — mirrors goalQualityPct in pages/SmartGoals.jsx.
+const SMART_KEYS = ['specific', 'measurable', 'achievable', 'relevant', 'timeBound'];
+function smartFieldQ(text = '') {
+  const w = (text || '').trim().split(/\s+/).filter(Boolean).length;
+  if (!w) return 0; if (w < 5) return 20; if (w < 15) return 50; if (w < 30) return 80; return 100;
+}
+function smartGoalQ(g) {
+  return Math.round(SMART_KEYS.reduce((a, k) => a + smartFieldQ(g[k]), 0) / SMART_KEYS.length);
+}
+// Motivational note on SMART-goal quality: kudos if all High Quality, otherwise
+// a gentle nudge to add detail. Returns null when the user has no goals.
+export function smartGoalsNote(total, high, opp) {
+  if (total === 0) return null;
+  if (opp === 0) {
+    return { kudos: true, text: `Kudos — great job with the quality of your SMART goals! All ${total} ${total === 1 ? 'goal is' : 'goals are'} High Quality. That clarity will keep you focused and moving.` };
+  }
+  return { kudos: false, text: `Please consider improving the quality and detail of your SMART goals — you have ${opp} with opportunit${opp === 1 ? 'y' : 'ies'} and ${high} at High Quality. Adding more specific, measurable detail will help you understand your objectives better and reach them.` };
+}
+
 // Personalized closing message tiered by the week's points earned — from a
 // gentle "you can do better" nudge up to "outstanding, above average."
 export function weeklyEncouragement(points, name) {
@@ -111,6 +130,11 @@ export async function fetchWeeklyReportData(uid) {
   const weekPoints = events.filter(e => e.points > 0).reduce((s, e) => s + e.points, 0);
   const score = data.calculatedScore || 0;
 
+  // SMART goal quality snapshot (High Quality >= 80% vs "with opportunities").
+  const smartGoals = (data.smartGoals || []).filter(g => g && g.status !== 'deleted' && g.status !== 'archived');
+  const smartHigh = smartGoals.filter(g => smartGoalQ(g) >= 80).length;
+  const smartQuality = { total: smartGoals.length, high: smartHigh, opp: smartGoals.length - smartHigh };
+
   // Points earned this week, grouped by activity (toolLabel) and summed —
   // for the "Well done, you earned these points" section of the report.
   const pointsByLabel = {};
@@ -165,6 +189,7 @@ export async function fetchWeeklyReportData(uid) {
     notUsedIn3Weeks,
     topUsedThisWeek,
     events, pointsBreakdown, actions, redActions, yellowActions, greenCount,
+    smartQuality,
     weeksTracked: newHistory.length, avgDiversity,
   };
 }
@@ -305,6 +330,18 @@ export async function generateWeeklyReportPDF(uid) {
     });
   }
   k.y += 4;
+
+  // ── SMART Goals quality — kudos or a nudge to add detail ──
+  const sg = smartGoalsNote(r.smartQuality.total, r.smartQuality.high, r.smartQuality.opp);
+  if (sg) {
+    k.sectionHeader('SMART Goals Quality', C.navy);
+    const col = sg.kudos ? C.green : C.amber;
+    pdf.setFontSize(10); pdf.setFont('helvetica', sg.kudos ? 'bold' : 'normal'); pdf.setTextColor(...col);
+    const sl = pdf.splitTextToSize(k.safe(sg.text), CW - 8);
+    k.space(sl.length * 14 + 10);
+    sl.forEach((line, i) => pdf.text(line, MARGIN, k.y + 4 + i * 14));
+    k.y += sl.length * 14 + 12;
+  }
 
   // ── Closing note — personalized message tiered by the week's points ──
   const enc = weeklyEncouragement(r.weekPoints, r.name);

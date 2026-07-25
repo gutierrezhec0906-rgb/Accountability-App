@@ -383,6 +383,23 @@ function toolKeyFromLabel(label = '') {
 // Build the motivational weekly report for one user's data. Returns { subject, html }
 // or null when there is nothing worth sending (never send an empty report to a
 // brand-new user with zero history).
+// SMART goal quality — mirrors goalQualityPct in the client.
+const SMART_KEYS = ['specific', 'measurable', 'achievable', 'relevant', 'timeBound'];
+function smartFieldQ(text = '') {
+  const w = (text || '').trim().split(/\s+/).filter(Boolean).length;
+  if (!w) return 0; if (w < 5) return 20; if (w < 15) return 50; if (w < 30) return 80; return 100;
+}
+function smartGoalQ(g) {
+  return Math.round(SMART_KEYS.reduce((a, k) => a + smartFieldQ(g[k]), 0) / SMART_KEYS.length);
+}
+function smartGoalsNote(total, high, opp) {
+  if (total === 0) return null;
+  if (opp === 0) {
+    return { kudos: true, text: `Kudos — great job with the quality of your SMART goals! All ${total} ${total === 1 ? 'goal is' : 'goals are'} High Quality. That clarity will keep you focused and moving.` };
+  }
+  return { kudos: false, text: `Please consider improving the quality and detail of your SMART goals — you have ${opp} with opportunit${opp === 1 ? 'y' : 'ies'} and ${high} at High Quality. Adding more specific, measurable detail will help you understand your objectives better and reach them.` };
+}
+
 // Personalized closing message tiered by the week's points earned.
 function weeklyEncouragement(points, name) {
   if (points <= 20) {
@@ -418,6 +435,9 @@ function buildWeeklyReport(data) {
   const weekPoints = events.filter(e => e.points > 0).reduce((s, e) => s + e.points, 0);
   const netPoints = events.reduce((s, e) => s + (e.points || 0), 0);
   const enc = weeklyEncouragement(weekPoints, name);
+  const sgList = (data.smartGoals || []).filter(g => g && g.status !== 'deleted' && g.status !== 'archived');
+  const sgHigh = sgList.filter(g => smartGoalQ(g) >= 80).length;
+  const sgNote = smartGoalsNote(sgList.length, sgHigh, sgList.length - sgHigh);
 
   const sessions = data.toolSessions || [];
   const usedThisWeekKeys = new Set(sessions.filter(s => (s.openedAt || 0) >= weekAgo).map(s => s.tool));
@@ -519,6 +539,12 @@ function buildWeeklyReport(data) {
         <table style="width:100%;border-collapse:collapse;background:#fff;border:1px solid #e2e8f0;border-radius:8px;overflow:hidden;font-size:13px;">
           ${activityRows}
         </table>` : ''}
+
+        ${sgNote ? `
+        <h2 style="font-size:15px;color:#0f2044;margin:24px 0 6px;">🎯 SMART Goals Quality</h2>
+        <div style="padding:14px 16px;background:${sgNote.kudos ? '#f0fdf4' : '#fffbeb'};border-left:4px solid ${sgNote.kudos ? '#16a34a' : '#f59e0b'};border-radius:8px;">
+          <p style="margin:0;font-size:14px;color:${sgNote.kudos ? '#15803d' : '#b45309'};font-weight:${sgNote.kudos ? 700 : 600};line-height:1.6;">${sgNote.text}</p>
+        </div>` : ''}
 
         <div style="margin:26px 0 6px;padding:16px;background:#f0fdfa;border-left:4px solid #0d9488;border-radius:8px;">
           <p style="margin:0;font-size:14px;color:#0f766e;font-weight:700;line-height:1.6;">${enc.message}</p>
