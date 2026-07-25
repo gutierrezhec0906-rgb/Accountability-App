@@ -761,7 +761,7 @@ export default function Lean() {
 
   return (
     <div style={{ maxWidth: 1180, margin: '0 auto' }}>
-      <PageHeader icon="🏭" title="Lean Manufacturing Toolkit" subtitle="5S checklist, waste identification, and Kaizen event log" />
+      <PageHeader icon="🏭" title="Lean Toolkit — Accountability Without Waste" subtitle="5S checklist, waste identification, and Kaizen event log" />
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
         {tabs.map(t => (
