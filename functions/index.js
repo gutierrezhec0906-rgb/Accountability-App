@@ -400,7 +400,7 @@ const KEY_TO_PILLAR = {};
 PILLARS.forEach(p => p.keys.forEach(k => { KEY_TO_PILLAR[k] = p.id; }));
 function buildPillars(pointsBreakdown) {
   const idx = Object.fromEntries(PILLARS.map((p, i) => [p.id, i]));
-  const out = PILLARS.map(p => ({ label: p.label, color: p.color, items: [], total: 0 }));
+  const out = PILLARS.map(p => ({ id: p.id, label: p.label, color: p.color, items: [], total: 0 }));
   pointsBreakdown.forEach(pb => {
     const pid = KEY_TO_PILLAR[toolKeyFromLabel(pb.label)];
     if (pid != null && idx[pid] != null) { out[idx[pid]].items.push(pb); out[idx[pid]].total += pb.points; }
@@ -516,7 +516,44 @@ function buildWeeklyReport(data) {
   const pointsBreakdown = Object.entries(pointsByLabel)
     .map(([label, points]) => ({ label, points }))
     .sort((a, b) => b.points - a.points);
-  // Points grouped into the five leadership pillars (sidebar colors).
+  // Accountability Board action status (embedded in the "Set the Bar" pillar).
+  const actStatusOf = (a) => {
+    const active = a.recommitmentDate || a.dueDate;
+    if (!active) return 'Green';
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const days = Math.round((new Date(active + 'T00:00:00') - today) / 86400000);
+    if (days < 0) return 'Red'; if (days <= 5) return 'Yellow'; return 'Green';
+  };
+  const openActions = (data.visualBoard || []).filter(a => !a.closed)
+    .map(a => ({ title: a.title || 'Untitled', owner: a.owner || '', due: a.recommitmentDate || a.dueDate || '', status: actStatusOf(a) }));
+  const redA = openActions.filter(a => a.status === 'Red');
+  const yelA = openActions.filter(a => a.status === 'Yellow');
+  const grnC = openActions.filter(a => a.status === 'Green').length;
+
+  // The report embedded inside each pillar (mirrors the PDF).
+  function pillarReport(id) {
+    if (id === 'model') {
+      const chip = (label, count, color) => `<span style="display:inline-block;background:${color}1a;color:${color};border:1px solid ${color}55;border-radius:9999px;padding:2px 10px;font-size:12px;font-weight:800;margin:2px 4px 2px 0;">${label} ${count}</span>`;
+      const flagged = [...redA, ...yelA].map(a =>
+        `<div style="font-size:12px;color:#475569;padding:3px 0;"><strong style="color:${a.status === 'Red' ? '#dc2626' : '#b45309'};">${a.status}</strong> — ${a.title} <span style="color:#94a3b8;">(due ${a.due || '—'})</span></div>`).join('');
+      return `<div style="padding:6px 14px 4px;">
+        <p style="margin:2px 0 6px;font-size:12px;font-weight:800;color:#0f2044;">Accountability Board — Action Status</p>
+        ${chip('🔴 Overdue', redA.length, '#dc2626')}${chip('🟡 Due Soon', yelA.length, '#b45309')}${chip('🟢 On Track', grnC, '#15803d')}
+        ${flagged ? `<div style="margin-top:6px;">${flagged}</div>` : (openActions.length ? '<p style="font-size:12px;color:#94a3b8;margin:6px 0 0;">All open actions are on track.</p>' : '<p style="font-size:12px;color:#94a3b8;margin:6px 0 0;">No open actions on your Accountability Board.</p>')}
+      </div>`;
+    }
+    if (id === 'inspire' && sgNote) {
+      return `<div style="margin:6px 14px 4px;padding:10px 12px;background:${sgNote.kudos ? '#f0fdf4' : '#fffbeb'};border-left:3px solid ${sgNote.kudos ? '#16a34a' : '#f59e0b'};border-radius:6px;">
+        <p style="margin:0;font-size:12.5px;color:${sgNote.kudos ? '#15803d' : '#b45309'};font-weight:${sgNote.kudos ? 700 : 600};line-height:1.5;">${sgNote.text}</p></div>`;
+    }
+    if (id === 'enable' && peerReq) {
+      return `<div style="margin:6px 14px 4px;padding:10px 12px;background:#fffbeb;border-left:3px solid #f59e0b;border-radius:6px;">
+        <p style="margin:0;font-size:12.5px;color:#b45309;font-weight:600;line-height:1.5;">We strongly recommend following up with <strong>${peerReq.toName || 'your teammate'}</strong> — in person or by email — to complete your skills assessment. Your request is still pending.</p></div>`;
+    }
+    return '';
+  }
+
+  // Points grouped into the five leadership pillars (sidebar colors), each with its report.
   const pillars = buildPillars(pointsBreakdown);
   const pillarsHtml = pillars.map(p => `
     <div style="margin:12px 0;">
@@ -527,6 +564,7 @@ function buildWeeklyReport(data) {
       ${p.items.length
         ? p.items.map(it => `<div style="display:flex;justify-content:space-between;padding:5px 14px;font-size:13px;color:#334155;"><span>${it.label}</span><span style="font-weight:700;color:#0f2044;">+${it.points}</span></div>`).join('')
         : '<div style="padding:5px 14px;font-size:12px;color:#94a3b8;">No points earned in this pillar this week.</div>'}
+      ${pillarReport(p.id)}
     </div>`).join('');
 
   const usedBadges = usedThisWeek.length
@@ -560,28 +598,14 @@ function buildWeeklyReport(data) {
 
         ${recognition ? `<h2 style="font-size:15px;color:#0f2044;margin:22px 0 4px;">🏆 What you did well</h2>${recognition}` : ''}
 
-        <h2 style="font-size:15px;color:#0f2044;margin:22px 0 4px;">🌱 Grow next week — tools to prioritize</h2>
-        <p style="font-size:13px;color:#64748b;margin:0 0 6px;">You have not touched these yet this week. Pick one or two — small, consistent steps compound into big growth:</p>
-        ${recommendations || '<p style="font-size:14px;color:#15803d;font-weight:700;">Incredible — you touched every tool this week! You are setting the standard. 🌟</p>'}
-
         ${weekPoints > 0 ? `
-        <h2 style="font-size:15px;color:#0f2044;margin:24px 0 6px;">🎉 Points you earned this week</h2>
+        <h2 style="font-size:15px;color:#0f2044;margin:22px 0 6px;">🎉 Points you earned this week</h2>
         <p style="font-size:13px;color:#475569;margin:0 0 8px;">Great work, ${name}! You earned ${weekPoints} point${weekPoints === 1 ? '' : 's'} this week across the five leadership pillars:</p>
         ${pillarsHtml}` : ''}
 
-        ${sgNote ? `
-        <h2 style="font-size:15px;color:#0f2044;margin:24px 0 6px;">🎯 SMART Goals Quality</h2>
-        <div style="padding:14px 16px;background:${sgNote.kudos ? '#f0fdf4' : '#fffbeb'};border-left:4px solid ${sgNote.kudos ? '#16a34a' : '#f59e0b'};border-radius:8px;">
-          <p style="margin:0;font-size:14px;color:${sgNote.kudos ? '#15803d' : '#b45309'};font-weight:${sgNote.kudos ? 700 : 600};line-height:1.6;">${sgNote.text}</p>
-        </div>` : ''}
-
-        ${peerReq ? `
-        <h2 style="font-size:15px;color:#0f2044;margin:24px 0 6px;">⭐ Skills Assessment — Follow Up</h2>
-        <div style="padding:14px 16px;background:#fffbeb;border-left:4px solid #f59e0b;border-radius:8px;">
-          <p style="margin:0;font-size:14px;color:#b45309;font-weight:600;line-height:1.6;">
-            We strongly recommend following up with <strong>${peerReq.toName || 'your teammate'}</strong> — in person or by email — to complete your skills assessment. Your request is still pending; a quick nudge keeps your development on track.
-          </p>
-        </div>` : ''}
+        <h2 style="font-size:15px;color:#0f2044;margin:24px 0 4px;">🌱 Focus next week — tools to prioritize</h2>
+        <p style="font-size:13px;color:#64748b;margin:0 0 6px;">You have not touched these yet this week. Pick one or two — small, consistent steps compound into big growth:</p>
+        ${recommendations || '<p style="font-size:14px;color:#15803d;font-weight:700;">Incredible — you touched every tool this week! You are setting the standard. 🌟</p>'}
 
         <div style="margin:26px 0 6px;padding:16px;background:#f0fdfa;border-left:4px solid #0d9488;border-radius:8px;">
           <p style="margin:0;font-size:14px;color:#0f766e;font-weight:700;line-height:1.6;">${enc.message}</p>

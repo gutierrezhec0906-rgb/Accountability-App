@@ -44,7 +44,7 @@ PILLARS.forEach(p => p.keys.forEach(k => { KEY_TO_PILLAR[k] = p.id; }));
 // Group this week's point events (already grouped by label) into the 5 pillars.
 function buildPillars(pointsBreakdown) {
   const idx = Object.fromEntries(PILLARS.map((p, i) => [p.id, i]));
-  const out = PILLARS.map(p => ({ label: p.label, color: p.color, items: [], total: 0 }));
+  const out = PILLARS.map(p => ({ id: p.id, label: p.label, color: p.color, items: [], total: 0 }));
   pointsBreakdown.forEach(pb => {
     const pid = KEY_TO_PILLAR[toolKeyFromLabel(pb.label)];
     if (pid != null && idx[pid] != null) { out[idx[pid]].items.push(pb); out[idx[pid]].total += pb.points; }
@@ -251,89 +251,120 @@ export async function generateWeeklyReportPDF(uid) {
   });
   k.y += 72;
 
-  // ── Total points this week, broken out across the 5 leadership pillars ──
+  // Small indented sub-heading used for the report embedded inside each pillar.
+  const subHead = (text, color = C.navy) => {
+    k.space(22);
+    pdf.setFontSize(9.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...color);
+    pdf.text(k.safe(text), MARGIN + 14, k.y + 8);
+    k.y += 15;
+  };
+
+  // Embedded report: Accountability Board action status (Set the Bar pillar).
+  function renderActionStatus() {
+    subHead('Accountability Board — Action Status');
+    const statusTiles = [
+      { label: 'RED — OVERDUE', count: r.redActions.length, color: C.red },
+      { label: 'YELLOW — DUE SOON', count: r.yellowActions.length, color: C.amber },
+      { label: 'GREEN — ON TRACK', count: r.greenCount, color: C.green },
+    ];
+    const stw = (CW - 34) / 3;
+    k.space(50);
+    statusTiles.forEach((t, i) => {
+      const x = MARGIN + 14 + i * (stw + 10);
+      pdf.setFillColor(...C.light); pdf.roundedRect(x, k.y, stw, 44, 6, 6, 'F');
+      pdf.setFillColor(...t.color); pdf.circle(x + 14, k.y + 16, 5, 'F');
+      pdf.setFontSize(17); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...t.color);
+      pdf.text(String(t.count), x + stw - 12, k.y + 22, { align: 'right' });
+      pdf.setFontSize(6.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.muted);
+      pdf.text(k.safe(t.label), x + 10, k.y + 37, { maxWidth: stw - 16 });
+    });
+    k.y += 54;
+    const flagged = [...r.redActions, ...r.yellowActions];
+    if (flagged.length) {
+      flagged.forEach(a => {
+        k.space(40);
+        const badge = a.status === 'Red' ? C.red : C.amber;
+        pdf.setFontSize(9.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.text);
+        pdf.text(k.safe(a.title), MARGIN + 14, k.y + 6, { maxWidth: CW - 90 });
+        pdf.setFillColor(...badge); pdf.roundedRect(MARGIN + CW - 60, k.y - 5, 60, 15, 7, 7, 'F');
+        pdf.setFontSize(7.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.white);
+        pdf.text(a.status.toUpperCase(), MARGIN + CW - 30, k.y + 5, { align: 'center' });
+        k.y += 14;
+        pdf.setFontSize(8); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.muted);
+        pdf.text(k.safe(`Owner: ${a.owner || '—'}   ·   Due: ${a.dueDate || '—'}`), MARGIN + 14, k.y + 4);
+        k.y += 12;
+        pdf.setFontSize(8.5); pdf.setFont('helvetica', a.status === 'Red' ? 'bold' : 'normal'); pdf.setTextColor(...a.note.color);
+        pdf.text(k.safe(a.note.text), MARGIN + 14, k.y + 4, { maxWidth: CW - 14 });
+        k.y += 14;
+      });
+    } else if (r.actions.length) {
+      pdf.setFontSize(8.5); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.muted);
+      pdf.text('All open actions are on track. Nothing overdue or due soon.', MARGIN + 14, k.y + 4); k.y += 14;
+    } else {
+      pdf.setFontSize(8.5); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.muted);
+      pdf.text('No open actions on your Accountability Board.', MARGIN + 14, k.y + 4); k.y += 14;
+    }
+  }
+
+  // Embedded report: SMART Goals quality (Spark the Vision pillar).
+  function renderSmartQuality() {
+    const sg = smartGoalsNote(r.smartQuality.total, r.smartQuality.high, r.smartQuality.opp);
+    if (!sg) return;
+    subHead('SMART Goals Quality');
+    const col = sg.kudos ? C.green : C.amber;
+    pdf.setFontSize(9.5); pdf.setFont('helvetica', sg.kudos ? 'bold' : 'normal'); pdf.setTextColor(...col);
+    const sl = pdf.splitTextToSize(k.safe(sg.text), CW - 22);
+    k.space(sl.length * 13 + 6);
+    sl.forEach((line, i) => pdf.text(line, MARGIN + 14, k.y + 4 + i * 13));
+    k.y += sl.length * 13 + 6;
+  }
+
+  // Embedded report: pending peer skills-assessment follow-up (Enable the Team pillar).
+  function renderSkillsFollowup() {
+    if (!r.skillsPeerPending) return;
+    subHead('Skills Assessment — Follow Up');
+    pdf.setFontSize(9.5); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.amber);
+    const fl = pdf.splitTextToSize(k.safe(`We strongly recommend following up with ${r.skillsPeerPending.name} — in person or by email — to complete your skills assessment. Your request is still pending; a quick nudge keeps your development on track.`), CW - 22);
+    k.space(fl.length * 13 + 6);
+    fl.forEach((line, i) => pdf.text(line, MARGIN + 14, k.y + 4 + i * 13));
+    k.y += fl.length * 13 + 6;
+  }
+
+  const PILLAR_REPORT = { model: renderActionStatus, inspire: renderSmartQuality, enable: renderSkillsFollowup };
+
+  // ── The five leadership pillars — points + each pillar's own report ──
   k.sectionHeader('Points You Earned This Week', C.teal);
-  if (r.weekPoints > 0) {
-    k.text(`Great work, ${r.name}! You earned ${r.weekPoints} point${r.weekPoints === 1 ? '' : 's'} this week across the five leadership pillars:`, MARGIN, 9, C.text, false, CW);
-    k.y += 14;
-    r.pillars.forEach(p => {
-      k.space(24 + Math.max(1, p.items.length) * 13);
-      // Pillar header: color swatch + label + pillar total (sidebar colors)
-      pdf.setFillColor(...p.color); pdf.roundedRect(MARGIN, k.y, 4, 15, 1, 1, 'F');
-      pdf.setFontSize(10.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...p.color);
-      pdf.text(k.safe(p.label), MARGIN + 10, k.y + 11);
-      pdf.text(p.total > 0 ? `+${p.total} pt${p.total === 1 ? '' : 's'}` : '—', MARGIN + CW, k.y + 11, { align: 'right' });
-      k.y += 19;
-      if (p.items.length) {
-        p.items.forEach(it => {
-          pdf.setFontSize(9); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.text);
-          pdf.text(k.safe(it.label), MARGIN + 14, k.y + 3, { maxWidth: CW - 60 });
-          pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.text);
-          pdf.text(`+${it.points}`, MARGIN + CW, k.y + 3, { align: 'right' });
-          k.y += 13;
-        });
-      } else {
-        pdf.setFontSize(8.5); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.muted);
-        pdf.text('No points earned in this pillar this week.', MARGIN + 14, k.y + 3);
+  k.text(r.weekPoints > 0
+    ? `Great work, ${r.name}! You earned ${r.weekPoints} point${r.weekPoints === 1 ? '' : 's'} this week across the five leadership pillars:`
+    : `${r.name}, no points earned this week yet — here's where each pillar stands. Every action counts.`, MARGIN, 9, C.text, false, CW);
+  k.y += 14;
+  r.pillars.forEach(p => {
+    k.space(24 + Math.max(1, p.items.length) * 13);
+    // Pillar header: color swatch + label + pillar total (sidebar colors)
+    pdf.setFillColor(...p.color); pdf.roundedRect(MARGIN, k.y, 4, 15, 1, 1, 'F');
+    pdf.setFontSize(10.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...p.color);
+    pdf.text(k.safe(p.label), MARGIN + 10, k.y + 11);
+    pdf.text(p.total > 0 ? `+${p.total} pt${p.total === 1 ? '' : 's'}` : '—', MARGIN + CW, k.y + 11, { align: 'right' });
+    k.y += 19;
+    if (p.items.length) {
+      p.items.forEach(it => {
+        pdf.setFontSize(9); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.text);
+        pdf.text(k.safe(it.label), MARGIN + 14, k.y + 3, { maxWidth: CW - 60 });
+        pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.text);
+        pdf.text(`+${it.points}`, MARGIN + CW, k.y + 3, { align: 'right' });
         k.y += 13;
-      }
-      k.y += 6;
-    });
-  } else {
-    k.text('No points earned this week yet — use a tool or complete an activity to start earning. Every action counts.', MARGIN, 9, C.muted, false, CW);
-    k.y += 18;
-  }
-
-  // ── Action Status Summary: 3 tiles (Red / Yellow / Green counts only) ──
-  // Status indicators are drawn as filled circles, NOT emoji glyphs — jsPDF's
-  // built-in Helvetica font has no emoji support and renders them as garbled
-  // mojibake (e.g. "Ø=Ý4") in the PDF.
-  k.sectionHeader('Action Status Summary', C.navy);
-  const statusTiles = [
-    { label: 'RED — OVERDUE', count: r.redActions.length, color: C.red },
-    { label: 'YELLOW — DUE SOON', count: r.yellowActions.length, color: C.amber },
-    { label: 'GREEN — ON TRACK', count: r.greenCount, color: C.green },
-  ];
-  const stw = (CW - 20) / 3;
-  statusTiles.forEach((t, i) => {
-    const x = MARGIN + i * (stw + 10);
-    pdf.setFillColor(...C.light); pdf.roundedRect(x, k.y, stw, 58, 6, 6, 'F');
-    pdf.setFillColor(...t.color); pdf.circle(x + 18, k.y + 20, 6, 'F');
-    pdf.setFontSize(20); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...t.color);
-    pdf.text(String(t.count), x + stw - 16, k.y + 26, { align: 'right' });
-    pdf.setFontSize(7); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.muted);
-    pdf.text(k.safe(t.label), x + 12, k.y + 46, { maxWidth: stw - 20 });
+      });
+    } else {
+      pdf.setFontSize(8.5); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.muted);
+      pdf.text('No points earned in this pillar this week.', MARGIN + 14, k.y + 3);
+      k.y += 13;
+    }
+    // Pillar-specific report (action status / SMART quality / skills follow-up)
+    if (PILLAR_REPORT[p.id]) PILLAR_REPORT[p.id]();
+    k.y += 8;
+    pdf.setDrawColor(...C.border); pdf.setLineWidth(0.5); pdf.line(MARGIN, k.y, MARGIN + CW, k.y);
+    k.y += 6;
   });
-  k.y += 74;
-
-  // Only Red and Yellow actions get written detail — Green is just the count above.
-  const flagged = [...r.redActions, ...r.yellowActions];
-  if (flagged.length) {
-    flagged.forEach(a => {
-      k.space(46);
-      const badge = a.status === 'Red' ? C.red : C.amber;
-      pdf.setFontSize(10); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.text);
-      pdf.text(k.safe(a.title), MARGIN, k.y + 6, { maxWidth: CW - 78 });
-      pdf.setFillColor(...badge); pdf.roundedRect(MARGIN + CW - 60, k.y - 6, 60, 15, 7, 7, 'F');
-      pdf.setFontSize(7.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.white);
-      pdf.text(a.status.toUpperCase(), MARGIN + CW - 30, k.y + 4, { align: 'center' });
-      k.y += 14;
-      pdf.setFontSize(8); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.muted);
-      pdf.text(k.safe(`Owner: ${a.owner || '—'}   ·   Due: ${a.dueDate || '—'}`), MARGIN, k.y + 4);
-      k.y += 13;
-      pdf.setFontSize(8.5); pdf.setFont('helvetica', a.status === 'Red' ? 'bold' : 'normal'); pdf.setTextColor(...a.note.color);
-      pdf.text(k.safe(a.note.text), MARGIN, k.y + 4, { maxWidth: CW });
-      k.y += 13;
-      pdf.setDrawColor(...C.border); pdf.setLineWidth(0.5); pdf.line(MARGIN, k.y, MARGIN + CW, k.y);
-      k.y += 8;
-    });
-  } else if (r.actions.length) {
-    k.text('All open actions are on track. Nothing overdue or due soon.', MARGIN, 9, C.muted, false, CW);
-    k.y += 16;
-  } else {
-    k.text('No open actions on your Accountability Board.', MARGIN, 9, C.muted, false, CW);
-    k.y += 16;
-  }
 
   // ── Focus Next Week — compact recommendation list, no paragraphs ──
   k.sectionHeader('Focus Next Week', C.amber);
@@ -343,8 +374,6 @@ export async function generateWeeklyReportPDF(uid) {
     k.text('Full coverage — every tool has been touched recently. Excellent breadth.', MARGIN, 9.5, C.green, true, CW);
     k.y += 16;
   } else {
-    // Tool "icon" fields are emoji — drawn as a small colored dot instead of
-    // printed as text (see note above on jsPDF's font not supporting emoji).
     r.notUsedIn3Weeks.forEach(t => {
       k.space(14);
       pdf.setFillColor(...C.red); pdf.circle(MARGIN + 3, k.y + 1, 2.5, 'F');
@@ -365,28 +394,6 @@ export async function generateWeeklyReportPDF(uid) {
     });
   }
   k.y += 4;
-
-  // ── SMART Goals quality — kudos or a nudge to add detail ──
-  const sg = smartGoalsNote(r.smartQuality.total, r.smartQuality.high, r.smartQuality.opp);
-  if (sg) {
-    k.sectionHeader('SMART Goals Quality', C.navy);
-    const col = sg.kudos ? C.green : C.amber;
-    pdf.setFontSize(10); pdf.setFont('helvetica', sg.kudos ? 'bold' : 'normal'); pdf.setTextColor(...col);
-    const sl = pdf.splitTextToSize(k.safe(sg.text), CW - 8);
-    k.space(sl.length * 14 + 10);
-    sl.forEach((line, i) => pdf.text(line, MARGIN, k.y + 4 + i * 14));
-    k.y += sl.length * 14 + 12;
-  }
-
-  // ── Pending peer skills-assessment follow-up ──
-  if (r.skillsPeerPending) {
-    k.sectionHeader('Skills Assessment — Follow Up', C.navy);
-    pdf.setFontSize(10); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.amber);
-    const fl = pdf.splitTextToSize(k.safe(`We strongly recommend following up with ${r.skillsPeerPending.name} — in person or by email — to complete your skills assessment. You have a request still pending; a quick nudge keeps your development on track.`), CW - 8);
-    k.space(fl.length * 14 + 10);
-    fl.forEach((line, i) => pdf.text(line, MARGIN, k.y + 4 + i * 14));
-    k.y += fl.length * 14 + 12;
-  }
 
   // ── Closing note — personalized message tiered by the week's points ──
   const enc = weeklyEncouragement(r.weekPoints, r.name);
