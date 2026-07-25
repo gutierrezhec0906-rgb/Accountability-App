@@ -124,7 +124,7 @@ export default function Training() {
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }}>
-      <PageHeader icon="🎓" title="Training Center" subtitle="Track learning progress and certifications"
+      <PageHeader icon="🎓" title="Training Center" subtitle="Growth is Non-Negotiable"
         action={<button className="btn-primary" onClick={() => { if (showForm) { cancelForm(); } else { setEditingId(null); setForm(emptyForm); setShowForm(true); } }}>+ Add Training</button>} />
 
       {/* Progress hero */}
