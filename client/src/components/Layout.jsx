@@ -5,7 +5,7 @@ import { collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
 import WelcomeModal from './WelcomeModal';
-import ToolVideoModal from './ToolVideoModal';
+import ToolVideoModal, { seenVideosLocal } from './ToolVideoModal';
 import { isLocked, TIER_ICONS, TIER_LABELS } from '../utils/subscription';
 
 // Top-level items (always visible, not in a category)
@@ -140,8 +140,10 @@ export default function Layout({ children }) {
     if (userProfile.status === 'pending') return;
     const toolId = location.pathname.replace('/', '') || 'dashboard';
     if (!VIDEO_TOOL_IDS.has(toolId)) return;
-    const seen = userProfile.seenToolVideos || [];
-    if (seen.includes(toolId)) return;
+    // "Seen" = recorded in the profile OR in this device's localStorage mirror,
+    // so a video auto-opens only the very first time; afterwards it's manual only.
+    const seen = new Set([...(userProfile.seenToolVideos || []), ...seenVideosLocal()]);
+    if (seen.has(toolId)) return;
     setToolVideoOpen(true);
   }, [location.pathname, currentUser, userProfile]);
 

@@ -3,11 +3,31 @@ import { doc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
+// localStorage mirror of "videos this user has already seen" — persisted
+// instantly and per-device, so a video never auto-reopens even if the cached
+// userProfile hasn't refreshed with the Firestore write yet.
+const LS_KEY = 'seenToolVideos';
+export function seenVideosLocal() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || '[]'); } catch { return []; }
+}
+function markSeenLocal(toolId) {
+  const arr = seenVideosLocal();
+  if (!arr.includes(toolId)) { arr.push(toolId); localStorage.setItem(LS_KEY, JSON.stringify(arr)); }
+}
+
 export default function ToolVideoModal({ toolId, toolLabel, open, onClose }) {
   const { currentUser } = useAuth();
   const [videoUrl, setVideoUrl] = useState('');
   const [ready, setReady] = useState(false);
   const videoRef = useRef(null);
+
+  async function markSeen() {
+    if (!toolId) return;
+    markSeenLocal(toolId);
+    if (currentUser) {
+      try { await updateDoc(doc(db, 'users', currentUser.uid), { seenToolVideos: arrayUnion(toolId) }); } catch {}
+    }
+  }
 
   useEffect(() => {
     if (!open || !toolId) { setReady(false); return; }
@@ -25,19 +45,16 @@ export default function ToolVideoModal({ toolId, toolLabel, open, onClose }) {
       if (!active) return;
       setVideoUrl(url);
       setReady(!!url);
+      // The moment a video is actually shown, mark it seen — so it won't
+      // auto-open again even if the user navigates away without closing it.
+      if (url) markSeen();
     })();
     return () => { active = false; };
   }, [open, toolId]);
 
   async function dismiss() {
     onClose();
-    if (currentUser && toolId) {
-      try {
-        await updateDoc(doc(db, 'users', currentUser.uid), {
-          seenToolVideos: arrayUnion(toolId),
-        });
-      } catch {}
-    }
+    await markSeen();
   }
 
   if (!open || !ready) return null;
