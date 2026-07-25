@@ -6,6 +6,7 @@ import { db } from '../firebase';
 import toast from 'react-hot-toast';
 import WelcomeModal from './WelcomeModal';
 import ToolVideoModal, { seenVideosLocal } from './ToolVideoModal';
+import GlobalPastDueModal from './GlobalPastDueModal';
 import { isLocked, TIER_ICONS, TIER_LABELS } from '../utils/subscription';
 
 // Top-level items (always visible, not in a category)
@@ -463,6 +464,7 @@ export default function Layout({ children }) {
       </div>
 
       <WelcomeModal />
+      <GlobalPastDueModal />
       <ToolVideoModal
         toolId={currentToolId}
         toolLabel={currentNavItem?.label || ''}
