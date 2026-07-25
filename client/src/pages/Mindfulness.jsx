@@ -209,7 +209,7 @@ export default function Mindfulness() {
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-      <PageHeader icon="🧘" title="Breathing & Mindfulness — A good leader is a calm leader" subtitle="Guided breathing exercises and mindfulness tools for leaders" />
+      <PageHeader icon="🧘" title="Breathing & Mindfulness — Accountability Starts Calm" subtitle="Guided breathing exercises and mindfulness tools for leaders" />
 
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
