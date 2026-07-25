@@ -229,7 +229,7 @@ export default function DISC() {
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-      <PageHeader icon="🧠" title="DISC Personality Assessment — Do you know yourself?" subtitle="Understand your behavioral style and leadership tendencies — 20 questions across 5 dimensions" />
+      <PageHeader icon="🧠" title="DISC Assessment — Accountability Starts With You" subtitle="Understand your behavioral style and leadership tendencies — 20 questions across 5 dimensions" />
 
       {showExpiredBanner && (
         <div style={{ background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 12, padding: '0.875rem 1.25rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: 12 }}>
