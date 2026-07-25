@@ -22,7 +22,7 @@ const navCategories = [
     icon: '🧭',
     color: '#60a5fa',
     items: [
-      { id: 'visual-board', label: 'The Accountability Board', icon: '🔴', path: '/visual-board' },
+      { id: 'visual-board', label: 'Visual Management', icon: '🔴', path: '/visual-board' },
       { id: 'lob',          label: 'Line of Balance',   icon: '📈', path: '/lob' },
       { id: 'urgency',      label: 'Sense of Urgency',  icon: '⚡', path: '/urgency' },
       { id: 'eq-opex',      label: 'EQ & OpEx Tools',   icon: '💡', path: '/eq-opex' },
