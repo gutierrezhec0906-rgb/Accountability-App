@@ -354,7 +354,7 @@ export default function Feedback() {
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-      <PageHeader icon="📬" title="Feedback Box" subtitle="Anonymous or named feedback from peers, supervisors, and leaders"
+      <PageHeader icon="📬" title="Feedback Box — Accountability with Care" subtitle="Anonymous or named feedback from peers, supervisors, and leaders"
         action={
           <div style={{ display: 'flex', gap: 8 }}>
             <button className="btn-secondary" onClick={() => setShowRequest(true)} style={{ position: 'relative' }}>
