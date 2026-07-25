@@ -517,7 +517,7 @@ export default function LOB() {
       <PageHeader
         icon="📈"
         title="Line of Balance — Track to the detail when you cannot fail"
-        subtitle="Visual production planning and schedule tracking"
+        subtitle="Accountability to the Detail"
         action={
           <button className="btn-primary" onClick={() => setShowNewForm(s => !s)}>
             + New Line of Balance
