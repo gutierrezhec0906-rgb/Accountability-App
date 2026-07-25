@@ -162,17 +162,22 @@ exports.sendRequestEmails = onDocumentUpdated('users/{uid}', async (event) => {
   // 1. Skills peer-assessment request (new pending request, or re-request)
   const prevReq = before.skillsPeerRequest;
   const newReq  = after.skillsPeerRequest;
-  if (newReq?.status === 'pending' && newReq.toUid &&
-      (prevReq?.requestedAt !== newReq.requestedAt || prevReq?.status !== 'pending')) {
+  const isNewRequest = newReq?.status === 'pending' && newReq.toUid &&
+    (prevReq?.requestedAt !== newReq.requestedAt || prevReq?.status !== 'pending');
+  const isReminder = newReq?.status === 'pending' && newReq.toUid &&
+    newReq.remindedAt && prevReq?.remindedAt !== newReq.remindedAt;
+  if (isNewRequest || isReminder) {
     const to = await emailForUid(newReq.toUid);
     if (to) {
       mails.push({
         to,
-        subject: `🙋 ${requesterName} requested your peer assessment`,
+        subject: isReminder
+          ? `🔔 Reminder: ${requesterName} is waiting on your peer assessment`
+          : `🙋 ${requesterName} requested your peer assessment`,
         html: brandedEmail(
-          'Peer assessment requested',
+          isReminder ? 'Reminder: peer assessment still pending' : 'Peer assessment requested',
           `<p style="color: #475569; font-size: 15px; line-height: 1.6;">
-             <strong>${requesterName}</strong> asked you to rate their skills in the
+             ${isReminder ? `This is a friendly reminder — <strong>${requesterName}</strong> is still waiting on you` : `<strong>${requesterName}</strong> asked you`} to rate their skills in the
              <strong>Skills Development Matrix</strong>. Your honest, independent rating helps them
              see their real gaps — their self-ratings stay hidden from you on purpose.
            </p>`,
@@ -440,6 +445,7 @@ function buildWeeklyReport(data) {
   const sgList = (data.smartGoals || []).filter(g => g && g.status !== 'deleted' && g.status !== 'archived');
   const sgHigh = sgList.filter(g => smartGoalQ(g) >= 80).length;
   const sgNote = smartGoalsNote(sgList.length, sgHigh, sgList.length - sgHigh);
+  const peerReq = (data.skillsPeerRequest && data.skillsPeerRequest.status === 'pending') ? data.skillsPeerRequest : null;
 
   const sessions = data.toolSessions || [];
   const usedThisWeekKeys = new Set(sessions.filter(s => (s.openedAt || 0) >= weekAgo).map(s => s.tool));
@@ -546,6 +552,14 @@ function buildWeeklyReport(data) {
         <h2 style="font-size:15px;color:#0f2044;margin:24px 0 6px;">🎯 SMART Goals Quality</h2>
         <div style="padding:14px 16px;background:${sgNote.kudos ? '#f0fdf4' : '#fffbeb'};border-left:4px solid ${sgNote.kudos ? '#16a34a' : '#f59e0b'};border-radius:8px;">
           <p style="margin:0;font-size:14px;color:${sgNote.kudos ? '#15803d' : '#b45309'};font-weight:${sgNote.kudos ? 700 : 600};line-height:1.6;">${sgNote.text}</p>
+        </div>` : ''}
+
+        ${peerReq ? `
+        <h2 style="font-size:15px;color:#0f2044;margin:24px 0 6px;">⭐ Skills Assessment — Follow Up</h2>
+        <div style="padding:14px 16px;background:#fffbeb;border-left:4px solid #f59e0b;border-radius:8px;">
+          <p style="margin:0;font-size:14px;color:#b45309;font-weight:600;line-height:1.6;">
+            We strongly recommend following up with <strong>${peerReq.toName || 'your teammate'}</strong> — in person or by email — to complete your skills assessment. Your request is still pending; a quick nudge keeps your development on track.
+          </p>
         </div>` : ''}
 
         <div style="margin:26px 0 6px;padding:16px;background:#f0fdfa;border-left:4px solid #0d9488;border-radius:8px;">

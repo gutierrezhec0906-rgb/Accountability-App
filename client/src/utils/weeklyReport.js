@@ -137,6 +137,10 @@ export async function fetchWeeklyReportData(uid) {
   const smartHigh = smartGoals.filter(g => smartGoalQ(g) >= 80).length;
   const smartQuality = { total: smartGoals.length, high: smartHigh, opp: smartGoals.length - smartHigh };
 
+  // Pending peer skills-assessment request awaiting a teammate.
+  const pr = data.skillsPeerRequest;
+  const skillsPeerPending = (pr && pr.status === 'pending') ? { name: pr.toName || 'your teammate' } : null;
+
   // Points earned this week, grouped by activity (toolLabel) and summed —
   // for the "Well done, you earned these points" section of the report.
   const pointsByLabel = {};
@@ -191,7 +195,7 @@ export async function fetchWeeklyReportData(uid) {
     notUsedIn3Weeks,
     topUsedThisWeek,
     events, pointsBreakdown, actions, redActions, yellowActions, greenCount,
-    smartQuality,
+    smartQuality, skillsPeerPending,
     weeksTracked: newHistory.length, avgDiversity,
   };
 }
@@ -343,6 +347,16 @@ export async function generateWeeklyReportPDF(uid) {
     k.space(sl.length * 14 + 10);
     sl.forEach((line, i) => pdf.text(line, MARGIN, k.y + 4 + i * 14));
     k.y += sl.length * 14 + 12;
+  }
+
+  // ── Pending peer skills-assessment follow-up ──
+  if (r.skillsPeerPending) {
+    k.sectionHeader('Skills Assessment — Follow Up', C.navy);
+    pdf.setFontSize(10); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.amber);
+    const fl = pdf.splitTextToSize(k.safe(`We strongly recommend following up with ${r.skillsPeerPending.name} — in person or by email — to complete your skills assessment. You have a request still pending; a quick nudge keeps your development on track.`), CW - 8);
+    k.space(fl.length * 14 + 10);
+    fl.forEach((line, i) => pdf.text(line, MARGIN, k.y + 4 + i * 14));
+    k.y += fl.length * 14 + 12;
   }
 
   // ── Closing note — personalized message tiered by the week's points ──

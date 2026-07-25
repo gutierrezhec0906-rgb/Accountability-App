@@ -135,6 +135,7 @@ export default function Skills() {
   const [myRequest, setMyRequest] = useState(null); // { requestedAt, toUid, toName, status }
   const [requestTarget, setRequestTarget] = useState('');
   const [requesting, setRequesting] = useState(false);
+  const [reminding, setReminding] = useState(false);
 
   const isLeader = userProfile?.isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager';
 
@@ -366,6 +367,24 @@ export default function Skills() {
     setRequesting(false);
   }
 
+  // Re-send the peer-assessment reminder email. Bumping remindedAt on the
+  // pending request triggers the sendRequestEmails Cloud Function to email again.
+  async function sendReminder() {
+    if (!currentUser || myRequest?.status !== 'pending') return;
+    setReminding(true);
+    try {
+      const now = new Date().toISOString();
+      const updated = { ...myRequest, remindedAt: now };
+      await setDoc(doc(db, 'users', currentUser.uid), { skillsPeerRequest: updated }, { merge: true });
+      setMyRequest(updated);
+      toast.success(`Reminder email sent to ${myRequest.toName}`);
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not send reminder');
+    }
+    setReminding(false);
+  }
+
   async function addSkill(e) {
     e.preventDefault();
     const updated = matrix.map(cat => cat.category !== newSkill.category ? cat : { ...cat, skills: [...cat.skills, { name: newSkill.name, self: newSkill.self, peer: 0 }] });
@@ -449,8 +468,15 @@ export default function Skills() {
             Ask a teammate to rate your skills. +1 pt for requesting, and +1 more when they deliver it (each max once per month).
           </p>
           {myRequest?.status === 'pending' ? (
-            <div style={{ padding: '0.625rem 1rem', borderRadius: 10, background: '#fefce8', border: '1px solid #fde047', fontSize: '0.8rem', color: '#a16207', fontWeight: 700 }}>
-              ⏳ Waiting on {myRequest.toName} — requested {fmtDate(myRequest.requestedAt)}
+            <div style={{ padding: '0.625rem 1rem', borderRadius: 10, background: '#fefce8', border: '1px solid #fde047', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: '0.8rem', color: '#a16207', fontWeight: 700, flex: 1, minWidth: 180 }}>
+                ⏳ Waiting on {myRequest.toName} — requested {fmtDate(myRequest.requestedAt)}
+                {myRequest.remindedAt && <span style={{ fontWeight: 500 }}> · last reminded {fmtDate(myRequest.remindedAt)}</span>}
+              </span>
+              <button onClick={sendReminder} disabled={reminding}
+                style={{ background: '#ca8a04', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.9rem', fontWeight: 700, fontSize: '0.78rem', cursor: reminding ? 'wait' : 'pointer', flexShrink: 0 }}>
+                {reminding ? 'Sending…' : '🔔 Resend Email Reminder'}
+              </button>
             </div>
           ) : (
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
