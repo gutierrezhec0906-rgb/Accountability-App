@@ -1,8 +1,16 @@
 import { useEffect, useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+
+// Career milestone check-in windows (anchored to careerPlan.completedAt).
+const CAREER_CHECKINS = [
+  { key: 'd30', label: '30-Day Progress Note', days: 30 },
+  { key: 'd90', label: '90-Day Progress Note', days: 90 },
+  { key: 'm6',  label: '6-Month Progress Note', days: 180 },
+  { key: 'm12', label: '12-Month Completion / Renewal Note', days: 365 },
+];
 
 const todayStr = () => {
   const d = new Date();
@@ -23,6 +31,7 @@ const SECTIONS = [
   { kind: 'board',    field: 'visualBoard', label: 'Accountability Board', icon: '🔴' },
   { kind: 'training', field: 'trainings',   label: 'Training Center',      icon: '🎓' },
   { kind: 'goal',     field: 'smartGoals',  label: 'SMART Goals',          icon: '🎯' },
+  { kind: 'career',   field: null,          label: 'Career Development',   icon: '🚀' },
 ];
 
 // Session-start reminder shown on EVERY module: lists every past-due activity across
@@ -31,6 +40,7 @@ const SECTIONS = [
 export default function GlobalPastDueModal() {
   const { currentUser } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
   const [data, setData] = useState({});        // { visualBoard, trainings, smartGoals }
   const [pending, setPending] = useState([]);  // unified past-due items
   const [dates, setDates] = useState({});       // { [key]: 'YYYY-MM-DD' }
@@ -58,6 +68,19 @@ export default function GlobalPastDueModal() {
         (d.smartGoals || []).forEach(g => {
           if (g && g.status !== 'completed' && g.status !== 'deleted' && overdue(g.dueDate)) items.push({ key: `goal-${g.id}`, kind: 'goal', id: g.id, title: g.title || 'Untitled goal', due: g.dueDate });
         });
+        // Career milestone check-ins that are past due with no progress note logged.
+        const cp = d.careerPlan;
+        if (cp && cp.completedAt) {
+          const anchor = new Date(cp.completedAt).getTime();
+          CAREER_CHECKINS.forEach(ck => {
+            const dueMs = anchor + ck.days * 86400000;
+            const noteFilled = ((cp.checkIns && cp.checkIns[ck.key] && cp.checkIns[ck.key].note) || '').trim().length > 0;
+            const dueStr = new Date(dueMs).toISOString().split('T')[0];
+            if (!noteFilled && overdue(dueStr)) {
+              items.push({ key: `career-${ck.key}`, kind: 'career', id: ck.key, title: ck.label, due: dueStr });
+            }
+          });
+        }
         setPending(items);
         if (items.length) setOpen(true);
       } catch { /* ignore */ }
@@ -136,18 +159,25 @@ export default function GlobalPastDueModal() {
                           {item.recommits > 0 && <span style={{ color: '#b45309', fontWeight: 700 }}>🔄 {item.recommits} prior</span>}
                         </div>
                         {item.notes && <p style={{ fontSize: '0.75rem', color: '#475569', margin: '0 0 8px', lineHeight: 1.45 }}>{item.notes}</p>}
-                        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                          <input type="date" min={todayStr()} value={dateVal}
-                            onChange={e => setDates(d => ({ ...d, [item.key]: e.target.value }))}
-                            style={{ padding: '0.4rem 0.6rem', borderRadius: 8, border: '2px solid #e2e8f0', fontSize: '0.82rem' }} />
-                          <button onClick={() => recommit(item)} disabled={!valid || saving === item.key}
-                            style={{ padding: '0.45rem 0.9rem', borderRadius: 8, border: 'none', fontWeight: 800, fontSize: '0.8rem',
-                              cursor: valid && saving !== item.key ? 'pointer' : 'not-allowed',
-                              background: valid && saving !== item.key ? '#0f2044' : '#e2e8f0',
-                              color: valid && saving !== item.key ? 'white' : '#94a3b8' }}>
-                            {saving === item.key ? 'Saving…' : '✓ Recommit'}
+                        {item.kind === 'career' ? (
+                          <button onClick={() => { setOpen(false); navigate('/career'); }}
+                            style={{ padding: '0.45rem 0.9rem', borderRadius: 8, border: 'none', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', background: '#0f2044', color: 'white' }}>
+                            📝 Add Progress Note →
                           </button>
-                        </div>
+                        ) : (
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <input type="date" min={todayStr()} value={dateVal}
+                              onChange={e => setDates(d => ({ ...d, [item.key]: e.target.value }))}
+                              style={{ padding: '0.4rem 0.6rem', borderRadius: 8, border: '2px solid #e2e8f0', fontSize: '0.82rem' }} />
+                            <button onClick={() => recommit(item)} disabled={!valid || saving === item.key}
+                              style={{ padding: '0.45rem 0.9rem', borderRadius: 8, border: 'none', fontWeight: 800, fontSize: '0.8rem',
+                                cursor: valid && saving !== item.key ? 'pointer' : 'not-allowed',
+                                background: valid && saving !== item.key ? '#0f2044' : '#e2e8f0',
+                                color: valid && saving !== item.key ? 'white' : '#94a3b8' }}>
+                              {saving === item.key ? 'Saving…' : '✓ Recommit'}
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}

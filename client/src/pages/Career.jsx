@@ -555,12 +555,19 @@ export default function Career() {
             const val = plan.checkIns[ci.key] || { note: '', savedAt: null };
             const filled = (val.note || '').trim().length > 0;
             const daysSince = plan.completedAt ? (Date.now() - new Date(plan.completedAt).getTime()) / 86400000 : 0;
-            const windowOpen = plan.completedAt && daysSince >= 0;
+            const daysUntil = plan.completedAt ? Math.ceil(ci.days - daysSince) : null;
             const overdue = plan.completedAt && daysSince >= ci.days && !filled && ci.penalty > 0;
-            const statusColor = filled ? '#15803d' : overdue ? '#dc2626' : '#94a3b8';
-            const statusLabel = filled ? '✓ Logged' : overdue ? `⚠ Overdue — ${ci.penaltyLabel}` : plan.completedAt ? `Due day ${ci.days}` : 'Locked';
+            const comingSoon = plan.completedAt && !filled && !overdue && daysUntil !== null && daysUntil > 0 && daysUntil <= 14;
+            // Status color/label: green logged · red past-due · yellow coming-soon · gray upcoming/locked
+            const statusColor = filled ? '#15803d' : overdue ? '#dc2626' : comingSoon ? '#b45309' : '#94a3b8';
+            const statusLabel = filled ? '✓ Logged'
+              : overdue ? '🚨 Past due — take action'
+              : comingSoon ? `⚠️ Coming soon — in ${daysUntil} day${daysUntil === 1 ? '' : 's'}`
+              : plan.completedAt ? `Due day ${ci.days}` : 'Locked';
+            const cardBg = filled ? '#f0fdf4' : overdue ? '#fef2f2' : comingSoon ? '#fef9c3' : 'white';
+            const cardBorder = filled ? '#86efac' : overdue ? '#fecaca' : comingSoon ? '#fde68a' : 'var(--border)';
             return (
-              <div key={ci.key} style={{ border: `1px solid ${filled ? '#86efac' : overdue ? '#fecaca' : 'var(--border)'}`, borderRadius: 10, padding: '0.75rem 0.875rem', background: filled ? '#f0fdf4' : overdue ? '#fef2f2' : 'white' }}>
+              <div key={ci.key} style={{ border: `1px solid ${cardBorder}`, borderRadius: 10, padding: '0.75rem 0.875rem', background: cardBg }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
                   <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-primary)' }}>{ci.label}</span>
                   <span style={{ fontSize: '0.7rem', fontWeight: 700, color: statusColor }}>{statusLabel}</span>
