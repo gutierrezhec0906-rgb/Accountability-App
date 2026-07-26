@@ -405,6 +405,20 @@ const PILLAR_ENGAGEMENT = {
   enable:    'Your real legacy is the leaders you build — pour genuine time into developing your people this week.',
   encourage: 'Recognition and care cost you nothing and change everything — use them generously and often.',
 };
+// Coaching session follow-up status (by each session's next-session date).
+function coachingStatus(sessions = []) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const s = { ontrack: 0, warning: 0, overdue: 0, total: sessions.length, behind: [] };
+  sessions.forEach(x => {
+    if (!x.nextSession) { s.ontrack++; return; }
+    const diff = Math.round((new Date(x.nextSession + 'T00:00:00') - today) / 86400000);
+    if (diff < 0) { s.overdue++; s.behind.push({ coachee: x.coachee || 'a coachee', due: x.nextSession }); }
+    else if (diff <= 14) s.warning++;
+    else s.ontrack++;
+  });
+  return s;
+}
+
 // Training Center dashboard counts (mirror the app's Training page).
 function trainingStatusCounts(trainings = []) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -571,6 +585,7 @@ function buildWeeklyReport(data) {
   const grnC = openActions.filter(a => a.status === 'Green').length;
   const lobBehind = lobBehindTasks(data.lobRecords || []);
   const trainStatus = trainingStatusCounts(data.trainings || []);
+  const coachStatus = coachingStatus(data.coachingSessions || []);
 
   // The report embedded inside each pillar (mirrors the PDF).
   function pillarReport(id) {
@@ -592,6 +607,18 @@ function buildWeeklyReport(data) {
     if (id === 'inspire' && sgNote) {
       return `<div style="margin:6px 14px 4px;padding:10px 12px;background:${sgNote.kudos ? '#f0fdf4' : '#fffbeb'};border-left:3px solid ${sgNote.kudos ? '#16a34a' : '#f59e0b'};border-radius:6px;">
         <p style="margin:0;font-size:12.5px;color:${sgNote.kudos ? '#15803d' : '#b45309'};font-weight:${sgNote.kudos ? 700 : 600};line-height:1.5;">${sgNote.text}</p></div>`;
+    }
+    if (id === 'encourage') {
+      const cs = coachStatus;
+      if (!cs.total) return '';
+      const tile = (label, count, color) => `<td style="width:33%;padding:4px;"><div style="background:#f8fafc;border-radius:6px;padding:8px;text-align:center;"><div style="width:10px;height:10px;border-radius:50%;background:${color};display:inline-block;margin-bottom:2px;"></div><div style="font-size:18px;font-weight:900;color:${color};line-height:1;">${count}</div><div style="font-size:8px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;">${label}</div></div></td>`;
+      const names = cs.behind.map(b => b.coachee).slice(0, 4).join(', ');
+      const nudge = cs.overdue > 0 ? `<div style="margin:6px 14px 4px;padding:10px 12px;background:#fef2f2;border-left:3px solid #dc2626;border-radius:6px;">
+        <p style="margin:0;font-size:12.5px;color:#b91c1c;font-weight:600;line-height:1.5;">You have ${cs.overdue} coaching follow-up${cs.overdue === 1 ? '' : 's'} past due (${names}). Following through is where leaders are truly built — the people you develop remember who showed up. Reconnect this week and keep their growth moving.</p></div>` : '';
+      return `<p style="margin:8px 14px 4px;font-size:12px;font-weight:800;color:#0f2044;">Coaching Log — Follow-Up Status</p>
+        <table style="width:calc(100% - 20px);margin:0 14px;border-collapse:collapse;"><tr>
+          ${tile('On Track', cs.ontrack, '#16a34a')}${tile('Due Soon', cs.warning, '#f59e0b')}${tile('Past Due', cs.overdue, '#dc2626')}
+        </tr></table>${nudge}`;
     }
     if (id === 'enable') {
       const ts = trainStatus;

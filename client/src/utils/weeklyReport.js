@@ -50,6 +50,20 @@ const PILLAR_ENGAGEMENT = {
   encourage: 'Recognition and care cost you nothing and change everything — use them generously and often.',
 };
 
+// Coaching session follow-up status (by each session's next-session date).
+function coachingStatus(sessions = []) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const s = { ontrack: 0, warning: 0, overdue: 0, total: sessions.length, behind: [] };
+  sessions.forEach(x => {
+    if (!x.nextSession) { s.ontrack++; return; }
+    const diff = Math.round((new Date(x.nextSession + 'T00:00:00') - today) / 86400000);
+    if (diff < 0) { s.overdue++; s.behind.push({ coachee: x.coachee || 'a coachee', due: x.nextSession }); }
+    else if (diff <= 14) s.warning++;
+    else s.ontrack++;
+  });
+  return s;
+}
+
 // Training Center dashboard counts (mirror pages/Training.jsx): completed vs
 // open On Track (>2 weeks) / Due Soon (<=2 weeks) / Past Due.
 function trainingStatusCounts(trainings = []) {
@@ -275,6 +289,9 @@ export async function fetchWeeklyReportData(uid) {
   // Training Center dashboard snapshot.
   const trainingStatus = trainingStatusCounts(data.trainings || []);
 
+  // Coaching session follow-up status.
+  const coaching = coachingStatus(data.coachingSessions || []);
+
   return {
     name: (data.displayName || '').split(' ')[0] || 'Leader',
     weekPoints, score, diversityPct, everPct,
@@ -282,7 +299,7 @@ export async function fetchWeeklyReportData(uid) {
     notUsedThisWeek: REPORT_TOOLS.filter(t => !usedThisWeek.has(t.key)),
     notUsedIn3Weeks,
     topUsedThisWeek,
-    events, pointsBreakdown, pillars, weakPillars, lobBehind, trainingStatus,
+    events, pointsBreakdown, pillars, weakPillars, lobBehind, trainingStatus, coaching,
     actions, redActions, yellowActions, greenCount,
     smartQuality, skillsPeerPending,
     weeksTracked: newHistory.length, avgDiversity,
@@ -450,10 +467,44 @@ export async function generateWeeklyReportPDF(uid) {
     k.y += 12;
   }
 
+  // Embedded report: Coaching session follow-up status (Winning with Compassion).
+  function renderCoaching() {
+    const cs = r.coaching;
+    if (!cs.total) return;
+    subHead('Coaching Log — Follow-Up Status');
+    const tiles = [
+      { label: 'ON TRACK', count: cs.ontrack, color: C.green },
+      { label: 'DUE SOON', count: cs.warning, color: C.amber },
+      { label: 'PAST DUE', count: cs.overdue, color: C.red },
+    ];
+    const tw = (CW - 14 - 2 * 8) / 3;
+    k.space(44);
+    tiles.forEach((t, i) => {
+      const x = MARGIN + 14 + i * (tw + 8);
+      pdf.setFillColor(...C.light); pdf.roundedRect(x, k.y, tw, 36, 5, 5, 'F');
+      pdf.setFillColor(...t.color); pdf.circle(x + 12, k.y + 13, 4.5, 'F');
+      pdf.setFontSize(15); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...t.color);
+      pdf.text(String(t.count), x + tw - 10, k.y + 18, { align: 'right' });
+      pdf.setFontSize(6.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.muted);
+      pdf.text(k.safe(t.label), x + 10, k.y + 30, { maxWidth: tw - 14 });
+    });
+    k.y += 44;
+    if (cs.overdue > 0) {
+      const names = cs.behind.map(b => b.coachee).slice(0, 4).join(', ');
+      const nudge = `You have ${cs.overdue} coaching follow-up${cs.overdue === 1 ? '' : 's'} past due (${names}). Following through is where leaders are truly built — the people you develop remember who showed up. Reconnect this week and keep their growth moving.`;
+      pdf.setFontSize(9); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.red);
+      const nl = pdf.splitTextToSize(k.safe(nudge), CW - 22);
+      k.space(nl.length * 12 + 6);
+      nl.forEach((line, i) => pdf.text(line, MARGIN + 14, k.y + 4 + i * 12));
+      k.y += nl.length * 12 + 6;
+    }
+  }
+
   const PILLAR_REPORT = {
     model: renderActionStatus,
     inspire: renderSmartQuality,
     enable: () => { renderTrainingStatus(); renderSkillsFollowup(); },
+    encourage: renderCoaching,
   };
 
   // ── The five leadership pillars — points + each pillar's own report ──
