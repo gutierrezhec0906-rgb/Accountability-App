@@ -50,6 +50,20 @@ const PILLAR_ENGAGEMENT = {
   encourage: 'Recognition and care cost you nothing and change everything — use them generously and often.',
 };
 
+// Training Center dashboard counts (mirror pages/Training.jsx): completed vs
+// open On Track (>2 weeks) / Due Soon (<=2 weeks) / Past Due.
+function trainingStatusCounts(trainings = []) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const s = { completed: 0, ontrack: 0, warning: 0, overdue: 0, total: trainings.length };
+  trainings.forEach(t => {
+    if (t.completed) { s.completed++; return; }
+    if (!t.dueDate) { s.ontrack++; return; }
+    const diff = Math.round((new Date(t.dueDate + 'T00:00:00') - today) / 86400000);
+    if (diff < 0) s.overdue++; else if (diff <= 14) s.warning++; else s.ontrack++;
+  });
+  return s;
+}
+
 // Find Line-of-Balance tasks that are behind: a task not yet 100% complete
 // while sitting past a planned date column (the "red" state on the LOB grid).
 function lobBehindTasks(lobRecords = []) {
@@ -258,6 +272,9 @@ export async function fetchWeeklyReportData(uid) {
   // Line of Balance tasks that are behind (past-due, under 100%).
   const lobBehind = lobBehindTasks(data.lobRecords || []);
 
+  // Training Center dashboard snapshot.
+  const trainingStatus = trainingStatusCounts(data.trainings || []);
+
   return {
     name: (data.displayName || '').split(' ')[0] || 'Leader',
     weekPoints, score, diversityPct, everPct,
@@ -265,7 +282,7 @@ export async function fetchWeeklyReportData(uid) {
     notUsedThisWeek: REPORT_TOOLS.filter(t => !usedThisWeek.has(t.key)),
     notUsedIn3Weeks,
     topUsedThisWeek,
-    events, pointsBreakdown, pillars, weakPillars, lobBehind,
+    events, pointsBreakdown, pillars, weakPillars, lobBehind, trainingStatus,
     actions, redActions, yellowActions, greenCount,
     smartQuality, skillsPeerPending,
     weeksTracked: newHistory.length, avgDiversity,
@@ -396,7 +413,39 @@ export async function generateWeeklyReportPDF(uid) {
     k.y += fl.length * 13 + 6;
   }
 
-  const PILLAR_REPORT = { model: renderActionStatus, inspire: renderSmartQuality, enable: renderSkillsFollowup };
+  // Embedded report: Training Center dashboard tiles (Enable the Team pillar).
+  function renderTrainingStatus() {
+    const ts = r.trainingStatus;
+    if (!ts.total) return;
+    subHead('Training Center — Dashboard');
+    const tiles = [
+      { label: 'COMPLETED', count: ts.completed, color: C.teal },
+      { label: 'ON TRACK', count: ts.ontrack, color: C.green },
+      { label: 'DUE SOON', count: ts.warning, color: C.amber },
+      { label: 'PAST DUE', count: ts.overdue, color: C.red },
+    ];
+    const tw = (CW - 14 - 3 * 8) / 4;
+    k.space(48);
+    tiles.forEach((t, i) => {
+      const x = MARGIN + 14 + i * (tw + 8);
+      pdf.setFillColor(...C.light); pdf.roundedRect(x, k.y, tw, 36, 5, 5, 'F');
+      pdf.setFillColor(...t.color); pdf.circle(x + 11, k.y + 13, 4.5, 'F');
+      pdf.setFontSize(15); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...t.color);
+      pdf.text(String(t.count), x + tw - 9, k.y + 18, { align: 'right' });
+      pdf.setFontSize(6); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.muted);
+      pdf.text(k.safe(t.label), x + 8, k.y + 30, { maxWidth: tw - 12 });
+    });
+    k.y += 42;
+    pdf.setFontSize(8); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.muted);
+    pdf.text(`${ts.completed} of ${ts.total} complete (${Math.round((ts.completed / ts.total) * 100)}%)`, MARGIN + 14, k.y + 2);
+    k.y += 12;
+  }
+
+  const PILLAR_REPORT = {
+    model: renderActionStatus,
+    inspire: renderSmartQuality,
+    enable: () => { renderTrainingStatus(); renderSkillsFollowup(); },
+  };
 
   // ── The five leadership pillars — points + each pillar's own report ──
   k.sectionHeader('Points You Earned This Week', C.teal);

@@ -405,6 +405,19 @@ const PILLAR_ENGAGEMENT = {
   enable:    'Your real legacy is the leaders you build — pour genuine time into developing your people this week.',
   encourage: 'Recognition and care cost you nothing and change everything — use them generously and often.',
 };
+// Training Center dashboard counts (mirror the app's Training page).
+function trainingStatusCounts(trainings = []) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const s = { completed: 0, ontrack: 0, warning: 0, overdue: 0, total: trainings.length };
+  trainings.forEach(t => {
+    if (t.completed) { s.completed++; return; }
+    if (!t.dueDate) { s.ontrack++; return; }
+    const diff = Math.round((new Date(t.dueDate + 'T00:00:00') - today) / 86400000);
+    if (diff < 0) s.overdue++; else if (diff <= 14) s.warning++; else s.ontrack++;
+  });
+  return s;
+}
+
 // LOB tasks that are behind: past a planned date column with a value under 100%.
 function lobBehindTasks(lobRecords = []) {
   const today = new Date(); today.setHours(0, 0, 0, 0);
@@ -557,6 +570,7 @@ function buildWeeklyReport(data) {
   const yelA = openActions.filter(a => a.status === 'Yellow');
   const grnC = openActions.filter(a => a.status === 'Green').length;
   const lobBehind = lobBehindTasks(data.lobRecords || []);
+  const trainStatus = trainingStatusCounts(data.trainings || []);
 
   // The report embedded inside each pillar (mirrors the PDF).
   function pillarReport(id) {
@@ -579,9 +593,18 @@ function buildWeeklyReport(data) {
       return `<div style="margin:6px 14px 4px;padding:10px 12px;background:${sgNote.kudos ? '#f0fdf4' : '#fffbeb'};border-left:3px solid ${sgNote.kudos ? '#16a34a' : '#f59e0b'};border-radius:6px;">
         <p style="margin:0;font-size:12.5px;color:${sgNote.kudos ? '#15803d' : '#b45309'};font-weight:${sgNote.kudos ? 700 : 600};line-height:1.5;">${sgNote.text}</p></div>`;
     }
-    if (id === 'enable' && peerReq) {
-      return `<div style="margin:6px 14px 4px;padding:10px 12px;background:#fffbeb;border-left:3px solid #f59e0b;border-radius:6px;">
-        <p style="margin:0;font-size:12.5px;color:#b45309;font-weight:600;line-height:1.5;">We strongly recommend following up with <strong>${peerReq.toName || 'your teammate'}</strong> — in person or by email — to complete your skills assessment. Your request is still pending.</p></div>`;
+    if (id === 'enable') {
+      const ts = trainStatus;
+      const tile = (label, count, color) => `<td style="width:25%;padding:4px;"><div style="background:#f8fafc;border-radius:6px;padding:8px;text-align:center;"><div style="width:10px;height:10px;border-radius:50%;background:${color};display:inline-block;margin-bottom:2px;"></div><div style="font-size:18px;font-weight:900;color:${color};line-height:1;">${count}</div><div style="font-size:8px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;">${label}</div></div></td>`;
+      const trainingHtml = ts.total ? `
+        <p style="margin:8px 14px 4px;font-size:12px;font-weight:800;color:#0f2044;">Training Center — Dashboard</p>
+        <table style="width:calc(100% - 20px);margin:0 14px;border-collapse:collapse;"><tr>
+          ${tile('Completed', ts.completed, '#0d9488')}${tile('On Track', ts.ontrack, '#16a34a')}${tile('Due Soon', ts.warning, '#f59e0b')}${tile('Past Due', ts.overdue, '#dc2626')}
+        </tr></table>
+        <p style="margin:2px 14px 0;font-size:11px;color:#94a3b8;">${ts.completed} of ${ts.total} complete (${Math.round((ts.completed / ts.total) * 100)}%)</p>` : '';
+      const skillsHtml = peerReq ? `<div style="margin:8px 14px 4px;padding:10px 12px;background:#fffbeb;border-left:3px solid #f59e0b;border-radius:6px;">
+        <p style="margin:0;font-size:12.5px;color:#b45309;font-weight:600;line-height:1.5;">We strongly recommend following up with <strong>${peerReq.toName || 'your teammate'}</strong> — in person or by email — to complete your skills assessment. Your request is still pending.</p></div>` : '';
+      return trainingHtml + skillsHtml;
     }
     return '';
   }
