@@ -299,6 +299,15 @@ export async function generateWeeklyReportPDF(uid) {
   const range = `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${today.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
   k.titleBand('Weekly Accountability Report', `${r.name} · ${range}`);
 
+  // Explainer heading between the navy band and the summary tiles
+  pdf.setFontSize(12.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.navy);
+  pdf.text('Your Accountability Score for This Week', MARGIN, k.y + 4);
+  k.y += 15;
+  pdf.setFontSize(8.5); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.muted);
+  const explain = 'Here is your week at a glance — Points This Week is what you earned in the last 7 days, Accountability Score is your overall standing out of 100, and Tool Diversity is how much of the leadership toolkit you used.';
+  pdf.splitTextToSize(k.safe(explain), CW).forEach((line, i) => pdf.text(line, MARGIN, k.y + i * 11));
+  k.y += pdf.splitTextToSize(k.safe(explain), CW).length * 11 + 8;
+
   // Summary tiles
   const tiles = [
     { label: 'Points This Week', value: r.weekPoints, color: C.teal },

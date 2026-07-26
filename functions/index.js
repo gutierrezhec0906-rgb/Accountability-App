@@ -662,8 +662,9 @@ function buildWeeklyReport(data) {
       </div>
 
       <div style="padding:28px 32px;background:#fff;">
-        <p style="font-size:15px;color:#334155;line-height:1.6;margin:0 0 4px;">
-          Every action you logged this week is a brick in the foundation of the leader you are becoming. Here is your progress — and where to aim next. 💪
+        <h2 style="font-size:17px;color:#0f2044;margin:0 0 6px;">Your Accountability Score for This Week</h2>
+        <p style="font-size:13.5px;color:#475569;line-height:1.6;margin:0 0 6px;">
+          Here is your week at a glance — <strong>Points This Week</strong> is what you earned in the last 7 days, <strong>Accountability Score</strong> is your overall standing out of 100, and <strong>Tool Coverage</strong> is how much of the leadership toolkit you used. Every action is a brick in the foundation of the leader you are becoming. 💪
         </p>
 
         <!-- Tool coverage -->
