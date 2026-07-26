@@ -376,6 +376,14 @@ export default function Scores() {
   }
 
   const [emailing, setEmailing] = useState(false);
+  // Collapse the two-column desktop layout to a single full-width column on
+  // narrow/mobile screens so cards don't get squished into the left half.
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < 900);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < 900);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
   async function emailWeeklyReport() {
     setEmailing(true);
     try {
@@ -405,7 +413,7 @@ export default function Scores() {
     <div style={{ maxWidth: 1100, margin: '0 auto' }} className="space-y-6">
       <PageHeader icon="📊" title="Accountability Score" subtitle="Calculated by the app based on how you use your tools — not self-reported." />
 
-      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 20 : 24, alignItems: 'stretch' }}>
         {/* Left column */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
@@ -511,7 +519,7 @@ export default function Scores() {
         </div>
 
         {/* Right column: chart + daily movement */}
-        <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div style={{ width: isMobile ? '100%' : 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
           {/* Weekly trend chart */}
           <div className="card" style={{ padding: '1.25rem' }}>
