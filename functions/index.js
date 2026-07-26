@@ -589,6 +589,7 @@ function buildWeeklyReport(data) {
 
   // The report embedded inside each pillar (mirrors the PDF).
   function pillarReport(id) {
+    const pcolor = (PILLARS.find(x => x.id === id) || {}).color || '226,232,240';
     if (id === 'model') {
       const chip = (label, count, color) => `<span style="display:inline-block;background:${color}1a;color:${color};border:1px solid ${color}55;border-radius:9999px;padding:2px 10px;font-size:12px;font-weight:800;margin:2px 4px 2px 0;">${label} ${count}</span>`;
       const flagged = [...redA, ...yelA].map(a =>
@@ -611,7 +612,7 @@ function buildWeeklyReport(data) {
     if (id === 'encourage') {
       const cs = coachStatus;
       if (!cs.total) return '';
-      const tile = (label, count, color) => `<td style="width:33%;padding:4px;"><div style="background:#f8fafc;border-radius:6px;padding:8px;text-align:center;"><div style="width:10px;height:10px;border-radius:50%;background:${color};display:inline-block;margin-bottom:2px;"></div><div style="font-size:18px;font-weight:900;color:${color};line-height:1;">${count}</div><div style="font-size:8px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;">${label}</div></div></td>`;
+      const tile = (label, count, color) => `<td style="width:33%;padding:4px;"><div style="background:#f8fafc;border:1.5px solid rgb(${pcolor});border-radius:6px;padding:8px;text-align:center;"><div style="width:10px;height:10px;border-radius:50%;background:${color};display:inline-block;margin-bottom:2px;"></div><div style="font-size:18px;font-weight:900;color:${color};line-height:1;">${count}</div><div style="font-size:8px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;">${label}</div></div></td>`;
       const names = cs.behind.map(b => b.coachee).slice(0, 4).join(', ');
       const nudge = cs.overdue > 0 ? `<div style="margin:6px 14px 4px;padding:10px 12px;background:#fef2f2;border-left:3px solid #dc2626;border-radius:6px;">
         <p style="margin:0;font-size:12.5px;color:#b91c1c;font-weight:600;line-height:1.5;">You have ${cs.overdue} coaching follow-up${cs.overdue === 1 ? '' : 's'} past due (${names}). Following through is where leaders are truly built — the people you develop remember who showed up. Reconnect this week and keep their growth moving.</p></div>` : '';
@@ -622,7 +623,7 @@ function buildWeeklyReport(data) {
     }
     if (id === 'enable') {
       const ts = trainStatus;
-      const tile = (label, count, color) => `<td style="width:25%;padding:4px;"><div style="background:#f8fafc;border-radius:6px;padding:8px;text-align:center;"><div style="width:10px;height:10px;border-radius:50%;background:${color};display:inline-block;margin-bottom:2px;"></div><div style="font-size:18px;font-weight:900;color:${color};line-height:1;">${count}</div><div style="font-size:8px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;">${label}</div></div></td>`;
+      const tile = (label, count, color) => `<td style="width:25%;padding:4px;"><div style="background:#f8fafc;border:1.5px solid rgb(${pcolor});border-radius:6px;padding:8px;text-align:center;"><div style="width:10px;height:10px;border-radius:50%;background:${color};display:inline-block;margin-bottom:2px;"></div><div style="font-size:18px;font-weight:900;color:${color};line-height:1;">${count}</div><div style="font-size:8px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;">${label}</div></div></td>`;
       const trainingHtml = ts.total ? `
         <p style="margin:8px 14px 4px;font-size:12px;font-weight:800;color:#0f2044;">Training Center — Dashboard</p>
         <table style="width:calc(100% - 20px);margin:0 14px;border-collapse:collapse;"><tr>

@@ -351,7 +351,7 @@ export async function generateWeeklyReportPDF(uid) {
   };
 
   // Embedded report: Accountability Board action status (Set the Bar pillar).
-  function renderActionStatus() {
+  function renderActionStatus(frame = C.border) {
     subHead('Accountability Board — Action Status');
     const statusTiles = [
       { label: 'RED — OVERDUE', count: r.redActions.length, color: C.red },
@@ -362,7 +362,7 @@ export async function generateWeeklyReportPDF(uid) {
     k.space(50);
     statusTiles.forEach((t, i) => {
       const x = MARGIN + 14 + i * (stw + 10);
-      pdf.setFillColor(...C.light); pdf.roundedRect(x, k.y, stw, 44, 6, 6, 'F');
+      pdf.setFillColor(...C.light); pdf.setDrawColor(...frame); pdf.setLineWidth(1.2); pdf.roundedRect(x, k.y, stw, 44, 6, 6, 'FD');
       pdf.setFillColor(...t.color); pdf.circle(x + 14, k.y + 16, 5, 'F');
       pdf.setFontSize(17); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...t.color);
       pdf.text(String(t.count), x + stw - 12, k.y + 22, { align: 'right' });
@@ -440,7 +440,7 @@ export async function generateWeeklyReportPDF(uid) {
   }
 
   // Embedded report: Training Center dashboard tiles (Enable the Team pillar).
-  function renderTrainingStatus() {
+  function renderTrainingStatus(frame = C.border) {
     const ts = r.trainingStatus;
     if (!ts.total) return;
     subHead('Training Center — Dashboard');
@@ -454,7 +454,7 @@ export async function generateWeeklyReportPDF(uid) {
     k.space(48);
     tiles.forEach((t, i) => {
       const x = MARGIN + 14 + i * (tw + 8);
-      pdf.setFillColor(...C.light); pdf.roundedRect(x, k.y, tw, 36, 5, 5, 'F');
+      pdf.setFillColor(...C.light); pdf.setDrawColor(...frame); pdf.setLineWidth(1.2); pdf.roundedRect(x, k.y, tw, 36, 5, 5, 'FD');
       pdf.setFillColor(...t.color); pdf.circle(x + 11, k.y + 13, 4.5, 'F');
       pdf.setFontSize(15); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...t.color);
       pdf.text(String(t.count), x + tw - 9, k.y + 18, { align: 'right' });
@@ -468,7 +468,7 @@ export async function generateWeeklyReportPDF(uid) {
   }
 
   // Embedded report: Coaching session follow-up status (Winning with Compassion).
-  function renderCoaching() {
+  function renderCoaching(frame = C.border) {
     const cs = r.coaching;
     if (!cs.total) return;
     subHead('Coaching Log — Follow-Up Status');
@@ -481,7 +481,7 @@ export async function generateWeeklyReportPDF(uid) {
     k.space(44);
     tiles.forEach((t, i) => {
       const x = MARGIN + 14 + i * (tw + 8);
-      pdf.setFillColor(...C.light); pdf.roundedRect(x, k.y, tw, 36, 5, 5, 'F');
+      pdf.setFillColor(...C.light); pdf.setDrawColor(...frame); pdf.setLineWidth(1.2); pdf.roundedRect(x, k.y, tw, 36, 5, 5, 'FD');
       pdf.setFillColor(...t.color); pdf.circle(x + 12, k.y + 13, 4.5, 'F');
       pdf.setFontSize(15); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...t.color);
       pdf.text(String(t.count), x + tw - 10, k.y + 18, { align: 'right' });
@@ -501,10 +501,10 @@ export async function generateWeeklyReportPDF(uid) {
   }
 
   const PILLAR_REPORT = {
-    model: renderActionStatus,
-    inspire: renderSmartQuality,
-    enable: () => { renderTrainingStatus(); renderSkillsFollowup(); },
-    encourage: renderCoaching,
+    model: (c) => renderActionStatus(c),
+    inspire: () => renderSmartQuality(),
+    enable: (c) => { renderTrainingStatus(c); renderSkillsFollowup(); },
+    encourage: (c) => renderCoaching(c),
   };
 
   // ── The five leadership pillars — points + each pillar's own report ──
@@ -535,7 +535,7 @@ export async function generateWeeklyReportPDF(uid) {
       k.y += 13;
     }
     // Pillar-specific report (action status / SMART quality / skills follow-up)
-    if (PILLAR_REPORT[p.id]) PILLAR_REPORT[p.id]();
+    if (PILLAR_REPORT[p.id]) PILLAR_REPORT[p.id](p.color);
     k.y += 8;
     pdf.setDrawColor(...C.border); pdf.setLineWidth(0.5); pdf.line(MARGIN, k.y, MARGIN + CW, k.y);
     k.y += 6;
