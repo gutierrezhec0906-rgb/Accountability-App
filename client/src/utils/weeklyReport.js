@@ -41,6 +41,15 @@ const PILLARS = [
 const KEY_TO_PILLAR = {};
 PILLARS.forEach(p => p.keys.forEach(k => { KEY_TO_PILLAR[k] = p.id; }));
 
+// Strong, per-pillar engagement lines for the "grow these pillars" recommendation.
+const PILLAR_ENGAGEMENT = {
+  model:     'Great leaders set the standard before they ask for it — step up here and the team will follow your lead.',
+  inspire:   'Your team moves faster when they can see the bigger picture — go paint it for them and watch them rally.',
+  challenge: 'Every bottleneck you remove frees your whole team — hunt one down and turn friction into flow.',
+  enable:    'Your real legacy is the leaders you build — pour genuine time into developing your people this week.',
+  encourage: 'Recognition and care cost you nothing and change everything — use them generously and often.',
+};
+
 // Group this week's point events (already grouped by label) into the 5 pillars.
 function buildPillars(pointsBreakdown) {
   const idx = Object.fromEntries(PILLARS.map((p, i) => [p.id, i]));
@@ -210,6 +219,19 @@ export async function fetchWeeklyReportData(uid) {
   const yellowActions = actions.filter(a => a.status === 'Yellow');
   const greenCount = actions.filter(a => a.status === 'Green').length;
 
+  // Pillars + the two least-active pillars this week, with the specific modules
+  // the user did NOT touch — used for the strong "grow these next week" nudge.
+  const pillars = buildPillars(pointsBreakdown);
+  pillars.forEach(p => {
+    const keys = (PILLARS.find(x => x.id === p.id) || {}).keys || [];
+    p.unusedTools = keys.filter(kk => !usedThisWeek.has(kk)).map(kk => (TOOL_LABEL[kk] && TOOL_LABEL[kk].label) || kk);
+    p.engagement = PILLAR_ENGAGEMENT[p.id] || '';
+  });
+  const weakPillars = pillars
+    .filter(p => p.unusedTools.length > 0)
+    .sort((a, b) => a.total - b.total || b.unusedTools.length - a.unusedTools.length)
+    .slice(0, 2);
+
   return {
     name: (data.displayName || '').split(' ')[0] || 'Leader',
     weekPoints, score, diversityPct, everPct,
@@ -217,7 +239,7 @@ export async function fetchWeeklyReportData(uid) {
     notUsedThisWeek: REPORT_TOOLS.filter(t => !usedThisWeek.has(t.key)),
     notUsedIn3Weeks,
     topUsedThisWeek,
-    events, pointsBreakdown, pillars: buildPillars(pointsBreakdown),
+    events, pointsBreakdown, pillars, weakPillars,
     actions, redActions, yellowActions, greenCount,
     smartQuality, skillsPeerPending,
     weeksTracked: newHistory.length, avgDiversity,
@@ -366,32 +388,29 @@ export async function generateWeeklyReportPDF(uid) {
     k.y += 6;
   });
 
-  // ── Focus Next Week — compact recommendation list, no paragraphs ──
+  // ── Focus Next Week — your two least-active pillars + the tools you skipped ──
   k.sectionHeader('Focus Next Week', C.amber);
-  const urgent = new Set(r.notUsedIn3Weeks.map(t => t.key));
-  const recs = r.notUsedThisWeek.filter(t => !urgent.has(t.key));
-  if (!recs.length && !r.notUsedIn3Weeks.length) {
-    k.text('Full coverage — every tool has been touched recently. Excellent breadth.', MARGIN, 9.5, C.green, true, CW);
+  if (r.weakPillars.length) {
+    k.text(`Your two quietest pillars this week were ${r.weakPillars.map(p => p.label).join(' and ')}. Make these your priority next week — here's exactly where to grow:`, MARGIN, 9.5, C.text, false, CW);
     k.y += 16;
+    r.weakPillars.forEach(p => {
+      const body = `You didn't use ${p.unusedTools.join(', ')} this week. ${p.engagement}`;
+      const bl = pdf.splitTextToSize(k.safe(body), CW - 14);
+      k.space(20 + bl.length * 12 + 6);
+      // Colored pillar header (sidebar color) + this-week total
+      pdf.setFillColor(...p.color); pdf.roundedRect(MARGIN, k.y, 4, 14, 1, 1, 'F');
+      pdf.setFontSize(10.5); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...p.color);
+      pdf.text(k.safe(p.label), MARGIN + 10, k.y + 10);
+      pdf.setFontSize(8); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.muted);
+      pdf.text(p.total > 0 ? `only +${p.total} pt${p.total === 1 ? '' : 's'} this week` : 'no points this week', MARGIN + CW, k.y + 10, { align: 'right' });
+      k.y += 17;
+      pdf.setFontSize(9.5); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.text);
+      bl.forEach((line, i) => pdf.text(line, MARGIN + 10, k.y + 4 + i * 12));
+      k.y += bl.length * 12 + 10;
+    });
   } else {
-    r.notUsedIn3Weeks.forEach(t => {
-      k.space(14);
-      pdf.setFillColor(...C.red); pdf.circle(MARGIN + 3, k.y + 1, 2.5, 'F');
-      pdf.setFontSize(9); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.red);
-      pdf.text(k.safe(t.label), MARGIN + 10, k.y + 4);
-      pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.muted);
-      pdf.text('Not touched in 3 weeks', MARGIN + CW - 100, k.y + 4, { align: 'right' });
-      k.y += 14;
-    });
-    recs.forEach(t => {
-      k.space(14);
-      pdf.setFillColor(...C.muted); pdf.circle(MARGIN + 3, k.y + 1, 2.5, 'F');
-      pdf.setFontSize(9); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.text);
-      pdf.text(k.safe(t.label), MARGIN + 10, k.y + 4);
-      pdf.setTextColor(...C.muted);
-      pdf.text('Not used this week', MARGIN + CW - 100, k.y + 4, { align: 'right' });
-      k.y += 14;
-    });
+    k.text('Outstanding breadth — you touched every leadership pillar this week. Keep the whole system moving!', MARGIN, 9.5, C.green, true, CW);
+    k.y += 16;
   }
   k.y += 4;
 

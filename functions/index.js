@@ -398,6 +398,13 @@ const PILLARS = [
 ];
 const KEY_TO_PILLAR = {};
 PILLARS.forEach(p => p.keys.forEach(k => { KEY_TO_PILLAR[k] = p.id; }));
+const PILLAR_ENGAGEMENT = {
+  model:     'Great leaders set the standard before they ask for it — step up here and the team will follow your lead.',
+  inspire:   'Your team moves faster when they can see the bigger picture — go paint it for them and watch them rally.',
+  challenge: 'Every bottleneck you remove frees your whole team — hunt one down and turn friction into flow.',
+  enable:    'Your real legacy is the leaders you build — pour genuine time into developing your people this week.',
+  encourage: 'Recognition and care cost you nothing and change everything — use them generously and often.',
+};
 function buildPillars(pointsBreakdown) {
   const idx = Object.fromEntries(PILLARS.map((p, i) => [p.id, i]));
   const out = PILLARS.map(p => ({ id: p.id, label: p.label, color: p.color, items: [], total: 0 }));
@@ -555,6 +562,28 @@ function buildWeeklyReport(data) {
 
   // Points grouped into the five leadership pillars (sidebar colors), each with its report.
   const pillars = buildPillars(pointsBreakdown);
+  // Two least-active pillars this week + the specific modules not used, for the
+  // strong "grow these next week" recommendation.
+  const moduleLabel = Object.fromEntries(MODULES.map(m => [m.key, m.label]));
+  pillars.forEach(p => {
+    const keys = (PILLARS.find(x => x.id === p.id) || {}).keys || [];
+    p.unusedTools = keys.filter(kk => !usedThisWeekKeys.has(kk)).map(kk => moduleLabel[kk] || kk);
+    p.engagement = PILLAR_ENGAGEMENT[p.id] || '';
+  });
+  const weakPillars = pillars
+    .filter(p => p.unusedTools.length > 0)
+    .sort((a, b) => a.total - b.total || b.unusedTools.length - a.unusedTools.length)
+    .slice(0, 2);
+  const weakPillarsHtml = weakPillars.length
+    ? weakPillars.map(p => `
+      <div style="margin:10px 0;">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-left:4px solid rgb(${p.color});padding:4px 12px;">
+          <span style="font-weight:800;font-size:14px;color:rgb(${p.color});">${p.label}</span>
+          <span style="font-size:12px;color:#94a3b8;">${p.total > 0 ? `only +${p.total} pt${p.total === 1 ? '' : 's'} this week` : 'no points this week'}</span>
+        </div>
+        <p style="margin:4px 12px 0;font-size:13px;color:#334155;line-height:1.5;">You didn't use <strong>${p.unusedTools.join(', ')}</strong> this week. ${p.engagement}</p>
+      </div>`).join('')
+    : '<p style="font-size:14px;color:#15803d;font-weight:700;">Outstanding breadth — you touched every leadership pillar this week. Keep the whole system moving! 🌟</p>';
   const pillarsHtml = pillars.map(p => `
     <div style="margin:12px 0;">
       <div style="display:flex;justify-content:space-between;align-items:center;border-left:4px solid rgb(${p.color});background:#f8fafc;padding:6px 12px;border-radius:4px;">
@@ -603,9 +632,9 @@ function buildWeeklyReport(data) {
         <p style="font-size:13px;color:#475569;margin:0 0 8px;">Great work, ${name}! You earned ${weekPoints} point${weekPoints === 1 ? '' : 's'} this week across the five leadership pillars:</p>
         ${pillarsHtml}` : ''}
 
-        <h2 style="font-size:15px;color:#0f2044;margin:24px 0 4px;">🌱 Focus next week — tools to prioritize</h2>
-        <p style="font-size:13px;color:#64748b;margin:0 0 6px;">You have not touched these yet this week. Pick one or two — small, consistent steps compound into big growth:</p>
-        ${recommendations || '<p style="font-size:14px;color:#15803d;font-weight:700;">Incredible — you touched every tool this week! You are setting the standard. 🌟</p>'}
+        <h2 style="font-size:15px;color:#0f2044;margin:24px 0 4px;">🌱 Focus next week — your two growth pillars</h2>
+        ${weakPillars.length ? `<p style="font-size:13px;color:#64748b;margin:0 0 6px;">Your two quietest pillars this week were <strong>${weakPillars.map(p => p.label).join('</strong> and <strong>')}</strong>. Make these your priority next week — here's exactly where to grow:</p>` : ''}
+        ${weakPillarsHtml}
 
         <div style="margin:26px 0 6px;padding:16px;background:#f0fdfa;border-left:4px solid #0d9488;border-radius:8px;">
           <p style="margin:0;font-size:14px;color:#0f766e;font-weight:700;line-height:1.6;">${enc.message}</p>
