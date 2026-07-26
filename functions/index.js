@@ -405,6 +405,26 @@ const PILLAR_ENGAGEMENT = {
   enable:    'Your real legacy is the leaders you build — pour genuine time into developing your people this week.',
   encourage: 'Recognition and care cost you nothing and change everything — use them generously and often.',
 };
+// LOB tasks that are behind: past a planned date column with a value under 100%.
+function lobBehindTasks(lobRecords = []) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const items = [];
+  lobRecords.forEach(lob => {
+    (lob.tasks || []).forEach(t => {
+      if (!(t.name || '').trim()) return;
+      let missed = null;
+      (lob.dates || []).forEach((d, ci) => {
+        if (!d || missed) return;
+        const raw = (t.cells || [])[ci];
+        const hasVal = raw !== undefined && raw !== null && String(raw).trim() !== '';
+        if (new Date(d + 'T00:00:00') < today && hasVal && parseFloat(raw) < 100) missed = d;
+      });
+      if (missed) items.push({ lob: lob.name || 'Line of Balance', task: t.name, due: missed });
+    });
+  });
+  return items;
+}
+
 function buildPillars(pointsBreakdown) {
   const idx = Object.fromEntries(PILLARS.map((p, i) => [p.id, i]));
   const out = PILLARS.map(p => ({ id: p.id, label: p.label, color: p.color, items: [], total: 0 }));
@@ -536,6 +556,7 @@ function buildWeeklyReport(data) {
   const redA = openActions.filter(a => a.status === 'Red');
   const yelA = openActions.filter(a => a.status === 'Yellow');
   const grnC = openActions.filter(a => a.status === 'Green').length;
+  const lobBehind = lobBehindTasks(data.lobRecords || []);
 
   // The report embedded inside each pillar (mirrors the PDF).
   function pillarReport(id) {
@@ -543,10 +564,15 @@ function buildWeeklyReport(data) {
       const chip = (label, count, color) => `<span style="display:inline-block;background:${color}1a;color:${color};border:1px solid ${color}55;border-radius:9999px;padding:2px 10px;font-size:12px;font-weight:800;margin:2px 4px 2px 0;">${label} ${count}</span>`;
       const flagged = [...redA, ...yelA].map(a =>
         `<div style="font-size:12px;color:#475569;padding:3px 0;"><strong style="color:${a.status === 'Red' ? '#dc2626' : '#b45309'};">${a.status}</strong> — ${a.title} <span style="color:#94a3b8;">(due ${a.due || '—'})</span></div>`).join('');
+      const lobHtml = lobBehind.length ? `
+        <p style="margin:10px 0 4px;font-size:12px;font-weight:800;color:#dc2626;">Line of Balance — Catch Up Needed</p>
+        <p style="margin:0 0 4px;font-size:12.5px;color:#b91c1c;font-weight:600;line-height:1.5;">${lobBehind.length} Line-of-Balance task${lobBehind.length === 1 ? ' is' : 's are'} past a planned date and not yet 100% complete. It's imperative you catch up — a slipping schedule compounds fast. You've got this: block time this week, update the numbers, and get each activity back on pace.</p>
+        ${lobBehind.slice(0, 8).map(it => `<div style="font-size:12px;color:#475569;padding:2px 0;">• <strong>${it.task}</strong> (${it.lob}) — behind since ${it.due}</div>`).join('')}` : '';
       return `<div style="padding:6px 14px 4px;">
         <p style="margin:2px 0 6px;font-size:12px;font-weight:800;color:#0f2044;">Accountability Board — Action Status</p>
         ${chip('🔴 Overdue', redA.length, '#dc2626')}${chip('🟡 Due Soon', yelA.length, '#b45309')}${chip('🟢 On Track', grnC, '#15803d')}
         ${flagged ? `<div style="margin-top:6px;">${flagged}</div>` : (openActions.length ? '<p style="font-size:12px;color:#94a3b8;margin:6px 0 0;">All open actions are on track.</p>' : '<p style="font-size:12px;color:#94a3b8;margin:6px 0 0;">No open actions on your Accountability Board.</p>')}
+        ${lobHtml}
       </div>`;
     }
     if (id === 'inspire' && sgNote) {

@@ -50,6 +50,29 @@ const PILLAR_ENGAGEMENT = {
   encourage: 'Recognition and care cost you nothing and change everything — use them generously and often.',
 };
 
+// Find Line-of-Balance tasks that are behind: a task not yet 100% complete
+// while sitting past a planned date column (the "red" state on the LOB grid).
+function lobBehindTasks(lobRecords = []) {
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const items = [];
+  lobRecords.forEach(lob => {
+    (lob.tasks || []).forEach(t => {
+      if (!(t.name || '').trim()) return;
+      let missed = null;
+      (lob.dates || []).forEach((d, ci) => {
+        if (!d || missed) return;
+        const raw = (t.cells || [])[ci];
+        const hasVal = raw !== undefined && raw !== null && String(raw).trim() !== '';
+        const due = new Date(d + 'T00:00:00');
+        // "Red" on the grid = a past-due date column whose value is under 100%.
+        if (due < today && hasVal && parseFloat(raw) < 100) missed = d;
+      });
+      if (missed) items.push({ lob: lob.name || 'Line of Balance', task: t.name, due: missed });
+    });
+  });
+  return items;
+}
+
 // Group this week's point events (already grouped by label) into the 5 pillars.
 function buildPillars(pointsBreakdown) {
   const idx = Object.fromEntries(PILLARS.map((p, i) => [p.id, i]));
@@ -232,6 +255,9 @@ export async function fetchWeeklyReportData(uid) {
     .sort((a, b) => a.total - b.total || b.unusedTools.length - a.unusedTools.length)
     .slice(0, 2);
 
+  // Line of Balance tasks that are behind (past-due, under 100%).
+  const lobBehind = lobBehindTasks(data.lobRecords || []);
+
   return {
     name: (data.displayName || '').split(' ')[0] || 'Leader',
     weekPoints, score, diversityPct, everPct,
@@ -239,7 +265,7 @@ export async function fetchWeeklyReportData(uid) {
     notUsedThisWeek: REPORT_TOOLS.filter(t => !usedThisWeek.has(t.key)),
     notUsedIn3Weeks,
     topUsedThisWeek,
-    events, pointsBreakdown, pillars, weakPillars,
+    events, pointsBreakdown, pillars, weakPillars, lobBehind,
     actions, redActions, yellowActions, greenCount,
     smartQuality, skillsPeerPending,
     weeksTracked: newHistory.length, avgDiversity,
@@ -325,6 +351,24 @@ export async function generateWeeklyReportPDF(uid) {
     } else {
       pdf.setFontSize(8.5); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.muted);
       pdf.text('No open actions on your Accountability Board.', MARGIN + 14, k.y + 4); k.y += 14;
+    }
+
+    // Line of Balance — imperative catch-up reminder for past-due, sub-100% tasks.
+    if (r.lobBehind.length) {
+      subHead('Line of Balance — Catch Up Needed', C.red);
+      const n = r.lobBehind.length;
+      const lead = `${n} Line-of-Balance task${n === 1 ? ' is' : 's are'} past a planned date and not yet 100% complete. It's imperative you catch up — a slipping schedule compounds fast. You've got this: block time this week, update the numbers, and get each activity back on pace.`;
+      pdf.setFontSize(9); pdf.setFont('helvetica', 'bold'); pdf.setTextColor(...C.red);
+      const ll = pdf.splitTextToSize(k.safe(lead), CW - 22);
+      k.space(ll.length * 12 + 6);
+      ll.forEach((line, i) => pdf.text(line, MARGIN + 14, k.y + 4 + i * 12));
+      k.y += ll.length * 12 + 6;
+      r.lobBehind.slice(0, 8).forEach(it => {
+        k.space(12);
+        pdf.setFontSize(8.5); pdf.setFont('helvetica', 'normal'); pdf.setTextColor(...C.text);
+        pdf.text(k.safe(`• ${it.task}  (${it.lob}) — behind since ${it.due}`), MARGIN + 16, k.y + 3, { maxWidth: CW - 22 });
+        k.y += 12;
+      });
     }
   }
 
