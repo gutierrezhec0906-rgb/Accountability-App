@@ -30,6 +30,20 @@ const BREAKDOWN_CONFIG = [
   { key: 'bonus',     label: 'Bonus Points',     max: 20, icon: '🏆',  desc: 'Extra points from quote reflections and other daily actions' },
 ];
 
+// Score Breakdown grouped into six sections: General Scores first, then the five
+// leadership pillars (same colors as the sidebar / weekly report). Each section
+// header is tinted with its brand color so users start associating the color
+// with the category.
+const SCORE_SECTIONS = [
+  { title: 'General Scores', color: '#0f2044', keys: ['breadth', 'frequency', 'quality', 'bonus'] },
+  { title: 'Set the Bar',            color: '#60a5fa', keys: ['actionsClosed', 'lob', 'urgency', 'eq'] },
+  { title: 'Spark the Vision',       color: '#34d399', keys: ['smart', 'mindfulness'] },
+  { title: 'Improve the Flow',       color: '#fbbf24', keys: ['lean5s', 'waste', 'problemSolving', 'disc'] },
+  { title: 'Enable the Team',        color: '#a78bfa', keys: ['skills', 'mentoring', 'career'] },
+  { title: 'Winning with Compassion', color: '#fb7185', keys: ['feedbackGiven', 'coaching'] },
+];
+const BREAKDOWN_BY_KEY = Object.fromEntries(BREAKDOWN_CONFIG.map(c => [c.key, c]));
+
 function ScoreGauge({ score }) {
   const r = 70;
   const circ = 2 * Math.PI * r;
@@ -502,12 +516,30 @@ export default function Scores() {
       {/* Score Breakdown */}
       <div className="card" style={{ padding: '1.5rem' }}>
         <h3 style={{ fontWeight: 800, color: '#1e293b', marginBottom: 4, fontSize: '1rem' }}>Score Breakdown</h3>
-        <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: 16 }}>Each category contributes to your total. Click "Calculate" to refresh.</p>
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))', gap: '0 32px' }}>
-          {BREAKDOWN_CONFIG.map(c => (
-            <BreakdownBar key={c.key} {...c} value={breakdown?.[c.key] ?? 0} />
-          ))}
-        </div>
+        <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: 16 }}>Each category contributes to your total, grouped by leadership pillar. Click "Calculate" to refresh.</p>
+        {SCORE_SECTIONS.map(section => {
+          const rows = section.keys.map(k => BREAKDOWN_BY_KEY[k]).filter(Boolean);
+          if (!rows.length) return null;
+          return (
+            <div key={section.title} style={{ marginBottom: 20 }}>
+              {/* Brand-colored category title bar */}
+              <div style={{
+                display: 'flex', alignItems: 'center', gap: 8,
+                background: section.color, color: '#fff',
+                borderRadius: 8, padding: '0.45rem 0.85rem', marginBottom: 12,
+                fontWeight: 800, fontSize: '0.9rem', letterSpacing: '0.01em',
+              }}>
+                <span style={{ width: 8, height: 8, borderRadius: '50%', background: 'rgba(255,255,255,0.85)' }} />
+                {section.title}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))', gap: '0 32px' }}>
+                {rows.map(c => (
+                  <BreakdownBar key={c.key} {...c} value={breakdown?.[c.key] ?? 0} />
+                ))}
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* How to improve */}
