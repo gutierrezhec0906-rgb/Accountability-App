@@ -5,7 +5,7 @@
 
 export const LEGAL_META = {
   appName: 'Accountability App',
-  company: 'Leadership Flow', // legal entity — confirm with counsel
+  company: 'Leadership Flow Technologies, LLC', // legal entity
   contactEmail: 'hectorg@accountability-app.com',
   website: 'https://www.accountability-app.com',
   effectiveDate: 'July 27, 2026',
