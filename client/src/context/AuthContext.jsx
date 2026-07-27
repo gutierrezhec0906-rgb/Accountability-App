@@ -37,6 +37,9 @@ export function AuthProvider({ children }) {
       scores: {},
       status: isFirst ? 'approved' : 'pending',
       isAdmin: isFirst,
+      // Legal consent captured at registration.
+      termsAcceptedAt: serverTimestamp(),
+      termsVersion: '2026-07-27',
     };
     await setDoc(doc(db, 'users', cred.user.uid), profile);
 

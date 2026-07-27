@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 
 export default function Signup() {
   const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '', role: 'Leader' });
+  const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signup } = useAuth();
   const navigate = useNavigate();
@@ -17,6 +18,7 @@ export default function Signup() {
     e.preventDefault();
     if (form.password !== form.confirm) return toast.error('Passwords do not match');
     if (form.password.length < 6) return toast.error('Password must be at least 6 characters');
+    if (!agreed) return toast.error('Please accept the Terms & Conditions and Privacy Policy to continue');
     setLoading(true);
     try {
       await signup(form.email, form.password, form.name, form.role);
@@ -66,7 +68,17 @@ export default function Signup() {
               <label className="label">Confirm Password</label>
               <input className="input" type="password" name="confirm" value={form.confirm} onChange={handleChange} required placeholder="Repeat password" />
             </div>
-            <button className="btn-primary w-full justify-center mt-2" type="submit" disabled={loading}>
+            <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, fontSize: '0.82rem', color: '#475569', lineHeight: 1.5, cursor: 'pointer', marginTop: 4 }}>
+              <input type="checkbox" checked={agreed} onChange={e => setAgreed(e.target.checked)}
+                style={{ width: 18, height: 18, marginTop: 1, flexShrink: 0, accentColor: '#0d9488', cursor: 'pointer' }} />
+              <span>
+                I agree to the{' '}
+                <Link to="/terms" target="_blank" style={{ color: '#0d9488', fontWeight: 700 }}>Terms &amp; Conditions</Link>
+                {' '}and{' '}
+                <Link to="/privacy" target="_blank" style={{ color: '#0d9488', fontWeight: 700 }}>Privacy Policy</Link>.
+              </span>
+            </label>
+            <button className="btn-primary w-full justify-center mt-2" type="submit" disabled={loading || !agreed}>
               {loading ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>

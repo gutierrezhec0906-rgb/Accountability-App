@@ -35,6 +35,7 @@ import Survey360 from './pages/Survey360';
 import CompleteProfile from './pages/CompleteProfile';
 import AdminPanel from './pages/AdminPanel';
 import TeamBoard from './pages/TeamBoard';
+import { Terms, Privacy } from './pages/Legal';
 
 function PrivateLayout({ children }) {
   return (
@@ -53,6 +54,8 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/privacy" element={<Privacy />} />
           <Route path="/complete-profile" element={<PrivateRoute><CompleteProfile /></PrivateRoute>} />
           <Route path="/dashboard" element={<PrivateLayout><Dashboard /></PrivateLayout>} />
           <Route path="/team" element={<PrivateLayout><Team /></PrivateLayout>} />
