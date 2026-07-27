@@ -181,19 +181,31 @@ export const PRIVACY_SECTIONS = [
     ],
   },
   {
-    heading: '10. International Users',
+    heading: '10. International Users and Data Transfers',
     paragraphs: [
-      `Your information may be processed and stored in countries other than your own, including where our service providers operate. We take steps to ensure appropriate protections are in place for such transfers.`,
+      `We are based in the United States and use service providers, including Google Firebase, that store and process data on servers that may be located in the United States and other countries. This means your information may be transferred to, stored in, and processed in a country different from the one in which you live.`,
+      `Where personal data of individuals in the European Economic Area (EEA), the United Kingdom, or Switzerland is transferred to the United States, we rely on our service providers’ safeguards for such transfers, including the EU–U.S. Data Privacy Framework and/or the European Commission’s Standard Contractual Clauses, as applicable. Google Cloud / Firebase, our primary infrastructure provider, offers these mechanisms.`,
     ],
   },
   {
-    heading: '11. Changes to This Policy',
+    heading: '11. Your Rights in the EEA, UK, and Switzerland (GDPR)',
+    paragraphs: [
+      `If you are located in the European Economic Area, the United Kingdom, or Switzerland, the General Data Protection Regulation (GDPR) and equivalent laws give you specific rights over your personal data. We act as a data controller for the personal data you provide through the Service.`,
+      `Legal basis for processing: we process your personal data based on (a) your consent, which you give when you register and accept these policies and which you may withdraw at any time; (b) our legitimate interests in operating, securing, and improving the Service; and (c) where applicable, performance of a contract with you or your organization.`,
+      `Your rights include: the right to access the personal data we hold about you; the right to rectification of inaccurate data; the right to erasure ("right to be forgotten"); the right to restrict or object to certain processing; the right to data portability (to receive your data in a portable format); and the right to withdraw consent at any time without affecting processing already carried out.`,
+      `To exercise any of these rights, contact us at ${LEGAL_META.contactEmail}. We will respond within the timeframes required by applicable law.`,
+      `You also have the right to lodge a complaint with your local data protection authority. In the Netherlands, this is the Autoriteit Persoonsgegevens (Dutch Data Protection Authority). You may also contact the supervisory authority in your country of residence or work.`,
+      `We retain your personal data only as long as necessary for the purposes described in this Policy or as required by law, after which it is deleted or de-identified.`,
+    ],
+  },
+  {
+    heading: '12. Changes to This Policy',
     paragraphs: [
       `We may update this Privacy Policy from time to time. We will post the updated version and, where appropriate, notify you by email or through the Service.`,
     ],
   },
   {
-    heading: '12. Contact Us',
+    heading: '13. Contact Us',
     paragraphs: [
       `Questions about this Privacy Policy or your data? Contact us at ${LEGAL_META.contactEmail}.`,
     ],
