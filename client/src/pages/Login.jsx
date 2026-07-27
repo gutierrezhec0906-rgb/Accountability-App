@@ -90,6 +90,12 @@ export default function Login() {
             </>
           )}
         </div>
+        <p className="text-center text-xs mt-5" style={{ color: 'rgba(255,255,255,0.6)' }}>
+          <Link to="/terms" style={{ color: 'rgba(255,255,255,0.75)' }}>Terms</Link>
+          {' · '}
+          <Link to="/privacy" style={{ color: 'rgba(255,255,255,0.75)' }}>Privacy</Link>
+          <br />© 2026 Leadership Flow. All rights reserved.
+        </p>
       </div>
     </div>
   );
