@@ -286,7 +286,10 @@ export default function Scores() {
   const [history, setHistory]       = useState([]);
   const [pointsLog, setPointsLog]   = useState([]);
 
-  const canSeeTeam = userProfile?.isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager';
+  // A viewer sees the Team Accountability Scores table when the master admin has
+  // granted them visibility into direct reports (users/{uid}.visibleScoreUids),
+  // or when they already have team members loaded.
+  const canSeeTeam = userProfile?.isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager' || (userProfile?.visibleScoreUids?.length > 0) || teamScores.length > 0;
 
   // Always read the latest score directly from Firestore on mount — never trust the stale userProfile cache
   useEffect(() => {
@@ -329,21 +332,32 @@ export default function Scores() {
   }, [currentUser, score]);
 
   useEffect(() => {
-    if (!canSeeTeam) return;
+    if (!currentUser) return;
     async function fetchTeam() {
       setLoadingTeam(true);
       try {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
-        const myTeam = snap.exists() ? (snap.data().myTeam || []) : [];
-        const members = myTeam
-          .filter(m => m.uid !== currentUser.uid)
-          .sort((a, b) => (b.score || 0) - (a.score || 0));
+        const visibleUids = snap.exists() ? (snap.data().visibleScoreUids || []) : [];
+        if (!visibleUids.length) { setTeamScores([]); setLoadingTeam(false); return; }
+        // Read each direct report's live score from their user doc.
+        const docs = await Promise.all(
+          visibleUids
+            .filter(uid => uid !== currentUser.uid)
+            .map(uid => getDoc(doc(db, 'users', uid)).catch(() => null))
+        );
+        const members = docs
+          .filter(d => d && d.exists())
+          .map(d => {
+            const u = d.data();
+            return { uid: d.id, displayName: u.displayName || u.email, role: u.role || '', calculatedScore: u.calculatedScore ?? 0 };
+          })
+          .sort((a, b) => (b.calculatedScore || 0) - (a.calculatedScore || 0));
         setTeamScores(members);
       } catch {}
       setLoadingTeam(false);
     }
     fetchTeam();
-  }, [canSeeTeam]);
+  }, [currentUser, userProfile?.visibleScoreUids]);
 
   async function handleCalculate() {
     setCalculating(true);

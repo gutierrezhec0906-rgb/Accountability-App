@@ -60,6 +60,8 @@ export default function AdminPanel() {
   const [toolVideos, setToolVideos] = useState({});
   const [uploadingTool, setUploadingTool] = useState(null);
   const [previewTool, setPreviewTool] = useState(null);
+  const [expandedViewer, setExpandedViewer] = useState(null); // uid of viewer whose report list is open
+  const [savingVis, setSavingVis] = useState(null);
 
   const isMasterAdmin = currentUser?.email === MASTER_ADMIN;
 
@@ -174,6 +176,26 @@ export default function AdminPanel() {
     }
   }
 
+  // Score visibility: grant a viewer (leader/manager) the ability to see the
+  // Accountability Scores of their direct reports. Stored as an array of report
+  // uids on the viewer's own user doc (`visibleScoreUids`). The Scores page reads
+  // this to build the "Team Accountability Scores" table.
+  async function toggleReport(viewerUid, reportUid) {
+    const viewer = users.find(u => u.uid === viewerUid);
+    const current = viewer?.visibleScoreUids || [];
+    const next = current.includes(reportUid)
+      ? current.filter(x => x !== reportUid)
+      : [...current, reportUid];
+    setSavingVis(viewerUid + reportUid);
+    try {
+      await updateDoc(doc(db, 'users', viewerUid), { visibleScoreUids: next });
+      setUsers(u => u.map(x => x.uid === viewerUid ? { ...x, visibleScoreUids: next } : x));
+    } catch (e) {
+      toast.error('Failed to update visibility');
+    }
+    setSavingVis(null);
+  }
+
   if (!isMasterAdmin) {
     return (
       <div className="max-w-lg mx-auto">
@@ -234,8 +256,8 @@ export default function AdminPanel() {
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: 8 }}>
-        {[['overview', '🏢 Org View'], ['pending', `⏳ Pending (${pendingUsers.length})`], ['companies', '⚙️ Companies'], ['videos', '🎬 Tool Videos']].map(([id, label]) => (
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {[['overview', '🏢 Org View'], ['pending', `⏳ Pending (${pendingUsers.length})`], ['companies', '⚙️ Companies'], ['visibility', '👁️ Score Visibility'], ['videos', '🎬 Tool Videos']].map(([id, label]) => (
           <button key={id} onClick={() => setActiveTab(id)}
             style={{
               padding: '8px 18px', borderRadius: 9999, fontSize: 13, fontWeight: 700,
@@ -416,6 +438,76 @@ export default function AdminPanel() {
               })
             )}
           </div>
+        </div>
+      )}
+
+      {/* SCORE VISIBILITY */}
+      {!loading && activeTab === 'visibility' && (
+        <div className="space-y-3">
+          <div className="card p-4" style={{ background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+            <p style={{ fontWeight: 700, color: '#1d4ed8', margin: '0 0 4px', fontSize: 14 }}>👁️ Direct-report score visibility</p>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+              Pick a leader or manager below, then check the team members who are their direct reports.
+              Each viewer will then see those people's Accountability Scores in the <strong>Team Accountability
+              Scores</strong> table on their Score Dashboard. Changes save instantly.
+            </p>
+          </div>
+          {approvedUsers.length === 0 ? (
+            <div className="card p-6 text-center" style={{ color: 'var(--text-secondary)' }}>No approved users yet.</div>
+          ) : (
+            <div className="space-y-2">
+              {[...approvedUsers]
+                .sort((a, b) => ROLE_ORDER.indexOf(a.role) - ROLE_ORDER.indexOf(b.role))
+                .map(viewer => {
+                  const granted = viewer.visibleScoreUids || [];
+                  const open = expandedViewer === viewer.uid;
+                  const rc = ROLE_COLORS[viewer.role] || ROLE_COLORS['Individual Contributor'];
+                  // Candidate reports = every other approved user.
+                  const candidates = approvedUsers.filter(u => u.uid !== viewer.uid);
+                  return (
+                    <div key={viewer.uid} className="card" style={{ overflow: 'hidden' }}>
+                      <button onClick={() => setExpandedViewer(open ? null : viewer.uid)}
+                        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 12, padding: '0.9rem 1rem', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
+                        <Avatar name={viewer.displayName || viewer.email} />
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{viewer.displayName || viewer.email}</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-secondary)', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                            <span style={{ padding: '1px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: rc.bg, color: rc.text }}>{viewer.role}</span>
+                            <span>{viewer.companyName || 'Unassigned'}</span>
+                            <span style={{ fontWeight: 700, color: granted.length ? '#0d9488' : '#94a3b8' }}>
+                              👁️ sees {granted.length} report{granted.length !== 1 ? 's' : ''}
+                            </span>
+                          </div>
+                        </div>
+                        <span style={{ fontSize: 18, color: '#94a3b8' }}>{open ? '▲' : '▼'}</span>
+                      </button>
+                      {open && (
+                        <div style={{ borderTop: '1px solid #f1f5f9', padding: '0.75rem 1rem', maxHeight: 360, overflowY: 'auto' }}>
+                          {candidates.length === 0 ? (
+                            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0 }}>No other users to assign.</p>
+                          ) : candidates.map(rep => {
+                            const checked = granted.includes(rep.uid);
+                            const busy = savingVis === viewer.uid + rep.uid;
+                            return (
+                              <label key={rep.uid}
+                                style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.5rem 0.25rem', borderBottom: '1px solid #f8fafc', cursor: busy ? 'wait' : 'pointer', opacity: busy ? 0.6 : 1 }}>
+                                <input type="checkbox" checked={checked} disabled={busy}
+                                  onChange={() => toggleReport(viewer.uid, rep.uid)}
+                                  style={{ width: 18, height: 18, cursor: 'pointer', accentColor: '#0d9488' }} />
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-primary)' }}>{rep.displayName || rep.email}</div>
+                                  <div style={{ fontSize: 11, color: 'var(--text-secondary)' }}>{rep.role} · {rep.companyName || 'Unassigned'}</div>
+                                </div>
+                              </label>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+            </div>
+          )}
         </div>
       )}
 
