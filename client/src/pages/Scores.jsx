@@ -413,12 +413,14 @@ export default function Scores() {
     <div style={{ maxWidth: 1100, margin: '0 auto' }} className="space-y-6">
       <PageHeader icon="📊" title="Accountability Score" subtitle="Calculated by the app based on how you use your tools — not self-reported." />
 
+      {/* Top row: score hero + trend/daily. Stacks on mobile; on wide screens
+          the hero and the trend/daily column sit side by side. */}
       <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 20 : 24, alignItems: 'stretch' }}>
-        {/* Left column */}
+        {/* Left column: score hero */}
         <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 20 }}>
 
           {/* Score hero */}
-          <div className="card" style={{ padding: '2rem', background: 'linear-gradient(135deg, #0f2044 0%, #1e3a6e 60%, #0d9488 100%)', color: 'white', display: 'flex', alignItems: 'center', gap: 32, flexWrap: 'wrap' }}>
+          <div className="card" style={{ flex: 1, padding: '2rem', background: 'linear-gradient(135deg, #0f2044 0%, #1e3a6e 60%, #0d9488 100%)', color: 'white', display: 'flex', alignItems: 'center', gap: 32, flexWrap: 'wrap' }}>
             <ScoreGauge score={score ?? 0} />
             <div style={{ flex: 1, minWidth: 200 }}>
               <h2 style={{ fontSize: '1.75rem', fontWeight: 900, margin: '0 0 8px', color: 'white' }}>
@@ -444,21 +446,61 @@ export default function Scores() {
               </div>
             </div>
           </div>
+        </div>
 
-          {/* Score Breakdown */}
-          <div className="card" style={{ padding: '1.5rem' }}>
-            <h3 style={{ fontWeight: 800, color: '#1e293b', marginBottom: 4, fontSize: '1rem' }}>Score Breakdown</h3>
-            <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: 16 }}>Each category contributes to your total. Click "Calculate" to refresh.</p>
-            {BREAKDOWN_CONFIG.map(c => (
-              <BreakdownBar key={c.key} {...c} value={breakdown?.[c.key] ?? 0} />
-            ))}
+        {/* Right column: chart + daily movement */}
+        <div style={{ width: isMobile ? '100%' : 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+          {/* Weekly trend chart */}
+          <div className="card" style={{ padding: '1.25rem' }}>
+            <p style={{ fontWeight: 800, color: '#1e293b', margin: '0 0 4px', fontSize: '0.9rem' }}>Score Trend</p>
+            <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '0 0 12px' }}>Weekly movement</p>
+            <ScoreLineChart history={history.slice(-14)} />
           </div>
 
-          {/* How to improve */}
-          <div className="card" style={{ padding: '1.5rem' }}>
-            <h3 style={{ fontWeight: 800, color: '#1e293b', marginBottom: 16, fontSize: '1rem' }}>How to Improve Your Score</h3>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
-              {[
+          {/* Daily movement feed */}
+          <div className="card" style={{ padding: '1.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+              <p style={{ fontWeight: 800, color: '#1e293b', margin: 0, fontSize: '0.9rem' }}>Daily Movement</p>
+              {(() => {
+                const today = localDateStr();
+                const net = movementLog.filter(e => e.date === today).reduce((s, e) => s + e.points, 0);
+                if (net === 0) return null;
+                return (
+                  <span style={{
+                    padding: '2px 10px', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 800,
+                    background: net > 0 ? '#dcfce7' : '#fee2e2',
+                    color: net > 0 ? '#15803d' : '#dc2626',
+                  }}>
+                    {net > 0 ? `+${net}` : net} pts today
+                  </span>
+                );
+              })()}
+            </div>
+            <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '0 0 12px' }}>Points gained or lost each day</p>
+            <DailyMovementFeed logs={movementLog} />
+          </div>
+        </div>
+      </div>
+
+      {/* Full-width sections below the top row — span the whole container so they
+          use the full screen width instead of being confined to the left half. */}
+      {/* Score Breakdown */}
+      <div className="card" style={{ padding: '1.5rem' }}>
+        <h3 style={{ fontWeight: 800, color: '#1e293b', marginBottom: 4, fontSize: '1rem' }}>Score Breakdown</h3>
+        <p style={{ color: '#94a3b8', fontSize: '0.8rem', marginBottom: 16 }}>Each category contributes to your total. Click "Calculate" to refresh.</p>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(auto-fit, minmax(320px, 1fr))', gap: '0 32px' }}>
+          {BREAKDOWN_CONFIG.map(c => (
+            <BreakdownBar key={c.key} {...c} value={breakdown?.[c.key] ?? 0} />
+          ))}
+        </div>
+      </div>
+
+      {/* How to improve */}
+      <div className="card" style={{ padding: '1.5rem' }}>
+        <h3 style={{ fontWeight: 800, color: '#1e293b', marginBottom: 16, fontSize: '1rem' }}>How to Improve Your Score</h3>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+          {[
                 { icon: '🗂',  tip: 'Use more tools across the app — diversity matters.' },
                 { icon: '📅',  tip: 'Log in consistently. Aim for daily or weekly sessions.' },
                 { icon: '✍️', tip: 'Fill SMART goal fields with detail — aim for 30+ words each.' },
@@ -516,42 +558,6 @@ export default function Scores() {
               )}
             </div>
           )}
-        </div>
-
-        {/* Right column: chart + daily movement */}
-        <div style={{ width: isMobile ? '100%' : 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-          {/* Weekly trend chart */}
-          <div className="card" style={{ padding: '1.25rem' }}>
-            <p style={{ fontWeight: 800, color: '#1e293b', margin: '0 0 4px', fontSize: '0.9rem' }}>Score Trend</p>
-            <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '0 0 12px' }}>Weekly movement</p>
-            <ScoreLineChart history={history.slice(-14)} />
-          </div>
-
-          {/* Daily movement feed */}
-          <div className="card" style={{ padding: '1.25rem' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
-              <p style={{ fontWeight: 800, color: '#1e293b', margin: 0, fontSize: '0.9rem' }}>Daily Movement</p>
-              {(() => {
-                const today = localDateStr();
-                const net = movementLog.filter(e => e.date === today).reduce((s, e) => s + e.points, 0);
-                if (net === 0) return null;
-                return (
-                  <span style={{
-                    padding: '2px 10px', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 800,
-                    background: net > 0 ? '#dcfce7' : '#fee2e2',
-                    color: net > 0 ? '#15803d' : '#dc2626',
-                  }}>
-                    {net > 0 ? `+${net}` : net} pts today
-                  </span>
-                );
-              })()}
-            </div>
-            <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '0 0 12px' }}>Points gained or lost each day</p>
-            <DailyMovementFeed logs={movementLog} />
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
