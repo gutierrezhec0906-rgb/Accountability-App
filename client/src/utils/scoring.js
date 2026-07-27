@@ -352,6 +352,19 @@ export async function calculateScore(uid) {
       .reduce((s, e) => s + e.points, 0)
   );
 
+  // --- Vision (0-20) & Leadership Quotes (0-20): these points are stored inside
+  //     bonusPoints, but we surface them as their own breakdown rows (Spark the
+  //     Vision / Winning with Compassion) and subtract them from the leftover
+  //     "bonus" so the total is unchanged. ---
+  const VISION_LABELS = ['Personal Vision', 'Team Vision'];
+  const visionScore = Math.min(20,
+    allEvents.filter(e => VISION_LABELS.includes(e.toolLabel) && e.points > 0).reduce((s, e) => s + e.points, 0)
+  );
+  const quotesScore = Math.min(20,
+    allEvents.filter(e => e.toolLabel === 'Leadership Quotes' && e.points > 0).reduce((s, e) => s + e.points, 0)
+  );
+  const bonusRemaining = Math.max(0, bonusPts - visionScore - quotesScore);
+
   const total = Math.round(Math.max(0, Math.min(100,
     breadth + frequency + quality + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + mentoringPoints + urgencyPoints + skillsPoints + lean5sPoints + wastePoints + careerPoints + lobPoints + bonusPts - penaltyPts
   )));
@@ -386,7 +399,9 @@ export async function calculateScore(uid) {
     waste:          Math.round(wastePoints),
     career:         Math.round(careerPoints),
     lob:            Math.round(lobPoints),
-    bonus:          Math.round(bonusPts),
+    vision:         Math.round(visionScore),
+    quotes:         Math.round(quotesScore),
+    bonus:          Math.round(bonusRemaining),
   };
 
   await updateDoc(doc(db, 'users', uid), { scoreBreakdown: breakdown });
