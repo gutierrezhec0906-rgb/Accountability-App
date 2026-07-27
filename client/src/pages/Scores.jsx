@@ -506,11 +506,11 @@ export default function Scores() {
                 { icon: '✍️', tip: 'Fill SMART goal fields with detail — aim for 30+ words each.' },
                 { icon: '🎯',  tip: 'Create active SMART goals and mark them complete.' },
                 { icon: '📝',  tip: 'Log a complete coaching session every week — goal, notes, and at least one action item — to earn 5 pts/week.' },
-                { icon: '🚨',  tip: 'Never let an action go past due. If something does slip past its deadline, recommit to a new date immediately — past-due items hurt your score and keep the reminder popping up until they’re rescheduled.', urgent: true },
+                { icon: '🚨',  tip: 'Never let an action go past due. If something does slip past its deadline, recommit to a new date immediately — past-due items hurt your score and keep the reminder popping up until they’re rescheduled.' },
               ].map((item, i) => (
-                <div key={i} style={{ background: item.urgent ? '#fef2f2' : '#f8fafc', border: item.urgent ? '1px solid #fecaca' : '1px solid transparent', borderLeft: item.urgent ? '4px solid #ef4444' : '1px solid transparent', borderRadius: 10, padding: '0.875rem', display: 'flex', gap: 10 }}>
+                <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '0.875rem', display: 'flex', gap: 10 }}>
                   <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>{item.icon}</span>
-                  <p style={{ color: item.urgent ? '#b91c1c' : '#475569', fontWeight: item.urgent ? 600 : 400, fontSize: '0.8rem', margin: 0, lineHeight: 1.5 }}>{item.tip}</p>
+                  <p style={{ color: '#475569', fontSize: '0.8rem', margin: 0, lineHeight: 1.5 }}>{item.tip}</p>
                 </div>
               ))}
             </div>
