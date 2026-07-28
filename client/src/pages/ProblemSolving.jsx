@@ -7,6 +7,18 @@ import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import { logPointEvent, calculateScore, weekMonday } from '../utils/scoring';
 
+// True on narrow / phone screens. Used to swap the horizontal fishbone diagram
+// for a readable vertical stack on mobile.
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < breakpoint);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < breakpoint);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 const PS_EVENT_LABELS = {
   '5whys':    { label: '5 Whys Analysis',      points: 5  },
   fishbone:   { label: 'Fishbone Diagram',      points: 5  },
@@ -672,6 +684,7 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
   const [problem, setProblem] = useState('');
   const [causes,  setCauses]  = useState(emptyCauses);
   const [saving,  setSaving]  = useState(false);
+  const isMobile = useIsMobile();
 
   const effectReady = problem.trim().length >= 15;
   const effectWarn  = problemStatementWarning(problem);
@@ -706,7 +719,7 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
   }
 
   return (
-    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 20, alignItems: 'stretch' }}>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
 
         {/* Name */}
@@ -747,31 +760,48 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
                 <strong style={{ color: '#0f2044' }}>How to brainstorm:</strong> Go category by category — don't jump around. Capture everything first, filter later. If a cause appears in more than one category, it's likely your highest-priority lead.
               </p>
               <div style={{ background: 'white', borderRadius: 12, padding: 10 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                  {TOP_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="top" causes={causes} onUpdate={updateCause} effectText={problem} />)}
-                </div>
-                <div style={{ position: 'relative', height: 64, margin: '2px 0' }}>
-                  <svg width="100%" height="64" style={{ display: 'block' }}>
-                    <defs>
-                      <marker id="fb-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
-                        <polygon points="0 0, 10 3.5, 0 7" fill="#0f2044" />
-                      </marker>
-                    </defs>
-                    <line x1="0" y1="32" x2="88%" y2="32" stroke="#0f2044" strokeWidth="4" strokeLinecap="round" markerEnd="url(#fb-arrow)" />
-                    <line x1="16.5%" y1="0"   x2="24%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
-                    <line x1="49.5%" y1="0"   x2="50%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
-                    <line x1="82.5%" y1="0"   x2="73%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
-                    <line x1="24%"  y1="32" x2="16.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
-                    <line x1="50%"  y1="32" x2="49.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
-                    <line x1="73%"  y1="32" x2="82.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
-                  </svg>
-                  <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: '#ef4444', color: 'white', padding: '5px 10px', borderRadius: '0 10px 10px 0', fontWeight: 700, fontSize: '0.72rem', maxWidth: '11%', textAlign: 'center', wordBreak: 'break-word', lineHeight: 1.3 }}>
-                    {problem}
+                {isMobile ? (
+                  /* Mobile: the horizontal fishbone is unreadable on a phone, so
+                     stack the effect banner + all 6 categories full-width. */
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    <div style={{ background: '#ef4444', color: 'white', padding: '10px 14px', borderRadius: 10, display: 'flex', gap: 10, alignItems: 'flex-start', lineHeight: 1.4 }}>
+                      <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>🎯</span>
+                      <span>
+                        <span style={{ display: 'block', fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.85 }}>Effect / Problem</span>
+                        <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{problem}</span>
+                      </span>
+                    </div>
+                    {ALL_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="top" causes={causes} onUpdate={updateCause} effectText={problem} />)}
                   </div>
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                  {BOTTOM_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="bottom" causes={causes} onUpdate={updateCause} effectText={problem} />)}
-                </div>
+                ) : (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                      {TOP_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="top" causes={causes} onUpdate={updateCause} effectText={problem} />)}
+                    </div>
+                    <div style={{ position: 'relative', height: 64, margin: '2px 0' }}>
+                      <svg width="100%" height="64" style={{ display: 'block' }}>
+                        <defs>
+                          <marker id="fb-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="#0f2044" />
+                          </marker>
+                        </defs>
+                        <line x1="0" y1="32" x2="88%" y2="32" stroke="#0f2044" strokeWidth="4" strokeLinecap="round" markerEnd="url(#fb-arrow)" />
+                        <line x1="16.5%" y1="0"   x2="24%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
+                        <line x1="49.5%" y1="0"   x2="50%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
+                        <line x1="82.5%" y1="0"   x2="73%"  y2="32" stroke="#94a3b8" strokeWidth="2" />
+                        <line x1="24%"  y1="32" x2="16.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
+                        <line x1="50%"  y1="32" x2="49.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
+                        <line x1="73%"  y1="32" x2="82.5%" y2="64" stroke="#94a3b8" strokeWidth="2" />
+                      </svg>
+                      <div style={{ position: 'absolute', right: 0, top: '50%', transform: 'translateY(-50%)', background: '#ef4444', color: 'white', padding: '5px 10px', borderRadius: '0 10px 10px 0', fontWeight: 700, fontSize: '0.72rem', maxWidth: '11%', textAlign: 'center', wordBreak: 'break-word', lineHeight: 1.3 }}>
+                        {problem}
+                      </div>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
+                      {BOTTOM_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="bottom" causes={causes} onUpdate={updateCause} effectText={problem} />)}
+                    </div>
+                  </>
+                )}
               </div>
             </div>
 
