@@ -152,7 +152,8 @@ applied consistently to every deadline-bearing feature (trainings, SMART goals, 
   in `pages/ProblemSolving.jsx`). Saving with fewer categories filled is always
   allowed — it just skips the point award and tells the user how many more
   categories are needed. Live "X/6 categories" badge shown above the save button.
-- Mentoring (max 20, no decay): +5 pts per session logged in its totality — date,
+- Mentoring (max 10, rolling 60 days — session points expire after 60 days; log new
+  sessions to regain them): +5 pts per session logged in its totality — date,
   progress review, challenge, and action item all filled (`isCompleteMentoringSession`
   in scoring.js). `Mentoring Session Logged` event. Session list moved to a sidebar
   next to the 5-section template (two-column `flexWrap:'wrap'` layout — mirrors the
