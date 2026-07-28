@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { isLocked, TIER_LABELS, TIER_ICONS } from '../utils/subscription';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { calculateScore } from '../utils/scoring';
 
 const categories = [
   {
@@ -133,17 +134,28 @@ export default function Dashboard() {
     if (userProfile?.calculatedScore !== undefined) setScore(userProfile.calculatedScore);
   }, [userProfile]);
 
+  // Recompute the score on load so time-based decay actually takes effect (the
+  // score is otherwise only recalculated when points change or the user clicks
+  // "Calculate"). Falls back to the saved value if the recompute fails.
   useEffect(() => {
     if (!currentUser) return;
     (async () => {
       try {
+        const result = await calculateScore(currentUser.uid);
+        setScore(result.total);
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
-        if (snap.exists()) {
-          const d = snap.data();
-          if (d.calculatedScore !== undefined) setScore(d.calculatedScore);
-          if (Array.isArray(d.scoreHistory)) setHistory(d.scoreHistory);
-        }
-      } catch (e) { console.warn('Could not load fresh score', e); }
+        if (snap.exists() && Array.isArray(snap.data().scoreHistory)) setHistory(snap.data().scoreHistory);
+      } catch (e) {
+        console.warn('auto-recalculate failed, falling back to saved score', e);
+        try {
+          const snap = await getDoc(doc(db, 'users', currentUser.uid));
+          if (snap.exists()) {
+            const d = snap.data();
+            if (d.calculatedScore !== undefined) setScore(d.calculatedScore);
+            if (Array.isArray(d.scoreHistory)) setHistory(d.scoreHistory);
+          }
+        } catch (e2) { console.warn('Could not load fresh score', e2); }
+      }
     })();
   }, [currentUser]);
 

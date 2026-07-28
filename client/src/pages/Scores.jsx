@@ -307,26 +307,40 @@ export default function Scores() {
   // or when they already have team members loaded.
   const canSeeTeam = userProfile?.isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager' || (userProfile?.visibleScoreUids?.length > 0) || teamScores.length > 0;
 
-  // Always read the latest score directly from Firestore on mount — never trust the stale userProfile cache
+  // Auto-recalculate the score on every visit to the Score page. Decay is "lazy":
+  // the time-windowed points (7/30/90-day expiries, etc.) are only evaluated when
+  // calculateScore runs. Previously this effect just READ the last saved score, so
+  // if a user stopped earning points and never clicked "Calculate," the stale value
+  // (e.g. 100) sat forever and decay never took effect. Recomputing on load makes
+  // the decay actually happen over time. Falls back to the saved value if the
+  // recompute fails (offline, permissions, etc.).
   useEffect(() => {
     if (!currentUser) return;
-    async function loadFreshScore() {
+    async function refreshScore() {
       try {
-        const snap = await getDoc(doc(db, 'users', currentUser.uid));
-        if (snap.exists()) {
-          const data = snap.data();
-          if (data.calculatedScore !== undefined) {
-            setScore(data.calculatedScore);
-            setBreakdown(data.scoreBreakdown || null);
-            if (data.scoreUpdatedAt) {
-              const d = data.scoreUpdatedAt.toDate?.();
-              if (d) setLastUpdated(d.toLocaleString());
+        const result = await calculateScore(currentUser.uid);
+        setScore(result.total);
+        setBreakdown(result.breakdown);
+        setLastUpdated(new Date().toLocaleString());
+      } catch (e) {
+        console.error('auto-recalculate failed, falling back to saved score:', e);
+        try {
+          const snap = await getDoc(doc(db, 'users', currentUser.uid));
+          if (snap.exists()) {
+            const data = snap.data();
+            if (data.calculatedScore !== undefined) {
+              setScore(data.calculatedScore);
+              setBreakdown(data.scoreBreakdown || null);
+              if (data.scoreUpdatedAt) {
+                const d = data.scoreUpdatedAt.toDate?.();
+                if (d) setLastUpdated(d.toLocaleString());
+              }
             }
           }
-        }
-      } catch (e) { console.error(e); }
+        } catch (e2) { console.error(e2); }
+      }
     }
-    loadFreshScore();
+    refreshScore();
   }, [currentUser]);
 
   useEffect(() => {
