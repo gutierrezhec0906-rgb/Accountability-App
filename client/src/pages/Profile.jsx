@@ -4,6 +4,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
 import { storage, db, auth } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { compressImage, withTimeout } from '../utils/image';
 import toast from 'react-hot-toast';
 
 function Avatar({ name, photoURL, size = 80 }) {
@@ -37,22 +38,27 @@ export default function Profile() {
 
   async function handlePhotoChange(e) {
     const file = e.target.files[0];
+    e.target.value = '';
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be under 5 MB');
-      return;
-    }
+    if (!file.type.startsWith('image/')) { toast.error('Please choose an image file'); return; }
+    if (file.size > 25 * 1024 * 1024) { toast.error('Image is too large (max 25 MB)'); return; }
     setUploading(true);
     try {
+      // Compress in the browser first so avatar uploads are fast on mobile.
+      let uploadData = file, contentType = file.type;
+      try {
+        const { blob } = await compressImage(file, 512, 0.85); // avatars are small
+        uploadData = blob; contentType = 'image/jpeg';
+      } catch { /* fall back to the original file */ }
       const storageRef = ref(storage, `avatars/${currentUser.uid}`);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
+      await withTimeout(uploadBytes(storageRef, uploadData, { contentType }), 45000, 'Photo upload');
+      const url = await withTimeout(getDownloadURL(storageRef), 15000, 'Photo link');
       await updateDoc(doc(db, 'users', currentUser.uid), { photoURL: url });
       await updateProfile(auth.currentUser, { photoURL: url });
       await fetchProfile(currentUser.uid);
       toast.success('Profile photo updated!');
     } catch (err) {
-      toast.error('Upload failed. Check Firebase Storage rules.');
+      toast.error('Upload failed or timed out. Please try again.');
     }
     setUploading(false);
   }

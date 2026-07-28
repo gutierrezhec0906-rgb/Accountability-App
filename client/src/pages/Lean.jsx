@@ -6,6 +6,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore, localDateStr } from '../utils/scoring';
+import { compressImage, withTimeout } from '../utils/image';
 import { generateKaizenPDF } from '../utils/moduleReports';
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
@@ -14,49 +15,6 @@ const MIN_OPPS = 3;        // need at least 3 described areas to earn the weekly
 
 function oppWordCount(text = '') {
   return text.trim().split(/\s+/).filter(Boolean).length;
-}
-
-// Downscale + re-encode an image to JPEG in the browser BEFORE uploading. Phone
-// photos are often 3–8 MB, which stalls uploads on mobile networks; shrinking to
-// ~1600px / quality 0.8 typically yields a ~150–400 KB file that uploads instantly.
-// Returns { blob, preview }. Throws if the browser can't decode the image (e.g.
-// some HEIC) so the caller can fall back to the original file.
-function compressImage(file, maxDim = 1600, quality = 0.8) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onerror = reject;
-    reader.onload = () => {
-      const img = new Image();
-      img.onerror = reject;
-      img.onload = () => {
-        let { width, height } = img;
-        if (width > maxDim || height > maxDim) {
-          const scale = maxDim / Math.max(width, height);
-          width = Math.round(width * scale);
-          height = Math.round(height * scale);
-        }
-        const canvas = document.createElement('canvas');
-        canvas.width = width;
-        canvas.height = height;
-        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-        canvas.toBlob(
-          blob => blob ? resolve({ blob, preview: canvas.toDataURL('image/jpeg', quality) }) : reject(new Error('toBlob failed')),
-          'image/jpeg',
-          quality,
-        );
-      };
-      img.src = reader.result;
-    };
-    reader.readAsDataURL(file);
-  });
-}
-
-// Reject an upload that stalls, so the UI never sticks on "Saving…" forever.
-function withTimeout(promise, ms, label = 'operation') {
-  return Promise.race([
-    promise,
-    new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} timed out`)), ms)),
-  ]);
 }
 
 const fiveSItems = [
@@ -594,13 +552,20 @@ export default function Lean() {
     setFindings(f => ({ ...f, [key]: { ...(f[key] || {}), [field]: value } }));
   }
 
-  function handleImageUpload(key, e) {
+  async function handleImageUpload(key, e) {
     const file = e.target.files[0];
+    e.target.value = '';
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5 MB'); return; }
-    const reader = new FileReader();
-    reader.onload = ev => setFinding(key, 'image', ev.target.result);
-    reader.readAsDataURL(file);
+    if (file.size > 25 * 1024 * 1024) { toast.error('Image is too large (max 25 MB)'); return; }
+    try {
+      const { preview } = await compressImage(file);
+      setFinding(key, 'image', preview);
+    } catch {
+      if (file.size > 5 * 1024 * 1024) { toast.error("Couldn't process this photo. Try a smaller one."); return; }
+      const reader = new FileReader();
+      reader.onload = ev => setFinding(key, 'image', ev.target.result);
+      reader.readAsDataURL(file);
+    }
   }
 
   function removeImage(key) {

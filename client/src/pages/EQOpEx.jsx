@@ -6,6 +6,7 @@ import { generateEQReport } from '../utils/eqReport';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore } from '../utils/scoring';
+import { compressImage } from '../utils/image';
 
 const SCALE_LABELS = {
   1: { label: 'Rarely',    desc: 'This behavior is absent or reactive. Others would not recognize it as a strength. Immediate focus needed.' },
@@ -575,13 +576,20 @@ export default function EQOpEx() {
     setOpexFindings(f => ({ ...f, [key]: { ...(f[key] || {}), [field]: value } }));
   }
 
-  function handleOpexImageUpload(key, e) {
+  async function handleOpexImageUpload(key, e) {
     const file = e.target.files[0];
+    e.target.value = '';
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5 MB'); return; }
-    const reader = new FileReader();
-    reader.onload = ev => setOpexFinding(key, 'image', ev.target.result);
-    reader.readAsDataURL(file);
+    if (file.size > 25 * 1024 * 1024) { toast.error('Image is too large (max 25 MB)'); return; }
+    try {
+      const { preview } = await compressImage(file);
+      setOpexFinding(key, 'image', preview);
+    } catch {
+      if (file.size > 5 * 1024 * 1024) { toast.error("Couldn't process this photo. Try a smaller one."); return; }
+      const reader = new FileReader();
+      reader.onload = ev => setOpexFinding(key, 'image', ev.target.result);
+      reader.readAsDataURL(file);
+    }
   }
 
   function removeOpexImage(key) {
