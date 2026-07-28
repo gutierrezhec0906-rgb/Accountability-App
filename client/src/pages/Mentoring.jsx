@@ -96,7 +96,17 @@ const labelStyle = { fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-mu
 
 export default function Mentoring() {
   const { currentUser } = useAuth();
-  const [plan, setPlan] = useState(emptyPlan());
+  // Multiple mentoring logs: `plans` is the full list, `activeIdx` selects the one
+  // being viewed/edited. `plan`/`setPlan` keep the original single-plan semantics
+  // so the rest of the component is unchanged — setPlan writes into plans[activeIdx].
+  const [plans, setPlans] = useState([emptyPlan()]);
+  const [activeIdx, setActiveIdx] = useState(0);
+  const plan = plans[activeIdx] || plans[0];
+  const setPlan = (updaterOrValue) => {
+    setPlans(ps => ps.map((p, i) => i === activeIdx
+      ? (typeof updaterOrValue === 'function' ? updaterOrValue(p) : updaterOrValue)
+      : p));
+  };
   const [skillsMatrix, setSkillsMatrix] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -113,11 +123,45 @@ export default function Mentoring() {
       const snap = await getDoc(doc(db, 'users', currentUser.uid));
       if (snap.exists()) {
         const data = snap.data();
-        setPlan(hydratePlan(data.mentoringPlan));
+        // New model: mentoringPlans array. Migrate a legacy single mentoringPlan
+        // into the array on first load so nothing is lost.
+        const arr = Array.isArray(data.mentoringPlans) && data.mentoringPlans.length
+          ? data.mentoringPlans
+          : (data.mentoringPlan ? [data.mentoringPlan] : []);
+        setPlans(arr.length ? arr.map(hydratePlan) : [emptyPlan()]);
+        setActiveIdx(0);
         setSkillsMatrix(data.skillsMatrix || null);
       }
     } catch { toast.error('Could not load your mentoring plan'); }
     setLoading(false);
+  }
+
+  // Persist the full list; `next` replaces plans[activeIdx] when given a plan object.
+  async function persistPlans(nextPlan, idx = activeIdx) {
+    const nextPlans = plans.map((p, i) => i === idx ? nextPlan : p);
+    await setDoc(doc(db, 'users', currentUser.uid), { mentoringPlans: nextPlans }, { merge: true });
+    setPlans(nextPlans);
+    return nextPlans;
+  }
+
+  function addLog() {
+    setPlans(ps => [...ps, emptyPlan()]);
+    setActiveIdx(plans.length);
+    setExpandedSession(null);
+    setSessionForm(null);
+    setCloseForm(null);
+  }
+
+  async function deleteLog(idx) {
+    const target = plans[idx];
+    const label = target?.mentor?.name?.trim() || `Log ${idx + 1}`;
+    if (!window.confirm(`Delete the mentoring log "${label}" and its ${target?.sessions?.length || 0} session(s)? This cannot be undone.`)) return;
+    const nextPlans = plans.filter((_, i) => i !== idx);
+    const finalPlans = nextPlans.length ? nextPlans : [emptyPlan()];
+    await setDoc(doc(db, 'users', currentUser.uid), { mentoringPlans: finalPlans }, { merge: true });
+    setPlans(finalPlans);
+    setActiveIdx(0);
+    toast.success('Mentoring log deleted');
   }
 
   function setField(path, value) {
@@ -158,8 +202,7 @@ export default function Mentoring() {
         cycle = { ...cycle, startDate: cycle.startDate || start.toISOString().split('T')[0], endDate: cycle.endDate || end.toISOString().split('T')[0] };
       }
       const toSave = { ...plan, cycle, startedAt, updatedAt: now };
-      await setDoc(doc(db, 'users', currentUser.uid), { mentoringPlan: toSave }, { merge: true });
-      setPlan(toSave);
+      await persistPlans(toSave);
       toast.success(!plan.startedAt && startedAt ? 'Mentoring cycle started!' : 'Mentoring plan saved');
     } catch { toast.error('Save failed'); }
     setSaving(false);
@@ -185,8 +228,7 @@ export default function Mentoring() {
         cycle = { ...cycle, startDate: cycle.startDate || start.toISOString().split('T')[0], endDate: cycle.endDate || end.toISOString().split('T')[0] };
       }
       const toSave = { ...plan, sessions, startedAt, cycle };
-      await setDoc(doc(db, 'users', currentUser.uid), { mentoringPlan: toSave }, { merge: true });
-      setPlan(toSave);
+      await persistPlans(toSave);
       setSessionForm(null);
 
       // +5 pts every time a session is logged in its totality — date, progress
@@ -213,8 +255,7 @@ export default function Mentoring() {
 
   async function deleteSession(id) {
     const sessions = plan.sessions.filter(s => s.id !== id);
-    await setDoc(doc(db, 'users', currentUser.uid), { mentoringPlan: { ...plan, sessions } }, { merge: true });
-    setPlan(p => ({ ...p, sessions }));
+    await persistPlans({ ...plan, sessions });
     toast.success('Session deleted');
   }
 
@@ -239,8 +280,7 @@ export default function Mentoring() {
     setSavingClose(true);
     try {
       const closeOut = { ...closeForm, closedAt: new Date().toISOString(), sessionsCompleted: plan.sessions.length, sessionsPlanned: plannedSessions, goalsAchieved, goalsSet: plan.goals.length };
-      await setDoc(doc(db, 'users', currentUser.uid), { mentoringPlan: { ...plan, closeOut } }, { merge: true });
-      setPlan(p => ({ ...p, closeOut }));
+      await persistPlans({ ...plan, closeOut });
       setCloseForm(null);
       toast.success('Mentoring cycle closed out');
     } catch { toast.error('Save failed'); }
@@ -258,6 +298,35 @@ export default function Mentoring() {
   return (
     <div style={{ maxWidth: 1180, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
       <PageHeader icon="🤝" title="Mentoring — Accountability, Multiplied" subtitle="Mentee-owned, mentor-guided. Pick who helps you grow, set goals across all three pillars, and track the journey." />
+
+      {/* Mentoring log switcher — one tab per log, each with its own mentor,
+          goals, cycle, and sessions. */}
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+        {plans.map((p, i) => {
+          const active = i === activeIdx;
+          const label = p.mentor?.name?.trim() || `Log ${i + 1}`;
+          const closed = !!p.closeOut;
+          return (
+            <button key={i} onClick={() => { setActiveIdx(i); setExpandedSession(null); setSessionForm(null); setCloseForm(null); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px', borderRadius: 9999, fontSize: '0.8rem', fontWeight: 700,
+                background: active ? '#0f2044' : 'white', color: active ? 'white' : '#475569',
+                border: active ? '1.5px solid #0f2044' : '1.5px solid #e2e8f0', cursor: 'pointer' }}>
+              🤝 {label}
+              {closed && <span style={{ fontSize: '0.62rem', fontWeight: 800, background: active ? 'rgba(255,255,255,0.18)' : '#f1f5f9', borderRadius: 9999, padding: '1px 7px' }}>closed</span>}
+              <span style={{ fontSize: '0.68rem', opacity: 0.7 }}>{p.sessions?.length || 0} sess.</span>
+              {plans.length > 1 && active && (
+                <span role="button" title="Delete this mentoring log"
+                  onClick={e => { e.stopPropagation(); deleteLog(i); }}
+                  style={{ marginLeft: 2, fontWeight: 900, opacity: 0.75 }}>✕</span>
+              )}
+            </button>
+          );
+        })}
+        <button onClick={addLog}
+          style={{ padding: '7px 14px', borderRadius: 9999, fontSize: '0.8rem', fontWeight: 800, background: 'white', color: '#0d9488', border: '1.5px dashed #0d9488', cursor: 'pointer' }}>
+          ＋ New Mentoring Log
+        </button>
+      </div>
 
       {/* Status + actions banner */}
       <div style={{ borderRadius: 12, padding: '0.875rem 1.125rem', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
