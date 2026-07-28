@@ -374,12 +374,31 @@ export async function calculateScore(uid) {
   );
   // Everything in the raw bonus counter that isn't vision or quotes (e.g. DISC,
   // visual-board quick actions) stays as-is; quotes are replaced by the weekly value.
-  const otherBonus = Math.max(0, bonusPts - visionScore - quotesAllTime);
+  const otherBonus = Math.min(20, Math.max(0, bonusPts - visionScore - quotesAllTime));
   const bonusRemaining = otherBonus;
 
-  const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + quality + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + mentoringPoints + urgencyPoints + skillsPoints + lean5sPoints + wastePoints + careerPoints + lobPoints + visionScore + quotesScore + otherBonus - penaltyPts
-  )));
+  // NORMALIZED SCORE. Previously every category was summed and then clamped at
+  // 100. But the category maximums add up to far more than 100 (see CAPS below),
+  // so a user only needed ~40% of everything to hit 100 — the clamp hid all the
+  // slack and decay never moved the visible number. Instead we express the score
+  // as the PERCENT of all possible accountability points the user currently holds,
+  // so any decay immediately lowers the score. Each part is capped at its CAP, and
+  // actionsClosed is capped here (its rolling-window sum can otherwise exceed 25).
+  const CAPS = {
+    breadth: 10, frequency: 20, quality: 5, smart: 15, coaching: 20, problemSolving: 20,
+    disc: 5, eq: 5, mindfulness: 2, feedbackGiven: 5, actionsClosed: 25, mentoring: 10,
+    urgency: 20, skills: 3, lean5s: 5, waste: 5, career: 10, lob: 8, vision: 20, quotes: 20, bonus: 20,
+  };
+  const parts = {
+    breadth, frequency, quality, smart: smartScore, coaching: coachingScore, problemSolving: psScore,
+    disc: discPoints, eq: eqPoints, mindfulness: mindfulnessPoints, feedbackGiven: feedbackPoints,
+    actionsClosed: Math.min(CAPS.actionsClosed, actionsClosedPoints), mentoring: mentoringPoints,
+    urgency: urgencyPoints, skills: skillsPoints, lean5s: lean5sPoints, waste: wastePoints,
+    career: careerPoints, lob: lobPoints, vision: visionScore, quotes: quotesScore, bonus: otherBonus,
+  };
+  const rawSum = Object.values(parts).reduce((a, b) => a + b, 0);
+  const MAX_TOTAL = Object.values(CAPS).reduce((a, b) => a + b, 0);
+  const total = Math.round(Math.max(0, Math.min(100, (rawSum / MAX_TOTAL) * 100 - penaltyPts)));
 
   // Persist score to user doc
   await updateDoc(doc(db, 'users', uid), {
