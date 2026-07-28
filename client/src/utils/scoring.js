@@ -214,7 +214,7 @@ export async function calculateScore(uid) {
     const key = toolKeyFromLabel(e.toolLabel || '');
     if (key) uniqueTools.add(key);
   });
-  const breadth = Math.min((uniqueTools.size / TOTAL_TOOLS) * 20 * 1.5, 20);
+  const breadth = Math.min((uniqueTools.size / TOTAL_TOOLS) * 10 * 1.5, 10);
 
   // --- Frequency (0-20): sessions in last 30 days ---
   const thirtyDaysAgo   = Date.now() - 30 * 24 * 60 * 60 * 1000;
@@ -229,7 +229,7 @@ export async function calculateScore(uid) {
     return scores.reduce((a, b) => a + b, 0) / SMART_FIELDS.length;
   });
   const avgQuality = goalQualities.length ? goalQualities.reduce((a, b) => a + b, 0) / goalQualities.length : 0;
-  const quality = avgQuality * 25;
+  const quality = avgQuality * 5;
 
   // --- pointEvents — declared here so all event-based scores below can use them ---
   const today = localDateStr();
@@ -292,7 +292,7 @@ export async function calculateScore(uid) {
 
   // --- Mentoring (0-20): +5 pts per fully-logged session (date, progress review,
   //     challenge, and action item all filled) — no decay, capped for display scale ---
-  const mentoringPoints = Math.min(20, allEvents
+  const mentoringPoints = Math.min(10, allEvents
     .filter(e => e.toolLabel === 'Mentoring Session Logged' && e.points > 0)
     .reduce((s, e) => s + e.points, 0));
 
@@ -353,20 +353,32 @@ export async function calculateScore(uid) {
   );
 
   // --- Vision (0-20) & Leadership Quotes (0-20): these points are stored inside
-  //     bonusPoints, but we surface them as their own breakdown rows (Spark the
-  //     Vision / Winning with Compassion) and subtract them from the leftover
-  //     "bonus" so the total is unchanged. ---
+  //     the permanent bonusPoints counter, but we surface them as their own
+  //     breakdown rows (Spark the Vision / Winning with Compassion).
+  //     Vision stays permanent. Quotes now DECAY WEEKLY: only quote reflections
+  //     from the last 7 days count — the previous week's quote points drop off
+  //     entirely. To make that decay show up in the TOTAL (not just the display),
+  //     we back the all-time quote points out of the raw bonus counter and add
+  //     back only the current week's. ---
   const VISION_LABELS = ['Personal Vision', 'Team Vision'];
   const visionScore = Math.min(20,
     allEvents.filter(e => VISION_LABELS.includes(e.toolLabel) && e.points > 0).reduce((s, e) => s + e.points, 0)
   );
+  const quotesAllTime = allEvents
+    .filter(e => e.toolLabel === 'Leadership Quotes' && e.points > 0)
+    .reduce((s, e) => s + e.points, 0);
   const quotesScore = Math.min(20,
-    allEvents.filter(e => e.toolLabel === 'Leadership Quotes' && e.points > 0).reduce((s, e) => s + e.points, 0)
+    allEvents
+      .filter(e => e.toolLabel === 'Leadership Quotes' && e.date >= sevenDaysAgoStr && e.points > 0)
+      .reduce((s, e) => s + e.points, 0)
   );
-  const bonusRemaining = Math.max(0, bonusPts - visionScore - quotesScore);
+  // Everything in the raw bonus counter that isn't vision or quotes (e.g. DISC,
+  // visual-board quick actions) stays as-is; quotes are replaced by the weekly value.
+  const otherBonus = Math.max(0, bonusPts - visionScore - quotesAllTime);
+  const bonusRemaining = otherBonus;
 
   const total = Math.round(Math.max(0, Math.min(100,
-    breadth + frequency + quality + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + mentoringPoints + urgencyPoints + skillsPoints + lean5sPoints + wastePoints + careerPoints + lobPoints + bonusPts - penaltyPts
+    breadth + frequency + quality + smartScore + coachingScore + psScore + discPoints + eqPoints + mindfulnessPoints + feedbackPoints + actionsClosedPoints + mentoringPoints + urgencyPoints + skillsPoints + lean5sPoints + wastePoints + careerPoints + lobPoints + visionScore + quotesScore + otherBonus - penaltyPts
   )));
 
   // Persist score to user doc

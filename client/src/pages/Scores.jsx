@@ -9,9 +9,9 @@ import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 
 const BREAKDOWN_CONFIG = [
-  { key: 'breadth',   label: 'Tool Diversity',  max: 20, icon: '🗂',  desc: 'How many different tools you use' },
+  { key: 'breadth',   label: 'Tool Diversity',  max: 10, icon: '🗂',  desc: 'How many different tools you use' },
   { key: 'frequency', label: 'Consistency',      max: 20, icon: '📅',  desc: 'How regularly you use the app (last 30 days)' },
-  { key: 'quality',   label: 'Entry Quality',    max: 25, icon: '✍️', desc: 'Completeness and depth of your entries' },
+  { key: 'quality',   label: 'Entry Quality',    max: 5,  icon: '✍️', desc: 'Completeness and depth of your entries' },
   { key: 'smart',     label: 'SMART Goals',      max: 15, icon: '🎯',  desc: '+1 pt per fully-filled goal created (max 5 per 6 months) · +2 pts per leader-approved completion · no decay on completions' },
   { key: 'coaching',  label: 'Coaching Log',     max: 20, icon: '📝',  desc: '5 pts per week with a complete coaching session (max 20/month)' },
   { key: 'problemSolving', label: 'Problem Solving', max: 20, icon: '🔍', desc: '5 Whys (5pts) + Fishbone (5pts) + A3 (10pts) per week; decays 20%→50%→75% without use' },
@@ -20,7 +20,7 @@ const BREAKDOWN_CONFIG = [
   { key: 'mindfulness', label: 'Mindfulness', max: 2, icon: '🧘', desc: '1 pt/day for completing any breathing exercise; +1 bonus pt for breaking your personal cycle record' },
   { key: 'feedbackGiven', label: 'Feedback Given', max: 5, icon: '📬', desc: '+1 pt each time you give feedback to a teammate (max 5/month); points expire after 30 days' },
   { key: 'actionsClosed', label: 'Actions Closed On Time', max: 25, icon: '✅', desc: '+5 pts per action closed on time with zero recommitments; points valid for 7 days. Closing with recommitments = no points. Past due = −5 pts per occurrence.' },
-  { key: 'mentoring', label: 'Mentoring Sessions', max: 20, icon: '🤝', desc: '+5 pts per mentoring session logged in its totality — date, progress review, challenge, and action item all filled in. No decay; sessions accumulate.' },
+  { key: 'mentoring', label: 'Mentoring Sessions', max: 10, icon: '🤝', desc: '+5 pts per mentoring session logged in its totality — date, progress review, challenge, and action item all filled in. Capped at 10.' },
   { key: 'urgency', label: 'Sense of Urgency', max: 20, icon: '⚡', desc: '+1 pt per day for completing the individual survey (all tips rated) · +1 pt for individual daily reflection (20+ words) · +1 pt for team survey · +1 pt for team daily reflection (20+ words, different question pool). Max 4 pts/day · 20 pts/week rolling window.' },
   { key: 'skills', label: 'Skills Development', max: 3, icon: '⭐', desc: '+1 pt for completing the skills self-assessment · +1 pt for requesting a peer survey · +1 pt when a peer delivers your survey. Each max once per rolling 30 days.' },
   { key: 'lean5s', label: 'Lean 5S Audit', max: 5, icon: '🏭', desc: '+5 pts for a weekly 5S audit that describes at least 3 areas of opportunity. Points expire after 7 days — run a new audit each week to keep them.' },
@@ -28,7 +28,7 @@ const BREAKDOWN_CONFIG = [
   { key: 'career', label: 'Career Development Plan', max: 10, icon: '🚀', desc: '10 pts for a fully completed plan (100% of the template, 20+ words per question). Sustain them with milestone progress notes: −2 if the 30-day note is missing, −3 more at 90 days, −2 more at 6 months, and lose all remaining if the 12-month note is missing. Add a note (even late) to restore that milestone’s points.' },
   { key: 'lob', label: 'Line of Balance', max: 8, icon: '📈', desc: '+1 pt for setting up a Line of Balance (4+ task rows and 4+ dates), +5 pts when every activity reaches 100% completion, and +2 bonus pts if you finish with no past-due (red) slips — 7 pts total if an activity ran late, 8 if it was flawless.' },
   { key: 'vision', label: 'Vision Builder', max: 20, icon: '🧭', desc: '+10 pts for your first Personal Vision and +10 for your first Team Vision statement (lifetime, no decay).' },
-  { key: 'quotes', label: 'Leadership Quotes', max: 20, icon: '💬', desc: '+5 pts each time you reflect on a leadership quote (daily). Builds toward your Winning with Compassion pillar.' },
+  { key: 'quotes', label: 'Leadership Quotes', max: 20, icon: '💬', desc: '+5 pts each time you reflect on a leadership quote. Points last one week only — last week’s quote points expire, so reflect again each week to keep them.' },
   { key: 'bonus',     label: 'Bonus Points',     max: 20, icon: '🏆',  desc: 'Extra points from other daily actions' },
 ];
 
