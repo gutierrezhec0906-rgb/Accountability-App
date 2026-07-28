@@ -661,7 +661,9 @@ export default function Lean() {
 
   async function saveAudit() {
     if (!auditArea.trim()) return toast.error('Please enter the area being audited');
-    if (ratedItems === 0) return toast.error('Rate at least one item (1–5) before saving');
+    if (ratedItems < totalItems) {
+      return toast.error(`Rate all ${totalItems} items across the 5 areas before saving — ${totalItems - ratedItems} still unrated.`);
+    }
     if (!currentUser) return toast.error('Not logged in');
     const dupName = auditArea.trim().toLowerCase();
     if (auditHistory.some(a => a.area.toLowerCase() === dupName)) {
@@ -823,12 +825,15 @@ export default function Lean() {
               <div style={{ height: 10, borderRadius: 9999, transition: 'width 0.6s ease', width: `${(avgScore / 5) * 100}%`, background: auditScoreColor(avgScore) }} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
-                <strong style={{ color: 'var(--text-secondary)' }}>{pct}% complete</strong> · {ratedItems} of {totalItems} items rated
+              <p style={{ fontSize: '0.75rem', color: ratedItems < totalItems ? '#b45309' : 'var(--text-muted)', margin: 0 }}>
+                <strong style={{ color: ratedItems < totalItems ? '#b45309' : 'var(--text-secondary)' }}>{pct}% complete</strong> · {ratedItems} of {totalItems} items rated
+                {ratedItems < totalItems && ` · rate all ${totalItems} to save`}
               </p>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn-secondary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem' }} onClick={resetAudit}>↺ Reset</button>
-                <button className="btn-primary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.875rem' }} onClick={saveAudit}>💾 Save Audit</button>
+                <button className="btn-primary" disabled={ratedItems < totalItems}
+                  style={{ fontSize: '0.78rem', padding: '0.3rem 0.875rem', opacity: ratedItems < totalItems ? 0.5 : 1, cursor: ratedItems < totalItems ? 'not-allowed' : 'pointer' }}
+                  onClick={saveAudit}>💾 Save Audit</button>
                 {(auditArea.trim() || checkedItems > 0) && (
                   <button
                     style={{ fontSize: '0.78rem', padding: '0.3rem 0.875rem', borderRadius: 9999, fontWeight: 700, border: '1.5px solid #0d9488', background: 'white', color: '#0d9488', cursor: 'pointer' }}
