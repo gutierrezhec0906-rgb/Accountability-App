@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
-import { db } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore, localDateStr } from '../utils/scoring';
 import { generateKaizenPDF } from '../utils/moduleReports';
@@ -611,6 +612,18 @@ export default function Lean() {
     count: wasteLogs.filter(l => l.type === w.type).length,
   }));
 
+  // Hold a picked (but not-yet-uploaded) waste photo as a preview data URL + File.
+  function pickWastePhoto(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) return toast.error('Please choose an image file');
+    if (file.size > 5 * 1024 * 1024) return toast.error('Image must be under 5 MB');
+    const reader = new FileReader();
+    reader.onload = () => setWasteForm(f => ({ ...f, imageFile: file, imagePreview: reader.result }));
+    reader.readAsDataURL(file);
+  }
+
   async function saveWasteLog() {
     if (!wasteForm || !currentUser) return;
     if (!wasteForm.location.trim() || !wasteForm.description.trim()) {
@@ -619,13 +632,30 @@ export default function Lean() {
     setSavingWaste(true);
     try {
       const now = new Date();
+      const id = now.getTime().toString();
+      // Upload the optional photo to Storage and keep only the URL on the log
+      // entry (wasteLogs is an array on the user doc — base64 would blow the 1 MB
+      // document limit, so the image lives in Storage, not Firestore).
+      let photoUrl = '';
+      if (wasteForm.imageFile) {
+        try {
+          const ext = (wasteForm.imageFile.name.split('.').pop() || 'jpg').toLowerCase();
+          const sref = ref(storage, `wasteWalk/${currentUser.uid}/${id}.${ext}`);
+          await uploadBytes(sref, wasteForm.imageFile);
+          photoUrl = await getDownloadURL(sref);
+        } catch (imgErr) {
+          console.error('waste photo upload failed', imgErr);
+          toast.error('Photo upload failed — saving the log without it.');
+        }
+      }
       const entry = {
-        id: now.getTime().toString(),
+        id,
         type: wasteForm.type,
         location: wasteForm.location.trim(),
         description: wasteForm.description.trim(),
         impact: (wasteForm.impact || '').trim(),
         countermeasure: (wasteForm.countermeasure || '').trim(),
+        photoUrl,
         date: localDateStr(now),
         savedAt: now.toISOString(),
       };
@@ -1162,7 +1192,15 @@ export default function Lean() {
                           <p style={{ margin: '0 0 6px' }}><strong style={{ color: '#0f2044' }}>What was seen:</strong> {l.description}</p>
                           {l.impact && <p style={{ margin: '0 0 6px' }}><strong style={{ color: '#0f2044' }}>Impact:</strong> {l.impact}</p>}
                           {l.countermeasure && <p style={{ margin: '0 0 6px' }}><strong style={{ color: '#0f2044' }}>Countermeasure:</strong> {l.countermeasure}</p>}
-                          <button onClick={() => deleteWasteLog(l.id)} style={{ background: 'none', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 7, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>🗑 Delete</button>
+                          {l.photoUrl && (
+                            <a href={l.photoUrl} target="_blank" rel="noreferrer" style={{ display: 'inline-block', margin: '2px 0 8px' }}>
+                              <img src={l.photoUrl} alt="Observation" style={{ maxWidth: '100%', maxHeight: 180, borderRadius: 8, border: '1px solid var(--border)', display: 'block' }} />
+                              <span style={{ fontSize: '0.7rem', color: '#0d9488', fontWeight: 700 }}>📎 Open photo ↗</span>
+                            </a>
+                          )}
+                          <div>
+                            <button onClick={() => deleteWasteLog(l.id)} style={{ background: 'none', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 7, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer' }}>🗑 Delete</button>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1199,6 +1237,21 @@ export default function Lean() {
               <div>
                 <label className="label">Countermeasure idea (optional)</label>
                 <textarea className="input" rows={2} value={wasteForm.countermeasure} onChange={e => setWasteForm(f => ({ ...f, countermeasure: e.target.value }))} placeholder="What could reduce or eliminate it?" />
+              </div>
+              <div>
+                <label className="label">Photo of the observation (optional)</label>
+                {wasteForm.imagePreview ? (
+                  <div style={{ position: 'relative', display: 'inline-block' }}>
+                    <img src={wasteForm.imagePreview} alt="Observation" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, border: '1px solid var(--border)', display: 'block' }} />
+                    <button onClick={() => setWasteForm(f => ({ ...f, imageFile: null, imagePreview: null }))}
+                      style={{ position: 'absolute', top: 6, right: 6, background: '#ef4444', border: 'none', borderRadius: '50%', width: 24, height: 24, color: 'white', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                  </div>
+                ) : (
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem 1rem', borderRadius: 8, border: '1.5px dashed #cbd5e1', cursor: 'pointer', background: 'white', fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                    📷 Click to attach a photo (JPG/PNG, max 5 MB)
+                    <input type="file" accept="image/*" style={{ display: 'none' }} onChange={pickWastePhoto} />
+                  </label>
+                )}
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
