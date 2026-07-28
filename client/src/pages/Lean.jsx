@@ -23,6 +23,19 @@ const fiveSItems = [
   { category: 'Sustain (Shitsuke)',    items: ['Conduct weekly 5S audits','Review audit scores with team','Recognize top performers','Track 5S score trends over time'] },
 ];
 
+// 1–5 maturity rating applied to each 5S audit item. The audit SCORE is the
+// average of all rated items (1–5). The percentage shown separately is just
+// completion — how many of the items have been rated.
+const RATING_SCALE = [
+  { value: 1, label: 'Not Practiced', color: '#ef4444', desc: 'No evidence the practice is in place or being followed.' },
+  { value: 2, label: 'Emerging',      color: '#f97316', desc: 'Attempted occasionally and inconsistently; major gaps remain.' },
+  { value: 3, label: 'Developing',    color: '#f59e0b', desc: 'Practiced regularly but not yet standardized or sustained.' },
+  { value: 4, label: 'Proficient',    color: '#22c55e', desc: 'Consistently practiced and standardized; only minor gaps.' },
+  { value: 5, label: 'Excellence',    color: '#0d9488', desc: 'Fully embedded, sustained, and continuously improved — a model example.' },
+];
+// Color for an average 5S score (1–5 scale).
+const auditScoreColor = (v) => v >= 4 ? '#0d9488' : v >= 3 ? '#f59e0b' : v >= 1 ? '#ef4444' : '#94a3b8';
+
 const wasteTypes = [
   { type: 'Defects',         icon: '❌', desc: 'Work requiring rework or scrap',                    example: 'Parts failing inspection, customer returns' },
   { type: 'Overproduction',  icon: '⚙️', desc: 'Producing more than customer demand',               example: 'Making parts before they are needed' },
@@ -527,7 +540,11 @@ export default function Lean() {
   const [savingWaste, setSavingWaste] = useState(false);
   const [expandedWaste, setExpandedWaste] = useState(null);
 
-  function toggle(cat, idx) { const k = `${cat}-${idx}`; setChecks(c => ({ ...c, [k]: !c[k] })); }
+  // Set a 1–5 rating for an item; clicking the same value again clears it.
+  function setRating(cat, idx, value) {
+    const k = `${cat}-${idx}`;
+    setChecks(c => ({ ...c, [k]: Number(c[k]) === value ? 0 : value }));
+  }
 
   function setFinding(key, field, value) {
     setFindings(f => ({ ...f, [key]: { ...(f[key] || {}), [field]: value } }));
@@ -560,8 +577,13 @@ export default function Lean() {
   const oppsQualified = describedOpps >= MIN_OPPS;
 
   const totalItems   = fiveSItems.reduce((a, c) => a + c.items.length, 0);
-  const checkedItems = Object.values(checks).filter(Boolean).length;
-  const pct          = Math.round((checkedItems / totalItems) * 100);
+  // Ratings are 1–5 (0 / falsy = not yet rated). Legacy audits stored booleans;
+  // Number(true) === 1 keeps them countable.
+  const ratedValues  = Object.values(checks).map(Number).filter(v => v >= 1);
+  const ratedItems   = ratedValues.length;
+  const checkedItems = ratedItems; // alias kept for existing references
+  const avgScore     = ratedItems ? ratedValues.reduce((a, b) => a + b, 0) / ratedItems : 0;
+  const pct          = Math.round((ratedItems / totalItems) * 100); // completion, not score
 
   async function loadAuditHistory() {
     if (!currentUser) return;
@@ -639,7 +661,7 @@ export default function Lean() {
 
   async function saveAudit() {
     if (!auditArea.trim()) return toast.error('Please enter the area being audited');
-    if (checkedItems === 0) return toast.error('Complete at least one checklist item before saving');
+    if (ratedItems === 0) return toast.error('Rate at least one item (1–5) before saving');
     if (!currentUser) return toast.error('Not logged in');
     const dupName = auditArea.trim().toLowerCase();
     if (auditHistory.some(a => a.area.toLowerCase() === dupName)) {
@@ -656,14 +678,17 @@ export default function Lean() {
       const record = {
         id: Date.now().toString(),
         area: auditArea.trim(),
-        score: pct,
-        checked: checkedItems,
+        avgScore: Number(avgScore.toFixed(2)), // audit score = average of 1–5 ratings
+        completion: pct,                        // % of items rated
+        score: pct,                             // legacy field kept for old readers
+        checked: ratedItems,
         total: totalItems,
         checks: { ...checks },
         findings: findingsNoImages,
         opportunities: cleanOpps,
         date: new Date().toISOString(),
       };
+      const scoreStr = `${avgScore.toFixed(1)}/5`;
       const updated = [record, ...auditHistory].slice(0, 50);
       await setDoc(doc(db, 'users', currentUser.uid), { fiveSAudits: updated }, { merge: true });
       setAuditHistory(updated);
@@ -679,14 +704,14 @@ export default function Lean() {
         if (awarded) {
           await calculateScore(currentUser.uid);
           setWeekPtsEarned(true);
-          toast.success(`Audit saved — ${pct}%. +5 pts for this week's 5S audit!`, { duration: 4000 });
+          toast.success(`Audit saved — score ${scoreStr}. +5 pts for this week's 5S audit!`, { duration: 4000 });
         } else {
-          toast.success(`Audit saved — ${pct}% for "${auditArea}"`);
+          toast.success(`Audit saved — score ${scoreStr} for "${auditArea}"`);
         }
       } else if (oppsQualified && weekPtsEarned) {
-        toast.success(`Audit saved — ${pct}%. (This week's +5 pts already earned.)`);
+        toast.success(`Audit saved — score ${scoreStr}. (This week's +5 pts already earned.)`);
       } else {
-        toast.success(`Audit saved — ${pct}%. Describe ${MIN_OPPS}+ areas of opportunity to earn +5 pts.`);
+        toast.success(`Audit saved — score ${scoreStr}. Describe ${MIN_OPPS}+ areas of opportunity to earn +5 pts.`);
       }
     } catch (e) { toast.error('Save failed: ' + e.message); }
   }
@@ -785,15 +810,22 @@ export default function Lean() {
               <input className="input" value={auditArea} onChange={e => setAuditArea(e.target.value)}
                 placeholder="e.g. Assembly Line 3, Warehouse Zone B, Office Floor 2…" />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-              <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>5S Audit Score</span>
-              <span style={{ fontSize: '1.75rem', fontWeight: 900, color: pct >= 80 ? '#0d9488' : pct >= 60 ? '#f59e0b' : '#ef4444' }}>{pct}%</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 10 }}>
+              <div>
+                <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>5S Audit Score</span>
+                <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Average of all rated items (1–5)</p>
+              </div>
+              <span style={{ fontSize: '1.75rem', fontWeight: 900, color: auditScoreColor(avgScore) }}>
+                {ratedItems ? avgScore.toFixed(1) : '—'}<span style={{ fontSize: '1rem', color: 'var(--text-muted)', fontWeight: 700 }}> / 5</span>
+              </span>
             </div>
             <div style={{ background: '#e2e8f0', borderRadius: 9999, height: 10, marginBottom: 6 }}>
-              <div style={{ height: 10, borderRadius: 9999, transition: 'width 0.6s ease', width: `${pct}%`, background: pct >= 80 ? '#0d9488' : pct >= 60 ? '#f59e0b' : '#ef4444' }} />
+              <div style={{ height: 10, borderRadius: 9999, transition: 'width 0.6s ease', width: `${(avgScore / 5) * 100}%`, background: auditScoreColor(avgScore) }} />
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{checkedItems} of {totalItems} items completed</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
+                <strong style={{ color: 'var(--text-secondary)' }}>{pct}% complete</strong> · {ratedItems} of {totalItems} items rated
+              </p>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn-secondary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem' }} onClick={resetAudit}>↺ Reset</button>
                 <button className="btn-primary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.875rem' }} onClick={saveAudit}>💾 Save Audit</button>
@@ -805,6 +837,21 @@ export default function Lean() {
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* Rating scale key */}
+          <div className="card" style={{ padding: '0.875rem 1.125rem' }}>
+            <p style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', margin: '0 0 8px' }}>Rating Scale — score each item 1 to 5</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {RATING_SCALE.map(r => (
+                <div key={r.value} style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                  <span style={{ flexShrink: 0, width: 22, height: 22, borderRadius: 6, background: r.color, color: 'white', fontWeight: 800, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>{r.value}</span>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.4 }}>
+                    <strong style={{ color: 'var(--text-primary)' }}>{r.label}</strong> — {r.desc}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -820,15 +867,24 @@ export default function Lean() {
                 const hasFinding = finding.note || finding.image;
                 return (
                   <div key={i} style={{ borderBottom: i < cat.items.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                    {/* Checkbox row */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.75rem 1.25rem' }}>
-                      <button onClick={() => toggle(cat.category, i)}
-                        style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, textAlign: 'left', background: 'none', border: 'none', cursor: 'pointer', padding: 0 }}>
-                        <div style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, border: `2px solid ${checks[key] ? '#0d9488' : '#e2e8f0'}`, background: checks[key] ? '#0d9488' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.75rem', fontWeight: 700, transition: 'all 0.2s' }}>
-                          {checks[key] && '✓'}
-                        </div>
-                        <span style={{ fontSize: '0.875rem', color: checks[key] ? '#94a3b8' : 'var(--text-secondary)', textDecoration: checks[key] ? 'line-through' : 'none' }}>{item}</span>
-                      </button>
+                    {/* Rating row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.75rem 1.25rem', flexWrap: 'wrap' }}>
+                      <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', flex: 1, minWidth: 150 }}>{item}</span>
+                      {/* 1–5 rating buttons */}
+                      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                        {RATING_SCALE.map(r => {
+                          const active = Number(checks[key]) === r.value;
+                          return (
+                            <button key={r.value} onClick={() => setRating(cat.category, i, r.value)}
+                              title={`${r.value} — ${r.label}: ${r.desc}`}
+                              style={{ width: 30, height: 30, borderRadius: 7, fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer',
+                                border: active ? `2px solid ${r.color}` : '1.5px solid #e2e8f0',
+                                background: active ? r.color : 'white', color: active ? 'white' : '#94a3b8', transition: 'all 0.15s' }}>
+                              {r.value}
+                            </button>
+                          );
+                        })}
+                      </div>
                       {/* Finding indicator */}
                       {hasFinding && !isExpanded && (
                         <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#fef9c3', color: '#b45309', border: '1px solid #fde68a', borderRadius: 9999, padding: '1px 7px', flexShrink: 0 }}>
@@ -941,8 +997,12 @@ export default function Lean() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {auditHistory.map(record => {
-                    const scoreColor = record.score >= 80 ? '#0d9488' : record.score >= 60 ? '#f59e0b' : '#ef4444';
-                    const scoreBg = record.score >= 80 ? '#f0fdfa' : record.score >= 60 ? '#fffbeb' : '#fef2f2';
+                    // Older audits only stored a completion % as `score`; new ones store avgScore (1–5).
+                    const hasAvg = typeof record.avgScore === 'number';
+                    const scoreColor = hasAvg
+                      ? auditScoreColor(record.avgScore)
+                      : (record.score >= 80 ? '#0d9488' : record.score >= 60 ? '#f59e0b' : '#ef4444');
+                    const scoreBg = scoreColor === '#0d9488' ? '#f0fdfa' : scoreColor === '#f59e0b' ? '#fffbeb' : '#fef2f2';
                     const isExp = expandedAudit === record.id;
                     const d = new Date(record.date);
                     const dateStr = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -953,7 +1013,7 @@ export default function Lean() {
                             <p style={{ fontWeight: 700, fontSize: '0.8rem', color: 'var(--text-primary)', margin: '0 0 2px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{record.area}</p>
                             <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>{dateStr}</p>
                           </div>
-                          <span style={{ background: scoreBg, color: scoreColor, fontWeight: 800, fontSize: '0.875rem', borderRadius: 8, padding: '2px 10px', border: `1px solid ${scoreColor}33`, flexShrink: 0 }}>{record.score}%</span>
+                          <span style={{ background: scoreBg, color: scoreColor, fontWeight: 800, fontSize: '0.875rem', borderRadius: 8, padding: '2px 10px', border: `1px solid ${scoreColor}33`, flexShrink: 0 }}>{hasAvg ? `${record.avgScore.toFixed(1)}/5` : `${record.score}%`}</span>
                         </div>
                         <div style={{ display: 'flex', borderTop: '1px solid var(--border)' }}>
                           <button onClick={() => loadAudit(record)}
@@ -971,7 +1031,9 @@ export default function Lean() {
                         </div>
                         {isExp && (
                           <div style={{ padding: '0.75rem', borderTop: '1px solid var(--border)', background: '#f8fafc', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                            <p style={{ margin: '0 0 4px', fontWeight: 700 }}>{record.checked} / {record.total} items completed</p>
+                            <p style={{ margin: '0 0 4px', fontWeight: 700 }}>
+                              {hasAvg && <>Score {record.avgScore.toFixed(1)}/5 · </>}{record.checked} / {record.total} items rated
+                            </p>
                             {Object.keys(record.findings || {}).length > 0 && (
                               <p style={{ margin: '0 0 6px', color: '#b45309' }}>📝 {Object.keys(record.findings).length} note(s) recorded</p>
                             )}
