@@ -290,10 +290,13 @@ export async function calculateScore(uid) {
     .filter(e => e.toolLabel === 'Action Closed On Time' && e.date >= sevenDaysAgoStr && e.points > 0)
     .reduce((s, e) => s + e.points, 0);
 
-  // --- Mentoring (0-20): +5 pts per fully-logged session (date, progress review,
-  //     challenge, and action item all filled) — no decay, capped for display scale ---
+  // --- Mentoring (0-10): +5 pts per fully-logged session (date, progress review,
+  //     challenge, and action item all filled). Rolling 60-day window — sessions
+  //     older than 60 days expire and their points drop off; the user must log
+  //     new sessions to regain them. ---
+  const sixtyDaysAgoStr = localDateStr(new Date(Date.now() - 60 * 24 * 60 * 60 * 1000));
   const mentoringPoints = Math.min(10, allEvents
-    .filter(e => e.toolLabel === 'Mentoring Session Logged' && e.points > 0)
+    .filter(e => e.toolLabel === 'Mentoring Session Logged' && e.date >= sixtyDaysAgoStr && e.points > 0)
     .reduce((s, e) => s + e.points, 0));
 
   // --- Skills Development (0-3): self-assessment +1, peer survey requested +1, peer survey received +1 — each max once per rolling 30 days ---
