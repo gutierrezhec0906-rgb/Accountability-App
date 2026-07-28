@@ -16,6 +16,49 @@ function oppWordCount(text = '') {
   return text.trim().split(/\s+/).filter(Boolean).length;
 }
 
+// Downscale + re-encode an image to JPEG in the browser BEFORE uploading. Phone
+// photos are often 3–8 MB, which stalls uploads on mobile networks; shrinking to
+// ~1600px / quality 0.8 typically yields a ~150–400 KB file that uploads instantly.
+// Returns { blob, preview }. Throws if the browser can't decode the image (e.g.
+// some HEIC) so the caller can fall back to the original file.
+function compressImage(file, maxDim = 1600, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => {
+      const img = new Image();
+      img.onerror = reject;
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const scale = maxDim / Math.max(width, height);
+          width = Math.round(width * scale);
+          height = Math.round(height * scale);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+        canvas.toBlob(
+          blob => blob ? resolve({ blob, preview: canvas.toDataURL('image/jpeg', quality) }) : reject(new Error('toBlob failed')),
+          'image/jpeg',
+          quality,
+        );
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+// Reject an upload that stalls, so the UI never sticks on "Saving…" forever.
+function withTimeout(promise, ms, label = 'operation') {
+  return Promise.race([
+    promise,
+    new Promise((_, rej) => setTimeout(() => rej(new Error(`${label} timed out`)), ms)),
+  ]);
+}
+
 const fiveSItems = [
   { category: 'Sort (Seiri)',          items: ['Remove all unnecessary items from the work area','Red-tag items not needed in the next 30 days','Dispose of or relocate red-tagged items','Document what was removed and why'] },
   { category: 'Set in Order (Seiton)', items: ['Designate a specific place for every item','Label all locations clearly','Arrange items for ergonomic ease of use','Implement visual controls (shadow boards, floor tape)'] },
@@ -612,16 +655,26 @@ export default function Lean() {
     count: wasteLogs.filter(l => l.type === w.type).length,
   }));
 
-  // Hold a picked (but not-yet-uploaded) waste photo as a preview data URL + File.
-  function pickWastePhoto(e) {
+  // Pick a waste photo. We compress it in the browser first so the upload is small
+  // and fast on mobile. Stores a ready-to-upload JPEG blob + a preview data URL.
+  async function pickWastePhoto(e) {
     const file = e.target.files?.[0];
     e.target.value = '';
     if (!file) return;
     if (!file.type.startsWith('image/')) return toast.error('Please choose an image file');
-    if (file.size > 5 * 1024 * 1024) return toast.error('Image must be under 5 MB');
-    const reader = new FileReader();
-    reader.onload = () => setWasteForm(f => ({ ...f, imageFile: file, imagePreview: reader.result }));
-    reader.readAsDataURL(file);
+    if (file.size > 25 * 1024 * 1024) return toast.error('Image is too large (max 25 MB)');
+    try {
+      const { blob, preview } = await compressImage(file);
+      setWasteForm(f => ({ ...f, imageBlob: blob, imagePreview: preview }));
+    } catch (err) {
+      // Browser couldn't decode/resize (rare) — fall back to the original file,
+      // but only if it's small enough to upload reliably.
+      console.error('image compress failed, using original', err);
+      if (file.size > 5 * 1024 * 1024) return toast.error("Couldn't process this photo. Try a smaller one.");
+      const reader = new FileReader();
+      reader.onload = () => setWasteForm(f => ({ ...f, imageBlob: file, imagePreview: reader.result }));
+      reader.readAsDataURL(file);
+    }
   }
 
   async function saveWasteLog() {
@@ -637,15 +690,15 @@ export default function Lean() {
       // entry (wasteLogs is an array on the user doc — base64 would blow the 1 MB
       // document limit, so the image lives in Storage, not Firestore).
       let photoUrl = '';
-      if (wasteForm.imageFile) {
+      if (wasteForm.imageBlob) {
         try {
-          const ext = (wasteForm.imageFile.name.split('.').pop() || 'jpg').toLowerCase();
-          const sref = ref(storage, `wasteWalk/${currentUser.uid}/${id}.${ext}`);
-          await uploadBytes(sref, wasteForm.imageFile);
-          photoUrl = await getDownloadURL(sref);
+          const sref = ref(storage, `wasteWalk/${currentUser.uid}/${id}.jpg`);
+          // Time-box the upload so a stalled mobile connection can't hang "Saving…".
+          await withTimeout(uploadBytes(sref, wasteForm.imageBlob, { contentType: 'image/jpeg' }), 45000, 'Photo upload');
+          photoUrl = await withTimeout(getDownloadURL(sref), 15000, 'Photo link');
         } catch (imgErr) {
           console.error('waste photo upload failed', imgErr);
-          toast.error('Photo upload failed — saving the log without it.');
+          toast.error('Photo upload failed or timed out — saving the log without it.');
         }
       }
       const entry = {
@@ -1243,7 +1296,7 @@ export default function Lean() {
                 {wasteForm.imagePreview ? (
                   <div style={{ position: 'relative', display: 'inline-block' }}>
                     <img src={wasteForm.imagePreview} alt="Observation" style={{ maxWidth: '100%', maxHeight: 200, borderRadius: 8, border: '1px solid var(--border)', display: 'block' }} />
-                    <button onClick={() => setWasteForm(f => ({ ...f, imageFile: null, imagePreview: null }))}
+                    <button onClick={() => setWasteForm(f => ({ ...f, imageBlob: null, imagePreview: null }))}
                       style={{ position: 'absolute', top: 6, right: 6, background: '#ef4444', border: 'none', borderRadius: '50%', width: 24, height: 24, color: 'white', fontSize: '0.75rem', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                   </div>
                 ) : (
