@@ -9,7 +9,7 @@ import { logPointEvent, calculateScore, weekMonday } from '../utils/scoring';
 
 // True on narrow / phone screens. Used to swap the horizontal fishbone diagram
 // for a readable vertical stack on mobile.
-function useIsMobile(breakpoint = 768) {
+function useIsMobile(breakpoint = 1024) {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < breakpoint);
   useEffect(() => {
     const onResize = () => setIsMobile(window.innerWidth < breakpoint);
