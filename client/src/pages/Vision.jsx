@@ -6,6 +6,22 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore } from '../utils/scoring';
 
+const REVIEW_CYCLE_DAYS = 365; // visions should be revisited annually
+const REVIEW_WARN_DAYS  = 30;  // start nudging this many days before the anniversary
+
+// A vision is "due for review" once a year has passed since it was created (or
+// last marked reviewed). No points are involved — this is purely a reminder to
+// revisit the statement and confirm it's still on track, or edit it.
+function visionReviewStatus(entry) {
+  const anchor = entry.reviewedAt || entry.createdAt;
+  if (!anchor) return null;
+  const dueDate = new Date(anchor);
+  dueDate.setDate(dueDate.getDate() + REVIEW_CYCLE_DAYS);
+  const daysUntil = Math.round((dueDate.getTime() - Date.now()) / 86400000);
+  const level = daysUntil < 0 ? 'overdue' : daysUntil <= REVIEW_WARN_DAYS ? 'upcoming' : 'ok';
+  return { dueDate, daysUntil, level };
+}
+
 function printVision(entry, prompts) {
   const dateStr = entry.createdAt
     ? new Date(entry.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
@@ -84,7 +100,7 @@ const teamPrompts = [
   { step: 5, question: "What commitments will our team make starting this week?",       placeholder: "Be concrete — what will the team do Monday?" },
 ];
 
-function SavedPanel({ entries, onDelete, onLoad, onEdit, activeTab, setActiveTab, expandedId, setExpandedId }) {
+function SavedPanel({ entries, onDelete, onLoad, onEdit, onMarkReviewed, activeTab, setActiveTab, expandedId, setExpandedId }) {
   const personal = entries.filter(e => e.mode === 'personal');
   const team     = entries.filter(e => e.mode === 'team');
   const list     = activeTab === 'personal' ? personal : team;
@@ -110,9 +126,21 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, activeTab, setActiveTab
               const d = e.createdAt ? new Date(e.createdAt) : new Date();
               const isExpanded = expandedId === e.id;
               const prompts = e.mode === 'personal' ? personalPrompts : teamPrompts;
+              const rs = visionReviewStatus(e);
+              const rsColor = rs?.level === 'overdue' ? '#dc2626' : rs?.level === 'upcoming' ? '#b45309' : '#15803d';
+              const rsBg    = rs?.level === 'overdue' ? '#fee2e2' : rs?.level === 'upcoming' ? '#fef9c3' : '#f0fdf4';
               return (
                 <div key={e.id} style={{ background: '#f8fafc', borderRadius: 10, padding: '0.75rem', border: '1px solid var(--border)' }}>
                   <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>{d.toLocaleDateString()}</p>
+                  {rs && (
+                    <p style={{ fontSize: '0.66rem', fontWeight: 700, color: rsColor, background: rsBg, borderRadius: 6, padding: '2px 7px', display: 'inline-block', margin: '0 0 6px' }}>
+                      {rs.level === 'overdue'
+                        ? `🔁 Review overdue — was due ${rs.dueDate.toLocaleDateString()}`
+                        : rs.level === 'upcoming'
+                          ? `🔁 Review due in ${rs.daysUntil}d (${rs.dueDate.toLocaleDateString()})`
+                          : `🔁 Next review ${rs.dueDate.toLocaleDateString()}`}
+                    </p>
+                  )}
 
                   <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0 0 6px', lineHeight: 1.5,
                     ...(!isExpanded ? { display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' } : {}) }}>
@@ -155,6 +183,12 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, activeTab, setActiveTab
                       style={{ padding: '0.25rem 0.5rem', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #fca5a5', background: 'white', color: '#ef4444', cursor: 'pointer' }}>
                       ✕
                     </button>
+                    {rs && rs.level !== 'ok' && (
+                      <button onClick={() => onMarkReviewed(e.id)}
+                        style={{ flex: '1 1 100%', padding: '0.3rem 0', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #15803d', background: '#f0fdf4', color: '#15803d', cursor: 'pointer' }}>
+                        ✅ I've reviewed this — still on track
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -175,6 +209,7 @@ export default function Vision() {
   const [editQVal, setEditQVal]     = useState('');
   const [expandedId, setExpandedId] = useState(null);
   const [mode, setMode]             = useState('personal');
+  const [reviewPopup, setReviewPopup] = useState(null); // list of entries due/overdue for review
 
   const [modeState, setModeState] = useState({
     personal: { answers: {}, vision: '', step: 0, loadedId: null },
@@ -206,6 +241,22 @@ export default function Vision() {
   }
 
   useEffect(() => { fetchSaved(); }, [currentUser]);
+
+  // Annual review reminder — pops up on this page (not points-related) whenever
+  // a saved vision is within 30 days of its 12-month review anniversary, or past
+  // it. Shows once per calendar day so it doesn't nag on every navigation.
+  useEffect(() => {
+    if (!currentUser || !saved.length) return;
+    const dueEntries = saved
+      .map(e => ({ entry: e, rs: visionReviewStatus(e) }))
+      .filter(x => x.rs && x.rs.level !== 'ok');
+    if (!dueEntries.length) return;
+    const today = new Date().toISOString().split('T')[0];
+    const flagKey = `visionReviewPrompt-${currentUser.uid}-${today}`;
+    if (localStorage.getItem(flagKey)) return;
+    localStorage.setItem(flagKey, '1');
+    setReviewPopup(dueEntries);
+  }, [saved, currentUser]);
 
   function generateVision() {
     if (Object.keys(answers).filter(k => answers[k]).length < 2) return toast.error('Answer at least 2 questions first');
@@ -279,6 +330,15 @@ export default function Vision() {
     } catch (e) { toast.error('Delete failed: ' + e?.message); }
   }
 
+  // No points involved — this just resets the annual review clock to today.
+  async function handleMarkReviewed(id) {
+    try {
+      const updated = saved.map(e => e.id === id ? { ...e, reviewedAt: new Date().toISOString() } : e);
+      await persistSaved(updated);
+      toast.success('Nice — marked as reviewed. Next check-in in 12 months.');
+    } catch (e) { toast.error('Could not save: ' + e?.message); }
+  }
+
   function handleLoad(entry) {
     setMode(entry.mode);
     setModeState(prev => ({
@@ -339,6 +399,51 @@ export default function Vision() {
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <PageHeader icon="🔭" title="Vision Builder — The Framework of the Accountability" subtitle="Create a compelling personal or team vision statement" />
+
+      {/* Annual review reminder — no points, just a nudge to revisit the statement */}
+      <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 12, padding: '0.75rem 1rem', marginBottom: '1.25rem', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+        <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>🔁</span>
+        <p style={{ fontSize: '0.8rem', color: '#0f766e', margin: 0, lineHeight: 1.5 }}>
+          <strong>It's highly recommended to review your Personal and Team Vision at least once a year</strong> — revisit the statement, confirm you're still on track, and edit it if your priorities have shifted.
+          We'll remind you here starting 30 days before each vision's 12-month anniversary.
+        </p>
+      </div>
+
+      {/* Annual review pop-up */}
+      {reviewPopup && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+          <div style={{ background: 'white', borderRadius: 16, padding: '1.75rem', width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+              <span style={{ fontSize: '1.5rem' }}>🔁</span>
+              <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1.05rem' }}>Time to revisit your vision</h3>
+            </div>
+            <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '0 0 14px', lineHeight: 1.55 }}>
+              It's been about a year since {reviewPopup.length > 1 ? 'these visions were' : 'this vision was'} last confirmed. Take a moment to make sure you're still on track — edit it if needed.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
+              {reviewPopup.map(({ entry, rs }) => (
+                <div key={entry.id} style={{ background: '#f8fafc', borderRadius: 10, padding: '0.75rem', border: '1px solid var(--border)' }}>
+                  <p style={{ fontSize: '0.72rem', fontWeight: 700, color: rs.level === 'overdue' ? '#dc2626' : '#b45309', margin: '0 0 4px' }}>
+                    {entry.mode === 'personal' ? '👤 Personal Vision' : '👥 Team Vision'} — {rs.level === 'overdue' ? `overdue since ${rs.dueDate.toLocaleDateString()}` : `due ${rs.dueDate.toLocaleDateString()}`}
+                  </p>
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0 0 8px', lineHeight: 1.45, fontStyle: 'italic' }}>"{entry.vision}"</p>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => { setReviewPopup(null); handleLoad(entry); }}
+                      style={{ flex: 1, padding: '0.3rem 0', borderRadius: 7, fontSize: '0.72rem', fontWeight: 700, border: '1px solid #0f2044', background: 'white', color: '#0f2044', cursor: 'pointer' }}>
+                      ✏️ Review / Edit Now
+                    </button>
+                    <button onClick={() => handleMarkReviewed(entry.id)}
+                      style={{ flex: 1, padding: '0.3rem 0', borderRadius: 7, fontSize: '0.72rem', fontWeight: 700, border: '1px solid #15803d', background: '#f0fdf4', color: '#15803d', cursor: 'pointer' }}>
+                      ✅ Still on track
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button className="btn-secondary" onClick={() => setReviewPopup(null)} style={{ width: '100%' }}>Remind me later</button>
+          </div>
+        </div>
+      )}
 
       {/* Edit saved vision modal */}
       {editingId && editingId !== 'current' && (
@@ -495,6 +600,7 @@ export default function Vision() {
           onDelete={handleDelete}
           onLoad={handleLoad}
           onEdit={handleEdit}
+          onMarkReviewed={handleMarkReviewed}
           activeTab={panelTab}
           setActiveTab={setPanelTab}
           expandedId={expandedId}
