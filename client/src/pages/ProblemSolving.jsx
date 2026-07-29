@@ -693,7 +693,7 @@ function getFilledCategories(causes = {}) {
 // to filled categories. These priorities guide the 5 Whys investigation.
 const PRIORITY_EMOJIS = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
-function PrioritizeCategories({ causes, onComplete }) {
+function PrioritizeCategories({ causes, onComplete, onBack }) {
   const filledCats = getFilledCategories(causes);
   const [priorities, setPriorities] = useState(Object.fromEntries(filledCats.map(c => [c.id, null])));
 
@@ -791,6 +791,22 @@ function PrioritizeCategories({ causes, onComplete }) {
       </div>
 
       <div style={{ display: 'flex', gap: 10 }}>
+        <button
+          onClick={onBack}
+          style={{
+            flex: 1,
+            background: '#f8fafc',
+            color: '#0f2044',
+            border: '1.5px solid #cbd5e1',
+            borderRadius: 10,
+            padding: '0.7rem 1.25rem',
+            fontWeight: 700,
+            fontSize: '0.875rem',
+            cursor: 'pointer',
+          }}
+        >
+          ← Back to Fishbone
+        </button>
         <button
           onClick={handleContinue}
           className="btn-primary"
@@ -905,7 +921,13 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
 
   // Show prioritization component after fishbone is saved
   if (showPrioritization) {
-    return <PrioritizeCategories causes={causes} onComplete={handlePrioritiesComplete} />;
+    return (
+      <PrioritizeCategories
+        causes={causes}
+        onComplete={handlePrioritiesComplete}
+        onBack={() => setShowPrioritization(false)}
+      />
+    );
   }
 
   return (
