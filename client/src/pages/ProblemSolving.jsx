@@ -606,14 +606,19 @@ function AutoGrowTextarea({ value, style, ...props }) {
   return <textarea ref={ref} rows={1} value={value} style={{ ...style, overflow: 'hidden' }} {...props} />;
 }
 
-function CatCard({ cat, position, causes, onUpdate, effectText }) {
+function CatCard({ cat, position, causes, onUpdate, effectText, priority }) {
   const clip = position === 'top'
     ? 'polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%)'
     : 'polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 50%)';
   return (
     <div style={{ background: 'white', borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 6px rgba(15,32,68,0.08)', border: '1px solid #e8edf5' }}>
-      <div style={{ padding: '5px 14px', background: cat.color, color: 'white', fontWeight: 700, fontSize: '0.78rem', clipPath: clip }}>
-        {cat.label}
+      <div style={{ padding: '5px 14px', background: cat.color, color: 'white', fontWeight: 700, fontSize: '0.78rem', clipPath: clip, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span>{cat.label}</span>
+        {priority && (
+          <span style={{ fontSize: '0.9rem', fontWeight: 900, backgroundColor: 'rgba(255,255,255,0.25)', padding: '2px 6px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+            {PRIORITY_EMOJIS[priority]} {priority}
+          </span>
+        )}
       </div>
       <div style={{ padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
         {causes[cat.id].map((v, i) => {
@@ -799,14 +804,17 @@ function PrioritizeCategories({ causes, onComplete }) {
 }
 
 function fishbonePrintHTML(entry) {
-  const { name, problem, causes } = entry.data;
+  const { name, problem, causes, priorities } = entry.data;
   const date = entry.createdAt ? new Date(entry.createdAt.seconds * 1000).toLocaleDateString() : new Date().toLocaleDateString();
   function catHTML(cat) {
     const items = (causes[cat.id] || []).map(v =>
       `<p style="margin:3px 0;font-size:0.78rem;color:${v ? '#1e293b' : '#cbd5e1'};font-style:${v ? 'normal' : 'italic'}">${v || '—'}</p>`
     ).join('');
+    const priority = (priorities || {})[cat.id];
+    const priorityEmojis = { 1: '🥇', 2: '🥈', 3: '🥉' };
+    const priorityBadge = priority ? `<span style="background:rgba(255,255,255,0.25);padding:2px 6px;border-radius:4px;font-size:0.75rem;margin-left:6px">${priorityEmojis[priority]} ${priority}</span>` : '';
     return `<div style="border:2px solid ${cat.color};border-radius:8px;overflow:hidden">
-      <div style="background:${cat.color};color:white;font-weight:700;font-size:0.8rem;padding:4px 10px">${cat.label}</div>
+      <div style="background:${cat.color};color:white;font-weight:700;font-size:0.8rem;padding:4px 10px;display:flex;justify-content:space-between;align-items:center"><span>${cat.label}</span>${priorityBadge}</div>
       <div style="padding:6px 10px">${items}</div>
     </div>`;
   }
@@ -837,6 +845,7 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
   const [name,    setName]    = useState('');
   const [problem, setProblem] = useState('');
   const [causes,  setCauses]  = useState(emptyCauses);
+  const [priorities, setPriorities] = useState({});
   const [saving,  setSaving]  = useState(false);
   const [showPrioritization, setShowPrioritization] = useState(false);
   const isMobile = useIsMobile();
@@ -852,6 +861,7 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
     setName(e.data.name || e.title || '');
     setProblem(e.data.problem || '');
     setCauses(e.data.causes || emptyCauses());
+    setPriorities(e.data.priorities || {});
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -863,7 +873,7 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
   }
 
   function handlePrintCurrent() {
-    printEntry({ id: 'cur', title: name, data: { name, problem, causes }, createdAt: null });
+    printEntry({ id: 'cur', title: name, data: { name, problem, causes, priorities }, createdAt: null });
   }
 
   async function handleSave() {
@@ -872,21 +882,22 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
     await onSave({
       type: 'fishbone',
       title: name,
-      data: { name, problem, causes, priorities: {} },
-      onSaved: () => { setName(''); setProblem(''); setCauses(emptyCauses()); setShowPrioritization(false); }
+      data: { name, problem, causes, priorities },
+      onSaved: () => { setName(''); setProblem(''); setCauses(emptyCauses()); setPriorities({}); setShowPrioritization(false); }
     });
     setSaving(false);
     setShowPrioritization(true);
   }
 
-  async function handlePrioritiesComplete(priorities) {
-    // Re-save with priorities included
+  async function handlePrioritiesComplete(newPriorities) {
+    // Update priorities and re-save
+    setPriorities(newPriorities);
     setSaving(true);
     await onSave({
       type: 'fishbone',
       title: name,
-      data: { name, problem, causes, priorities },
-      onSaved: () => { setName(''); setProblem(''); setCauses(emptyCauses()); setShowPrioritization(false); }
+      data: { name, problem, causes, priorities: newPriorities },
+      onSaved: () => { setName(''); setProblem(''); setCauses(emptyCauses()); setPriorities({}); setShowPrioritization(false); }
     });
     setSaving(false);
     toast.success('✓ Fishbone diagram saved with priorities!');
@@ -950,12 +961,12 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
                         <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{problem}</span>
                       </span>
                     </div>
-                    {ALL_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="top" causes={causes} onUpdate={updateCause} effectText={problem} />)}
+                    {ALL_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="top" causes={causes} onUpdate={updateCause} effectText={problem} priority={priorities[cat.id]} />)}
                   </div>
                 ) : (
                   <>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                      {TOP_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="top" causes={causes} onUpdate={updateCause} effectText={problem} />)}
+                      {TOP_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="top" causes={causes} onUpdate={updateCause} effectText={problem} priority={priorities[cat.id]} />)}
                     </div>
                     <div style={{ position: 'relative', height: 64, margin: '2px 0' }}>
                       <svg width="100%" height="64" style={{ display: 'block' }}>
@@ -977,7 +988,7 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
                       </div>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10 }}>
-                      {BOTTOM_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="bottom" causes={causes} onUpdate={updateCause} effectText={problem} />)}
+                      {BOTTOM_CATS.map(cat => <CatCard key={cat.id} cat={cat} position="bottom" causes={causes} onUpdate={updateCause} effectText={problem} priority={priorities[cat.id]} />)}
                     </div>
                   </>
                 )}
