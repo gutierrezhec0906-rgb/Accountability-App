@@ -236,6 +236,11 @@ export default function Training() {
                 {t.dueDate && !t.completed && <DateStatus date={t.dueDate} />}
                 {t.dueDate && t.completed && <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>📅 {t.dueDate}</span>}
                 {t.completedDate && <span style={{ color: '#0d9488', fontWeight: 600 }}>✅ {t.completedDate}</span>}
+                {t.recommitmentCount > 0 && (
+                  <span style={{ background: '#fef9c3', color: '#b45309', border: '1px solid #fde68a', padding: '1px 8px', borderRadius: 9999, fontWeight: 700, fontSize: '0.7rem' }}>
+                    🔄 {t.recommitmentCount} recommitment{t.recommitmentCount > 1 ? 's' : ''}
+                  </span>
+                )}
               </div>
             </div>
             {/* Edit + Delete */}

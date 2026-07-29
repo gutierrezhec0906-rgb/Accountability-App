@@ -63,10 +63,10 @@ export default function GlobalPastDueModal() {
           if (!i.closed && overdue(due)) items.push({ key: `board-${i.id}`, kind: 'board', id: i.id, title: i.title || 'Untitled action', sub: i.owner, due, notes: i.notes, recommits: i.recommitmentCount });
         });
         (d.trainings || []).forEach(t => {
-          if (!t.completed && overdue(t.dueDate)) items.push({ key: `training-${t.id}`, kind: 'training', id: t.id, title: t.title || 'Untitled training', sub: t.category, due: t.dueDate });
+          if (!t.completed && overdue(t.dueDate)) items.push({ key: `training-${t.id}`, kind: 'training', id: t.id, title: t.title || 'Untitled training', sub: t.category, due: t.dueDate, recommits: t.recommitmentCount });
         });
         (d.smartGoals || []).forEach(g => {
-          if (g && g.status !== 'completed' && g.status !== 'deleted' && overdue(g.dueDate)) items.push({ key: `goal-${g.id}`, kind: 'goal', id: g.id, title: g.title || 'Untitled goal', due: g.dueDate });
+          if (g && g.status !== 'completed' && g.status !== 'deleted' && overdue(g.dueDate)) items.push({ key: `goal-${g.id}`, kind: 'goal', id: g.id, title: g.title || 'Untitled goal', due: g.dueDate, recommits: g.recommitmentCount });
         });
         // Career milestone check-ins that are past due with no progress note logged.
         const cp = d.careerPlan;
@@ -100,8 +100,9 @@ export default function GlobalPastDueModal() {
           // Mirror the board's recommit: new date, bump count, reset deduction flag.
           return { ...row, recommitmentDate: newDate, recommitmentCount: (row.recommitmentCount || 0) + 1, recommitmentSetAt: { seconds: Math.floor(Date.now() / 1000) }, deductionApplied: false };
         }
-        // Trainings & goals: recommitting means a new due date.
-        return { ...row, dueDate: newDate };
+        // Trainings & goals: recommitting means a new due date; count each
+        // recommitment so modules can show "🔄 N recommitment(s)".
+        return { ...row, dueDate: newDate, recommitmentCount: (row.recommitmentCount || 0) + 1 };
       });
       await setDoc(doc(db, 'users', currentUser.uid), { [sec.field]: updated }, { merge: true });
       setData(d => ({ ...d, [sec.field]: updated }));

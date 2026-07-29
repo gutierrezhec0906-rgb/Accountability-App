@@ -339,7 +339,16 @@ export default function SmartGoals() {
                   <span style={{ fontSize: '1.25rem' }}>🎯</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontWeight: 700, color: '#1e293b', margin: 0, fontSize: '0.95rem' }}>{goal.title}</p>
-                    {goal.dueDate && <div style={{ marginTop: 4 }}><DateStatus date={goal.dueDate} /></div>}
+                    {goal.dueDate && (
+                      <div style={{ marginTop: 4, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <DateStatus date={goal.dueDate} />
+                        {goal.recommitmentCount > 0 && (
+                          <span style={{ background: '#fef9c3', color: '#b45309', border: '1px solid #fde68a', padding: '1px 8px', borderRadius: 9999, fontWeight: 700, fontSize: '0.7rem' }}>
+                            🔄 {goal.recommitmentCount} recommitment{goal.recommitmentCount > 1 ? 's' : ''}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </div>
                   <QualityBadge pct={qpct} />
                   <span style={{ background: st.bg, color: st.text, padding: '3px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 700 }}>{st.label}</span>
