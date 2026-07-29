@@ -29,8 +29,9 @@ const TOOLS = ['5 Whys', 'Fishbone Diagram', 'A3 Template'];
 
 // ─── Shared: Saved panel ──────────────────────────────────────────────────────
 function SavedPanel({ entries, onDelete, onLoad, printEntry }) {
+  const isMobile = useIsMobile();
   return (
-    <div style={{ width: 260, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: isMobile ? '100%' : 260, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
       <div style={{ background: '#0f2044', borderRadius: '12px 12px 0 0', padding: '0.75rem 1rem' }}>
         <p style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem', margin: 0 }}>📋 Saved Templates</p>
         <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', margin: '2px 0 0' }}>{entries.length} template{entries.length !== 1 ? 's' : ''}</p>
@@ -282,6 +283,7 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
   const [problem,   setProblem]   = useState('');
   const [whys,      setWhys]      = useState(['', '', '', '', '']);
   const [rootCause, setRootCause] = useState('');
+  const isMobile = useIsMobile();
 
   const problemReady = problem.trim().length >= 15;
   const problemWarn  = problemStatementWarning(problem);
@@ -313,7 +315,7 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
   }
 
   return (
-    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 20, alignItems: isMobile ? 'stretch' : 'flex-start' }}>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
 
         {/* Title */}
@@ -1149,6 +1151,7 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
   const [team,  setTeam]  = useState('');
   const [date,  setDate]  = useState('');
   const [form,  setForm]  = useState(EMPTY_A3);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!prefill) return;
@@ -1188,7 +1191,7 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
   }
 
   return (
-    <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 20, alignItems: isMobile ? 'stretch' : 'flex-start' }}>
       <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
 
         {/* Example guide banner */}
