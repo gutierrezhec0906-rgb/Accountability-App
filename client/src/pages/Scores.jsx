@@ -561,22 +561,41 @@ export default function Scores() {
       {/* How to improve */}
       <div className="card" style={{ padding: '1.5rem' }}>
         <h3 style={{ fontWeight: 800, color: '#1e293b', marginBottom: 16, fontSize: '1rem' }}>How to Improve Your Score</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 12 }}>
           {[
                 { icon: '🗂',  tip: 'Use more tools across the app — diversity matters.' },
                 { icon: '📅',  tip: 'Log in consistently. Aim for daily or weekly sessions.' },
                 { icon: '✍️', tip: 'Fill SMART goal fields with detail — aim for 30+ words each.' },
                 { icon: '🎯',  tip: 'Create active SMART goals and mark them complete.' },
                 { icon: '📝',  tip: 'Log a complete coaching session every week — goal, notes, and at least one action item — to earn 5 pts/week.' },
-                { icon: '🚨',  tip: 'Never let an action go past due. If something does slip past its deadline, recommit to a new date immediately — past-due items hurt your score and keep the reminder popping up until they’re rescheduled.' },
               ].map((item, i) => (
                 <div key={i} style={{ background: '#f8fafc', borderRadius: 10, padding: '0.875rem', display: 'flex', gap: 10 }}>
                   <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>{item.icon}</span>
                   <p style={{ color: '#475569', fontSize: '0.8rem', margin: 0, lineHeight: 1.5 }}>{item.tip}</p>
                 </div>
               ))}
-            </div>
+        </div>
+
+        {/* Foundation banner — spans the full width beneath the tips above, so
+            "never let an action go past due" reads as the base everything else
+            stands on, not just one tip among equals. */}
+        <div style={{
+          background: 'linear-gradient(135deg, #7f1d1d 0%, #b91c1c 55%, #7f1d1d 100%)',
+          borderRadius: 12, padding: '1rem 1.25rem',
+          display: 'flex', alignItems: 'center', gap: 14,
+          boxShadow: '0 6px 18px rgba(185,28,28,0.28)',
+        }}>
+          <span style={{ fontSize: '1.75rem', flexShrink: 0 }}>🏛️</span>
+          <div>
+            <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#fecaca', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+              The Foundation — everything above depends on this
+            </p>
+            <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 600, color: 'white', lineHeight: 1.5 }}>
+              Never let an action go past due. If something does slip past its deadline, recommit to a new date immediately — past-due items hurt your score and keep the reminder popping up until they're rescheduled.
+            </p>
           </div>
+        </div>
+      </div>
 
           {/* Team scores */}
           {canSeeTeam && (
