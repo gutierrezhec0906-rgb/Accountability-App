@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import { logPointEvent, calculateScore } from '../utils/scoring';
+import NameField from '../components/NameField';
+import { useSavedNames } from '../utils/savedNames';
 
 const LOB_MIN_TASKS = 4;   // named task rows required for the setup point
 const LOB_MIN_DATES = 4;   // date columns required for the setup point
@@ -274,6 +276,7 @@ function LOBGuide() {
 
 export default function LOB() {
   const { currentUser } = useAuth();
+  const { names: savedNames, remember: rememberName } = useSavedNames();
   const [lobs, setLobs] = useState([]);
   const [activeLobId, setActiveLobId] = useState(null);
   const [showNewForm, setShowNewForm] = useState(false);
@@ -398,6 +401,7 @@ export default function LOB() {
     const numCols = activeLob.dates.length;
     const task = { ...blankTask(numCols), name: taskForm.name, owner: taskForm.owner };
     patchActive({ tasks: [...(activeLob.tasks || []), task] });
+    rememberName(taskForm.owner);
     setTaskForm({ name: '', owner: '' });
     setShowTaskForm(false);
     toast.success('Task row added');
@@ -409,6 +413,7 @@ export default function LOB() {
       t.id !== editingTask.id ? t : { ...t, name: editingTask.name, owner: editingTask.owner }
     );
     patchActive({ tasks });
+    rememberName(editingTask.owner);
     setEditingTask(null);
     toast.success('Task updated');
   }
@@ -644,7 +649,7 @@ export default function LOB() {
             </div>
             <div style={{ marginBottom: '1.5rem' }}>
               <label className="label">Owner / Team</label>
-              <input className="input" value={editingTask.owner}
+              <NameField value={editingTask.owner} names={savedNames}
                 onChange={e => setEditingTask(t => ({ ...t, owner: e.target.value }))}
                 onKeyDown={e => e.key === 'Enter' && saveTaskEdit()} />
             </div>
@@ -884,7 +889,7 @@ export default function LOB() {
             </div>
             <div style={{ flex: 1, minWidth: 160 }}>
               <label className="label">Owner / Team</label>
-              <input className="input" value={taskForm.owner}
+              <NameField value={taskForm.owner} names={savedNames}
                 onChange={e => setTaskForm(f => ({ ...f, owner: e.target.value }))}
                 placeholder="e.g. Team F" />
             </div>

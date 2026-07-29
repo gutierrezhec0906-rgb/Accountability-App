@@ -7,6 +7,8 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore } from '../utils/scoring';
 import { RecommitBadge } from '../components/DateStatus';
+import NameField from '../components/NameField';
+import { useSavedNames } from '../utils/savedNames';
 
 // Grows with its content so a long action title/description is never clipped
 // to a single line — matches the pattern used for Fishbone/5S notes.
@@ -90,6 +92,7 @@ const EMPTY_FORM = { title: '', owner: '', dueDate: '', notes: '' };
 export default function VisualBoard() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const { names: savedNames, remember: rememberName } = useSavedNames();
   const [items, setItems]       = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [filter, setFilter]     = useState('All');
@@ -150,6 +153,7 @@ export default function VisualBoard() {
         createdAt: { seconds: Math.floor(Date.now() / 1000) },
       };
       await persist([newItem, ...items]);
+      rememberName(form.owner);
 
       const qaTs = localStorage.getItem('ps_quick_action_ts');
       if (qaTs && Date.now() - parseInt(qaTs, 10) < 5 * 60 * 1000) {
@@ -188,6 +192,7 @@ export default function VisualBoard() {
   async function handleEditSave(id) {
     try {
       await persist(items.map(i => i.id === id ? { ...i, ...editForm, updatedAt: { seconds: Math.floor(Date.now() / 1000) } } : i));
+      rememberName(editForm.owner);
       setEditingId(null);
       toast.success('Action updated');
     } catch (e) {
@@ -361,7 +366,7 @@ export default function VisualBoard() {
           <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>New Action Item</h3>
           <form onSubmit={handleAdd} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div><label className="label">Title / Action</label><AutoGrowTextarea className="input" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Describe the action..." style={{ minHeight: 38 }} /></div>
-            <div><label className="label">Owner</label><input className="input" required value={form.owner} onChange={e => setForm(f => ({ ...f, owner: e.target.value }))} placeholder="Responsible person" /></div>
+            <div><label className="label">Owner</label><NameField required value={form.owner} onChange={e => setForm(f => ({ ...f, owner: e.target.value }))} placeholder="Responsible person" names={savedNames} /></div>
             <div><label className="label">Due Date <span style={{ color: '#ef4444' }}>*</span></label><input className="input" type="date" required value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
             <div style={{ display: 'flex', alignItems: 'flex-end' }}>
               <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
@@ -533,7 +538,7 @@ export default function VisualBoard() {
                 <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #e2e8f0' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
                     <div><label className="label">Title / Action</label><AutoGrowTextarea className="input" value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} style={{ minHeight: 38 }} /></div>
-                    <div><label className="label">Owner</label><input className="input" value={editForm.owner} onChange={e => setEditForm(f => ({ ...f, owner: e.target.value }))} /></div>
+                    <div><label className="label">Owner</label><NameField value={editForm.owner} onChange={e => setEditForm(f => ({ ...f, owner: e.target.value }))} names={savedNames} /></div>
                     <div><label className="label">Due Date</label><input className="input" type="date" value={editForm.dueDate} onChange={e => setEditForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
                     <div style={{ gridColumn: '1/-1' }}><label className="label">Notes</label><textarea className="input" rows={2} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} /></div>
                   </div>

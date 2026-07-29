@@ -6,6 +6,8 @@ import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import { logPointEvent, calculateScore, weekMonday } from '../utils/scoring';
+import NameField from '../components/NameField';
+import { useSavedNames } from '../utils/savedNames';
 
 // True on narrow / phone screens. Used to swap the horizontal fishbone diagram
 // for a readable vertical stack on mobile.
@@ -1152,6 +1154,7 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
   const [date,  setDate]  = useState('');
   const [form,  setForm]  = useState(EMPTY_A3);
   const isMobile = useIsMobile();
+  const { names: savedNames, remember: rememberName } = useSavedNames();
 
   useEffect(() => {
     if (!prefill) return;
@@ -1224,7 +1227,7 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               <div>
                 <label className="label">Owner (single accountable person)</label>
-                <input className="input" value={owner} onChange={e => setOwner(e.target.value)} placeholder="Name" />
+                <NameField value={owner} names={savedNames} onChange={e => setOwner(e.target.value)} placeholder="Name" />
               </div>
               <div>
                 <label className="label">Team / Others involved</label>
@@ -1403,7 +1406,7 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
 
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn-primary" style={{ flex: 1 }}
-            onClick={() => onSave({ type: 'a3', title: title || 'Untitled A3', data: { ...form, owner, team, date }, onSaved: () => { setTitle(''); setOwner(''); setTeam(''); setDate(''); setForm(EMPTY_A3); } })}>
+            onClick={() => { rememberName(owner); onSave({ type: 'a3', title: title || 'Untitled A3', data: { ...form, owner, team, date }, onSaved: () => { setTitle(''); setOwner(''); setTeam(''); setDate(''); setForm(EMPTY_A3); } }); }}>
             💾 Save A3
           </button>
           <button onClick={handlePrintCurrent}

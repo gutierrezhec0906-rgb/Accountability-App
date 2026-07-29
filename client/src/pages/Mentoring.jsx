@@ -6,6 +6,8 @@ import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import { generateMentoringPDF } from '../utils/mentoringReport';
 import { logPointEvent, calculateScore, isCompleteMentoringSession } from '../utils/scoring';
+import NameField from '../components/NameField';
+import { useSavedNames } from '../utils/savedNames';
 
 const PILLARS = ['Leadership', 'Technical', 'Interpersonal'];
 const PILLAR_COLORS = { Leadership: '#0f2044', Technical: '#0891b2', Interpersonal: '#8b5cf6' };
@@ -96,6 +98,7 @@ const labelStyle = { fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-mu
 
 export default function Mentoring() {
   const { currentUser } = useAuth();
+  const { names: savedNames, remember: rememberName } = useSavedNames();
   // Multiple mentoring logs: `plans` is the full list, `activeIdx` selects the one
   // being viewed/edited. `plan`/`setPlan` keep the original single-plan semantics
   // so the rest of the component is unchanged — setPlan writes into plans[activeIdx].
@@ -203,6 +206,7 @@ export default function Mentoring() {
       }
       const toSave = { ...plan, cycle, startedAt, updatedAt: now };
       await persistPlans(toSave);
+      rememberName(plan.mentor.name);
       toast.success(!plan.startedAt && startedAt ? 'Mentoring cycle started!' : 'Mentoring plan saved');
     } catch { toast.error('Save failed'); }
     setSaving(false);
@@ -358,7 +362,7 @@ export default function Mentoring() {
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 14 }}>
           <div>
             <label style={labelStyle}>Mentor Name</label>
-            <input className="input" value={plan.mentor.name} onChange={e => setField(['mentor', 'name'], e.target.value)} placeholder="Full name" />
+            <NameField value={plan.mentor.name} names={savedNames} onChange={e => setField(['mentor', 'name'], e.target.value)} placeholder="Full name" />
           </div>
           <div>
             <label style={labelStyle}>Mentor Role</label>

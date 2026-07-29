@@ -8,6 +8,8 @@ import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore, localDateStr } from '../utils/scoring';
 import { compressImage, withTimeout } from '../utils/image';
 import { generateKaizenPDF } from '../utils/moduleReports';
+import NameField from '../components/NameField';
+import { useSavedNames } from '../utils/savedNames';
 
 const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 const MIN_OPP_WORDS = 4;   // an "area of opportunity" must be described in ≥4 words
@@ -93,6 +95,7 @@ function KaizenForm({ initial, onSave, onCancel, title: formTitle }) {
     auditDates: { d30: '', d60: '', d90: '', ...(initial?.auditDates || {}) },
   });
   const [phase, setPhase]     = useState('prepare');
+  const { names: savedNames, remember: rememberName } = useSavedNames();
 
   function set(field, val) { setForm(f => ({ ...f, [field]: val })); }
   function setAuditDate(key, val) { setForm(f => ({ ...f, auditDates: { ...f.auditDates, [key]: val } })); }
@@ -265,7 +268,7 @@ function KaizenForm({ initial, onSave, onCancel, title: formTitle }) {
                 <input className="input" style={{ fontSize: '0.82rem', padding: '0.45rem 0.6rem' }}
                   placeholder="Describe the action…" value={row.action}
                   onChange={e => updateFollowUp(i, 'action', e.target.value)} />
-                <input className="input" style={{ fontSize: '0.82rem', padding: '0.45rem 0.6rem' }}
+                <NameField inputStyle={{ fontSize: '0.82rem', padding: '0.45rem 0.6rem' }} names={savedNames}
                   placeholder="Owner name" value={row.owner}
                   onChange={e => updateFollowUp(i, 'owner', e.target.value)} />
                 <input className="input" type="date" style={{ fontSize: '0.82rem', padding: '0.45rem 0.6rem' }}
@@ -315,10 +318,13 @@ function KaizenForm({ initial, onSave, onCancel, title: formTitle }) {
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           <button type="button" className="btn-secondary" onClick={onCancel}>Cancel</button>
-          <button type="button" className="btn-primary" onClick={() => onSave({
-            ...form,
-            followUpActions: form.followUpActions.filter(r => r.action.trim() || r.owner.trim() || r.deadline),
-          })}>💾 Save Kaizen</button>
+          <button type="button" className="btn-primary" onClick={() => {
+            form.followUpActions.forEach(r => rememberName(r.owner));
+            onSave({
+              ...form,
+              followUpActions: form.followUpActions.filter(r => r.action.trim() || r.owner.trim() || r.deadline),
+            });
+          }}>💾 Save Kaizen</button>
         </div>
       </div>
     </div>

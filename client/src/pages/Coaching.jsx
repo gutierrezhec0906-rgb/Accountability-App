@@ -6,6 +6,8 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { calculateScore, logPointEvent, isCompleteCoachingSession, weekMonday } from '../utils/scoring';
+import NameField from '../components/NameField';
+import { useSavedNames } from '../utils/savedNames';
 
 const sessionTypes = ['Performance', 'Development', 'Disciplinary', 'Recognition', 'Career', 'General'];
 const typeColors   = { Performance: '#0d9488', Development: '#0f2044', Disciplinary: '#ef4444', Recognition: '#f59e0b', Career: '#8b5cf6', General: '#64748b' };
@@ -164,6 +166,7 @@ function ActionItemsGrid({ rows, onChange }) {
 
 export default function Coaching() {
   const { currentUser } = useAuth();
+  const { names: savedNames, remember: rememberName } = useSavedNames();
   const [sessions, setSessions]           = useState([]);
   const [loading, setLoading]             = useState(true);
   const [showForm, setShowForm]           = useState(false);
@@ -235,6 +238,7 @@ export default function Coaching() {
       };
       const updated = [newSession, ...sessions];
       await persist(updated);
+      rememberName(form.coachee);
       setForm(emptyForm);
       setShowForm(false);
       const earned = await maybeLogCoachingPoints(newSession);
@@ -271,6 +275,7 @@ export default function Coaching() {
           : s
       );
       await persist(updated);
+      rememberName(editForm.coachee);
       setSelectedSession(updated.find(s => s.id === editingId) || null);
       setEditingId(null);
       setEditForm(null);
@@ -328,7 +333,7 @@ export default function Coaching() {
         <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
           <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>New Coaching Session</h3>
           <form onSubmit={addSession} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <div><label className="label">Coachee Name</label><input className="input" required value={form.coachee} onChange={e => setForm(f => ({ ...f, coachee: e.target.value }))} placeholder="Team member name" /></div>
+            <div><label className="label">Coachee Name</label><NameField required value={form.coachee} names={savedNames} onChange={e => setForm(f => ({ ...f, coachee: e.target.value }))} placeholder="Team member name" /></div>
             <div>
               <label className="label">Session Type</label>
               <select className="input" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>{sessionTypes.map(t => <option key={t}>{t}</option>)}</select>
@@ -410,7 +415,7 @@ export default function Coaching() {
               <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
                 <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.875rem', margin: '0 0 1rem' }}>Edit Session</h4>
                 <form onSubmit={saveEdit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                  <div><label className="label">Coachee Name</label><input className="input" required value={editForm.coachee} onChange={e => setEditForm(f => ({ ...f, coachee: e.target.value }))} /></div>
+                  <div><label className="label">Coachee Name</label><NameField required value={editForm.coachee} names={savedNames} onChange={e => setEditForm(f => ({ ...f, coachee: e.target.value }))} /></div>
                   <div>
                     <label className="label">Session Type</label>
                     <select className="input" value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))}>{sessionTypes.map(t => <option key={t}>{t}</option>)}</select>
