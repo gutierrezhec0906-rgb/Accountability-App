@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { recommitColor } from './DateStatus';
 
 // Career milestone check-in windows (anchored to careerPlan.completedAt).
 const CAREER_CHECKINS = [
@@ -157,7 +158,7 @@ export default function GlobalPastDueModal() {
                           {item.sub && <span>{item.kind === 'training' ? '🏷️' : '👤'} {item.sub}</span>}
                           <span style={{ color: '#dc2626', fontWeight: 700 }}>🚨 {daysOverdue(item.due)}d overdue</span>
                           <span>📅 was due {new Date(item.due + 'T00:00:00').toLocaleDateString()}</span>
-                          {item.recommits > 0 && <span style={{ color: '#b45309', fontWeight: 700 }}>🔄 {item.recommits} prior</span>}
+                          {item.recommits > 0 && <span style={{ color: recommitColor(item.recommits).color, fontWeight: 700 }}>🔄 {item.recommits} prior</span>}
                         </div>
                         {item.notes && <p style={{ fontSize: '0.75rem', color: '#475569', margin: '0 0 8px', lineHeight: 1.45 }}>{item.notes}</p>}
                         {item.kind === 'career' ? (

@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import DateStatus, { getDateStatus } from '../components/DateStatus';
+import DateStatus, { getDateStatus, RecommitBadge } from '../components/DateStatus';
 
 const sampleTrainings = [
   { id: 1, title: 'Lean Manufacturing Fundamentals', category: 'Lean',       duration: '4h',   dueDate: '2024-08-31', completed: true,  completedDate: '2024-07-20', mandatory: true  },
@@ -236,11 +236,7 @@ export default function Training() {
                 {t.dueDate && !t.completed && <DateStatus date={t.dueDate} />}
                 {t.dueDate && t.completed && <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>📅 {t.dueDate}</span>}
                 {t.completedDate && <span style={{ color: '#0d9488', fontWeight: 600 }}>✅ {t.completedDate}</span>}
-                {t.recommitmentCount > 0 && (
-                  <span style={{ background: '#fef9c3', color: '#b45309', border: '1px solid #fde68a', padding: '1px 8px', borderRadius: 9999, fontWeight: 700, fontSize: '0.7rem' }}>
-                    🔄 {t.recommitmentCount} recommitment{t.recommitmentCount > 1 ? 's' : ''}
-                  </span>
-                )}
+                <RecommitBadge count={t.recommitmentCount} />
               </div>
             </div>
             {/* Edit + Delete */}

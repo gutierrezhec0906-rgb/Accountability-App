@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore, localDateStr } from '../utils/scoring';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
-import DateStatus from '../components/DateStatus';
+import DateStatus, { RecommitBadge } from '../components/DateStatus';
 import { generateSmartGoalsPDF } from '../utils/moduleReports';
 
 const STATUS_STYLES = {
@@ -342,11 +342,7 @@ export default function SmartGoals() {
                     {goal.dueDate && (
                       <div style={{ marginTop: 4, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                         <DateStatus date={goal.dueDate} />
-                        {goal.recommitmentCount > 0 && (
-                          <span style={{ background: '#fef9c3', color: '#b45309', border: '1px solid #fde68a', padding: '1px 8px', borderRadius: 9999, fontWeight: 700, fontSize: '0.7rem' }}>
-                            🔄 {goal.recommitmentCount} recommitment{goal.recommitmentCount > 1 ? 's' : ''}
-                          </span>
-                        )}
+                        <RecommitBadge count={goal.recommitmentCount} />
                       </div>
                     )}
                   </div>

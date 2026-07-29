@@ -6,6 +6,7 @@ import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore } from '../utils/scoring';
+import { RecommitBadge } from '../components/DateStatus';
 
 // Status is computed automatically from due date — never manually set
 function computeStatus(dueDate, recommitmentDate) {
@@ -381,7 +382,7 @@ export default function VisualBoard() {
                     <div style={{ display: 'flex', gap: 12, fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
                       <span>👤 {item.owner}</span>
                       {item.closedAt?.seconds && <span>Closed {new Date(item.closedAt.seconds * 1000).toLocaleDateString()}</span>}
-                      {item.recommitmentCount > 0 && <span style={{ color: '#f59e0b' }}>🔄 {item.recommitmentCount} recommitment{item.recommitmentCount > 1 ? 's' : ''}</span>}
+                      <RecommitBadge count={item.recommitmentCount} />
                     </div>
                   </div>
                   <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 800,
@@ -463,11 +464,7 @@ export default function VisualBoard() {
                       {st.daysLeft !== null && st.daysLeft < 0 && ` · ${Math.abs(st.daysLeft)}d overdue`}
                       {st.daysLeft !== null && st.daysLeft >= 0 && ` · ${st.daysLeft}d left`}
                     </span>
-                    {recommitCount > 0 && (
-                      <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: '0.65rem', fontWeight: 700, background: '#eff6ff', color: '#3b82f6', border: '1px solid #bfdbfe' }}>
-                        🔄 {recommitCount} recommitment{recommitCount > 1 ? 's' : ''}
-                      </span>
-                    )}
+                    <RecommitBadge count={recommitCount} />
                   </div>
                   {item.notes && <p style={{ color: 'var(--text-secondary)', fontSize: '0.8375rem', margin: '0 0 6px', lineHeight: 1.5 }}>{item.notes}</p>}
                   <div style={{ display: 'flex', gap: 16, fontSize: '0.75rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>

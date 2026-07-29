@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { collection, getDocs, query, where, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { RecommitBadge } from '../components/DateStatus';
 
 const REFRESH_INTERVAL = 60;
 
@@ -315,11 +316,7 @@ export default function TeamBoard() {
                       </div>
 
                       {/* Recommitments */}
-                      {recommitCount > 0 && (
-                        <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#60a5fa', background: 'rgba(96,165,250,0.12)', padding: '2px 10px', borderRadius: 9999, whiteSpace: 'nowrap', justifySelf: 'start' }}>
-                          🔄 {recommitCount} recommit{recommitCount > 1 ? 's' : ''}
-                        </span>
-                      )}
+                      <RecommitBadge count={recommitCount} dark style={{ fontSize: '0.75rem', padding: '2px 10px', justifySelf: 'start' }} />
                     </div>
 
                     {/* Notes */}
