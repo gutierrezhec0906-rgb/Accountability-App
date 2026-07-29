@@ -678,6 +678,126 @@ function fishboneCategoriesFilled(causes = {}) {
 }
 const emptyCauses = () => Object.fromEntries(ALL_CATS.map(c => [c.id, ['', '', '']]));
 
+// Get categories that have at least one cause filled in
+function getFilledCategories(causes = {}) {
+  return ALL_CATS.filter(c => (causes[c.id] || []).some(v => (v || '').trim()));
+}
+
+// ─── Prioritize Categories (Post-Fishbone) ──────────────────────────────────
+// After completing a fishbone diagram, let the user assign priorities (1, 2, 3)
+// to filled categories. These priorities guide the 5 Whys investigation.
+const PRIORITY_EMOJIS = { 1: '🥇', 2: '🥈', 3: '🥉' };
+
+function PrioritizeCategories({ causes, onComplete }) {
+  const filledCats = getFilledCategories(causes);
+  const [priorities, setPriorities] = useState(Object.fromEntries(filledCats.map(c => [c.id, null])));
+
+  function togglePriority(catId, priority) {
+    setPriorities(p => ({ ...p, [catId]: p[catId] === priority ? null : priority }));
+  }
+
+  function handleContinue() {
+    onComplete(priorities);
+  }
+
+  const hasPriorities = Object.values(priorities).some(p => p !== null);
+
+  return (
+    <div style={{ maxWidth: 860, margin: '0 auto', padding: '1.5rem' }}>
+      <div style={{ background: '#f0f9ff', border: '2px solid #0369a1', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem' }}>
+        <h3 style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 8px', fontSize: '1rem' }}>🎯 Next Step: Prioritize Root Causes</h3>
+        <p style={{ color: '#0369a1', fontSize: '0.85rem', margin: '0 0 8px', lineHeight: 1.6 }}>
+          You've identified {filledCats.length} area{filledCats.length !== 1 ? 's' : ''} of opportunity. Now choose which 1–3 to investigate first via 5 Whys analysis.
+        </p>
+        <p style={{ color: '#064e3b', fontSize: '0.8rem', margin: 0, fontStyle: 'italic' }}>
+          💡 Use data if you have it (Pareto, frequency counts, impact); otherwise, team consensus works fine.
+        </p>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12, marginBottom: '1.5rem' }}>
+        {filledCats.map(cat => (
+          <div
+            key={cat.id}
+            style={{
+              border: `2px solid ${cat.color}`,
+              borderRadius: 12,
+              padding: '1rem',
+              background: 'white',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 8,
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+              <span style={{ fontSize: '1.3rem' }}>{cat.emoji}</span>
+              <span style={{ fontWeight: 700, color: '#0f2044', fontSize: '0.9rem' }}>{cat.label}</span>
+            </div>
+
+            {/* Show first cause as preview */}
+            {(causes[cat.id] || []).filter(v => v.trim()).slice(0, 1).map((cause, i) => (
+              <p key={i} style={{ fontSize: '0.75rem', color: '#64748b', margin: '0 0 6px', fontStyle: 'italic', lineHeight: 1.4 }}>
+                "{cause.substring(0, 50)}{cause.length > 50 ? '…' : ''}"
+              </p>
+            ))}
+
+            {/* Priority buttons */}
+            <div style={{ display: 'flex', gap: 6 }}>
+              {[1, 2, 3].map(p => (
+                <button
+                  key={p}
+                  onClick={() => togglePriority(cat.id, p)}
+                  style={{
+                    flex: 1,
+                    padding: '0.5rem',
+                    borderRadius: 8,
+                    border: `2px solid ${priorities[cat.id] === p ? cat.color : '#e2e8f0'}`,
+                    background: priorities[cat.id] === p ? cat.color : 'white',
+                    color: priorities[cat.id] === p ? 'white' : '#64748b',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 3,
+                  }}
+                >
+                  <span style={{ fontSize: '1rem' }}>{PRIORITY_EMOJIS[p]}</span>
+                  <span style={{ fontSize: '0.75rem' }}>{p}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Summary */}
+      <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '0.875rem 1rem', marginBottom: '1.5rem' }}>
+        <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0 }}>
+          <strong>Priorities assigned:</strong>{' '}
+          {hasPriorities
+            ? [1, 2, 3]
+                .filter(p => Object.values(priorities).includes(p))
+                .map(p => `${PRIORITY_EMOJIS[p]} ×${Object.values(priorities).filter(pr => pr === p).length}`)
+                .join(' ')
+            : 'None yet'}
+        </p>
+      </div>
+
+      <div style={{ display: 'flex', gap: 10 }}>
+        <button
+          onClick={handleContinue}
+          className="btn-primary"
+          style={{ flex: 1 }}
+        >
+          {hasPriorities ? '✓ Continue to 5 Whys' : 'Skip Prioritization'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function fishbonePrintHTML(entry) {
   const { name, problem, causes } = entry.data;
   const date = entry.createdAt ? new Date(entry.createdAt.seconds * 1000).toLocaleDateString() : new Date().toLocaleDateString();
@@ -718,6 +838,7 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
   const [problem, setProblem] = useState('');
   const [causes,  setCauses]  = useState(emptyCauses);
   const [saving,  setSaving]  = useState(false);
+  const [showPrioritization, setShowPrioritization] = useState(false);
   const isMobile = useIsMobile();
 
   const effectReady = problem.trim().length >= 15;
@@ -748,8 +869,32 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
   async function handleSave() {
     if (!name.trim()) return toast.error('Please enter a diagram name before saving');
     setSaving(true);
-    await onSave({ type: 'fishbone', title: name, data: { name, problem, causes }, onSaved: () => { setName(''); setProblem(''); setCauses(emptyCauses()); } });
+    await onSave({
+      type: 'fishbone',
+      title: name,
+      data: { name, problem, causes, priorities: {} },
+      onSaved: () => { setName(''); setProblem(''); setCauses(emptyCauses()); setShowPrioritization(false); }
+    });
     setSaving(false);
+    setShowPrioritization(true);
+  }
+
+  async function handlePrioritiesComplete(priorities) {
+    // Re-save with priorities included
+    setSaving(true);
+    await onSave({
+      type: 'fishbone',
+      title: name,
+      data: { name, problem, causes, priorities },
+      onSaved: () => { setName(''); setProblem(''); setCauses(emptyCauses()); setShowPrioritization(false); }
+    });
+    setSaving(false);
+    toast.success('✓ Fishbone diagram saved with priorities!');
+  }
+
+  // Show prioritization component after fishbone is saved
+  if (showPrioritization) {
+    return <PrioritizeCategories causes={causes} onComplete={handlePrioritiesComplete} />;
   }
 
   return (
