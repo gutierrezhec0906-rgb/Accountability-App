@@ -417,6 +417,25 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
           <textarea className="input" rows={2} value={rootCause} onChange={e => setRootCause(e.target.value)} placeholder="State the root cause and proposed countermeasure..." />
         </div>
 
+        {(() => {
+          const qualifying = fiveWhysQualifyingCount(whys);
+          const qualifies = qualifying >= FIVE_WHYS_MIN_FILLED;
+          return (
+            <div style={{
+              display: 'flex', alignItems: 'center', gap: 8, padding: '0.6rem 0.875rem', borderRadius: 10,
+              background: qualifies ? '#f0fdf4' : '#f8fafc',
+              border: `1px solid ${qualifies ? '#86efac' : '#e2e8f0'}`,
+            }}>
+              <span style={{ fontSize: '0.95rem' }}>{qualifies ? '✅' : '🎯'}</span>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: qualifies ? '#15803d' : '#475569' }}>
+                {qualifying}/{FIVE_WHYS_MIN_FILLED} Whys with {FIVE_WHYS_MIN_WORDS}+ words — {qualifies
+                  ? 'you qualify for +5 pts on save'
+                  : `write ${FIVE_WHYS_MIN_FILLED - qualifying} more to earn +5 pts`}
+              </span>
+            </div>
+          );
+        })()}
+
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn-primary" style={{ flex: 1 }}
             onClick={() => onSave({ type: '5whys', title: title || problem || 'Untitled 5 Whys', data: { problem, whys, rootCause }, onSaved: () => { setTitle(''); setProblem(''); setWhys(['','','','','']); setRootCause(''); } })}>
@@ -635,6 +654,17 @@ const BOTTOM_CATS = [
 ];
 const ALL_CATS = [...TOP_CATS, ...BOTTOM_CATS];
 const FISHBONE_MIN_CATEGORIES = 4; // of 6 (People/Process/Materials/Machine/Environment/Measurement)
+
+const FIVE_WHYS_MIN_FILLED = 3;  // of 5 Whys must be filled to qualify for points
+const FIVE_WHYS_MIN_WORDS  = 15; // each qualifying Why needs at least this many words
+
+// A 5 Whys analysis only earns its points once at least FIVE_WHYS_MIN_FILLED of
+// the 5 Why fields each have at least FIVE_WHYS_MIN_WORDS words — a shallow
+// one-word "why" chain doesn't get root-cause thinking credit. Saving is always
+// allowed either way; this only gates the +5 pts.
+function fiveWhysQualifyingCount(whys = []) {
+  return whys.filter(w => (w || '').trim().split(/\s+/).filter(Boolean).length >= FIVE_WHYS_MIN_WORDS).length;
+}
 
 // A fishbone earns its points only when at least FISHBONE_MIN_CATEGORIES of the
 // 6 categories each have at least one filled-in cause. Saving is always allowed —
@@ -1467,6 +1497,18 @@ export default function ProblemSolving() {
             toast.success(`Template saved. Fill in at least ${FISHBONE_MIN_CATEGORIES} of the 6 categories (currently ${filledCats}) to earn +5 pts.`, { duration: 6000 });
             await persist(updated);
             return; // keep the form filled — don't wipe the diagram (or any manual box resizing) after its first save
+          }
+        }
+
+        // 5 Whys only qualifies for points once at least 3 of the 5 Why fields
+        // each have 15+ words — saving is always allowed either way.
+        if (type === '5whys') {
+          const qualifying = fiveWhysQualifyingCount(data.whys);
+          if (qualifying < FIVE_WHYS_MIN_FILLED) {
+            toast.success(`Analysis saved. Write at least ${FIVE_WHYS_MIN_FILLED} Whys with ${FIVE_WHYS_MIN_WORDS}+ words each (currently ${qualifying}) to earn +5 pts.`, { duration: 6000 });
+            await persist(updated);
+            onSaved?.();
+            return;
           }
         }
 

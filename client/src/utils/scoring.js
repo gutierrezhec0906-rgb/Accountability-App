@@ -128,7 +128,7 @@ export function isCompleteCoachingSession(s) {
 
 // ── Problem-Solving Score (0-20) ───────────────────────────────────────────
 // Points per tool per week (max once per tool per week):
-//   5 Whys   → 5 pts
+//   5 Whys   → 5 pts (only if 3+ of the 5 Why fields have 15+ words each)
 //   Fishbone → 5 pts
 //   A3       → 10 pts  (total cap 20 pts/week)
 //
@@ -138,18 +138,31 @@ export function isCompleteCoachingSession(s) {
 //   2 week gap          →  50%
 //   3+ week gap         →  25%
 const PS_POINTS = { '5whys': 5, fishbone: 5, a3: 10 };
+const FIVE_WHYS_MIN_FILLED = 3;
+const FIVE_WHYS_MIN_WORDS  = 15;
+
+// Mirrors the client-side gate in ProblemSolving.jsx (fiveWhysQualifyingCount) —
+// a shallow one-word "why" chain doesn't earn root-cause credit.
+function fiveWhysQualifies(whys = []) {
+  const qualifying = whys.filter(w => (w || '').trim().split(/\s+/).filter(Boolean).length >= FIVE_WHYS_MIN_WORDS).length;
+  return qualifying >= FIVE_WHYS_MIN_FILLED;
+}
 
 export function problemSolvingScore(entries = []) {
   if (!entries.length) return 0;
 
-  // Normalise createdAt to YYYY-MM-DD
-  const dated = entries.map(e => ({
-    type: e.type,
-    date: e.createdAt?.seconds
-      ? new Date(e.createdAt.seconds * 1000).toISOString().split('T')[0]
-      : typeof e.createdAt === 'string' ? e.createdAt.split('T')[0]
-      : null,
-  })).filter(e => e.date && PS_POINTS[e.type] !== undefined);
+  // Normalise createdAt to YYYY-MM-DD. A '5whys' entry only counts toward
+  // points once it clears the quality gate — filter it out here (not just at
+  // save time) so a shallow analysis never scores, even on recalculation.
+  const dated = entries
+    .filter(e => e.type !== '5whys' || fiveWhysQualifies(e.data?.whys))
+    .map(e => ({
+      type: e.type,
+      date: e.createdAt?.seconds
+        ? new Date(e.createdAt.seconds * 1000).toISOString().split('T')[0]
+        : typeof e.createdAt === 'string' ? e.createdAt.split('T')[0]
+        : null,
+    })).filter(e => e.date && PS_POINTS[e.type] !== undefined);
 
   if (!dated.length) return 0;
 
