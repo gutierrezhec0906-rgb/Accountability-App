@@ -857,7 +857,7 @@ function fishbonePrintHTML(entry) {
   </div>`;
 }
 
-function Fishbone({ onSave, savedEntries, onDelete }) {
+function Fishbone({ onSave, savedEntries, onDelete, onGoTo5Whys }) {
   const [name,    setName]    = useState('');
   const [problem, setProblem] = useState('');
   const [causes,  setCauses]  = useState(emptyCauses);
@@ -916,7 +916,11 @@ function Fishbone({ onSave, savedEntries, onDelete }) {
       onSaved: () => { setName(''); setProblem(''); setCauses(emptyCauses()); setPriorities({}); setShowPrioritization(false); }
     });
     setSaving(false);
-    toast.success('✓ Fishbone diagram saved with priorities!');
+    toast.success('✓ Fishbone diagram saved!');
+    // Navigate to 5 Whys to continue analysis
+    if (onGoTo5Whys) {
+      onGoTo5Whys({ name, problem, causes, priorities: newPriorities });
+    }
   }
 
   // Show prioritization component after fishbone is saved
@@ -1604,6 +1608,7 @@ export default function ProblemSolving() {
   const [activeTool, setActiveTool] = useState('5 Whys');
   const [saved, setSaved]           = useState({ '5whys': [], fishbone: [], a3: [] });
   const [a3Prefill, setA3Prefill]   = useState(null);
+  const [fishboneReference, setFishboneReference] = useState(null);
 
   async function fetchSaved() {
     if (!currentUser) return;
@@ -1722,6 +1727,12 @@ export default function ProblemSolving() {
     } catch { toast.error('Delete failed'); }
   }
 
+  function handleFishboneComplete(fishboneData) {
+    setFishboneReference(fishboneData);
+    setActiveTool('5 Whys');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       <PageHeader icon="🔍" title="Problem-Solving — Accountability that Solves" subtitle="5 Whys, Fishbone Diagram, and A3 Template" />
@@ -1749,7 +1760,7 @@ export default function ProblemSolving() {
             }}
           />
         )}
-        {activeTool === 'Fishbone Diagram' && <Fishbone   onSave={handleSave} savedEntries={saved.fishbone} onDelete={handleDelete} />}
+        {activeTool === 'Fishbone Diagram' && <Fishbone onSave={handleSave} savedEntries={saved.fishbone} onDelete={handleDelete} onGoTo5Whys={handleFishboneComplete} />}
         {activeTool === 'A3 Template'      && (
           <A3Template
             onSave={handleSave}
