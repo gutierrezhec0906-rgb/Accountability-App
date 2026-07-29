@@ -30,32 +30,43 @@ export default function NameField({ value, onChange, names = [], placeholder, cl
         value={value}
         onChange={onChange}
         onFocus={() => setOpen(true)}
+        onBlur={() => setOpen(false)}
         placeholder={placeholder}
         autoComplete="off"
         style={inputStyle}
         {...rest}
       />
-      {open && matches.length > 0 && (
+      {open && (
         <div style={{
           position: 'absolute', top: '100%', left: 0, right: 0, marginTop: 4, zIndex: 40,
           background: 'white', border: '1px solid #e2e8f0', borderRadius: 10,
           boxShadow: '0 8px 24px rgba(15,32,68,0.12)', maxHeight: 220, overflowY: 'auto',
         }}>
-          {matches.map(n => (
-            <button
-              key={n}
-              type="button"
-              onMouseDown={e => { e.preventDefault(); onChange({ target: { value: n } }); setOpen(false); }}
-              style={{
-                display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem 0.75rem',
-                background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', color: '#334155',
-              }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
-              onMouseLeave={e => e.currentTarget.style.background = 'none'}
-            >
-              👤 {n}
-            </button>
-          ))}
+          {matches.length > 0 ? (
+            matches.map(n => (
+              <button
+                key={n}
+                type="button"
+                onMouseDown={e => { e.preventDefault(); onChange({ target: { value: n } }); setOpen(false); }}
+                style={{
+                  display: 'block', width: '100%', textAlign: 'left', padding: '0.5rem 0.75rem',
+                  background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.85rem', color: '#334155',
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                onMouseLeave={e => e.currentTarget.style.background = 'none'}
+              >
+                👤 {n}
+              </button>
+            ))
+          ) : names.length === 0 ? (
+            <div style={{ padding: '0.75rem', fontSize: '0.8rem', color: '#94a3b8', textAlign: 'center' }}>
+              No saved names yet — enter one to get started
+            </div>
+          ) : (
+            <div style={{ padding: '0.75rem', fontSize: '0.8rem', color: '#94a3b8', textAlign: 'center' }}>
+              No matches found
+            </div>
+          )}
         </div>
       )}
     </div>
