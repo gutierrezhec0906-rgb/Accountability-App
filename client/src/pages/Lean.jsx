@@ -527,8 +527,19 @@ function WasteParetoChart({ tally }) {
   );
 }
 
+function useIsMobile(breakpoint = 1024) {
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < breakpoint);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < breakpoint);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 export default function Lean() {
   const { currentUser } = useAuth();
+  const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('5s');
   const [checks, setChecks]       = useState({});
   const [auditArea, setAuditArea] = useState('');
@@ -855,7 +866,7 @@ export default function Lean() {
 
       {/* 5S Tab */}
       {activeTab === '5s' && (
-        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 20, alignItems: 'flex-start' }}>
           {/* ── Left: checklist ── */}
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
 
@@ -927,10 +938,10 @@ export default function Lean() {
                 return (
                   <div key={i} style={{ borderBottom: i < cat.items.length - 1 ? '1px solid var(--border)' : 'none' }}>
                     {/* Rating row */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.75rem 1.25rem', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', flex: 1, minWidth: 150 }}>{item}</span>
+                    <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 8 : 10, padding: '0.75rem 1.25rem' }}>
+                      <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', flex: isMobile ? '0 0 100%' : 1, minWidth: isMobile ? 0 : 150 }}>{item}</span>
                       {/* 1–5 rating buttons */}
-                      <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
+                      <div style={{ display: isMobile ? 'grid' : 'flex', gridTemplateColumns: isMobile ? 'repeat(3, 30px)' : 'unset', gap: 4, flexShrink: 0 }}>
                         {RATING_SCALE.map(r => {
                           const active = Number(checks[key]) === r.value;
                           return (
@@ -1048,7 +1059,7 @@ export default function Lean() {
           </div>{/* end left checklist */}
 
           {/* ── Right: audit history ── */}
-          <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <div style={{ width: isMobile ? '100%' : 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: '1.125rem' }}>
               <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px', fontSize: '0.9rem' }}>📋 Audit History</h4>
               {auditHistory.length === 0 ? (
