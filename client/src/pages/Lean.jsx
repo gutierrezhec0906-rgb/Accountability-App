@@ -528,9 +528,9 @@ function WasteParetoChart({ tally }) {
 }
 
 function useIsMobile(breakpoint = 1024) {
-  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < breakpoint);
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= breakpoint);
   useEffect(() => {
-    const onResize = () => setIsMobile(window.innerWidth < breakpoint);
+    const onResize = () => setIsMobile(window.innerWidth <= breakpoint);
     window.addEventListener('resize', onResize);
     return () => window.removeEventListener('resize', onResize);
   }, [breakpoint]);
