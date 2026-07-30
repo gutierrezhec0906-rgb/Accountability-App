@@ -7,6 +7,16 @@ import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore } from '../utils/scoring';
 import { generateDISCReport } from '../utils/discReport';
 
+function useIsMobile(breakpoint = 1024) {
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth < breakpoint);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth < breakpoint);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 const discProfiles = {
   D: { name: 'Dominance',        color: '#ef4444', traits: ['Results-oriented','Direct & decisive','Competitive','Problem-solver','High sense of urgency'], strengths: 'Drives results, takes initiative, thrives under pressure', challenges: 'May overlook feelings, appear blunt, move too fast', tips: 'Slow down for team input. Ask questions before deciding.' },
   I: { name: 'Influence',        color: '#f59e0b', traits: ['Enthusiastic & optimistic','Collaborative','Persuasive','People-focused','Creative'], strengths: 'Inspires others, builds relationships, creates excitement', challenges: 'May avoid conflict, lose focus, overcommit', tips: 'Follow through on commitments. Use structure to stay organized.' },
@@ -56,9 +66,9 @@ function balanceNote(scores) {
   return { level: 'good', text: `Balanced blend of ${top.map(([k]) => `${k} (${discProfiles[k].name})`).join(' & ')} — a strong combination for adaptive leadership.` };
 }
 
-function SavedPanel({ entries, onDelete, onDownload, userName }) {
+function SavedPanel({ entries, onDelete, onDownload, userName, isMobile }) {
   return (
-    <div style={{ width: 280, flexShrink: 0, background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', alignSelf: 'flex-start', position: 'sticky', top: 24 }}>
+    <div style={{ width: isMobile ? '100%' : 280, flexShrink: 0, background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', alignSelf: 'flex-start', position: isMobile ? 'relative' : 'sticky', top: isMobile ? 'auto' : 24 }}>
       <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)', margin: '0 0 4px' }}>Assessment History</p>
       <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 14px' }}>Goal: balanced across 2–3 styles</p>
 
@@ -122,6 +132,7 @@ export default function DISC() {
   const [saved, setSaved]       = useState([]);
   const [discMeta, setDiscMeta] = useState(null);
   const [userName, setUserName] = useState('');
+  const isMobile = useIsMobile();
 
   async function fetchSaved() {
     if (!currentUser) return;
@@ -253,8 +264,8 @@ export default function DISC() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 24, alignItems: 'flex-start' }}>
+        <div style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : 'auto' }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
             {tabs.map(t => (
               <button key={t.id} onClick={() => setView(t.id)}
@@ -418,7 +429,7 @@ export default function DISC() {
         </div>
 
         {/* Right: saved panel */}
-        <SavedPanel entries={saved} onDelete={handleDelete} onDownload={handleDownloadPDF} userName={userName} />
+        <SavedPanel entries={saved} onDelete={handleDelete} onDownload={handleDownloadPDF} userName={userName} isMobile={isMobile} />
       </div>
     </div>
   );
