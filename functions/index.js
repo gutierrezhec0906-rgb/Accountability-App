@@ -208,6 +208,30 @@ exports.sendRequestEmails = onDocumentUpdated('users/{uid}', async (event) => {
     }
   }
 
+  // 2b. Feedback delivered — email the recipient the full text of any newly
+  // arrived entry in their own feedbackReceived array (written by the sender's
+  // client straight onto this doc, so this fires on the RECIPIENT's own update).
+  const prevReceivedIds = new Set((before.feedbackReceived || []).map(f => f.id));
+  const newReceived = (after.feedbackReceived || []).filter(f => !prevReceivedIds.has(f.id));
+  for (const fb of newReceived) {
+    if (!after.email) continue;
+    const fromName = fb.anonymous ? 'Someone (anonymous)' : (fb.from || 'A teammate');
+    const stars = '★'.repeat(fb.rating || 0) + '☆'.repeat(5 - (fb.rating || 0));
+    mails.push({
+      to: after.email,
+      subject: `📬 You received feedback from ${fromName}`,
+      html: brandedEmail(
+        'You received new feedback',
+        `<p style="color: #475569; font-size: 15px; line-height: 1.6;">
+           <strong>${fromName}</strong> sent you ${fb.type ? `<strong>${fb.type.toLowerCase()}</strong> ` : ''}feedback${fb.category ? ` on <strong>${fb.category}</strong>` : ''}.
+         </p>
+         <p style="color: #f59e0b; font-size: 16px; letter-spacing: 2px;">${stars}</p>
+         ${fb.text ? `<p style="color: #0f2044; font-size: 14px; background: white; border-left: 3px solid #0d9488; padding: 12px 16px; line-height: 1.6; white-space: pre-line;">${fb.text}</p>` : ''}`,
+        'View in Feedback Box', '/feedback'
+      ),
+    });
+  }
+
   // 3. SMART goal approval requests — email company leaders/managers/admins
   const prevPending = new Set((before.smartGoals || []).filter(g => g.status === 'pending_approval').map(g => g.id));
   const newPending  = (after.smartGoals || []).filter(g => g.status === 'pending_approval' && !prevPending.has(g.id));

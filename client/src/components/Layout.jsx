@@ -97,6 +97,7 @@ export default function Layout({ children }) {
   const [openCategories, setOpenCategories] = useState(() => Object.fromEntries(navCategories.map(c => [c.id, true])));
   function toggleCategory(id) { setOpenCategories(prev => ({ ...prev, [id]: !prev[id] })); }
   const [pendingCount, setPendingCount] = useState(0);
+  const [unreadFeedback, setUnreadFeedback] = useState(0);
   const [toolVideoOpen, setToolVideoOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -165,6 +166,23 @@ export default function Layout({ children }) {
     const interval = setInterval(fetchPending, 30000);
     return () => clearInterval(interval);
   }, [canApprove, currentUser]);
+
+  // Unread received-feedback badge on the Feedback Box nav item — refetches on
+  // an interval and whenever the route changes (so leaving /feedback, which
+  // marks entries read, clears the badge without waiting for the poll).
+  useEffect(() => {
+    if (!currentUser) return;
+    async function fetchUnreadFeedback() {
+      try {
+        const snap = await getDoc(doc(db, 'users', currentUser.uid));
+        const received = snap.exists() ? (snap.data().feedbackReceived || []) : [];
+        setUnreadFeedback(received.filter(f => !f.read).length);
+      } catch {}
+    }
+    fetchUnreadFeedback();
+    const interval = setInterval(fetchUnreadFeedback, 30000);
+    return () => clearInterval(interval);
+  }, [currentUser, location.pathname]);
 
   async function handleLogout() {
     await logout();
@@ -302,6 +320,9 @@ export default function Layout({ children }) {
                           {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.8rem' }}>{item.label}</span>}
                           {!collapsed && locked && (
                             <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#f59e0b', letterSpacing: '0.04em', flexShrink: 0 }}>PRO</span>
+                          )}
+                          {item.id === 'feedback' && unreadFeedback > 0 && (
+                            <span style={{ background: '#ef4444', color: 'white', borderRadius: 9999, fontSize: '0.6rem', fontWeight: 700, padding: '1px 5px', minWidth: 16, textAlign: 'center', flexShrink: 0 }}>{unreadFeedback}</span>
                           )}
                         </button>
                       );

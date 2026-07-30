@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, getDocs, collection, query, where, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, query, where, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -28,8 +28,13 @@ function Avatar({ name }) {
   );
 }
 
-function FeedbackPanel({ given, received, requests, onDelete, onDismissRequest }) {
+function FeedbackPanel({ given, received, requests, onDelete, onDismissRequest, onOpenReceived, unreadCount }) {
   const [tab, setTab] = useState('given');
+
+  function selectTab(t) {
+    setTab(t);
+    if (t === 'received') onOpenReceived?.();
+  }
 
   return (
     <div style={{ width: 270, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
@@ -37,10 +42,14 @@ function FeedbackPanel({ given, received, requests, onDelete, onDismissRequest }
         <p style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem', margin: '0 0 8px' }}>📋 Feedback History</p>
         <div style={{ display: 'flex', gap: 4 }}>
           {['given', 'received', 'requests'].map(t => (
-            <button key={t} onClick={() => setTab(t)}
-              style={{ flex: 1, fontSize: '0.62rem', fontWeight: 700, padding: '3px 0', borderRadius: 6, border: 'none', cursor: 'pointer',
+            <button key={t} onClick={() => selectTab(t)} style={{ position: 'relative', flex: 1, fontSize: '0.62rem', fontWeight: 700, padding: '3px 0', borderRadius: 6, border: 'none', cursor: 'pointer',
                 background: tab === t ? '#0d9488' : 'rgba(255,255,255,0.12)', color: 'white' }}>
               {t === 'given' ? `Given (${given.length})` : t === 'received' ? `Rcvd (${received.length})` : `Req (${requests.filter(r=>r.status==='pending').length})`}
+              {t === 'received' && unreadCount > 0 && (
+                <span style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: 'white', borderRadius: '50%', width: 16, height: 16, fontSize: '0.6rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {unreadCount}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -83,19 +92,22 @@ function FeedbackPanel({ given, received, requests, onDelete, onDismissRequest }
                 <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: 0, fontStyle: 'italic' }}>No {tab} feedback yet.</p>
               </div>
             ) : (tab === 'given' ? given : received).map((f, i) => (
-              <div key={f.id} style={{ padding: '0.75rem 1rem', borderBottom: i < given.length - 1 ? '1px solid #e8edf5' : 'none', background: 'white' }}>
+              <div key={f.id} style={{ padding: '0.75rem 1rem', borderBottom: i < (tab === 'given' ? given : received).length - 1 ? '1px solid #e8edf5' : 'none', background: tab === 'received' && !f.read ? '#f0fdfa' : 'white' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
                   <div>
                     <p style={{ fontWeight: 700, fontSize: '0.78rem', color: '#1e293b', margin: '0 0 1px' }}>
                       {tab === 'given' ? `To: ${f.to}` : `From: ${f.anonymous ? 'Anonymous' : f.from}`}
+                      {tab === 'received' && !f.read && <span style={{ marginLeft: 6, color: '#0d9488' }}>●</span>}
                     </p>
                     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 3 }}>
                       <span style={{ background: '#e0f2fe', color: '#0369a1', borderRadius: 9999, padding: '1px 6px', fontSize: '0.62rem', fontWeight: 700 }}>{f.type}</span>
                       <span style={{ background: '#f1f5f9', color: '#475569', borderRadius: 9999, padding: '1px 6px', fontSize: '0.62rem', fontWeight: 700 }}>{f.category}</span>
                     </div>
                   </div>
-                  <button onClick={() => onDelete(f.id)}
-                    style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: '0.75rem', padding: '0 2px', flexShrink: 0 }}>🗑</button>
+                  {tab === 'given' && (
+                    <button onClick={() => onDelete(f.id)}
+                      style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: '0.75rem', padding: '0 2px', flexShrink: 0 }}>🗑</button>
+                  )}
                 </div>
                 <StarRow rating={f.rating} />
                 <p style={{ fontSize: '0.72rem', color: '#64748b', margin: '4px 0 0', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{f.text}</p>
@@ -210,7 +222,7 @@ export default function Feedback() {
   const [showForm, setShowForm]       = useState(false);
   const [showRequest, setShowRequest] = useState(false);
   const [filterType, setFilterType]   = useState('All');
-  const [form, setForm] = useState({ type: 'Peer', from: '', to: '', anonymous: false, category: 'Leadership', rating: 5, when: '', what: '', effect: '' });
+  const [form, setForm] = useState({ type: 'Peer', from: '', to: '', toUid: '', anonymous: false, category: 'Leadership', rating: 5, when: '', what: '', effect: '' });
   const [teamMembers, setTeamMembers] = useState([]);
   const [given,    setGiven]    = useState([]);
   const [received, setReceived] = useState([]);
@@ -228,6 +240,7 @@ export default function Feedback() {
         if (snap.exists()) {
           const data = snap.data();
           setGiven(data.feedbackEntries || []);
+          setReceived(data.feedbackReceived || []);
           setRequests(data.feedbackRequests || []);
           // Count feedback points earned in last 30 days
           const thirtyDaysAgo = localDateStr(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000));
@@ -279,7 +292,7 @@ export default function Feedback() {
 
   async function submitFeedback(e) {
     e.preventDefault();
-    if (!form.to) return toast.error('Please select a recipient');
+    if (!form.toUid) return toast.error('Please select a recipient');
     setSubmitting(true);
     try {
       const newEntry = {
@@ -288,6 +301,7 @@ export default function Feedback() {
         type: form.type,
         from: form.anonymous ? 'Anonymous' : (form.from || myName),
         to: form.to,
+        toUid: form.toUid,
         anonymous: form.anonymous,
         category: form.category,
         rating: form.rating,
@@ -299,15 +313,35 @@ export default function Feedback() {
         createdAt: { seconds: Math.floor(Date.now() / 1000) },
       };
       await persist([newEntry, ...given], undefined);
+      // Deliver a copy into the recipient's own doc so they can actually see it —
+      // this is what the "Received" tab, the sidebar badge, and the notification
+      // email all read from. Cross-user write allowed by the sameCompany rule.
+      try {
+        await updateDoc(doc(db, 'users', form.toUid), {
+          feedbackReceived: arrayUnion({ ...newEntry, read: false }),
+        });
+      } catch (e) { console.error('Could not deliver feedback to recipient', e); }
       const earned = await awardFeedbackPoint();
       if (earned === 'earned') toast.success(`Feedback submitted! +1 pt (${monthlyFeedbackCount + 1}/5 this month)`, { duration: 5000 });
       else if (earned === 'capped-monthly') toast('Feedback submitted! You\'ve reached the 5-pt monthly feedback limit. Points reset in 30 days.', { duration: 6000, icon: '📅' });
       else if (earned === 'capped-daily') toast('Feedback submitted! Daily 25-pt cap reached — come back tomorrow.', { duration: 6000, icon: '📅' });
       else toast.success('Feedback submitted!');
-      setForm({ type: 'Peer', from: '', to: '', anonymous: false, category: 'Leadership', rating: 5, when: '', what: '', effect: '' });
+      setForm({ type: 'Peer', from: '', to: '', toUid: '', anonymous: false, category: 'Leadership', rating: 5, when: '', what: '', effect: '' });
       setShowForm(false);
     } catch (e) { toast.error('Submit failed: ' + (e?.message || e)); }
     setSubmitting(false);
+  }
+
+  // Mark all received feedback as read when the user opens the Received tab —
+  // clears the sidebar badge and the unread dot on individual entries.
+  async function markReceivedRead() {
+    const unread = received.filter(f => !f.read);
+    if (unread.length === 0) return;
+    const updated = received.map(f => ({ ...f, read: true }));
+    setReceived(updated);
+    try {
+      await setDoc(doc(db, 'users', currentUser.uid), { feedbackReceived: updated }, { merge: true });
+    } catch {}
   }
 
   async function handleDelete(id) {
@@ -439,10 +473,14 @@ export default function Feedback() {
                   )}
                   <div style={form.anonymous ? { gridColumn: '1 / -1' } : {}}>
                     <label className="label">Recipient (To) *</label>
-                    <select className="input" required value={form.to} onChange={e => setForm(f => ({ ...f, to: e.target.value }))}>
+                    <select className="input" required value={form.toUid} onChange={e => {
+                      const uid = e.target.value;
+                      const member = teamMembers.find(m => m.uid === uid);
+                      setForm(f => ({ ...f, toUid: uid, to: member?.displayName || member?.email || '' }));
+                    }}>
                       <option value="">— Select team member —</option>
                       {teamMembers.map(m => (
-                        <option key={m.uid} value={m.displayName || m.email}>
+                        <option key={m.uid} value={m.uid}>
                           {m.displayName || m.email}{m.teamName ? ` · ${m.teamName}` : ''}{m.isAdmin ? ' (Manager)' : m.role ? ` (${m.role})` : ''}{m.uid === currentUser.uid ? ' — You' : ''}
                         </option>
                       ))}
@@ -545,7 +583,8 @@ export default function Feedback() {
         </div>
 
         {/* Right panel */}
-        <FeedbackPanel given={given} received={received} requests={requests} onDelete={handleDelete} onDismissRequest={handleDismissRequest} />
+        <FeedbackPanel given={given} received={received} requests={requests} onDelete={handleDelete} onDismissRequest={handleDismissRequest}
+          onOpenReceived={markReceivedRead} unreadCount={received.filter(f => !f.read).length} />
       </div>
     </div>
   );
