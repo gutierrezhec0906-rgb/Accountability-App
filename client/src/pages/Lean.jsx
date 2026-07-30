@@ -941,7 +941,7 @@ export default function Lean() {
                     <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 8 : 10, padding: '0.75rem 1.25rem' }}>
                       <span style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', flex: isMobile ? '0 0 100%' : 1, minWidth: isMobile ? 0 : 150 }}>{item}</span>
                       {/* 1–5 rating buttons */}
-                      <div style={{ display: isMobile ? 'grid' : 'flex', gridTemplateColumns: isMobile ? 'repeat(3, 30px)' : 'unset', gap: 4, flexShrink: 0 }}>
+                      <div style={{ display: 'flex', gap: 4, flexShrink: 0, flexWrap: 'nowrap' }}>
                         {RATING_SCALE.map(r => {
                           const active = Number(checks[key]) === r.value;
                           return (
