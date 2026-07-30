@@ -609,6 +609,11 @@ export default function Feedback() {
                   <StarRow rating={f.rating} />
                 </div>
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0 }}>{f.text}</p>
+                {f.uid === currentUser.uid && (
+                  <p style={{ fontSize: '0.68rem', margin: '8px 0 0', fontWeight: 700, color: f.delivered ? '#15803d' : '#b45309' }}>
+                    {f.delivered ? `✓ Delivered to ${f.to}'s inbox` : `⚠ Not yet delivered to ${f.to}'s inbox${f.toUid ? '' : ' — no matching account found'}`}
+                  </p>
+                )}
               </div>
             ))}
           </div>
