@@ -6,6 +6,16 @@ import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import { logPointEvent, localDateStr } from '../utils/scoring';
 
+function useIsMobile(breakpoint = 1024) {
+  const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= breakpoint);
+  useEffect(() => {
+    const onResize = () => setIsMobile(window.innerWidth <= breakpoint);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 const categories = ['Leadership', 'Performance', 'Communication', 'Coaching', 'Teamwork', 'Technical', 'General'];
 const types = ['All', 'Peer', 'Supervisor', 'Direct Report', 'Other', 'Self'];
 const typeLabels = { 'All': 'All', 'Peer': 'Peer', 'Supervisor': 'Supervisor', 'Direct Report': 'Direct Report', 'Other': 'Other', 'Self': 'Self' };
@@ -31,16 +41,16 @@ function Avatar({ name }) {
 
 // ── Relationship filter (right, small box) ──
 // Filters the Given/Received feed shown in the big left box by relationship type.
-function RelationshipFilter({ filterType, onSelect }) {
+function RelationshipFilter({ filterType, onSelect, isMobile }) {
   return (
-    <div style={{ width: 200, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: isMobile ? '100%' : 200, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
       <div style={{ background: '#0f2044', borderRadius: '12px 12px 0 0', padding: '0.75rem 1rem' }}>
         <p style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem', margin: 0 }}>🔗 Relationship</p>
       </div>
-      <div style={{ border: '1px solid #e8edf5', borderTop: 'none', borderRadius: '0 0 12px 12px', background: '#fafbfc', padding: '0.625rem', display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ border: '1px solid #e8edf5', borderTop: 'none', borderRadius: '0 0 12px 12px', background: '#fafbfc', padding: '0.625rem', display: 'flex', flexDirection: isMobile ? 'row' : 'column', flexWrap: isMobile ? 'wrap' : 'nowrap', gap: 6 }}>
         {types.map(t => (
           <button key={t} onClick={() => onSelect(t)}
-            style={{ textAlign: 'left', padding: '0.5rem 0.75rem', borderRadius: 8, fontSize: '0.8rem', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+            style={{ textAlign: 'left', padding: '0.5rem 0.75rem', borderRadius: 8, fontSize: '0.8rem', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.15s', flex: isMobile ? '1 1 auto' : 'unset',
               background: filterType === t ? '#0d9488' : 'white', color: filterType === t ? 'white' : '#475569', boxShadow: filterType === t ? 'none' : '0 0 0 1px #e8edf5 inset' }}>
             {typeLabels[t]}
           </button>
@@ -148,6 +158,7 @@ function RequestModal({ teamMembers, onClose, onSave }) {
 
 export default function Feedback() {
   const { currentUser, userProfile } = useAuth();
+  const isMobile = useIsMobile();
   const [showForm, setShowForm]       = useState(false);
   const [showRequest, setShowRequest] = useState(false);
   const [filterType, setFilterType]   = useState('All');
@@ -363,7 +374,7 @@ export default function Feedback() {
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
       <PageHeader icon="📬" title="Feedback Box — Accountability with Care" subtitle="Anonymous or named feedback from peers, supervisors, and leaders"
         action={
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="btn-secondary" onClick={() => setShowRequest(true)} style={{ position: 'relative' }}>
               📨 Request Feedback
               {pendingRequests > 0 && (
@@ -387,15 +398,15 @@ export default function Feedback() {
       )}
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: isMobile ? 8 : 12, marginBottom: '1.5rem' }}>
         {[
           { label: 'Avg Rating',        value: avg,                                           color: '#0d9488' },
           { label: 'Total Feedback',    value: allFeedback.length,                            color: '#0f2044' },
           { label: 'Pending Requests',  value: pendingRequests,                               color: '#f59e0b' },
         ].map(s => (
-          <div key={s.label} className="stat-tile" style={{ textAlign: 'center' }}>
-            <p style={{ fontSize: '2rem', fontWeight: 900, color: s.color, margin: 0, lineHeight: 1 }}>{s.value}</p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '4px 0 0', fontWeight: 600 }}>{s.label}</p>
+          <div key={s.label} className="stat-tile" style={{ textAlign: 'center', padding: isMobile ? '0.75rem 0.25rem' : undefined }}>
+            <p style={{ fontSize: isMobile ? '1.4rem' : '2rem', fontWeight: 900, color: s.color, margin: 0, lineHeight: 1 }}>{s.value}</p>
+            <p style={{ fontSize: isMobile ? '0.65rem' : '0.75rem', color: 'var(--text-muted)', margin: '4px 0 0', fontWeight: 600 }}>{s.label}</p>
           </div>
         ))}
       </div>
@@ -414,15 +425,15 @@ export default function Feedback() {
       )}
 
       {/* Main layout */}
-      <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
-        <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 20, alignItems: 'flex-start', width: '100%' }}>
+        <div style={{ flex: isMobile ? '0 0 100%' : 1, minWidth: 0, width: isMobile ? '100%' : 'auto', order: isMobile ? 2 : 1 }}>
 
           {/* Submit form */}
           {showForm && (
             <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
               <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>Submit Feedback</h3>
               <form onSubmit={submitFeedback} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14 }}>
                   <div><label className="label">Feedback Type</label>
                     <select className="input" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
                       {types.slice(1).map(t => <option key={t}>{t}</option>)}
@@ -438,7 +449,7 @@ export default function Feedback() {
                   <input type="checkbox" id="anon" checked={form.anonymous} onChange={e => setForm(f => ({ ...f, anonymous: e.target.checked }))} style={{ width: 16, height: 16 }} />
                   <label htmlFor="anon" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Submit Anonymously</label>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14 }}>
                   {!form.anonymous && (
                     <div><label className="label">Your Name (From)</label>
                       <input className="input" value={form.from || myName} onChange={e => setForm(f => ({ ...f, from: e.target.value }))} placeholder="Your name" />
@@ -517,11 +528,13 @@ export default function Feedback() {
           )}
 
           {/* Given / Received / Requests tabs */}
-          <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem' }}>
+          <div style={{ display: 'flex', gap: isMobile ? 6 : 8, marginBottom: '1.25rem' }}>
             {['given', 'received', 'requests'].map(t => (
-              <button key={t} onClick={() => selectTab(t)} style={{ position: 'relative', flex: 1, padding: '0.5rem 0', borderRadius: 10, fontSize: '0.82rem', fontWeight: 800, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+              <button key={t} onClick={() => selectTab(t)} style={{ position: 'relative', flex: 1, padding: isMobile ? '0.5rem 0.25rem' : '0.5rem 0', borderRadius: 10, fontSize: isMobile ? '0.72rem' : '0.82rem', fontWeight: 800, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
                   background: tab === t ? '#0f2044' : '#f1f5f9', color: tab === t ? 'white' : '#475569' }}>
-                {t === 'given' ? `Given (${given.length})` : t === 'received' ? `Received (${received.length})` : `Requests (${pendingRequests})`}
+                {isMobile
+                  ? (t === 'given' ? `Given (${given.length})` : t === 'received' ? `Rcvd (${received.length})` : `Req (${pendingRequests})`)
+                  : (t === 'given' ? `Given (${given.length})` : t === 'received' ? `Received (${received.length})` : `Requests (${pendingRequests})`)}
                 {t === 'received' && unreadCount > 0 && (
                   <span style={{ position: 'absolute', top: -6, right: '30%', background: '#ef4444', color: 'white', borderRadius: '50%', width: 18, height: 18, fontSize: '0.65rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {unreadCount}
@@ -593,8 +606,10 @@ export default function Feedback() {
           </div>
         </div>
 
-        {/* Right panel — relationship filter */}
-        <RelationshipFilter filterType={filterType} onSelect={setFilterType} />
+        {/* Right panel — relationship filter (shown above the feed on mobile) */}
+        <div style={{ width: isMobile ? '100%' : 'auto', order: isMobile ? 1 : 2 }}>
+          <RelationshipFilter filterType={filterType} onSelect={setFilterType} isMobile={isMobile} />
+        </div>
       </div>
     </div>
   );
