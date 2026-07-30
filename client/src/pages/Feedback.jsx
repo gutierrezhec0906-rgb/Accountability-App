@@ -260,6 +260,35 @@ export default function Feedback() {
               .map(d => ({ uid: d.id, ...d.data() }))
               .filter(m => m.status === 'approved' || m.isAdmin === true);
             setTeamMembers(members);
+
+            // Backfill: entries sent BEFORE cross-user delivery existed (or that
+            // silently failed to deliver) never reached the recipient's inbox.
+            // Catch them up once here, then flag each as delivered so this
+            // doesn't re-run every load.
+            const given = data.feedbackEntries || [];
+            const undelivered = given.filter(f => !f.delivered);
+            if (undelivered.length > 0) {
+              const nextGiven = [...given];
+              let changed = false;
+              for (const f of undelivered) {
+                const toUid = f.toUid || members.find(m => (m.displayName || m.email) === f.to)?.uid;
+                let delivered = false;
+                if (toUid) {
+                  try {
+                    await updateDoc(doc(db, 'users', toUid), {
+                      feedbackReceived: arrayUnion({ ...f, toUid, read: false }),
+                    });
+                    delivered = true;
+                  } catch (e) { console.error('Backfill delivery failed for', f.id, e); }
+                }
+                const idx = nextGiven.findIndex(g => g.id === f.id);
+                if (idx !== -1 && delivered) { nextGiven[idx] = { ...nextGiven[idx], toUid, delivered: true }; changed = true; }
+              }
+              if (changed) {
+                await setDoc(doc(db, 'users', currentUser.uid), { feedbackEntries: nextGiven }, { merge: true });
+                setGiven(nextGiven);
+              }
+            }
           }
         }
       } catch (e) { console.error(e); }
@@ -312,15 +341,18 @@ export default function Feedback() {
         date: localDateStr(),
         createdAt: { seconds: Math.floor(Date.now() / 1000) },
       };
-      await persist([newEntry, ...given], undefined);
       // Deliver a copy into the recipient's own doc so they can actually see it —
       // this is what the "Received" tab, the sidebar badge, and the notification
       // email all read from. Cross-user write allowed by the sameCompany rule.
+      let delivered = false;
       try {
         await updateDoc(doc(db, 'users', form.toUid), {
           feedbackReceived: arrayUnion({ ...newEntry, read: false }),
         });
+        delivered = true;
       } catch (e) { console.error('Could not deliver feedback to recipient', e); }
+      await persist([{ ...newEntry, delivered }, ...given], undefined);
+      if (!delivered) toast.error(`Saved, but couldn't deliver to ${form.to}'s inbox — they may not see it. Try again shortly.`, { duration: 7000 });
       const earned = await awardFeedbackPoint();
       if (earned === 'earned') toast.success(`Feedback submitted! +1 pt (${monthlyFeedbackCount + 1}/5 this month)`, { duration: 5000 });
       else if (earned === 'capped-monthly') toast('Feedback submitted! You\'ve reached the 5-pt monthly feedback limit. Points reset in 30 days.', { duration: 6000, icon: '📅' });
