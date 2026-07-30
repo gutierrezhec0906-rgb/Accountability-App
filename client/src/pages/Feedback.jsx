@@ -7,7 +7,10 @@ import PageHeader from '../components/PageHeader';
 import { logPointEvent, localDateStr } from '../utils/scoring';
 
 const categories = ['Leadership', 'Performance', 'Communication', 'Coaching', 'Teamwork', 'Technical', 'General'];
-const types = ['All', 'Peer', 'Supervisor', 'Direct Report', 'Self'];
+const types = ['All', 'Peer', 'Supervisor', 'Direct Report', 'Board', 'Self'];
+// Short labels for the relationship-filter buttons — underlying stored `type`
+// values stay unchanged (e.g. "Direct Report") so existing entries still match.
+const typeLabels = { 'All': 'All', 'Peer': 'Peer', 'Supervisor': 'Supervisor', 'Direct Report': 'Direct', 'Board': 'Board', 'Self': 'Self' };
 
 function StarRow({ rating }) {
   return (
@@ -28,94 +31,22 @@ function Avatar({ name }) {
   );
 }
 
-function FeedbackPanel({ given, received, requests, onDelete, onDismissRequest, onOpenReceived, unreadCount }) {
-  const [tab, setTab] = useState('given');
-
-  function selectTab(t) {
-    setTab(t);
-    if (t === 'received') onOpenReceived?.();
-  }
-
+// ── Relationship filter (right, small box) ──
+// Filters the Given/Received feed shown in the big left box by relationship type.
+function RelationshipFilter({ filterType, onSelect }) {
   return (
-    <div style={{ width: 270, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
+    <div style={{ width: 200, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
       <div style={{ background: '#0f2044', borderRadius: '12px 12px 0 0', padding: '0.75rem 1rem' }}>
-        <p style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem', margin: '0 0 8px' }}>📋 Feedback History</p>
-        <div style={{ display: 'flex', gap: 4 }}>
-          {['given', 'received', 'requests'].map(t => (
-            <button key={t} onClick={() => selectTab(t)} style={{ position: 'relative', flex: 1, fontSize: '0.62rem', fontWeight: 700, padding: '3px 0', borderRadius: 6, border: 'none', cursor: 'pointer',
-                background: tab === t ? '#0d9488' : 'rgba(255,255,255,0.12)', color: 'white' }}>
-              {t === 'given' ? `Given (${given.length})` : t === 'received' ? `Rcvd (${received.length})` : `Req (${requests.filter(r=>r.status==='pending').length})`}
-              {t === 'received' && unreadCount > 0 && (
-                <span style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: 'white', borderRadius: '50%', width: 16, height: 16, fontSize: '0.6rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+        <p style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem', margin: 0 }}>🔗 Relationship</p>
       </div>
-
-      <div style={{ flex: 1, border: '1px solid #e8edf5', borderTop: 'none', borderRadius: '0 0 12px 12px', background: '#fafbfc', overflow: 'hidden' }}>
-        {tab === 'requests' ? (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {requests.length === 0 ? (
-              <div style={{ padding: '1.5rem 1rem', textAlign: 'center' }}>
-                <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: 0, fontStyle: 'italic' }}>No pending requests.</p>
-              </div>
-            ) : requests.map((r, i) => (
-              <div key={r.id} style={{ padding: '0.75rem 1rem', borderBottom: i < requests.length - 1 ? '1px solid #e8edf5' : 'none', background: 'white' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: 700, fontSize: '0.78rem', color: '#1e293b', margin: '0 0 2px' }}>To: {r.to}</p>
-                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 3 }}>
-                      <span style={{ background: '#fef3c7', color: '#b45309', borderRadius: 9999, padding: '1px 6px', fontSize: '0.62rem', fontWeight: 700 }}>{r.category}</span>
-                      <span style={{ background: r.status === 'pending' ? '#fef9c3' : '#dcfce7', color: r.status === 'pending' ? '#b45309' : '#15803d', borderRadius: 9999, padding: '1px 6px', fontSize: '0.62rem', fontWeight: 700 }}>
-                        {r.status === 'pending' ? '⏳ Pending' : '✅ Done'}
-                      </span>
-                    </div>
-                    {r.note && <p style={{ fontSize: '0.68rem', color: '#64748b', margin: '3px 0 0', lineHeight: 1.4 }}>{r.note}</p>}
-                    <p style={{ fontSize: '0.65rem', color: '#94a3b8', margin: '3px 0 0' }}>{r.date}</p>
-                  </div>
-                  {r.status === 'pending' && (
-                    <button onClick={() => onDismissRequest(r.id)}
-                      title="Mark as fulfilled"
-                      style={{ background: 'none', border: 'none', color: '#0d9488', cursor: 'pointer', fontSize: '0.75rem', padding: '0 2px', flexShrink: 0 }}>✓</button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            {(tab === 'given' ? given : received).length === 0 ? (
-              <div style={{ padding: '1.5rem 1rem', textAlign: 'center' }}>
-                <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: 0, fontStyle: 'italic' }}>No {tab} feedback yet.</p>
-              </div>
-            ) : (tab === 'given' ? given : received).map((f, i) => (
-              <div key={f.id} style={{ padding: '0.75rem 1rem', borderBottom: i < (tab === 'given' ? given : received).length - 1 ? '1px solid #e8edf5' : 'none', background: tab === 'received' && !f.read ? '#f0fdfa' : 'white' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4 }}>
-                  <div>
-                    <p style={{ fontWeight: 700, fontSize: '0.78rem', color: '#1e293b', margin: '0 0 1px' }}>
-                      {tab === 'given' ? `To: ${f.to}` : `From: ${f.anonymous ? 'Anonymous' : f.from}`}
-                      {tab === 'received' && !f.read && <span style={{ marginLeft: 6, color: '#0d9488' }}>●</span>}
-                    </p>
-                    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginBottom: 3 }}>
-                      <span style={{ background: '#e0f2fe', color: '#0369a1', borderRadius: 9999, padding: '1px 6px', fontSize: '0.62rem', fontWeight: 700 }}>{f.type}</span>
-                      <span style={{ background: '#f1f5f9', color: '#475569', borderRadius: 9999, padding: '1px 6px', fontSize: '0.62rem', fontWeight: 700 }}>{f.category}</span>
-                    </div>
-                  </div>
-                  {tab === 'given' && (
-                    <button onClick={() => onDelete(f.id)}
-                      style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: '0.75rem', padding: '0 2px', flexShrink: 0 }}>🗑</button>
-                  )}
-                </div>
-                <StarRow rating={f.rating} />
-                <p style={{ fontSize: '0.72rem', color: '#64748b', margin: '4px 0 0', lineHeight: 1.4, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{f.text}</p>
-                {f.createdAt && <p style={{ fontSize: '0.65rem', color: '#94a3b8', margin: '4px 0 0' }}>{new Date(f.createdAt.seconds * 1000).toLocaleDateString()}</p>}
-              </div>
-            ))}
-          </div>
-        )}
+      <div style={{ border: '1px solid #e8edf5', borderTop: 'none', borderRadius: '0 0 12px 12px', background: '#fafbfc', padding: '0.625rem', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {types.map(t => (
+          <button key={t} onClick={() => onSelect(t)}
+            style={{ textAlign: 'left', padding: '0.5rem 0.75rem', borderRadius: 8, fontSize: '0.8rem', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+              background: filterType === t ? '#0d9488' : 'white', color: filterType === t ? 'white' : '#475569', boxShadow: filterType === t ? 'none' : '0 0 0 1px #e8edf5 inset' }}>
+            {typeLabels[t]}
+          </button>
+        ))}
       </div>
     </div>
   );
@@ -222,6 +153,7 @@ export default function Feedback() {
   const [showForm, setShowForm]       = useState(false);
   const [showRequest, setShowRequest] = useState(false);
   const [filterType, setFilterType]   = useState('All');
+  const [tab, setTab] = useState('given'); // 'given' | 'received' | 'requests'
   const [form, setForm] = useState({ type: 'Peer', from: '', to: '', toUid: '', anonymous: false, category: 'Leadership', rating: 5, when: '', what: '', effect: '' });
   const [teamMembers, setTeamMembers] = useState([]);
   const [given,    setGiven]    = useState([]);
@@ -413,10 +345,21 @@ export default function Feedback() {
     } catch { toast.error('Update failed'); }
   }
 
+  function selectTab(t) {
+    setTab(t);
+    if (t === 'received') markReceivedRead();
+  }
+
   const allFeedback = [...given, ...received.filter(r => !given.find(g => g.id === r.id))];
-  const filtered    = filterType === 'All' ? allFeedback : allFeedback.filter(f => f.type === filterType);
   const avg = allFeedback.length ? (allFeedback.reduce((a, f) => a + f.rating, 0) / allFeedback.length).toFixed(1) : '—';
   const pendingRequests = requests.filter(r => r.status === 'pending').length;
+  const unreadCount = received.filter(f => !f.read).length;
+
+  // Feed shown in the big left box — which list depends on the active tab
+  // (Given / Received / Requests), then narrowed by the relationship filter
+  // from the small right panel.
+  const tabList  = tab === 'requests' ? requests : (tab === 'given' ? given : received);
+  const filtered = tab === 'requests' || filterType === 'All' ? tabList : tabList.filter(f => f.type === filterType);
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -575,12 +518,17 @@ export default function Feedback() {
             </div>
           )}
 
-          {/* Filter */}
-          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
-            {types.map(t => (
-              <button key={t} onClick={() => setFilterType(t)}
-                style={{ padding: '0.375rem 1rem', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.15s', background: filterType === t ? '#0f2044' : '#f1f5f9', color: filterType === t ? '#fff' : '#475569' }}>
-                {t}
+          {/* Given / Received / Requests tabs */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: '1.25rem' }}>
+            {['given', 'received', 'requests'].map(t => (
+              <button key={t} onClick={() => selectTab(t)} style={{ position: 'relative', flex: 1, padding: '0.5rem 0', borderRadius: 10, fontSize: '0.82rem', fontWeight: 800, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                  background: tab === t ? '#0f2044' : '#f1f5f9', color: tab === t ? 'white' : '#475569' }}>
+                {t === 'given' ? `Given (${given.length})` : t === 'received' ? `Received (${received.length})` : `Requests (${pendingRequests})`}
+                {t === 'received' && unreadCount > 0 && (
+                  <span style={{ position: 'absolute', top: -6, right: '30%', background: '#ef4444', color: 'white', borderRadius: '50%', width: 18, height: 18, fontSize: '0.65rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    {unreadCount}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -588,9 +536,30 @@ export default function Feedback() {
           {/* Feed */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {filtered.length === 0 ? (
-              <div className="card" style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No feedback yet. Click "+ Give Feedback" to get started.</div>
-            ) : filtered.map(f => (
-              <div key={f.id} className="card" style={{ padding: '1.25rem' }}>
+              <div className="card" style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
+                {tab === 'requests' ? 'No pending requests.' : `No ${tab} feedback yet.`}
+              </div>
+            ) : tab === 'requests' ? filtered.map(r => (
+              <div key={r.id} className="card" style={{ padding: '1.25rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)', margin: '0 0 4px' }}>To: {r.to}</p>
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+                      <span style={{ background: '#fef3c7', color: '#b45309', borderRadius: 9999, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700 }}>{r.category}</span>
+                      <span style={{ background: r.status === 'pending' ? '#fef9c3' : '#dcfce7', color: r.status === 'pending' ? '#b45309' : '#15803d', borderRadius: 9999, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700 }}>
+                        {r.status === 'pending' ? '⏳ Pending' : '✅ Done'}
+                      </span>
+                    </div>
+                    {r.note && <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '4px 0 0', lineHeight: 1.5 }}>{r.note}</p>}
+                    <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '4px 0 0' }}>{r.date}</p>
+                  </div>
+                  {r.status === 'pending' && (
+                    <button onClick={() => handleDismissRequest(r.id)} title="Mark as fulfilled" className="btn-secondary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem', flexShrink: 0 }}>✓ Mark Fulfilled</button>
+                  )}
+                </div>
+              </div>
+            )) : filtered.map(f => (
+              <div key={f.id} className="card" style={{ padding: '1.25rem', background: tab === 'received' && !f.read ? '#f0fdfa' : undefined }}>
                 <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: '0.75rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                     <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'linear-gradient(135deg,#e0f2fe,#bae6fd)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.125rem', flexShrink: 0 }}>
@@ -600,16 +569,23 @@ export default function Feedback() {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
                         <span style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{f.from}</span>
                         {f.to && <><span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>→</span><span style={{ fontWeight: 700, fontSize: '0.875rem', color: '#0d9488' }}>{f.to}</span></>}
+                        {tab === 'received' && !f.read && <span style={{ color: '#0d9488' }}>●</span>}
                         <span style={{ background: '#e0f2fe', color: '#0369a1', borderRadius: 9999, padding: '1px 8px', fontSize: '0.7rem', fontWeight: 700 }}>{f.type}</span>
                         <span style={{ background: '#f1f5f9', color: '#475569', borderRadius: 9999, padding: '1px 8px', fontSize: '0.7rem', fontWeight: 700 }}>{f.category}</span>
                       </div>
                       <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>{f.date}</p>
                     </div>
                   </div>
-                  <StarRow rating={f.rating} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <StarRow rating={f.rating} />
+                    {tab === 'given' && (
+                      <button onClick={() => handleDelete(f.id)}
+                        style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: '0.9rem', padding: '0 2px' }}>🗑</button>
+                    )}
+                  </div>
                 </div>
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0 }}>{f.text}</p>
-                {f.uid === currentUser.uid && (
+                {tab === 'given' && f.uid === currentUser.uid && (
                   <p style={{ fontSize: '0.68rem', margin: '8px 0 0', fontWeight: 700, color: f.delivered ? '#15803d' : '#b45309' }}>
                     {f.delivered ? `✓ Delivered to ${f.to}'s inbox` : `⚠ Not yet delivered to ${f.to}'s inbox${f.toUid ? '' : ' — no matching account found'}`}
                   </p>
@@ -619,9 +595,8 @@ export default function Feedback() {
           </div>
         </div>
 
-        {/* Right panel */}
-        <FeedbackPanel given={given} received={received} requests={requests} onDelete={handleDelete} onDismissRequest={handleDismissRequest}
-          onOpenReceived={markReceivedRead} unreadCount={received.filter(f => !f.read).length} />
+        {/* Right panel — relationship filter */}
+        <RelationshipFilter filterType={filterType} onSelect={setFilterType} />
       </div>
     </div>
   );
