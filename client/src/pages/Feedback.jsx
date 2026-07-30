@@ -7,10 +7,8 @@ import PageHeader from '../components/PageHeader';
 import { logPointEvent, localDateStr } from '../utils/scoring';
 
 const categories = ['Leadership', 'Performance', 'Communication', 'Coaching', 'Teamwork', 'Technical', 'General'];
-const types = ['All', 'Peer', 'Supervisor', 'Direct Report', 'Board', 'Self'];
-// Short labels for the relationship-filter buttons — underlying stored `type`
-// values stay unchanged (e.g. "Direct Report") so existing entries still match.
-const typeLabels = { 'All': 'All', 'Peer': 'Peer', 'Supervisor': 'Supervisor', 'Direct Report': 'Direct', 'Board': 'Board', 'Self': 'Self' };
+const types = ['All', 'Peer', 'Supervisor', 'Direct Report', 'Other', 'Self'];
+const typeLabels = { 'All': 'All', 'Peer': 'Peer', 'Supervisor': 'Supervisor', 'Direct Report': 'Direct Report', 'Other': 'Other', 'Self': 'Self' };
 
 function StarRow({ rating }) {
   return (
