@@ -866,9 +866,9 @@ export default function Lean() {
 
       {/* 5S Tab */}
       {activeTab === '5s' && (
-        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 20, alignItems: 'flex-start' }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 20, alignItems: 'flex-start', width: '100%' }}>
           {/* ── Left: checklist ── */}
-          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ flex: isMobile ? '0 0 100%' : 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
 
           {/* Area input + score */}
           <div className="card" style={{ padding: '1.25rem' }}>
