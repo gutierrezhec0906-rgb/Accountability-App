@@ -1,9 +1,40 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, query, where, setDoc, updateDoc, increment, deleteField } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
 import { logPointEvent } from '../utils/scoring';
+
+const REACTION_EMOJIS = ['👍', '❤️', '🎉', '🙏', '😍', '👎'];
+
+// Team-visible reactions on a quote — shows every emoji that has at least one
+// reaction from ANYONE on the team (with a live count), plus the full picker.
+// `counts` is { emoji: number }; `myEmoji` is this user's own pick, if any.
+function TeamReactionRow({ counts = {}, myEmoji, onToggle }) {
+  return (
+    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+      {REACTION_EMOJIS.map(emoji => {
+        const count = counts[emoji] || 0;
+        const isMine = myEmoji === emoji;
+        if (count === 0 && !isMine) {
+          return (
+            <button key={emoji} onClick={() => onToggle(emoji)} title="React"
+              style={{ background: 'none', border: '1px solid #e8edf5', borderRadius: 9999, padding: '2px 8px', fontSize: '0.85rem', cursor: 'pointer', opacity: 0.55, transition: 'opacity 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0.55'}>
+              {emoji}
+            </button>
+          );
+        }
+        return (
+          <button key={emoji} onClick={() => onToggle(emoji)}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, border: isMine ? '1px solid #0d9488' : '1px solid #e8edf5', background: isMine ? '#f0fdfa' : 'white', borderRadius: 9999, padding: '2px 8px', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 700, color: '#0f2044' }}>
+            {emoji}<span style={{ fontSize: '0.7rem' }}>{count}</span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
 
 const quotes = [
   { text: "Leadership is not about being in charge. It is about taking care of those in your charge.", author: "Simon Sinek" },
@@ -55,6 +86,13 @@ export default function Quotes() {
   const [toast, setToast] = useState('');
   const [expandedRef, setExpandedRef] = useState(null);
 
+  // Team-wide quote reactions — each teammate's own pick lives on their own
+  // users/{uid}.quoteReactions.{quoteIdx} field (no rules change needed, same
+  // pattern as everything else in this doc); we aggregate everyone in the
+  // company client-side so likes accumulate visibly across the team.
+  const [myReactions, setMyReactions] = useState({});   // { quoteIdx: emoji }
+  const [teamCounts, setTeamCounts] = useState({});     // { quoteIdx: { emoji: count } }
+
   const alreadyDoneToday = reflections.some(r => r.date === today);
 
   useEffect(() => {
@@ -63,12 +101,58 @@ export default function Quotes() {
       try {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
         if (snap.exists()) {
-          setReflections(snap.data().quoteReflections || []);
+          const data = snap.data();
+          setReflections(data.quoteReflections || []);
+          setMyReactions(data.quoteReactions || {});
+
+          const companyId = data.companyId;
+          if (companyId) {
+            const membersSnap = await getDocs(query(
+              collection(db, 'users'),
+              where('companyId', '==', companyId)
+            ));
+            const counts = {};
+            membersSnap.docs.forEach(d => {
+              const reactions = d.data().quoteReactions || {};
+              Object.entries(reactions).forEach(([qIdx, emoji]) => {
+                counts[qIdx] = counts[qIdx] || {};
+                counts[qIdx][emoji] = (counts[qIdx][emoji] || 0) + 1;
+              });
+            });
+            setTeamCounts(counts);
+          }
         }
       } catch (e) { console.error(e); }
     }
     load();
   }, [currentUser]);
+
+  // Toggle my reaction on a quote — one emoji per person; clicking the same
+  // emoji again removes it, clicking a different one switches it. Updates my
+  // own doc (source of truth) and the local team tally optimistically.
+  async function toggleQuoteReaction(quoteIdx, emoji) {
+    const key = String(quoteIdx);
+    const prev = myReactions[key];
+    const next = prev === emoji ? null : emoji;
+
+    setTeamCounts(c => {
+      const forQuote = { ...(c[key] || {}) };
+      if (prev) forQuote[prev] = Math.max(0, (forQuote[prev] || 1) - 1);
+      if (next) forQuote[next] = (forQuote[next] || 0) + 1;
+      return { ...c, [key]: forQuote };
+    });
+    setMyReactions(r => {
+      const nextR = { ...r };
+      if (next) nextR[key] = next; else delete nextR[key];
+      return nextR;
+    });
+
+    try {
+      await updateDoc(doc(db, 'users', currentUser.uid), {
+        [`quoteReactions.${key}`]: next ?? deleteField(),
+      });
+    } catch (e) { console.error('Could not save quote reaction', e); }
+  }
 
   function toggleFav(idx) {
     setFavorites(f => {
@@ -156,10 +240,13 @@ export default function Quotes() {
           "{quotes[todayIdx].text}"
         </p>
         <p style={{ color: '#5eead4', fontWeight: 700, margin: '0 0 16px', fontSize: '0.9rem' }}>— {quotes[todayIdx].author}</p>
-        <button onClick={() => toggleFav(todayIdx)}
-          style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '0.375rem 1rem', color: favorites.includes(todayIdx) ? '#fbbf24' : 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>
-          {favorites.includes(todayIdx) ? '⭐ Saved' : '☆ Save to Favorites'}
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <button onClick={() => toggleFav(todayIdx)}
+            style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 8, padding: '0.375rem 1rem', color: favorites.includes(todayIdx) ? '#fbbf24' : 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>
+            {favorites.includes(todayIdx) ? '⭐ Saved' : '☆ Save to Favorites'}
+          </button>
+          <TeamReactionRow counts={teamCounts[String(todayIdx)]} myEmoji={myReactions[String(todayIdx)]} onToggle={emoji => toggleQuoteReaction(todayIdx, emoji)} />
+        </div>
       </div>
 
       {/* ── Quote Reflection Journal ── */}
@@ -315,6 +402,7 @@ export default function Quotes() {
                 </button>
               </div>
             </div>
+            <TeamReactionRow counts={teamCounts[String(idx)]} myEmoji={myReactions[String(idx)]} onToggle={emoji => toggleQuoteReaction(idx, emoji)} />
           </div>
         ))}
         {showFavs && favorites.length === 0 && (
