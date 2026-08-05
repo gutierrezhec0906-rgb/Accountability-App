@@ -18,12 +18,43 @@ function useIsMobile(breakpoint = 1024) {
 
 const categories = ['Leadership', 'Performance', 'Communication', 'Coaching', 'Teamwork', 'Technical', 'General'];
 const types = ['All', 'Peer', 'Supervisor', 'Direct Report', 'Other', 'Self'];
+const REACTION_EMOJIS = ['👍', '❤️', '🎉', '🙏', '😍', '👎'];
 const typeLabels = { 'All': 'All', 'Peer': 'Peer', 'Supervisor': 'Supervisor', 'Direct Report': 'Direct Report', 'Other': 'Other', 'Self': 'Self' };
 
 function StarRow({ rating }) {
   return (
     <div style={{ display: 'flex', gap: 2 }}>
       {[1,2,3,4,5].map(n => <span key={n} style={{ fontSize: '0.9rem', color: n <= rating ? '#f59e0b' : '#e2e8f0' }}>★</span>)}
+    </div>
+  );
+}
+
+// Quick emoji reactions — lets the recipient say "thanks" without typing.
+// `reactions` is { emoji: [uid, ...] }. Shows every emoji that has at least
+// one reaction, plus the full picker so a new reaction can always be added.
+function ReactionRow({ reactions = {}, myUid, onToggle }) {
+  const active = new Set(REACTION_EMOJIS.filter(e => (reactions[e] || []).includes(myUid)));
+  return (
+    <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 10 }}>
+      {REACTION_EMOJIS.map(emoji => {
+        const count = (reactions[emoji] || []).length;
+        const isActive = active.has(emoji);
+        if (count === 0 && !isActive) {
+          return (
+            <button key={emoji} onClick={() => onToggle(emoji)} title="React"
+              style={{ background: 'none', border: '1px solid #e8edf5', borderRadius: 9999, padding: '2px 8px', fontSize: '0.85rem', cursor: 'pointer', opacity: 0.55, transition: 'opacity 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0.55'}>
+              {emoji}
+            </button>
+          );
+        }
+        return (
+          <button key={emoji} onClick={() => onToggle(emoji)}
+            style={{ display: 'flex', alignItems: 'center', gap: 4, border: isActive ? '1px solid #0d9488' : '1px solid #e8edf5', background: isActive ? '#f0fdfa' : 'white', borderRadius: 9999, padding: '2px 8px', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 700, color: '#0f2044' }}>
+            {emoji}<span style={{ fontSize: '0.7rem' }}>{count}</span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -317,6 +348,28 @@ export default function Feedback() {
     } catch {}
   }
 
+  // Toggle the current user's reaction on a received feedback entry — one
+  // emoji per person; clicking the same emoji again removes it, clicking a
+  // different one switches it. Stored on the entry itself, in this user's
+  // own feedbackReceived array (no cross-user write needed).
+  async function toggleReaction(entryId, emoji) {
+    const updated = received.map(f => {
+      if (f.id !== entryId) return f;
+      const reactions = { ...(f.reactions || {}) };
+      const already = (reactions[emoji] || []).includes(currentUser.uid);
+      for (const key of Object.keys(reactions)) {
+        reactions[key] = reactions[key].filter(uid => uid !== currentUser.uid);
+        if (reactions[key].length === 0) delete reactions[key];
+      }
+      if (!already) reactions[emoji] = [...(reactions[emoji] || []), currentUser.uid];
+      return { ...f, reactions };
+    });
+    setReceived(updated);
+    try {
+      await setDoc(doc(db, 'users', currentUser.uid), { feedbackReceived: updated }, { merge: true });
+    } catch { toast.error('Could not save reaction'); }
+  }
+
   async function handleDelete(id) {
     if (!confirm('Delete this feedback?')) return;
     try {
@@ -600,6 +653,9 @@ export default function Feedback() {
                   <p style={{ fontSize: '0.68rem', margin: '8px 0 0', fontWeight: 700, color: f.delivered ? '#15803d' : '#b45309' }}>
                     {f.delivered ? `✓ Delivered to ${f.to}'s inbox` : `⚠ Not yet delivered to ${f.to}'s inbox${f.toUid ? '' : ' — no matching account found'}`}
                   </p>
+                )}
+                {tab === 'received' && (
+                  <ReactionRow reactions={f.reactions} myUid={currentUser.uid} onToggle={emoji => toggleReaction(f.id, emoji)} />
                 )}
               </div>
             ))}
