@@ -13,6 +13,7 @@ import { isLocked, TIER_ICONS, TIER_LABELS } from '../utils/subscription';
 const topNavItems = [
   { id: 'dashboard', label: 'Dashboard',     icon: '📊', path: '/dashboard' },
   { id: 'team',      label: 'Team',           icon: '👥', path: '/team' },
+  { id: 'podcasts',  label: 'Podcasts',       icon: '🎙️', path: '/podcasts' },
   { id: 'approvals', label: 'Team Approvals', icon: '✅', path: '/approvals', adminOnly: true },
 ];
 

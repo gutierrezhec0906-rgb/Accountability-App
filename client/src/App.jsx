@@ -11,6 +11,7 @@ import Team from './pages/Team';
 import Approvals from './pages/Approvals';
 import VisualBoard from './pages/VisualBoard';
 import Quotes from './pages/Quotes';
+import Podcasts from './pages/Podcasts';
 import Training from './pages/Training';
 import Coaching from './pages/Coaching';
 import Mentoring from './pages/Mentoring';
@@ -62,6 +63,7 @@ export default function App() {
           <Route path="/approvals" element={<PrivateLayout><Approvals /></PrivateLayout>} />
           <Route path="/visual-board" element={<PrivateLayout><VisualBoard /></PrivateLayout>} />
           <Route path="/quotes" element={<PrivateLayout><Quotes /></PrivateLayout>} />
+          <Route path="/podcasts" element={<PrivateLayout><Podcasts /></PrivateLayout>} />
           <Route path="/training" element={<PrivateLayout><Training /></PrivateLayout>} />
           <Route path="/coaching" element={<PrivateLayout><Coaching /></PrivateLayout>} />
           <Route path="/mentoring" element={<PrivateLayout><Mentoring /></PrivateLayout>} />
