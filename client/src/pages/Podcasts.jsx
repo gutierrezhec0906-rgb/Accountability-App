@@ -6,7 +6,7 @@ import PageHeader from '../components/PageHeader';
 const PODCASTS = [
   { id: 'model',     pillar: 'Set the Bar',            icon: '🧭', color: '#60a5fa', episodeUrl: 'https://open.spotify.com/episode/6fCn9D7cmtd5LpRGJyy080?si=dnH_bXWLQs-c9K8k65sHLg' },
   { id: 'inspire',   pillar: 'Spark the Vision',        icon: '🔭', color: '#34d399', episodeUrl: 'https://open.spotify.com/episode/3nkZUvhvOBjhPHwK8awL25?si=MDPWRVBYSuKMzXQdBo8tnQ' },
-  { id: 'challenge', pillar: 'Improve the Flow',        icon: '⚙️', color: '#fbbf24', episodeUrl: null },
+  { id: 'challenge', pillar: 'Improve the Flow',        icon: '⚙️', color: '#fbbf24', episodeUrl: 'https://open.spotify.com/episode/4p8TtCiYP796VBMNqFrSBM?si=r-mwc-HVT5eD_k8ZSSBRvA' },
   { id: 'enable',    pillar: 'Enable the Team',         icon: '🤝', color: '#a78bfa', episodeUrl: null },
   { id: 'encourage', pillar: 'Winning with Compassion', icon: '❤️', color: '#fb7185', episodeUrl: null },
 ];
