@@ -417,7 +417,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay }) {
 
 export default function EQOpEx() {
   const { currentUser, userProfile } = useAuth();
-  const [activeTab, setActiveTab] = useState('eq');
+  const [activeTab, setActiveTab] = useState(() => localStorage.getItem('eqopex-active-tab') || 'eq');
   const [eqScores, setEqScores] = useState({});
   const [opexChecks, setOpexChecks] = useState({});
   const [opexFindings, setOpexFindings] = useState({});
@@ -797,7 +797,7 @@ export default function EQOpEx() {
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
         {[{ id: 'eq', label: '💡 EQ Assessment' }, { id: 'opex', label: '⚙️ OpEx Checklist' }, { id: 'sqdip', label: '🗓️ SQDIP Board' }].map(t => (
-          <button key={t.id} onClick={() => setActiveTab(t.id)}
+          <button key={t.id} onClick={() => { setActiveTab(t.id); localStorage.setItem('eqopex-active-tab', t.id); }}
             style={{ padding: '0.5rem 1.25rem', borderRadius: 10, fontWeight: 700, fontSize: '0.875rem', border: 'none', cursor: 'pointer', transition: 'all 0.15s', background: activeTab === t.id ? '#0f2044' : '#f1f5f9', color: activeTab === t.id ? 'white' : '#475569' }}>
             {t.label}
           </button>
