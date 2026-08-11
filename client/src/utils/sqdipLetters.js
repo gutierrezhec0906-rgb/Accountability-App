@@ -31,7 +31,7 @@ const I = [
   '1111', '1111',
   '0110', '0110', '0110', '0110', '0110', '0110', '0110', '0110', '0110',
   '1111',
-  '0100',
+  '1000',
 ];
 const P = [
   '1111', '1111',
@@ -56,16 +56,14 @@ export const SQDIP_ORDER = ['S', 'Q', 'D', 'I', 'P'];
 // true void) — the tail of D's and I's final row, past the single day-31
 // square. [row, col], 0-indexed.
 export const FILLER_CELLS = {
-  D: [[12, 1], [12, 3]],
-  I: [[12, 0], [12, 3]],
+  D: [[12, 1], [12, 2], [12, 3]],
+  I: [[12, 1], [12, 2], [12, 3]],
 };
 
-// The one background position per letter that also carries the "Empty"
-// label — the designed finisher square, distinct from plain filler cells.
-export const EMPTY_LABEL_CELLS = {
-  D: [[12, 2]],
-  I: [[12, 2]],
-};
+// Reserved for background positions that need a distinct look/label from
+// plain filler cells. Currently unused — all finisher squares render the
+// same plain blank style.
+export const EMPTY_LABEL_CELLS = {};
 
 // All 32 cell positions for a letter — [{ day, row, col }, ...]. `day` is
 // 1..maxDays for the first `maxDays` positions in reading order; every
