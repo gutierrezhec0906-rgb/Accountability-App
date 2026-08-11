@@ -128,6 +128,7 @@ export default function Dashboard() {
   const [history, setHistory] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
   const [dueSoon, setDueSoon] = useState([]);
+  const [dueSoonCollapsed, setDueSoonCollapsed] = useState(false);
 
   // Read the latest score straight from Firestore on mount — never trust the
   // possibly-stale userProfile cache (it can lag behind a fresh Calculate on the
@@ -378,37 +379,49 @@ export default function Dashboard() {
       {/* ── Coming Due Soon (yellow zone) — proactive, before anything goes past due ── */}
       {dueSoon.length > 0 && (
         <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #f59e0b' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+          <style>{`
+            .due-soon-scroll::-webkit-scrollbar { width: 8px; -webkit-appearance: none; }
+            .due-soon-scroll::-webkit-scrollbar-track { background: #fef3c7; border-radius: 8px; }
+            .due-soon-scroll::-webkit-scrollbar-thumb { background: #d97706; border-radius: 8px; border: 1px solid #fef3c7; }
+          `}</style>
+          <button onClick={() => setDueSoonCollapsed(c => !c)}
+            style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: dueSoonCollapsed ? 0 : 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: '1.25rem' }}>⚠️</span>
-              <div>
+              <div style={{ textAlign: 'left' }}>
                 <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.95rem' }}>Coming Due Soon</h3>
                 <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Due within 2 weeks — act now, before it goes past due.</p>
               </div>
             </div>
-            <span style={{ background: '#fef9c3', color: '#b45309', fontWeight: 800, fontSize: '0.75rem', borderRadius: 9999, padding: '3px 10px' }}>
-              {dueSoon.length}
-            </span>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {dueSoon.slice(0, 6).map(item => {
-              const status = getDateStatus(item.due);
-              const daysLeft = Math.round((new Date(item.due + 'T00:00:00') - new Date(new Date().toDateString())) / 86400000);
-              return (
-                <button key={item.key} onClick={() => navigate(item.path)}
-                  style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '0.6rem 0.875rem', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
-                  <span style={{ fontSize: '1rem', flexShrink: 0 }}>{item.icon}</span>
-                  <span style={{ flex: 1, minWidth: 0, fontSize: '0.83rem', fontWeight: 600, color: '#78350f', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: status.color, flexShrink: 0 }}>
-                    {daysLeft <= 0 ? 'Due today' : `${daysLeft}d left`}
-                  </span>
-                </button>
-              );
-            })}
-            {dueSoon.length > 6 && (
-              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '2px 0 0', textAlign: 'center' }}>+{dueSoon.length - 6} more</p>
-            )}
-          </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ background: '#fef9c3', color: '#b45309', fontWeight: 800, fontSize: '0.75rem', borderRadius: 9999, padding: '3px 10px' }}>
+                {dueSoon.length}
+              </span>
+              <span style={{ fontSize: '0.8rem', color: '#94a3b8', transition: 'transform 0.2s', transform: dueSoonCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', display: 'inline-block' }}>▼</span>
+            </div>
+          </button>
+          {!dueSoonCollapsed && (
+            <div className="due-soon-scroll" style={{
+              display: 'flex', flexDirection: 'column', gap: 6,
+              maxHeight: 320, overflowY: 'scroll', paddingRight: 4,
+              scrollbarWidth: 'thin', scrollbarColor: '#d97706 #fef3c7',
+            }}>
+              {dueSoon.map(item => {
+                const status = getDateStatus(item.due);
+                const daysLeft = Math.round((new Date(item.due + 'T00:00:00') - new Date(new Date().toDateString())) / 86400000);
+                return (
+                  <button key={item.key} onClick={() => navigate(item.path)}
+                    style={{ flexShrink: 0, display: 'flex', alignItems: 'center', gap: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '0.6rem 0.875rem', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
+                    <span style={{ fontSize: '1rem', flexShrink: 0 }}>{item.icon}</span>
+                    <span style={{ flex: 1, minWidth: 0, fontSize: '0.83rem', fontWeight: 600, color: '#78350f', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: status.color, flexShrink: 0 }}>
+                      {daysLeft <= 0 ? 'Due today' : `${daysLeft}d left`}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 
