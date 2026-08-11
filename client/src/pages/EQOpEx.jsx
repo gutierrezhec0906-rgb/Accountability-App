@@ -318,17 +318,25 @@ function QuestionGuide({ guideKey }) {
 const SQDIP_COLORS = { green: '#16a34a', red: '#dc2626' };
 
 // One letter card — a pixel-grid glyph made of clickable day-squares.
-// Clicking a square cycles: empty → green → red → empty.
-function SqdipLetterCard({ letterKey, label, days, cellStatus, onToggleDay }) {
+// Clicking a square opens a small popover with explicit On Target / Issue /
+// Clear options, so picking red doesn't depend on remembering a click-cycle.
+function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay }) {
   const meta = SQDIP_META[letterKey];
   const { rows, cols } = letterGridSize(letterKey);
   const cells = letterCells(letterKey, days);
   const cellByPos = {};
   cells.forEach(c => { cellByPos[`${c.row}-${c.col}`] = c; });
 
+  const [openDay, setOpenDay] = useState(null);
+
   const greenCount = Object.values(cellStatus).filter(v => v === 'green').length;
   const redCount = Object.values(cellStatus).filter(v => v === 'red').length;
   const filled = greenCount + redCount;
+
+  function choose(day, status) {
+    onSetDay(letterKey, day, status);
+    setOpenDay(null);
+  }
 
   return (
     <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: 10, borderLeft: `4px solid ${meta.color}` }}>
@@ -347,18 +355,40 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onToggleDay }) {
             if (!cell) return <div key={`${row}-${col}`} style={{ aspectRatio: '1' }} />;
             const status = cellStatus[cell.day];
             const bg = status ? SQDIP_COLORS[status] : '#f1f5f9';
+            const isOpen = openDay === cell.day;
             return (
-              <button key={`${row}-${col}`} onClick={() => onToggleDay(letterKey, cell.day)}
-                title={`Day ${cell.day}${status ? ` — ${status === 'green' ? 'On target' : 'Issue'}` : ' — click to log'}`}
-                style={{
-                  aspectRatio: '1', borderRadius: 3, border: status ? 'none' : '1px solid #e2e8f0',
-                  background: bg, cursor: 'pointer', padding: 0,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.55rem', fontWeight: 700, color: status ? 'rgba(255,255,255,0.85)' : '#94a3b8',
-                  transition: 'background 0.15s',
-                }}>
-                {cell.day}
-              </button>
+              <div key={`${row}-${col}`} style={{ position: 'relative', aspectRatio: '1' }}>
+                <button onClick={() => setOpenDay(isOpen ? null : cell.day)}
+                  title={`Day ${cell.day}${status ? ` — ${status === 'green' ? 'On target' : 'Issue'}` : ' — click to log'}`}
+                  style={{
+                    width: '100%', height: '100%', borderRadius: 3, border: status ? 'none' : '1px solid #e2e8f0',
+                    background: bg, cursor: 'pointer', padding: 0,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.55rem', fontWeight: 700, color: status ? 'rgba(255,255,255,0.85)' : '#94a3b8',
+                    transition: 'background 0.15s',
+                  }}>
+                  {cell.day}
+                </button>
+                {isOpen && (
+                  <>
+                    <div onClick={() => setOpenDay(null)} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />
+                    <div style={{
+                      position: 'absolute', top: '100%', left: 0, marginTop: 4, zIndex: 200,
+                      background: '#0f2044', borderRadius: 8, padding: 4, display: 'flex', gap: 4,
+                      boxShadow: '0 4px 16px rgba(0,0,0,0.25)', whiteSpace: 'nowrap',
+                    }}>
+                      <button onClick={() => choose(cell.day, 'green')} title="On target"
+                        style={{ background: SQDIP_COLORS.green, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>✓</button>
+                      <button onClick={() => choose(cell.day, 'red')} title="Issue"
+                        style={{ background: SQDIP_COLORS.red, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>✕</button>
+                      {status && (
+                        <button onClick={() => choose(cell.day, null)} title="Clear"
+                          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700 }}>⨯</button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             );
           })
         )}
@@ -467,11 +497,9 @@ export default function EQOpEx() {
     persistSqdip({ labels: next });
   }
 
-  function toggleSqdipDay(letterKey, day) {
-    const current = sqdipCells[letterKey]?.[day];
-    const nextStatus = !current ? 'green' : current === 'green' ? 'red' : undefined;
+  function setSqdipDay(letterKey, day, status) {
     const nextLetterCells = { ...(sqdipCells[letterKey] || {}) };
-    if (nextStatus) nextLetterCells[day] = nextStatus; else delete nextLetterCells[day];
+    if (status) nextLetterCells[day] = status; else delete nextLetterCells[day];
     const next = { ...sqdipCells, [letterKey]: nextLetterCells };
     setSqdipCells(next);
     persistSqdip({ cells: next });
@@ -1409,7 +1437,7 @@ export default function EQOpEx() {
                   label={sqdipLabels[key] || SQDIP_META[key].defaultLabel}
                   days={days}
                   cellStatus={sqdipCells[key] || {}}
-                  onToggleDay={toggleSqdipDay}
+                  onSetDay={setSqdipDay}
                 />
               ))}
             </div>
