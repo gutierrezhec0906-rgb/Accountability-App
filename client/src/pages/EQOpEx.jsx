@@ -356,35 +356,15 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay }) {
             const cell = cellByPos[`${row}-${col}`];
             if (!cell) {
               const posKey = `${row}-${col}`;
-              if (emptyLabelSet.has(posKey)) {
-                return (
-                  <div key={posKey} style={{
-                    aspectRatio: '1', borderRadius: 3, border: '1px solid #e2e8f0', background: '#f8fafc',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.4rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.02em',
-                  }}>
-                    Empty
-                  </div>
-                );
-              }
-              const isFiller = fillerSet.has(posKey);
-              return <div key={posKey} style={isFiller
+              const isBlankSquare = fillerSet.has(posKey) || emptyLabelSet.has(posKey);
+              return <div key={posKey} style={isBlankSquare
                 ? { aspectRatio: '1', borderRadius: 3, border: '1px solid #e2e8f0', background: '#f8fafc' }
                 : { aspectRatio: '1' }} />;
             }
             if (cell.day === null) {
               // Finisher square (or unused tail on a shorter month) — always
-              // blank, not clickable. Just completes the shape, labeled so
-              // it reads as intentional rather than a missing square.
-              return (
-                <div key={`${row}-${col}`} style={{
-                  aspectRatio: '1', borderRadius: 3, border: '1px solid #e2e8f0', background: '#f8fafc',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.4rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.02em',
-                }}>
-                  Empty
-                </div>
-              );
+              // blank, not clickable. Just completes the shape.
+              return <div key={`${row}-${col}`} style={{ aspectRatio: '1', borderRadius: 3, border: '1px solid #e2e8f0', background: '#f8fafc' }} />;
             }
             const status = cellStatus[cell.day];
             const bg = status ? SQDIP_COLORS[status] : '#f1f5f9';
