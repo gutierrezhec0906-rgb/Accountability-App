@@ -7,6 +7,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore } from '../utils/scoring';
 import { compressImage } from '../utils/image';
+import { SQDIP_META, SQDIP_ORDER, letterCells, letterGridSize, daysInMonth } from '../utils/sqdipLetters';
 
 const SCALE_LABELS = {
   1: { label: 'Rarely',    desc: 'This behavior is absent or reactive. Others would not recognize it as a strength. Immediate focus needed.' },
@@ -314,6 +315,63 @@ function QuestionGuide({ guideKey }) {
   );
 }
 
+const SQDIP_COLORS = { green: '#16a34a', red: '#dc2626' };
+
+// One letter card — a pixel-grid glyph made of clickable day-squares.
+// Clicking a square cycles: empty → green → red → empty.
+function SqdipLetterCard({ letterKey, label, days, cellStatus, onToggleDay }) {
+  const meta = SQDIP_META[letterKey];
+  const { rows, cols } = letterGridSize(letterKey);
+  const cells = letterCells(letterKey, days);
+  const cellByPos = {};
+  cells.forEach(c => { cellByPos[`${c.row}-${c.col}`] = c; });
+
+  const greenCount = Object.values(cellStatus).filter(v => v === 'green').length;
+  const redCount = Object.values(cellStatus).filter(v => v === 'red').length;
+  const filled = greenCount + redCount;
+
+  return (
+    <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: 10, borderLeft: `4px solid ${meta.color}` }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontSize: '1.1rem' }}>{meta.icon}</span>
+          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.95rem' }}>{label}</h3>
+        </div>
+        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>{filled}/{days} logged</span>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 3, maxWidth: cols * 34 }}>
+        {Array.from({ length: rows }).flatMap((_, row) =>
+          Array.from({ length: cols }).map((_, col) => {
+            const cell = cellByPos[`${row}-${col}`];
+            if (!cell) return <div key={`${row}-${col}`} style={{ aspectRatio: '1' }} />;
+            const status = cellStatus[cell.day];
+            const bg = status ? SQDIP_COLORS[status] : '#f1f5f9';
+            return (
+              <button key={`${row}-${col}`} onClick={() => onToggleDay(letterKey, cell.day)}
+                title={`Day ${cell.day}${status ? ` — ${status === 'green' ? 'On target' : 'Issue'}` : ' — click to log'}`}
+                style={{
+                  aspectRatio: '1', borderRadius: 3, border: status ? 'none' : '1px solid #e2e8f0',
+                  background: bg, cursor: 'pointer', padding: 0,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  fontSize: '0.55rem', fontWeight: 700, color: status ? 'rgba(255,255,255,0.85)' : '#94a3b8',
+                  transition: 'background 0.15s',
+                }}>
+                {cell.day}
+              </button>
+            );
+          })
+        )}
+      </div>
+
+      <div style={{ display: 'flex', gap: 12, fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>
+        <span><span style={{ color: SQDIP_COLORS.green }}>●</span> {greenCount} on target</span>
+        <span><span style={{ color: SQDIP_COLORS.red }}>●</span> {redCount} issues</span>
+      </div>
+    </div>
+  );
+}
+
 export default function EQOpEx() {
   const { currentUser, userProfile } = useAuth();
   const [activeTab, setActiveTab] = useState('eq');
@@ -326,6 +384,13 @@ export default function EQOpEx() {
   const [opexExpandedAudit, setOpexExpandedAudit] = useState(null);
   const [saving, setSaving] = useState(false);
   const [lastSavedRecord, setLastSavedRecord] = useState(null);
+
+  // SQDIP Board state — which letters are active (max 5, all 5 by default),
+  // label overrides for I/P (Inventory↔Cost, People↔Productivity), and the
+  // current month's day-by-day green/red status per letter.
+  const [sqdipEnabled, setSqdipEnabled] = useState({ S: true, Q: true, D: true, I: true, P: true });
+  const [sqdipLabels, setSqdipLabels] = useState({});
+  const [sqdipCells, setSqdipCells] = useState({ S: {}, Q: {}, D: {}, I: {}, P: {} });
 
   // Personal Development Plan state
   const [pdpAreas, setPdpAreas] = useState(null); // null = not yet initialized
@@ -351,11 +416,66 @@ export default function EQOpEx() {
           setEqHistory(history);
           setOpexHistory(data.opexAudits || []);
           if (data.eqDevPlan) setSavedPdp(data.eqDevPlan);
+
+          const board = data.sqdipBoard;
+          const currentMonthKey = new Date().toISOString().slice(0, 7);
+          if (board && board.month === currentMonthKey) {
+            setSqdipEnabled(board.enabled || { S: true, Q: true, D: true, I: true, P: true });
+            setSqdipLabels(board.labels || {});
+            setSqdipCells(board.cells || { S: {}, Q: {}, D: {}, I: {}, P: {} });
+          } else if (board) {
+            // New month — keep the user's letter/label config, but start a fresh grid.
+            setSqdipEnabled(board.enabled || { S: true, Q: true, D: true, I: true, P: true });
+            setSqdipLabels(board.labels || {});
+          }
         }
       } catch (e) { console.error(e); setLoadError(true); }
     }
     load();
   }, [currentUser]);
+
+  async function persistSqdip(next) {
+    if (!currentUser) return;
+    const monthKey = new Date().toISOString().slice(0, 7);
+    const board = {
+      month: monthKey,
+      enabled: next.enabled ?? sqdipEnabled,
+      labels: next.labels ?? sqdipLabels,
+      cells: next.cells ?? sqdipCells,
+    };
+    try {
+      await setDoc(doc(db, 'users', currentUser.uid), { sqdipBoard: board }, { merge: true });
+    } catch { toast.error('Could not save SQDIP Board'); }
+  }
+
+  function toggleSqdipLetter(key) {
+    const activeCount = Object.values(sqdipEnabled).filter(Boolean).length;
+    const turningOn = !sqdipEnabled[key];
+    if (turningOn && activeCount >= 5) return toast.error('Maximum of 5 letters on the board');
+    if (!turningOn && activeCount <= 1) return toast.error('Keep at least one letter active');
+    const next = { ...sqdipEnabled, [key]: turningOn };
+    setSqdipEnabled(next);
+    persistSqdip({ enabled: next });
+  }
+
+  function toggleSqdipLabel(key) {
+    const meta = SQDIP_META[key];
+    if (!meta.altLabel) return;
+    const current = sqdipLabels[key] || meta.defaultLabel;
+    const next = { ...sqdipLabels, [key]: current === meta.defaultLabel ? meta.altLabel : meta.defaultLabel };
+    setSqdipLabels(next);
+    persistSqdip({ labels: next });
+  }
+
+  function toggleSqdipDay(letterKey, day) {
+    const current = sqdipCells[letterKey]?.[day];
+    const nextStatus = !current ? 'green' : current === 'green' ? 'red' : undefined;
+    const nextLetterCells = { ...(sqdipCells[letterKey] || {}) };
+    if (nextStatus) nextLetterCells[day] = nextStatus; else delete nextLetterCells[day];
+    const next = { ...sqdipCells, [letterKey]: nextLetterCells };
+    setSqdipCells(next);
+    persistSqdip({ cells: next });
+  }
 
   async function saveEQ() {
     if (!currentUser) return toast.error('Not logged in');
@@ -635,7 +755,7 @@ export default function EQOpEx() {
       <PageHeader icon="💡" title="EQ & OpEx Tools — Accountability in Action" subtitle="Emotional Intelligence self-assessment and Operational Excellence checklist" />
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-        {[{ id: 'eq', label: '💡 EQ Assessment' }, { id: 'opex', label: '⚙️ OpEx Checklist' }].map(t => (
+        {[{ id: 'eq', label: '💡 EQ Assessment' }, { id: 'opex', label: '⚙️ OpEx Checklist' }, { id: 'sqdip', label: '🗓️ SQDIP Board' }].map(t => (
           <button key={t.id} onClick={() => setActiveTab(t.id)}
             style={{ padding: '0.5rem 1.25rem', borderRadius: 10, fontWeight: 700, fontSize: '0.875rem', border: 'none', cursor: 'pointer', transition: 'all 0.15s', background: activeTab === t.id ? '#0f2044' : '#f1f5f9', color: activeTab === t.id ? 'white' : '#475569' }}>
             {t.label}
@@ -1239,6 +1359,63 @@ export default function EQOpEx() {
           </div>
         </div>
       )}
+
+      {activeTab === 'sqdip' && (() => {
+        const today = new Date();
+        const monthLabel = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        const days = daysInMonth(today.getFullYear(), today.getMonth());
+        const activeCount = Object.values(sqdipEnabled).filter(Boolean).length;
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {/* Config bar */}
+            <div className="card" style={{ padding: '1.125rem 1.25rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
+                <div>
+                  <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.95rem' }}>🗓️ {monthLabel} · {days} days</h3>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Fill in each day green (on target) or red (issue) — the letter completes as the month goes on.</p>
+                </div>
+                <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>{activeCount}/5 letters active</span>
+              </div>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {SQDIP_ORDER.map(key => {
+                  const meta = SQDIP_META[key];
+                  const on = sqdipEnabled[key];
+                  const label = sqdipLabels[key] || meta.defaultLabel;
+                  return (
+                    <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <button onClick={() => toggleSqdipLetter(key)}
+                        style={{ padding: '0.4rem 0.875rem', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                          background: on ? meta.color : '#f1f5f9', color: on ? 'white' : '#94a3b8' }}>
+                        {meta.icon} {label}
+                      </button>
+                      {meta.altLabel && on && (
+                        <button onClick={() => toggleSqdipLabel(key)} title={`Switch to ${label === meta.defaultLabel ? meta.altLabel : meta.defaultLabel}`}
+                          style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: 9999, padding: '2px 6px', fontSize: '0.65rem', cursor: 'pointer', color: '#94a3b8' }}>
+                          ⇄
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Letter cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+              {SQDIP_ORDER.filter(key => sqdipEnabled[key]).map(key => (
+                <SqdipLetterCard
+                  key={key}
+                  letterKey={key}
+                  label={sqdipLabels[key] || SQDIP_META[key].defaultLabel}
+                  days={days}
+                  cellStatus={sqdipCells[key] || {}}
+                  onToggleDay={toggleSqdipDay}
+                />
+              ))}
+            </div>
+          </div>
+        );
+      })()}
 
     </div>
   );
