@@ -352,7 +352,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay }) {
         {Array.from({ length: rows }).flatMap((_, row) =>
           Array.from({ length: cols }).map((_, col) => {
             const cell = cellByPos[`${row}-${col}`];
-            if (!cell) return <div key={`${row}-${col}`} style={{ aspectRatio: '1' }} />;
+            if (!cell) return <div key={`${row}-${col}`} style={{ aspectRatio: '1', borderRadius: 3, background: `${meta.color}14` }} />;
             const status = cellStatus[cell.day];
             const bg = status ? SQDIP_COLORS[status] : '#f1f5f9';
             const isOpen = openDay === cell.day;
