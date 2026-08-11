@@ -52,6 +52,15 @@ export const SQDIP_META = {
 
 export const SQDIP_ORDER = ['S', 'Q', 'D', 'I', 'P'];
 
+// A few specific background positions render as a plain blank square (not
+// true void) — the taper rows where D's and I's stroke narrows from two
+// squares to one right before the bottom bar. Left as void, that side reads
+// as a stray gap rather than an intentional taper; [row, col], 0-indexed.
+export const FILLER_CELLS = {
+  D: [[9, 3], [10, 3]],
+  I: [[9, 2], [10, 2]],
+};
+
 // All 32 cell positions for a letter — [{ day, row, col }, ...]. `day` is
 // 1..maxDays for the first `maxDays` positions in reading order; every
 // position after that (the finisher square, and the unused tail on a

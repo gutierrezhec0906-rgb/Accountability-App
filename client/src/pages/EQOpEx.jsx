@@ -7,7 +7,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore } from '../utils/scoring';
 import { compressImage } from '../utils/image';
-import { SQDIP_META, SQDIP_ORDER, letterCells, letterGridSize, daysInMonth } from '../utils/sqdipLetters';
+import { SQDIP_META, SQDIP_ORDER, letterCells, letterGridSize, daysInMonth, FILLER_CELLS } from '../utils/sqdipLetters';
 
 const SCALE_LABELS = {
   1: { label: 'Rarely',    desc: 'This behavior is absent or reactive. Others would not recognize it as a strength. Immediate focus needed.' },
@@ -326,6 +326,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay }) {
   const cells = letterCells(letterKey, days);
   const cellByPos = {};
   cells.forEach(c => { cellByPos[`${c.row}-${c.col}`] = c; });
+  const fillerSet = new Set((FILLER_CELLS[letterKey] || []).map(([r, c]) => `${r}-${c}`));
 
   const [openDay, setOpenDay] = useState(null);
 
@@ -352,7 +353,12 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay }) {
         {Array.from({ length: rows }).flatMap((_, row) =>
           Array.from({ length: cols }).map((_, col) => {
             const cell = cellByPos[`${row}-${col}`];
-            if (!cell) return <div key={`${row}-${col}`} style={{ aspectRatio: '1' }} />;
+            if (!cell) {
+              const isFiller = fillerSet.has(`${row}-${col}`);
+              return <div key={`${row}-${col}`} style={isFiller
+                ? { aspectRatio: '1', borderRadius: 3, border: '1px solid #e2e8f0', background: '#f8fafc' }
+                : { aspectRatio: '1' }} />;
+            }
             if (cell.day === null) {
               // Finisher square (or unused tail on a shorter month) — always
               // blank, no number, not clickable. Just completes the shape.
