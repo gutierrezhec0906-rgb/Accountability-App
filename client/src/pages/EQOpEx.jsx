@@ -460,6 +460,8 @@ export default function EQOpEx() {
           setOpexHistory(data.opexAudits || []);
           if (data.eqDevPlan) setSavedPdp(data.eqDevPlan);
 
+          if (data.eqOpexActiveTab) setActiveTab(data.eqOpexActiveTab);
+
           const board = data.sqdipBoard;
           const currentMonthKey = new Date().toISOString().slice(0, 7);
           if (board && board.month === currentMonthKey) {
@@ -797,7 +799,11 @@ export default function EQOpEx() {
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
         {[{ id: 'eq', label: '💡 EQ Assessment' }, { id: 'opex', label: '⚙️ OpEx Checklist' }, { id: 'sqdip', label: '🗓️ SQDIP Board' }].map(t => (
-          <button key={t.id} onClick={() => { setActiveTab(t.id); localStorage.setItem('eqopex-active-tab', t.id); }}
+          <button key={t.id} onClick={() => {
+            setActiveTab(t.id);
+            localStorage.setItem('eqopex-active-tab', t.id);
+            if (currentUser) setDoc(doc(db, 'users', currentUser.uid), { eqOpexActiveTab: t.id }, { merge: true }).catch(() => {});
+          }}
             style={{ padding: '0.5rem 1.25rem', borderRadius: 10, fontWeight: 700, fontSize: '0.875rem', border: 'none', cursor: 'pointer', transition: 'all 0.15s', background: activeTab === t.id ? '#0f2044' : '#f1f5f9', color: activeTab === t.id ? 'white' : '#475569' }}>
             {t.label}
           </button>
