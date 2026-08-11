@@ -29,10 +29,11 @@ function daysOverdue(dateStr) {
 
 // Section metadata: which user-doc array each source lives in, plus labels.
 const SECTIONS = [
-  { kind: 'board',    field: 'visualBoard', label: 'Accountability Board', icon: '🔴' },
-  { kind: 'training', field: 'trainings',   label: 'Training Center',      icon: '🎓' },
-  { kind: 'goal',     field: 'smartGoals',  label: 'SMART Goals',          icon: '🎯' },
-  { kind: 'career',   field: null,          label: 'Career Development',   icon: '🚀' },
+  { kind: 'board',    field: 'visualBoard',      label: 'Accountability Board', icon: '🔴' },
+  { kind: 'training', field: 'trainings',        label: 'Training Center',      icon: '🎓' },
+  { kind: 'goal',     field: 'smartGoals',       label: 'SMART Goals',          icon: '🎯' },
+  { kind: 'coaching', field: 'coachingSessions', label: 'Coaching Log',         icon: '📝' },
+  { kind: 'career',   field: null,               label: 'Career Development',   icon: '🚀' },
 ];
 
 // Session-start reminder shown on EVERY module: lists every past-due activity across
@@ -57,7 +58,7 @@ export default function GlobalPastDueModal() {
       try {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
         const d = snap.exists() ? snap.data() : {};
-        setData({ visualBoard: d.visualBoard || [], trainings: d.trainings || [], smartGoals: d.smartGoals || [] });
+        setData({ visualBoard: d.visualBoard || [], trainings: d.trainings || [], smartGoals: d.smartGoals || [], coachingSessions: d.coachingSessions || [] });
         const items = [];
         (d.visualBoard || []).forEach(i => {
           const due = i.recommitmentDate || i.dueDate;
@@ -68,6 +69,9 @@ export default function GlobalPastDueModal() {
         });
         (d.smartGoals || []).forEach(g => {
           if (g && g.status !== 'completed' && g.status !== 'deleted' && overdue(g.dueDate)) items.push({ key: `goal-${g.id}`, kind: 'goal', id: g.id, title: g.title || 'Untitled goal', due: g.dueDate, recommits: g.recommitmentCount });
+        });
+        (d.coachingSessions || []).forEach(s => {
+          if (overdue(s.nextSession)) items.push({ key: `coaching-${s.id}`, kind: 'coaching', id: s.id, title: `Coaching follow-up — ${s.coachee || 'Untitled coachee'}`, sub: s.coachee, due: s.nextSession, recommits: s.recommitmentCount });
         });
         // Career milestone check-ins that are past due with no progress note logged.
         const cp = d.careerPlan;
@@ -100,6 +104,10 @@ export default function GlobalPastDueModal() {
         if (item.kind === 'board') {
           // Mirror the board's recommit: new date, bump count, reset deduction flag.
           return { ...row, recommitmentDate: newDate, recommitmentCount: (row.recommitmentCount || 0) + 1, recommitmentSetAt: { seconds: Math.floor(Date.now() / 1000) }, deductionApplied: false };
+        }
+        if (item.kind === 'coaching') {
+          // Coaching sessions track their commitment as `nextSession`, not `dueDate`.
+          return { ...row, nextSession: newDate, recommitmentCount: (row.recommitmentCount || 0) + 1 };
         }
         // Trainings & goals: recommitting means a new due date; count each
         // recommitment so modules can show "🔄 N recommitment(s)".
