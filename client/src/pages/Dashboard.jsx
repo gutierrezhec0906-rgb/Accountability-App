@@ -5,6 +5,7 @@ import { isLocked, TIER_LABELS, TIER_ICONS } from '../utils/subscription';
 import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { calculateScore } from '../utils/scoring';
+import { getDateStatus } from '../components/DateStatus';
 
 const categories = [
   {
@@ -126,6 +127,7 @@ export default function Dashboard() {
   const [score, setScore] = useState(null);
   const [history, setHistory] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
+  const [dueSoon, setDueSoon] = useState([]);
 
   // Read the latest score straight from Firestore on mount — never trust the
   // possibly-stale userProfile cache (it can lag behind a fresh Calculate on the
@@ -178,6 +180,47 @@ export default function Dashboard() {
     }
     loadTeam();
   }, [userProfile, currentUser]);
+
+  // "Due Soon" — every yellow-zone item (due within 2 weeks, per the
+  // app-wide getDateStatus convention) across the same deadline-bearing
+  // modules the past-due popup already watches. This is the proactive
+  // counterpart: surfaced here on the Dashboard *before* anything goes red,
+  // instead of only reacting once it's overdue.
+  useEffect(() => {
+    if (!currentUser) return;
+    (async () => {
+      try {
+        const snap = await getDoc(doc(db, 'users', currentUser.uid));
+        if (!snap.exists()) return;
+        const d = snap.data();
+        const items = [];
+        (d.visualBoard || []).forEach(i => {
+          const due = i.recommitmentDate || i.dueDate;
+          if (!i.closed && getDateStatus(due)?.level === 'warning') items.push({ key: `board-${i.id}`, icon: '🔴', label: i.title || 'Untitled action', due, path: '/visual-board' });
+        });
+        (d.trainings || []).forEach(t => {
+          if (!t.completed && getDateStatus(t.dueDate)?.level === 'warning') items.push({ key: `training-${t.id}`, icon: '🎓', label: t.title || 'Untitled training', due: t.dueDate, path: '/training' });
+        });
+        (d.smartGoals || []).forEach(g => {
+          if (g && g.status !== 'completed' && g.status !== 'deleted' && getDateStatus(g.dueDate)?.level === 'warning') items.push({ key: `goal-${g.id}`, icon: '🎯', label: g.title || 'Untitled goal', due: g.dueDate, path: '/smart-goals' });
+        });
+        (d.coachingSessions || []).forEach(s => {
+          if (getDateStatus(s.nextSession)?.level === 'warning') items.push({ key: `coaching-${s.id}`, icon: '📝', label: `Coaching follow-up — ${s.coachee || 'Untitled coachee'}`, due: s.nextSession, path: '/coaching' });
+        });
+        const cp = d.careerPlan;
+        if (cp?.completedAt) {
+          const anchor = new Date(cp.completedAt).getTime();
+          [['d30', 30], ['d90', 90], ['m6', 180], ['m12', 365]].forEach(([key, days]) => {
+            const noteFilled = ((cp.checkIns?.[key]?.note) || '').trim().length > 0;
+            const dueStr = new Date(anchor + days * 86400000).toISOString().split('T')[0];
+            if (!noteFilled && getDateStatus(dueStr)?.level === 'warning') items.push({ key: `career-${key}`, icon: '🚀', label: 'Career check-in note', due: dueStr, path: '/career' });
+          });
+        }
+        items.sort((a, b) => a.due.localeCompare(b.due));
+        setDueSoon(items);
+      } catch (e) { console.warn('Could not load due-soon items', e); }
+    })();
+  }, [currentUser]);
 
   const firstName = currentUser?.displayName?.split(' ')[0] || 'Leader';
   const hour = new Date().getHours();
@@ -329,6 +372,43 @@ export default function Dashboard() {
             style={{ background: careerReminder.overdue ? '#dc2626' : '#0d9488', color: 'white', border: 'none', borderRadius: 10, padding: '0.5rem 1.1rem', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', flexShrink: 0 }}>
             {careerReminder.overdue ? 'Update Now →' : 'Add Progress Note →'}
           </button>
+        </div>
+      )}
+
+      {/* ── Coming Due Soon (yellow zone) — proactive, before anything goes past due ── */}
+      {dueSoon.length > 0 && (
+        <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #f59e0b' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: '1.25rem' }}>⚠️</span>
+              <div>
+                <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.95rem' }}>Coming Due Soon</h3>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Due within 2 weeks — act now, before it goes past due.</p>
+              </div>
+            </div>
+            <span style={{ background: '#fef9c3', color: '#b45309', fontWeight: 800, fontSize: '0.75rem', borderRadius: 9999, padding: '3px 10px' }}>
+              {dueSoon.length}
+            </span>
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {dueSoon.slice(0, 6).map(item => {
+              const status = getDateStatus(item.due);
+              const daysLeft = Math.round((new Date(item.due + 'T00:00:00') - new Date(new Date().toDateString())) / 86400000);
+              return (
+                <button key={item.key} onClick={() => navigate(item.path)}
+                  style={{ display: 'flex', alignItems: 'center', gap: 10, background: '#fffbeb', border: '1px solid #fde68a', borderRadius: 10, padding: '0.6rem 0.875rem', cursor: 'pointer', textAlign: 'left', width: '100%' }}>
+                  <span style={{ fontSize: '1rem', flexShrink: 0 }}>{item.icon}</span>
+                  <span style={{ flex: 1, minWidth: 0, fontSize: '0.83rem', fontWeight: 600, color: '#78350f', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 800, color: status.color, flexShrink: 0 }}>
+                    {daysLeft <= 0 ? 'Due today' : `${daysLeft}d left`}
+                  </span>
+                </button>
+              );
+            })}
+            {dueSoon.length > 6 && (
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '2px 0 0', textAlign: 'center' }}>+{dueSoon.length - 6} more</p>
+            )}
+          </div>
         </div>
       )}
 
