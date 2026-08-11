@@ -353,6 +353,11 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay }) {
           Array.from({ length: cols }).map((_, col) => {
             const cell = cellByPos[`${row}-${col}`];
             if (!cell) return <div key={`${row}-${col}`} style={{ aspectRatio: '1' }} />;
+            if (cell.day === null) {
+              // Finisher square (or unused tail on a shorter month) — always
+              // blank, no number, not clickable. Just completes the shape.
+              return <div key={`${row}-${col}`} style={{ aspectRatio: '1', borderRadius: 3, border: '1px solid #e2e8f0', background: '#f8fafc' }} />;
+            }
             const status = cellStatus[cell.day];
             const bg = status ? SQDIP_COLORS[status] : '#f1f5f9';
             const isOpen = openDay === cell.day;
@@ -367,7 +372,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay }) {
                     fontSize: '0.55rem', fontWeight: 700, color: status ? 'rgba(255,255,255,0.85)' : '#94a3b8',
                     transition: 'background 0.15s',
                   }}>
-                  {cell.day === days ? '' : cell.day}
+                  {cell.day}
                 </button>
                 {isOpen && (
                   <>
