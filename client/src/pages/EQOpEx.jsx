@@ -352,7 +352,11 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay }) {
         {Array.from({ length: rows }).flatMap((_, row) =>
           Array.from({ length: cols }).map((_, col) => {
             const cell = cellByPos[`${row}-${col}`];
-            if (!cell) return <div key={`${row}-${col}`} style={{ aspectRatio: '1' }} />;
+            // Background positions (not part of the day count) still render
+            // as a plain blank square — same look as the trailing finisher
+            // square — so the letter reads as one complete filled shape
+            // instead of having empty void space inside it.
+            if (!cell) return <div key={`${row}-${col}`} style={{ aspectRatio: '1', borderRadius: 3, border: '1px solid #e2e8f0', background: '#f8fafc' }} />;
             if (cell.day === null) {
               // Finisher square (or unused tail on a shorter month) — always
               // blank, no number, not clickable. Just completes the shape.
