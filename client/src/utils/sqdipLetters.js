@@ -23,15 +23,15 @@ const Q = [
 ];
 const D = [
   '1111', '1111',
-  '1001', '1001', '1001', '1001', '1001', '1001', '1001',
-  '1000', '1000',
-  '1111', '1111',
+  '1001', '1001', '1001', '1001', '1001', '1001', '1001', '1001', '1001',
+  '1111',
+  '1000',
 ];
 const I = [
   '1111', '1111',
-  '0110', '0110', '0110', '0110', '0110', '0110', '0110',
-  '0100', '0100',
-  '1111', '1111',
+  '0110', '0110', '0110', '0110', '0110', '0110', '0110', '0110', '0110',
+  '1111',
+  '0100',
 ];
 const P = [
   '1111', '1111',
@@ -53,12 +53,18 @@ export const SQDIP_META = {
 export const SQDIP_ORDER = ['S', 'Q', 'D', 'I', 'P'];
 
 // A few specific background positions render as a plain blank square (not
-// true void) — the taper rows where D's and I's stroke narrows from two
-// squares to one right before the bottom bar. Left as void, that side reads
-// as a stray gap rather than an intentional taper; [row, col], 0-indexed.
+// true void) — the tail of D's and I's final row, past the single day-31
+// square. [row, col], 0-indexed.
 export const FILLER_CELLS = {
-  D: [[9, 3], [10, 3]],
-  I: [[9, 2], [10, 2]],
+  D: [[12, 1], [12, 3]],
+  I: [[12, 0], [12, 3]],
+};
+
+// The one background position per letter that also carries the "Empty"
+// label — the designed finisher square, distinct from plain filler cells.
+export const EMPTY_LABEL_CELLS = {
+  D: [[12, 2]],
+  I: [[12, 2]],
 };
 
 // All 32 cell positions for a letter — [{ day, row, col }, ...]. `day` is

@@ -7,7 +7,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore } from '../utils/scoring';
 import { compressImage } from '../utils/image';
-import { SQDIP_META, SQDIP_ORDER, letterCells, letterGridSize, daysInMonth, FILLER_CELLS } from '../utils/sqdipLetters';
+import { SQDIP_META, SQDIP_ORDER, letterCells, letterGridSize, daysInMonth, FILLER_CELLS, EMPTY_LABEL_CELLS } from '../utils/sqdipLetters';
 
 const SCALE_LABELS = {
   1: { label: 'Rarely',    desc: 'This behavior is absent or reactive. Others would not recognize it as a strength. Immediate focus needed.' },
@@ -327,6 +327,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay }) {
   const cellByPos = {};
   cells.forEach(c => { cellByPos[`${c.row}-${c.col}`] = c; });
   const fillerSet = new Set((FILLER_CELLS[letterKey] || []).map(([r, c]) => `${r}-${c}`));
+  const emptyLabelSet = new Set((EMPTY_LABEL_CELLS[letterKey] || []).map(([r, c]) => `${r}-${c}`));
 
   const [openDay, setOpenDay] = useState(null);
 
@@ -354,8 +355,20 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay }) {
           Array.from({ length: cols }).map((_, col) => {
             const cell = cellByPos[`${row}-${col}`];
             if (!cell) {
-              const isFiller = fillerSet.has(`${row}-${col}`);
-              return <div key={`${row}-${col}`} style={isFiller
+              const posKey = `${row}-${col}`;
+              if (emptyLabelSet.has(posKey)) {
+                return (
+                  <div key={posKey} style={{
+                    aspectRatio: '1', borderRadius: 3, border: '1px solid #e2e8f0', background: '#f8fafc',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontSize: '0.4rem', fontWeight: 700, color: '#cbd5e1', textTransform: 'uppercase', letterSpacing: '0.02em',
+                  }}>
+                    Empty
+                  </div>
+                );
+              }
+              const isFiller = fillerSet.has(posKey);
+              return <div key={posKey} style={isFiller
                 ? { aspectRatio: '1', borderRadius: 3, border: '1px solid #e2e8f0', background: '#f8fafc' }
                 : { aspectRatio: '1' }} />;
             }
