@@ -563,7 +563,10 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
 
   function saveValue(day) {
     const trimmed = String(valueDraft).trim();
+    if (trimmed !== '' && Number.isNaN(Number(trimmed))) return toast.error('Enter a valid number');
     onSetValue(letterKey, day, trimmed === '' ? null : Number(trimmed));
+    setOpenDay(null);
+    toast.success(`Day ${day} value saved`);
   }
 
   return (
@@ -594,12 +597,14 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
                 return <div key={`${row}-${col}`} style={{ width: SQDIP_SQUARE, height: SQDIP_SQUARE, borderRadius: 3, background: 'rgba(255,255,255,0.15)' }} />;
               }
               const status = cellStatus[cell.day];
+              const loggedValue = cellValues?.[cell.day];
+              const hasLoggedValue = loggedValue !== undefined && loggedValue !== null;
               const bg = status ? SQDIP_COLORS[status] : 'rgba(255,255,255,0.92)';
               const isOpen = openDay === cell.day;
               return (
                 <div key={`${row}-${col}`} style={{ position: 'relative', width: SQDIP_SQUARE, height: SQDIP_SQUARE }}>
                   <button onClick={() => openPopover(cell.day)}
-                    title={`Day ${cell.day}${status ? ` — ${SQDIP_STATUS_LABEL[status]}` : ' — click to log'}`}
+                    title={`Day ${cell.day}${status ? ` — ${SQDIP_STATUS_LABEL[status]}` : ' — click to log'}${hasLoggedValue ? ` — value ${loggedValue}` : ''}`}
                     style={{
                       width: '100%', height: '100%', borderRadius: 3, border: 'none',
                       background: bg, cursor: 'pointer', padding: 0,
@@ -609,6 +614,12 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
                     }}>
                     {cell.day}
                   </button>
+                  {hasLoggedValue && (
+                    <span title={`Value ${loggedValue}`} style={{
+                      position: 'absolute', top: -2, right: -2, width: 7, height: 7, borderRadius: '50%',
+                      background: '#0d9488', border: '1px solid white', pointerEvents: 'none',
+                    }} />
+                  )}
                   {isOpen && (
                     <>
                       <div onClick={() => setOpenDay(null)} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />
