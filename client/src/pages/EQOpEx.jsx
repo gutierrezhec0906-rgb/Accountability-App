@@ -316,6 +316,13 @@ function QuestionGuide({ guideKey }) {
 }
 
 const SQDIP_COLORS = { green: '#16a34a', amber: '#f59e0b', red: '#dc2626' };
+// Fixed square size/gap so day-squares are pixel-identical across every
+// letter regardless of card width, and a fixed grid height (sized for the
+// tallest letter, P) so the "meet/behind/at risk" legend lands at the same
+// vertical position under every card, whichever letters are active.
+const SQDIP_SQUARE = 32;
+const SQDIP_GAP = 3;
+const SQDIP_MAX_ROWS = Math.max(...SQDIP_ORDER.map(k => letterGridSize(k).rows));
 const SQDIP_STATUS_LABEL = { green: 'Meet Goal', amber: 'Behind Goal', red: 'At Risk' };
 const ACTION_STATUS = {
   open:    { label: 'Open',    color: '#2563eb', bg: '#eff6ff' },
@@ -514,7 +521,8 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, metricN
           <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{filled}/{days} logged</span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 3, maxWidth: cols * 34, margin: '0.9rem auto 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: SQDIP_MAX_ROWS * (SQDIP_SQUARE + SQDIP_GAP), margin: '0.9rem 0 0' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${SQDIP_SQUARE}px)`, gridAutoRows: `${SQDIP_SQUARE}px`, gap: SQDIP_GAP }}>
           {Array.from({ length: rows }).flatMap((_, row) =>
             Array.from({ length: cols }).map((_, col) => {
               const cell = cellByPos[`${row}-${col}`];
@@ -522,17 +530,17 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, metricN
                 const posKey = `${row}-${col}`;
                 const isBlankSquare = fillerSet.has(posKey) || emptyLabelSet.has(posKey);
                 return <div key={posKey} style={isBlankSquare
-                  ? { aspectRatio: '1', borderRadius: 3, background: 'rgba(255,255,255,0.15)' }
-                  : { aspectRatio: '1' }} />;
+                  ? { width: SQDIP_SQUARE, height: SQDIP_SQUARE, borderRadius: 3, background: 'rgba(255,255,255,0.15)' }
+                  : { width: SQDIP_SQUARE, height: SQDIP_SQUARE }} />;
               }
               if (cell.day === null) {
-                return <div key={`${row}-${col}`} style={{ aspectRatio: '1', borderRadius: 3, background: 'rgba(255,255,255,0.15)' }} />;
+                return <div key={`${row}-${col}`} style={{ width: SQDIP_SQUARE, height: SQDIP_SQUARE, borderRadius: 3, background: 'rgba(255,255,255,0.15)' }} />;
               }
               const status = cellStatus[cell.day];
               const bg = status ? SQDIP_COLORS[status] : 'rgba(255,255,255,0.92)';
               const isOpen = openDay === cell.day;
               return (
-                <div key={`${row}-${col}`} style={{ position: 'relative', aspectRatio: '1' }}>
+                <div key={`${row}-${col}`} style={{ position: 'relative', width: SQDIP_SQUARE, height: SQDIP_SQUARE }}>
                   <button onClick={() => setOpenDay(isOpen ? null : cell.day)}
                     title={`Day ${cell.day}${status ? ` — ${SQDIP_STATUS_LABEL[status]}` : ' — click to log'}`}
                     style={{
@@ -569,6 +577,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, metricN
               );
             })
           )}
+        </div>
         </div>
 
         <div style={{ display: 'flex', gap: 10, fontSize: '0.68rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700, marginTop: 10, flexWrap: 'wrap' }}>
