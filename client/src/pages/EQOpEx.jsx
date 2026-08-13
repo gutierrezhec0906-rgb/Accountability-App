@@ -611,14 +611,11 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
                     style={{
                       width: '100%', height: '100%', borderRadius: 3, border: 'none',
                       background: bg, cursor: 'pointer', padding: 0,
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
                       fontSize: '0.55rem', fontWeight: 700, color: status ? 'rgba(255,255,255,0.9)' : meta.color,
-                      transition: 'background 0.15s', lineHeight: 1,
+                      transition: 'background 0.15s',
                     }}>
-                    <span>{cell.day}</span>
-                    {hasLoggedValue && (
-                      <span style={{ fontSize: '0.46rem', fontWeight: 800, opacity: 1, textDecoration: 'underline', textUnderlineOffset: 1 }}>{loggedValue}</span>
-                    )}
+                    {cell.day}
                   </button>
                   {isOpen && (
                     <>
