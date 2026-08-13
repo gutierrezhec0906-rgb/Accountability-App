@@ -541,6 +541,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
 
   const [openDay, setOpenDay] = useState(null);
   const [valueDraft, setValueDraft] = useState('');
+  const [justSaved, setJustSaved] = useState(false);
   const [editingMetric, setEditingMetric] = useState(false);
   const [editingGoal, setEditingGoal] = useState(false);
 
@@ -559,14 +560,16 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
     if (openDay === day) { setOpenDay(null); return; }
     setOpenDay(day);
     setValueDraft(cellValues?.[day] ?? '');
+    setJustSaved(false);
   }
 
   function saveValue(day) {
     const trimmed = String(valueDraft).trim();
     if (trimmed !== '' && Number.isNaN(Number(trimmed))) return toast.error('Enter a valid number');
-    onSetValue(letterKey, day, trimmed === '' ? null : Number(trimmed));
-    setOpenDay(null);
-    toast.success(`Day ${day} value saved`);
+    const saved = trimmed === '' ? null : Number(trimmed);
+    onSetValue(letterKey, day, saved);
+    setValueDraft(saved === null ? '' : saved);
+    setJustSaved(true);
   }
 
   return (
@@ -608,18 +611,15 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
                     style={{
                       width: '100%', height: '100%', borderRadius: 3, border: 'none',
                       background: bg, cursor: 'pointer', padding: 0,
-                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 0,
                       fontSize: '0.55rem', fontWeight: 700, color: status ? 'rgba(255,255,255,0.9)' : meta.color,
-                      transition: 'background 0.15s',
+                      transition: 'background 0.15s', lineHeight: 1,
                     }}>
-                    {cell.day}
+                    <span>{cell.day}</span>
+                    {hasLoggedValue && (
+                      <span style={{ fontSize: '0.36rem', fontWeight: 700, opacity: 0.9 }}>{loggedValue}</span>
+                    )}
                   </button>
-                  {hasLoggedValue && (
-                    <span title={`Value ${loggedValue}`} style={{
-                      position: 'absolute', top: -2, right: -2, width: 7, height: 7, borderRadius: '50%',
-                      background: '#0d9488', border: '1px solid white', pointerEvents: 'none',
-                    }} />
-                  )}
                   {isOpen && (
                     <>
                       <div onClick={() => setOpenDay(null)} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />
@@ -641,12 +641,15 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
                           )}
                         </div>
                         <div style={{ display: 'flex', gap: 4, alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: 6 }}>
-                          <input type="number" value={valueDraft} onChange={e => setValueDraft(e.target.value)}
+                          <input type="number" value={valueDraft}
+                            onChange={e => { setValueDraft(e.target.value); setJustSaved(false); }}
                             onKeyDown={e => e.key === 'Enter' && saveValue(cell.day)}
                             placeholder={metricName} title={`Actual ${metricName} value for this day`}
                             style={{ width: 64, fontSize: '0.72rem', padding: '3px 5px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.08)', color: 'white' }} />
                           <button onClick={() => saveValue(cell.day)} title="Save value"
-                            style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 5, padding: '3px 8px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                            style={{ background: justSaved ? '#16a34a' : '#0d9488', color: 'white', border: 'none', borderRadius: 5, padding: '3px 8px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer' }}>
+                            {justSaved ? '✓ Saved' : 'Save'}
+                          </button>
                         </div>
                       </div>
                     </>
