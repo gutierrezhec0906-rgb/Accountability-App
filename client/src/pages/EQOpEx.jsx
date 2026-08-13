@@ -617,7 +617,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
                     }}>
                     <span>{cell.day}</span>
                     {hasLoggedValue && (
-                      <span style={{ fontSize: '0.36rem', fontWeight: 700, opacity: 0.9 }}>{loggedValue}</span>
+                      <span style={{ fontSize: '0.46rem', fontWeight: 800, opacity: 1, textDecoration: 'underline', textUnderlineOffset: 1 }}>{loggedValue}</span>
                     )}
                   </button>
                   {isOpen && (
