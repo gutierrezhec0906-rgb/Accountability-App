@@ -364,10 +364,10 @@ function weekWorstColor(wk) {
 function WeeklyBarChart({ weeks, metricName, goal }) {
   const w = 320, h = 150, padL = 26, padB = 22, padT = 10, padR = 8;
   const plotW = w - padL - padR, plotH = h - padT - padB;
-  const useValues = weeks.some(wk => wk.hasValue);
-  const barVals = weeks.map(wk => useValues ? wk.value : wk.green + wk.amber + wk.red);
   const target = goal?.target;
   const goalSet = target !== undefined && target !== null && target !== '';
+  const useValues = goalSet || weeks.some(wk => wk.hasValue);
+  const barVals = weeks.map(wk => useValues ? wk.value : wk.green + wk.amber + wk.red);
   const hasGoal = useValues && goalSet;
   const yTicks = 5;
   const rawMax = Math.max(1, ...barVals, goalSet ? Number(target) : 0);
@@ -419,10 +419,10 @@ function WeeklyBarChart({ weeks, metricName, goal }) {
 function WeeklyTrendChart({ weeks, goal }) {
   const w = 320, h = 150, padL = 26, padB = 22, padT = 10, padR = 8;
   const plotW = w - padL - padR, plotH = h - padT - padB;
-  const useValues = weeks.some(wk => wk.hasValue);
-  const totals = weeks.map(wk => useValues ? wk.value : wk.green + wk.amber + wk.red);
   const target = goal?.target;
   const goalSet = target !== undefined && target !== null && target !== '';
+  const useValues = goalSet || weeks.some(wk => wk.hasValue);
+  const totals = weeks.map(wk => useValues ? wk.value : wk.green + wk.amber + wk.red);
   const hasGoal = useValues && goalSet;
   const rawMax = Math.max(1, ...totals, goalSet ? Number(target) : 0);
   const maxVal = Math.ceil(rawMax / 5) * 5;
