@@ -316,6 +316,19 @@ function QuestionGuide({ guideKey }) {
 }
 
 const SQDIP_COLORS = { green: '#16a34a', amber: '#f59e0b', red: '#dc2626' };
+
+// The 🦺 emoji renders in its own fixed colors (can't be tinted via CSS) and
+// is hard to see against Safety's red header — swap in a yellow SVG vest so
+// it actually stands out, keep every other letter's emoji as-is.
+function LetterIcon({ letterKey, icon, size = '1.2rem' }) {
+  if (letterKey !== 'S') return <span style={{ fontSize: size }}>{icon}</span>;
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} style={{ display: 'inline-block', verticalAlign: '-0.15em' }}>
+      <path d="M9 2h6l1.5 3H16v15a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V5H7.5L9 2z" fill="#facc15" stroke="#78350f" strokeWidth="0.6" strokeLinejoin="round" />
+      <path d="M8 9h8M8 13h8" stroke="#78350f" strokeWidth="1.1" strokeLinecap="round" />
+    </svg>
+  );
+}
 // Fixed square size/gap so day-squares are pixel-identical across every
 // letter regardless of card width, and a fixed grid height (sized for the
 // tallest letter, P) so the "meet/behind/at risk" legend lands at the same
@@ -578,7 +591,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
       <div style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}cc)`, padding: '1rem 1.25rem 1.25rem' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: '1.2rem' }}>{meta.icon}</span>
+            <LetterIcon letterKey={letterKey} icon={meta.icon} />
             <h3 style={{ fontWeight: 800, color: 'white', margin: 0, fontSize: '1.05rem' }}>{label}</h3>
           </div>
           <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{filled}/{days} logged</span>
@@ -1772,7 +1785,7 @@ export default function EQOpEx() {
                       <button onClick={() => toggleSqdipLetter(key)}
                         style={{ padding: '0.4rem 0.875rem', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
                           background: on ? meta.color : '#f1f5f9', color: on ? 'white' : '#94a3b8' }}>
-                        {meta.icon} {label}
+                        <LetterIcon letterKey={key} icon={meta.icon} size="1rem" /> {label}
                       </button>
                       {meta.altLabel && on && (
                         <button onClick={() => toggleSqdipLabel(key)} title={`Switch to ${label === meta.defaultLabel ? meta.altLabel : meta.defaultLabel}`}
