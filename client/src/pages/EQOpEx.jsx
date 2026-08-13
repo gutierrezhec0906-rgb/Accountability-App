@@ -315,12 +315,171 @@ function QuestionGuide({ guideKey }) {
   );
 }
 
-const SQDIP_COLORS = { green: '#16a34a', red: '#dc2626' };
+const SQDIP_COLORS = { green: '#16a34a', amber: '#f59e0b', red: '#dc2626' };
+const SQDIP_STATUS_LABEL = { green: 'Meet Goal', amber: 'Behind Goal', red: 'At Risk' };
+const ACTION_STATUS = {
+  open:    { label: 'Open',    color: '#2563eb', bg: '#eff6ff' },
+  pending: { label: 'Pending', color: '#b45309', bg: '#fef9c3' },
+  atrisk:  { label: 'At Risk', color: '#dc2626', bg: '#fee2e2' },
+};
 
-// One letter card — a pixel-grid glyph made of clickable day-squares.
-// Clicking a square opens a small popover with explicit On Target / Issue /
-// Clear options, so picking red doesn't depend on remembering a click-cycle.
-function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay }) {
+// Bucket a letter's day statuses into ISO-ish weeks (WK1 = days 1-7, etc.)
+// for the two charts below each letter card.
+function weeklyStatusCounts(cellStatus, days) {
+  const weeks = Math.ceil(days / 7);
+  return Array.from({ length: weeks }, (_, w) => {
+    const start = w * 7 + 1, end = Math.min((w + 1) * 7, days);
+    const counts = { green: 0, amber: 0, red: 0 };
+    for (let d = start; d <= end; d++) {
+      const s = cellStatus[d];
+      if (s) counts[s]++;
+    }
+    return { label: `WK${w + 1}`, ...counts };
+  });
+}
+
+// Small self-contained SVG bar chart — no charting library, matches the
+// house style already used for Dashboard's Sparkline and Lean's Pareto chart.
+function WeeklyBarChart({ weeks, metricName }) {
+  const w = 320, h = 150, padL = 26, padB = 22, padT = 10, padR = 8;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+  const maxVal = Math.max(1, ...weeks.map(wk => wk.green + wk.amber + wk.red));
+  const barW = plotW / weeks.length * 0.55;
+  const yTicks = 5;
+  return (
+    <svg width="100%" viewBox={`0 0 ${w} ${h}`} style={{ display: 'block' }}>
+      {Array.from({ length: yTicks + 1 }).map((_, i) => {
+        const y = padT + plotH - (i / yTicks) * plotH;
+        const val = Math.ceil((maxVal / yTicks) * i);
+        return (
+          <g key={i}>
+            <line x1={padL} x2={w - padR} y1={y} y2={y} stroke="#eef2f7" strokeWidth="1" />
+            <text x={padL - 6} y={y + 3} fontSize="7" fill="#94a3b8" textAnchor="end">{val}</text>
+          </g>
+        );
+      })}
+      {weeks.map((wk, i) => {
+        const x = padL + (i + 0.5) * (plotW / weeks.length) - barW / 2;
+        const total = wk.green + wk.amber + wk.red;
+        const color = wk.red > 0 ? SQDIP_COLORS.red : wk.amber > 0 ? SQDIP_COLORS.amber : total > 0 ? SQDIP_COLORS.green : '#e2e8f0';
+        const barH = (total / maxVal) * plotH;
+        return (
+          <g key={wk.label}>
+            <rect x={x} y={padT + plotH - barH} width={barW} height={Math.max(barH, total > 0 ? 2 : 0)} fill={color} rx="2" />
+            <text x={x + barW / 2} y={h - 6} fontSize="7.5" fill="#64748b" textAnchor="middle">{wk.label}</text>
+          </g>
+        );
+      })}
+      <text x={padL} y={10} fontSize="7.5" fill="#94a3b8">{metricName}</text>
+    </svg>
+  );
+}
+
+// Second chart — same weekly buckets as a trend line (dots colored by that
+// week's dominant status, plus a 2-point moving-average trend line).
+function WeeklyTrendChart({ weeks }) {
+  const w = 320, h = 150, padL = 26, padB = 22, padT = 10, padR = 8;
+  const plotW = w - padL - padR, plotH = h - padT - padB;
+  const totals = weeks.map(wk => wk.green + wk.amber + wk.red);
+  const maxVal = Math.max(1, ...totals);
+  const stepX = weeks.length > 1 ? plotW / (weeks.length - 1) : 0;
+  const pts = totals.map((v, i) => [padL + i * stepX, padT + plotH - (v / maxVal) * plotH]);
+  const trend = totals.map((_, i) => {
+    const lo = Math.max(0, i - 1), hi = Math.min(totals.length - 1, i + 1);
+    const slice = totals.slice(lo, hi + 1);
+    return slice.reduce((a, b) => a + b, 0) / slice.length;
+  });
+  const trendPts = trend.map((v, i) => [padL + i * stepX, padT + plotH - (v / maxVal) * plotH]);
+  const line = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  const trendLine = trendPts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+  return (
+    <svg width="100%" viewBox={`0 0 ${w} ${h}`} style={{ display: 'block' }}>
+      {Array.from({ length: 5 + 1 }).map((_, i) => {
+        const y = padT + plotH - (i / 5) * plotH;
+        return <line key={i} x1={padL} x2={w - padR} y1={y} y2={y} stroke="#eef2f7" strokeWidth="1" />;
+      })}
+      <path d={trendLine} fill="none" stroke="#7c3aed" strokeWidth="1.5" strokeDasharray="3,2" />
+      <path d={line} fill="none" stroke="#1e293b" strokeWidth="1.5" />
+      {weeks.map((wk, i) => {
+        const [x, y] = pts[i];
+        const color = wk.red > 0 ? SQDIP_COLORS.red : wk.amber > 0 ? SQDIP_COLORS.amber : totals[i] > 0 ? SQDIP_COLORS.green : '#cbd5e1';
+        return (
+          <g key={wk.label}>
+            <circle cx={x} cy={y} r="3.5" fill={color} />
+            <text x={x} y={h - 6} fontSize="7.5" fill="#64748b" textAnchor="middle">{wk.label}</text>
+          </g>
+        );
+      })}
+    </svg>
+  );
+}
+
+// Compact action-plan list under each letter — title / due date / status,
+// with add and remove. Mirrors the lightweight row-editor pattern used
+// elsewhere in the app (Coaching action items, Lean follow-ups).
+function ActionPlanSection({ items, onChange }) {
+  const [title, setTitle] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const counts = { open: 0, pending: 0, atrisk: 0 };
+  items.forEach(it => { if (counts[it.status] !== undefined) counts[it.status]++; });
+
+  function addItem() {
+    if (!title.trim()) return;
+    onChange([...items, { id: Date.now().toString(), title: title.trim(), dueDate, status: 'open' }]);
+    setTitle(''); setDueDate('');
+  }
+  function updateStatus(id, status) {
+    onChange(items.map(it => it.id === id ? { ...it, status } : it));
+  }
+  function removeItem(id) {
+    onChange(items.filter(it => it.id !== id));
+  }
+
+  return (
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
+        <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.85rem' }}>Action Plan</h4>
+        <div style={{ display: 'flex', gap: 6 }}>
+          {Object.entries(ACTION_STATUS).map(([key, s]) => (
+            <span key={key} title={s.label} style={{ background: s.bg, color: s.color, fontWeight: 800, fontSize: '0.72rem', borderRadius: 8, padding: '2px 8px', minWidth: 22, textAlign: 'center' }}>
+              {String(counts[key]).padStart(2, '0')}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {items.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
+          {items.map(it => (
+            <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.4rem 0.5rem', borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <span style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.title}</span>
+              {it.dueDate && <span style={{ fontSize: '0.68rem', color: '#94a3b8', flexShrink: 0 }}>{it.dueDate}</span>}
+              <select value={it.status} onChange={e => updateStatus(it.id, e.target.value)}
+                style={{ fontSize: '0.68rem', fontWeight: 700, color: ACTION_STATUS[it.status].color, background: ACTION_STATUS[it.status].bg, border: 'none', borderRadius: 999, padding: '2px 6px', flexShrink: 0, cursor: 'pointer' }}>
+                {Object.entries(ACTION_STATUS).map(([key, s]) => <option key={key} value={key}>{s.label}</option>)}
+              </select>
+              <button onClick={() => removeItem(it.id)} style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>🗑</button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 6 }}>
+        <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Action title…"
+          style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', padding: '0.35rem 0.5rem', borderRadius: 8, border: '1px solid #e2e8f0' }} />
+        <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
+          style={{ fontSize: '0.72rem', padding: '0.35rem 0.4rem', borderRadius: 8, border: '1px solid #e2e8f0', width: 128, flexShrink: 0 }} />
+        <button onClick={addItem} style={{ background: '#0f2044', color: 'white', border: 'none', borderRadius: 8, padding: '0.35rem 0.7rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>+ Add</button>
+      </div>
+    </div>
+  );
+}
+
+// One letter card — a pixel-grid glyph made of clickable day-squares, plus a
+// weekly chart, a trend chart, and a per-letter action plan underneath.
+// Clicking a square opens a small popover with explicit Meet Goal / Behind
+// Goal / At Risk / Clear options, so picking a status is a direct choice.
+function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, metricName, onMetricNameChange, actionItems, onActionItemsChange }) {
   const meta = SQDIP_META[letterKey];
   const { rows, cols } = letterGridSize(letterKey);
   const cells = letterCells(letterKey, days);
@@ -330,10 +489,13 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay }) {
   const emptyLabelSet = new Set((EMPTY_LABEL_CELLS[letterKey] || []).map(([r, c]) => `${r}-${c}`));
 
   const [openDay, setOpenDay] = useState(null);
+  const [editingMetric, setEditingMetric] = useState(false);
 
   const greenCount = Object.values(cellStatus).filter(v => v === 'green').length;
+  const amberCount = Object.values(cellStatus).filter(v => v === 'amber').length;
   const redCount = Object.values(cellStatus).filter(v => v === 'red').length;
-  const filled = greenCount + redCount;
+  const filled = greenCount + amberCount + redCount;
+  const weeks = weeklyStatusCounts(cellStatus, days);
 
   function choose(day, status) {
     onSetDay(letterKey, day, status);
@@ -341,75 +503,106 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay }) {
   }
 
   return (
-    <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: 10, borderLeft: `4px solid ${meta.color}` }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: '1.1rem' }}>{meta.icon}</span>
-          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.95rem' }}>{label}</h3>
+    <div className="card" style={{ padding: 0, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      {/* Gradient header */}
+      <div style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}cc)`, padding: '1rem 1.25rem 1.25rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: '1.2rem' }}>{meta.icon}</span>
+            <h3 style={{ fontWeight: 800, color: 'white', margin: 0, fontSize: '1.05rem' }}>{label}</h3>
+          </div>
+          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{filled}/{days} logged</span>
         </div>
-        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>{filled}/{days} logged</span>
-      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 3, maxWidth: cols * 34 }}>
-        {Array.from({ length: rows }).flatMap((_, row) =>
-          Array.from({ length: cols }).map((_, col) => {
-            const cell = cellByPos[`${row}-${col}`];
-            if (!cell) {
-              const posKey = `${row}-${col}`;
-              const isBlankSquare = fillerSet.has(posKey) || emptyLabelSet.has(posKey);
-              return <div key={posKey} style={isBlankSquare
-                ? { aspectRatio: '1', borderRadius: 3, border: '1px solid #e2e8f0', background: '#f8fafc' }
-                : { aspectRatio: '1' }} />;
-            }
-            if (cell.day === null) {
-              // Finisher square (or unused tail on a shorter month) — always
-              // blank, not clickable. Just completes the shape.
-              return <div key={`${row}-${col}`} style={{ aspectRatio: '1', borderRadius: 3, border: '1px solid #e2e8f0', background: '#f8fafc' }} />;
-            }
-            const status = cellStatus[cell.day];
-            const bg = status ? SQDIP_COLORS[status] : '#f1f5f9';
-            const isOpen = openDay === cell.day;
-            return (
-              <div key={`${row}-${col}`} style={{ position: 'relative', aspectRatio: '1' }}>
-                <button onClick={() => setOpenDay(isOpen ? null : cell.day)}
-                  title={`Day ${cell.day}${status ? ` — ${status === 'green' ? 'On target' : 'Issue'}` : ' — click to log'}`}
-                  style={{
-                    width: '100%', height: '100%', borderRadius: 3, border: status ? 'none' : '1px solid #e2e8f0',
-                    background: bg, cursor: 'pointer', padding: 0,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '0.55rem', fontWeight: 700, color: status ? 'rgba(255,255,255,0.85)' : '#94a3b8',
-                    transition: 'background 0.15s',
-                  }}>
-                  {cell.day}
-                </button>
-                {isOpen && (
-                  <>
-                    <div onClick={() => setOpenDay(null)} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />
-                    <div style={{
-                      position: 'absolute', top: '100%', left: 0, marginTop: 4, zIndex: 200,
-                      background: '#0f2044', borderRadius: 8, padding: 4, display: 'flex', gap: 4,
-                      boxShadow: '0 4px 16px rgba(0,0,0,0.25)', whiteSpace: 'nowrap',
+        <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, 1fr)`, gap: 3, maxWidth: cols * 34, margin: '0.9rem auto 0' }}>
+          {Array.from({ length: rows }).flatMap((_, row) =>
+            Array.from({ length: cols }).map((_, col) => {
+              const cell = cellByPos[`${row}-${col}`];
+              if (!cell) {
+                const posKey = `${row}-${col}`;
+                const isBlankSquare = fillerSet.has(posKey) || emptyLabelSet.has(posKey);
+                return <div key={posKey} style={isBlankSquare
+                  ? { aspectRatio: '1', borderRadius: 3, background: 'rgba(255,255,255,0.15)' }
+                  : { aspectRatio: '1' }} />;
+              }
+              if (cell.day === null) {
+                return <div key={`${row}-${col}`} style={{ aspectRatio: '1', borderRadius: 3, background: 'rgba(255,255,255,0.15)' }} />;
+              }
+              const status = cellStatus[cell.day];
+              const bg = status ? SQDIP_COLORS[status] : 'rgba(255,255,255,0.92)';
+              const isOpen = openDay === cell.day;
+              return (
+                <div key={`${row}-${col}`} style={{ position: 'relative', aspectRatio: '1' }}>
+                  <button onClick={() => setOpenDay(isOpen ? null : cell.day)}
+                    title={`Day ${cell.day}${status ? ` — ${SQDIP_STATUS_LABEL[status]}` : ' — click to log'}`}
+                    style={{
+                      width: '100%', height: '100%', borderRadius: 3, border: 'none',
+                      background: bg, cursor: 'pointer', padding: 0,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      fontSize: '0.55rem', fontWeight: 700, color: status ? 'rgba(255,255,255,0.9)' : meta.color,
+                      transition: 'background 0.15s',
                     }}>
-                      <button onClick={() => choose(cell.day, 'green')} title="On target"
-                        style={{ background: SQDIP_COLORS.green, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>✓</button>
-                      <button onClick={() => choose(cell.day, 'red')} title="Issue"
-                        style={{ background: SQDIP_COLORS.red, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>✕</button>
-                      {status && (
-                        <button onClick={() => choose(cell.day, null)} title="Clear"
-                          style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700 }}>⨯</button>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            );
-          })
-        )}
+                    {cell.day}
+                  </button>
+                  {isOpen && (
+                    <>
+                      <div onClick={() => setOpenDay(null)} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />
+                      <div style={{
+                        position: 'absolute', top: '100%', left: 0, marginTop: 4, zIndex: 200,
+                        background: '#0f2044', borderRadius: 8, padding: 4, display: 'flex', gap: 4,
+                        boxShadow: '0 4px 16px rgba(0,0,0,0.25)', whiteSpace: 'nowrap',
+                      }}>
+                        <button onClick={() => choose(cell.day, 'green')} title="Meet Goal"
+                          style={{ background: SQDIP_COLORS.green, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>✓</button>
+                        <button onClick={() => choose(cell.day, 'amber')} title="Behind Goal"
+                          style={{ background: SQDIP_COLORS.amber, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>!</button>
+                        <button onClick={() => choose(cell.day, 'red')} title="At Risk"
+                          style={{ background: SQDIP_COLORS.red, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>✕</button>
+                        {status && (
+                          <button onClick={() => choose(cell.day, null)} title="Clear"
+                            style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700 }}>⨯</button>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+
+        <div style={{ display: 'flex', gap: 10, fontSize: '0.68rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700, marginTop: 10, flexWrap: 'wrap' }}>
+          <span>🟢 {greenCount} meet</span>
+          <span>🟡 {amberCount} behind</span>
+          <span>🔴 {redCount} at risk</span>
+        </div>
       </div>
 
-      <div style={{ display: 'flex', gap: 12, fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>
-        <span><span style={{ color: SQDIP_COLORS.green }}>●</span> {greenCount} on target</span>
-        <span><span style={{ color: SQDIP_COLORS.red }}>●</span> {redCount} issues</span>
+      {/* Metric name + weekly chart */}
+      <div style={{ padding: '1rem 1.25rem 0.25rem' }}>
+        {editingMetric ? (
+          <input autoFocus value={metricName} onChange={e => onMetricNameChange(e.target.value)}
+            onBlur={() => setEditingMetric(false)} onKeyDown={e => e.key === 'Enter' && setEditingMetric(false)}
+            style={{ fontSize: '0.85rem', fontWeight: 700, padding: '0.3rem 0.5rem', borderRadius: 8, border: `1px solid ${meta.color}`, width: '100%', marginBottom: 6 }} />
+        ) : (
+          <button onClick={() => setEditingMetric(true)} title="Click to rename this metric"
+            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
+            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>{metricName}</span>
+            <span style={{ fontSize: '0.65rem', color: '#cbd5e1' }}>✎</span>
+          </button>
+        )}
+        <WeeklyBarChart weeks={weeks} metricName={metricName} />
+      </div>
+
+      {/* Action Plan */}
+      <div style={{ padding: '0.5rem 1.25rem 1rem', borderTop: '1px solid var(--border)', marginTop: 8 }}>
+        <ActionPlanSection items={actionItems} onChange={onActionItemsChange} />
+      </div>
+
+      {/* One Minute Manager trend chart */}
+      <div style={{ padding: '0.75rem 1.25rem 1.25rem', borderTop: '1px solid var(--border)' }}>
+        <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '0.85rem' }}>One Minute Manager</h4>
+        <WeeklyTrendChart weeks={weeks} />
       </div>
     </div>
   );
@@ -434,6 +627,8 @@ export default function EQOpEx() {
   const [sqdipEnabled, setSqdipEnabled] = useState({ S: true, Q: true, D: true, I: true, P: true });
   const [sqdipLabels, setSqdipLabels] = useState({});
   const [sqdipCells, setSqdipCells] = useState({ S: {}, Q: {}, D: {}, I: {}, P: {} });
+  const [sqdipMetricNames, setSqdipMetricNames] = useState({ S: 'Accidents', Q: 'Defects', D: 'Late Shipments', I: 'Stock-outs', P: 'Turnover' });
+  const [sqdipActionPlans, setSqdipActionPlans] = useState({ S: [], Q: [], D: [], I: [], P: [] });
 
   // Personal Development Plan state
   const [pdpAreas, setPdpAreas] = useState(null); // null = not yet initialized
@@ -464,14 +659,16 @@ export default function EQOpEx() {
 
           const board = data.sqdipBoard;
           const currentMonthKey = new Date().toISOString().slice(0, 7);
-          if (board && board.month === currentMonthKey) {
+          if (board) {
             setSqdipEnabled(board.enabled || { S: true, Q: true, D: true, I: true, P: true });
             setSqdipLabels(board.labels || {});
-            setSqdipCells(board.cells || { S: {}, Q: {}, D: {}, I: {}, P: {} });
-          } else if (board) {
-            // New month — keep the user's letter/label config, but start a fresh grid.
-            setSqdipEnabled(board.enabled || { S: true, Q: true, D: true, I: true, P: true });
-            setSqdipLabels(board.labels || {});
+            setSqdipMetricNames(m => ({ ...m, ...(board.metricNames || {}) }));
+            // Action plans and metric names carry across months (they're
+            // ongoing config, not a day-by-day log); only the day grid resets.
+            setSqdipActionPlans(a => ({ ...a, ...(board.actionPlans || {}) }));
+            if (board.month === currentMonthKey) {
+              setSqdipCells(board.cells || { S: {}, Q: {}, D: {}, I: {}, P: {} });
+            }
           }
         }
       } catch (e) { console.error(e); setLoadError(true); }
@@ -487,6 +684,8 @@ export default function EQOpEx() {
       enabled: next.enabled ?? sqdipEnabled,
       labels: next.labels ?? sqdipLabels,
       cells: next.cells ?? sqdipCells,
+      metricNames: next.metricNames ?? sqdipMetricNames,
+      actionPlans: next.actionPlans ?? sqdipActionPlans,
     };
     try {
       await setDoc(doc(db, 'users', currentUser.uid), { sqdipBoard: board }, { merge: true });
@@ -518,6 +717,18 @@ export default function EQOpEx() {
     const next = { ...sqdipCells, [letterKey]: nextLetterCells };
     setSqdipCells(next);
     persistSqdip({ cells: next });
+  }
+
+  function setSqdipMetricName(letterKey, name) {
+    const next = { ...sqdipMetricNames, [letterKey]: name };
+    setSqdipMetricNames(next);
+    persistSqdip({ metricNames: next });
+  }
+
+  function setSqdipActionItems(letterKey, items) {
+    const next = { ...sqdipActionPlans, [letterKey]: items };
+    setSqdipActionPlans(next);
+    persistSqdip({ actionPlans: next });
   }
 
   async function saveEQ() {
@@ -1419,7 +1630,7 @@ export default function EQOpEx() {
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
                 <div>
                   <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.95rem' }}>🗓️ {monthLabel} · {days} days</h3>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Fill in each day green (on target) or red (issue) — the letter completes as the month goes on.</p>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Log each day, track the weekly trend, and manage the action plan for each letter.</p>
                 </div>
                 <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>{activeCount}/5 letters active</span>
               </div>
@@ -1448,7 +1659,7 @@ export default function EQOpEx() {
             </div>
 
             {/* Letter cards */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: 14 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14 }}>
               {SQDIP_ORDER.filter(key => sqdipEnabled[key]).map(key => (
                 <SqdipLetterCard
                   key={key}
@@ -1457,6 +1668,10 @@ export default function EQOpEx() {
                   days={days}
                   cellStatus={sqdipCells[key] || {}}
                   onSetDay={setSqdipDay}
+                  metricName={sqdipMetricNames[key] || SQDIP_META[key].defaultLabel}
+                  onMetricNameChange={name => setSqdipMetricName(key, name)}
+                  actionItems={sqdipActionPlans[key] || []}
+                  onActionItemsChange={items => setSqdipActionItems(key, items)}
                 />
               ))}
             </div>
