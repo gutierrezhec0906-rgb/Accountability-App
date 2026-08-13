@@ -567,7 +567,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
     const trimmed = String(valueDraft).trim();
     if (trimmed !== '' && Number.isNaN(Number(trimmed))) return toast.error('Enter a valid number');
     const saved = trimmed === '' ? null : Number(trimmed);
-    onSetValue(letterKey, day, saved);
+    onSetValue(day, saved);
     setValueDraft(saved === null ? '' : saved);
     setJustSaved(true);
   }
