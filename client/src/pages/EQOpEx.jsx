@@ -332,25 +332,43 @@ const ACTION_STATUS = {
 
 // Bucket a letter's day statuses into ISO-ish weeks (WK1 = days 1-7, etc.)
 // for the two charts below each letter card.
-function weeklyStatusCounts(cellStatus, days) {
+// Weekly buckets combine both data sources: the day-square status counts
+// (always available) and, when the user has logged actual numbers, the sum
+// of those values for the week. Charts prefer real values once any exist —
+// falling back to status counts keeps older boards (logged before numeric
+// capture existed) still rendering something meaningful.
+function weeklyStatusCounts(cellStatus, cellValues, days) {
   const weeks = Math.ceil(days / 7);
   return Array.from({ length: weeks }, (_, w) => {
     const start = w * 7 + 1, end = Math.min((w + 1) * 7, days);
     const counts = { green: 0, amber: 0, red: 0 };
+    let value = 0, hasValue = false;
     for (let d = start; d <= end; d++) {
       const s = cellStatus[d];
       if (s) counts[s]++;
+      const v = cellValues?.[d];
+      if (v !== undefined && v !== null && v !== '') { value += Number(v) || 0; hasValue = true; }
     }
-    return { label: `WK${w + 1}`, ...counts };
+    return { label: `WK${w + 1}`, ...counts, value, hasValue };
   });
+}
+
+function weekWorstColor(wk) {
+  const total = wk.green + wk.amber + wk.red;
+  return wk.red > 0 ? SQDIP_COLORS.red : wk.amber > 0 ? SQDIP_COLORS.amber : total > 0 ? SQDIP_COLORS.green : '#e2e8f0';
 }
 
 // Small self-contained SVG bar chart — no charting library, matches the
 // house style already used for Dashboard's Sparkline and Lean's Pareto chart.
-function WeeklyBarChart({ weeks, metricName }) {
+// Draws a dashed goal line when a target has been set for this letter.
+function WeeklyBarChart({ weeks, metricName, goal }) {
   const w = 320, h = 150, padL = 26, padB = 22, padT = 10, padR = 8;
   const plotW = w - padL - padR, plotH = h - padT - padB;
-  const maxVal = Math.max(1, ...weeks.map(wk => wk.green + wk.amber + wk.red));
+  const useValues = weeks.some(wk => wk.hasValue);
+  const barVals = weeks.map(wk => useValues ? wk.value : wk.green + wk.amber + wk.red);
+  const target = goal?.target;
+  const hasGoal = useValues && target !== undefined && target !== null && target !== '';
+  const maxVal = Math.max(1, ...barVals, hasGoal ? Number(target) : 0);
   const barW = plotW / weeks.length * 0.55;
   const yTicks = 5;
   return (
@@ -367,16 +385,28 @@ function WeeklyBarChart({ weeks, metricName }) {
       })}
       {weeks.map((wk, i) => {
         const x = padL + (i + 0.5) * (plotW / weeks.length) - barW / 2;
-        const total = wk.green + wk.amber + wk.red;
-        const color = wk.red > 0 ? SQDIP_COLORS.red : wk.amber > 0 ? SQDIP_COLORS.amber : total > 0 ? SQDIP_COLORS.green : '#e2e8f0';
-        const barH = (total / maxVal) * plotH;
+        const val = barVals[i];
+        const color = useValues
+          ? (hasGoal
+              ? (goal.direction === 'min' ? (val < target ? SQDIP_COLORS.red : val === target ? SQDIP_COLORS.amber : SQDIP_COLORS.green)
+                                           : (val > target ? SQDIP_COLORS.red : val === target ? SQDIP_COLORS.amber : SQDIP_COLORS.green))
+              : (val > 0 ? '#2563eb' : '#e2e8f0'))
+          : weekWorstColor(wk);
+        const barH = (val / maxVal) * plotH;
         return (
           <g key={wk.label}>
-            <rect x={x} y={padT + plotH - barH} width={barW} height={Math.max(barH, total > 0 ? 2 : 0)} fill={color} rx="2" />
+            <rect x={x} y={padT + plotH - barH} width={barW} height={Math.max(barH, val > 0 ? 2 : 0)} fill={color} rx="2" />
+            {useValues && val > 0 && <text x={x + barW / 2} y={padT + plotH - barH - 3} fontSize="7" fill="#475569" textAnchor="middle">{val}</text>}
             <text x={x + barW / 2} y={h - 6} fontSize="7.5" fill="#64748b" textAnchor="middle">{wk.label}</text>
           </g>
         );
       })}
+      {hasGoal && (
+        <>
+          <line x1={padL} x2={w - padR} y1={padT + plotH - (Number(target) / maxVal) * plotH} y2={padT + plotH - (Number(target) / maxVal) * plotH} stroke="#0ea5e9" strokeWidth="1.25" strokeDasharray="4,2" />
+          <text x={w - padR} y={padT + plotH - (Number(target) / maxVal) * plotH - 3} fontSize="7" fill="#0ea5e9" textAnchor="end">Goal {target}</text>
+        </>
+      )}
       <text x={padL} y={10} fontSize="7.5" fill="#94a3b8">{metricName}</text>
     </svg>
   );
@@ -384,11 +414,14 @@ function WeeklyBarChart({ weeks, metricName }) {
 
 // Second chart — same weekly buckets as a trend line (dots colored by that
 // week's dominant status, plus a 2-point moving-average trend line).
-function WeeklyTrendChart({ weeks }) {
+function WeeklyTrendChart({ weeks, goal }) {
   const w = 320, h = 150, padL = 26, padB = 22, padT = 10, padR = 8;
   const plotW = w - padL - padR, plotH = h - padT - padB;
-  const totals = weeks.map(wk => wk.green + wk.amber + wk.red);
-  const maxVal = Math.max(1, ...totals);
+  const useValues = weeks.some(wk => wk.hasValue);
+  const totals = weeks.map(wk => useValues ? wk.value : wk.green + wk.amber + wk.red);
+  const target = goal?.target;
+  const hasGoal = useValues && target !== undefined && target !== null && target !== '';
+  const maxVal = Math.max(1, ...totals, hasGoal ? Number(target) : 0);
   const stepX = weeks.length > 1 ? plotW / (weeks.length - 1) : 0;
   const pts = totals.map((v, i) => [padL + i * stepX, padT + plotH - (v / maxVal) * plotH]);
   const trend = totals.map((_, i) => {
@@ -405,11 +438,18 @@ function WeeklyTrendChart({ weeks }) {
         const y = padT + plotH - (i / 5) * plotH;
         return <line key={i} x1={padL} x2={w - padR} y1={y} y2={y} stroke="#eef2f7" strokeWidth="1" />;
       })}
+      {hasGoal && (
+        <line x1={padL} x2={w - padR} y1={padT + plotH - (Number(target) / maxVal) * plotH} y2={padT + plotH - (Number(target) / maxVal) * plotH} stroke="#0ea5e9" strokeWidth="1.25" strokeDasharray="4,2" />
+      )}
       <path d={trendLine} fill="none" stroke="#7c3aed" strokeWidth="1.5" strokeDasharray="3,2" />
       <path d={line} fill="none" stroke="#1e293b" strokeWidth="1.5" />
       {weeks.map((wk, i) => {
         const [x, y] = pts[i];
-        const color = wk.red > 0 ? SQDIP_COLORS.red : wk.amber > 0 ? SQDIP_COLORS.amber : totals[i] > 0 ? SQDIP_COLORS.green : '#cbd5e1';
+        const color = useValues
+          ? (hasGoal ? (goal.direction === 'min' ? (totals[i] < target ? SQDIP_COLORS.red : totals[i] === target ? SQDIP_COLORS.amber : SQDIP_COLORS.green)
+                                                  : (totals[i] > target ? SQDIP_COLORS.red : totals[i] === target ? SQDIP_COLORS.amber : SQDIP_COLORS.green))
+                     : (totals[i] > 0 ? '#2563eb' : '#cbd5e1'))
+          : weekWorstColor(wk);
         return (
           <g key={wk.label}>
             <circle cx={x} cy={y} r="3.5" fill={color} />
@@ -486,7 +526,7 @@ function ActionPlanSection({ items, onChange }) {
 // weekly chart, a trend chart, and a per-letter action plan underneath.
 // Clicking a square opens a small popover with explicit Meet Goal / Behind
 // Goal / At Risk / Clear options, so picking a status is a direct choice.
-function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, metricName, onMetricNameChange, actionItems, onActionItemsChange }) {
+function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellValues, onSetValue, goal, onGoalChange, metricName, onMetricNameChange, actionItems, onActionItemsChange }) {
   const meta = SQDIP_META[letterKey];
   const { rows, cols } = letterGridSize(letterKey);
   const cells = letterCells(letterKey, days);
@@ -496,17 +536,30 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, metricN
   const emptyLabelSet = new Set((EMPTY_LABEL_CELLS[letterKey] || []).map(([r, c]) => `${r}-${c}`));
 
   const [openDay, setOpenDay] = useState(null);
+  const [valueDraft, setValueDraft] = useState('');
   const [editingMetric, setEditingMetric] = useState(false);
+  const [editingGoal, setEditingGoal] = useState(false);
 
   const greenCount = Object.values(cellStatus).filter(v => v === 'green').length;
   const amberCount = Object.values(cellStatus).filter(v => v === 'amber').length;
   const redCount = Object.values(cellStatus).filter(v => v === 'red').length;
   const filled = greenCount + amberCount + redCount;
-  const weeks = weeklyStatusCounts(cellStatus, days);
+  const weeks = weeklyStatusCounts(cellStatus, cellValues, days);
 
   function choose(day, status) {
     onSetDay(letterKey, day, status);
     setOpenDay(null);
+  }
+
+  function openPopover(day) {
+    if (openDay === day) { setOpenDay(null); return; }
+    setOpenDay(day);
+    setValueDraft(cellValues?.[day] ?? '');
+  }
+
+  function saveValue(day) {
+    const trimmed = String(valueDraft).trim();
+    onSetValue(letterKey, day, trimmed === '' ? null : Number(trimmed));
   }
 
   return (
@@ -541,7 +594,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, metricN
               const isOpen = openDay === cell.day;
               return (
                 <div key={`${row}-${col}`} style={{ position: 'relative', width: SQDIP_SQUARE, height: SQDIP_SQUARE }}>
-                  <button onClick={() => setOpenDay(isOpen ? null : cell.day)}
+                  <button onClick={() => openPopover(cell.day)}
                     title={`Day ${cell.day}${status ? ` — ${SQDIP_STATUS_LABEL[status]}` : ' — click to log'}`}
                     style={{
                       width: '100%', height: '100%', borderRadius: 3, border: 'none',
@@ -557,19 +610,29 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, metricN
                       <div onClick={() => setOpenDay(null)} style={{ position: 'fixed', inset: 0, zIndex: 199 }} />
                       <div style={{
                         position: 'absolute', top: '100%', left: 0, marginTop: 4, zIndex: 200,
-                        background: '#0f2044', borderRadius: 8, padding: 4, display: 'flex', gap: 4,
+                        background: '#0f2044', borderRadius: 8, padding: 6, display: 'flex', flexDirection: 'column', gap: 6,
                         boxShadow: '0 4px 16px rgba(0,0,0,0.25)', whiteSpace: 'nowrap',
                       }}>
-                        <button onClick={() => choose(cell.day, 'green')} title="Meet Goal"
-                          style={{ background: SQDIP_COLORS.green, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>✓</button>
-                        <button onClick={() => choose(cell.day, 'amber')} title="Behind Goal"
-                          style={{ background: SQDIP_COLORS.amber, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>!</button>
-                        <button onClick={() => choose(cell.day, 'red')} title="At Risk"
-                          style={{ background: SQDIP_COLORS.red, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>✕</button>
-                        {status && (
-                          <button onClick={() => choose(cell.day, null)} title="Clear"
-                            style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700 }}>⨯</button>
-                        )}
+                        <div style={{ display: 'flex', gap: 4 }}>
+                          <button onClick={() => choose(cell.day, 'green')} title="Meet Goal"
+                            style={{ background: SQDIP_COLORS.green, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>✓</button>
+                          <button onClick={() => choose(cell.day, 'amber')} title="Behind Goal"
+                            style={{ background: SQDIP_COLORS.amber, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>!</button>
+                          <button onClick={() => choose(cell.day, 'red')} title="At Risk"
+                            style={{ background: SQDIP_COLORS.red, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>✕</button>
+                          {status && (
+                            <button onClick={() => choose(cell.day, null)} title="Clear"
+                              style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700 }}>⨯</button>
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', gap: 4, alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: 6 }}>
+                          <input type="number" value={valueDraft} onChange={e => setValueDraft(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && saveValue(cell.day)}
+                            placeholder={metricName} title={`Actual ${metricName} value for this day`}
+                            style={{ width: 64, fontSize: '0.72rem', padding: '3px 5px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.08)', color: 'white' }} />
+                          <button onClick={() => saveValue(cell.day)} title="Save value"
+                            style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 5, padding: '3px 8px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer' }}>Save</button>
+                        </div>
                       </div>
                     </>
                   )}
@@ -587,20 +650,40 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, metricN
         </div>
       </div>
 
-      {/* Metric name + weekly chart */}
+      {/* Metric name + goal + weekly chart */}
       <div style={{ padding: '1rem 1.25rem 0.25rem' }}>
-        {editingMetric ? (
-          <input autoFocus value={metricName} onChange={e => onMetricNameChange(e.target.value)}
-            onBlur={() => setEditingMetric(false)} onKeyDown={e => e.key === 'Enter' && setEditingMetric(false)}
-            style={{ fontSize: '0.85rem', fontWeight: 700, padding: '0.3rem 0.5rem', borderRadius: 8, border: `1px solid ${meta.color}`, width: '100%', marginBottom: 6 }} />
-        ) : (
-          <button onClick={() => setEditingMetric(true)} title="Click to rename this metric"
-            style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4, marginBottom: 6 }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>{metricName}</span>
-            <span style={{ fontSize: '0.65rem', color: '#cbd5e1' }}>✎</span>
-          </button>
-        )}
-        <WeeklyBarChart weeks={weeks} metricName={metricName} />
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: 6 }}>
+          {editingMetric ? (
+            <input autoFocus value={metricName} onChange={e => onMetricNameChange(e.target.value)}
+              onBlur={() => setEditingMetric(false)} onKeyDown={e => e.key === 'Enter' && setEditingMetric(false)}
+              style={{ fontSize: '0.85rem', fontWeight: 700, padding: '0.3rem 0.5rem', borderRadius: 8, border: `1px solid ${meta.color}`, flex: 1, minWidth: 100 }} />
+          ) : (
+            <button onClick={() => setEditingMetric(true)} title="Click to rename this metric"
+              style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>{metricName}</span>
+              <span style={{ fontSize: '0.65rem', color: '#cbd5e1' }}>✎</span>
+            </button>
+          )}
+
+          {editingGoal ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <select value={goal?.direction || 'max'} onChange={e => onGoalChange({ ...goal, direction: e.target.value })}
+                style={{ fontSize: '0.68rem', padding: '3px 4px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
+                <option value="max">≤ at most</option>
+                <option value="min">≥ at least</option>
+              </select>
+              <input type="number" autoFocus value={goal?.target ?? ''} onChange={e => onGoalChange({ ...goal, target: e.target.value === '' ? null : Number(e.target.value) })}
+                onBlur={() => setEditingGoal(false)} onKeyDown={e => e.key === 'Enter' && setEditingGoal(false)}
+                placeholder="target" style={{ width: 56, fontSize: '0.72rem', padding: '3px 5px', borderRadius: 6, border: '1px solid #e2e8f0' }} />
+            </div>
+          ) : (
+            <button onClick={() => setEditingGoal(true)} title="Click to set a numeric goal for this metric"
+              style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 999, padding: '2px 9px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700, color: '#1d4ed8' }}>
+              🎯 {goal?.target !== undefined && goal?.target !== null ? `${goal.direction === 'min' ? '≥' : '≤'} ${goal.target}` : 'Set goal'}
+            </button>
+          )}
+        </div>
+        <WeeklyBarChart weeks={weeks} metricName={metricName} goal={goal} />
       </div>
 
       {/* Action Plan */}
@@ -611,7 +694,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, metricN
       {/* One Minute Manager trend chart */}
       <div style={{ padding: '0.75rem 1.25rem 1.25rem', borderTop: '1px solid var(--border)' }}>
         <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '0.85rem' }}>One Minute Manager</h4>
-        <WeeklyTrendChart weeks={weeks} />
+        <WeeklyTrendChart weeks={weeks} goal={goal} />
       </div>
     </div>
   );
@@ -638,6 +721,8 @@ export default function EQOpEx() {
   const [sqdipCells, setSqdipCells] = useState({ S: {}, Q: {}, D: {}, I: {}, P: {} });
   const [sqdipMetricNames, setSqdipMetricNames] = useState({ S: 'Accidents', Q: 'Defects', D: 'Late Shipments', I: 'Stock-outs', P: 'Turnover' });
   const [sqdipActionPlans, setSqdipActionPlans] = useState({ S: [], Q: [], D: [], I: [], P: [] });
+  const [sqdipValues, setSqdipValues] = useState({ S: {}, Q: {}, D: {}, I: {}, P: {} });
+  const [sqdipGoals, setSqdipGoals] = useState({});
 
   // Personal Development Plan state
   const [pdpAreas, setPdpAreas] = useState(null); // null = not yet initialized
@@ -672,11 +757,14 @@ export default function EQOpEx() {
             setSqdipEnabled(board.enabled || { S: true, Q: true, D: true, I: true, P: true });
             setSqdipLabels(board.labels || {});
             setSqdipMetricNames(m => ({ ...m, ...(board.metricNames || {}) }));
-            // Action plans and metric names carry across months (they're
-            // ongoing config, not a day-by-day log); only the day grid resets.
+            setSqdipGoals(board.goals || {});
+            // Action plans, metric names, and goals carry across months
+            // (they're ongoing config, not a day-by-day log); only the day
+            // grid and logged values reset.
             setSqdipActionPlans(a => ({ ...a, ...(board.actionPlans || {}) }));
             if (board.month === currentMonthKey) {
               setSqdipCells(board.cells || { S: {}, Q: {}, D: {}, I: {}, P: {} });
+              setSqdipValues(board.values || { S: {}, Q: {}, D: {}, I: {}, P: {} });
             }
           }
         }
@@ -695,6 +783,8 @@ export default function EQOpEx() {
       cells: next.cells ?? sqdipCells,
       metricNames: next.metricNames ?? sqdipMetricNames,
       actionPlans: next.actionPlans ?? sqdipActionPlans,
+      values: next.values ?? sqdipValues,
+      goals: next.goals ?? sqdipGoals,
     };
     try {
       await setDoc(doc(db, 'users', currentUser.uid), { sqdipBoard: board }, { merge: true });
@@ -738,6 +828,20 @@ export default function EQOpEx() {
     const next = { ...sqdipActionPlans, [letterKey]: items };
     setSqdipActionPlans(next);
     persistSqdip({ actionPlans: next });
+  }
+
+  function setSqdipValue(letterKey, day, value) {
+    const nextLetterValues = { ...(sqdipValues[letterKey] || {}) };
+    if (value === null || value === undefined) delete nextLetterValues[day]; else nextLetterValues[day] = value;
+    const next = { ...sqdipValues, [letterKey]: nextLetterValues };
+    setSqdipValues(next);
+    persistSqdip({ values: next });
+  }
+
+  function setSqdipGoal(letterKey, goal) {
+    const next = { ...sqdipGoals, [letterKey]: goal };
+    setSqdipGoals(next);
+    persistSqdip({ goals: next });
   }
 
   async function saveEQ() {
@@ -1681,6 +1785,10 @@ export default function EQOpEx() {
                   onMetricNameChange={name => setSqdipMetricName(key, name)}
                   actionItems={sqdipActionPlans[key] || []}
                   onActionItemsChange={items => setSqdipActionItems(key, items)}
+                  cellValues={sqdipValues[key] || {}}
+                  onSetValue={(day, val) => setSqdipValue(key, day, val)}
+                  goal={sqdipGoals[key] || {}}
+                  onGoalChange={g => setSqdipGoal(key, g)}
                 />
               ))}
             </div>
