@@ -367,15 +367,17 @@ function WeeklyBarChart({ weeks, metricName, goal }) {
   const useValues = weeks.some(wk => wk.hasValue);
   const barVals = weeks.map(wk => useValues ? wk.value : wk.green + wk.amber + wk.red);
   const target = goal?.target;
-  const hasGoal = useValues && target !== undefined && target !== null && target !== '';
-  const maxVal = Math.max(1, ...barVals, hasGoal ? Number(target) : 0);
-  const barW = plotW / weeks.length * 0.55;
+  const goalSet = target !== undefined && target !== null && target !== '';
+  const hasGoal = useValues && goalSet;
   const yTicks = 5;
+  const rawMax = Math.max(1, ...barVals, goalSet ? Number(target) : 0);
+  const maxVal = Math.ceil(rawMax / yTicks) * yTicks;
+  const barW = plotW / weeks.length * 0.55;
   return (
     <svg width="100%" viewBox={`0 0 ${w} ${h}`} style={{ display: 'block' }}>
       {Array.from({ length: yTicks + 1 }).map((_, i) => {
         const y = padT + plotH - (i / yTicks) * plotH;
-        const val = Math.ceil((maxVal / yTicks) * i);
+        const val = Math.round((maxVal / yTicks) * i);
         return (
           <g key={i}>
             <line x1={padL} x2={w - padR} y1={y} y2={y} stroke="#eef2f7" strokeWidth="1" />
@@ -401,7 +403,7 @@ function WeeklyBarChart({ weeks, metricName, goal }) {
           </g>
         );
       })}
-      {hasGoal && (
+      {goalSet && (
         <>
           <line x1={padL} x2={w - padR} y1={padT + plotH - (Number(target) / maxVal) * plotH} y2={padT + plotH - (Number(target) / maxVal) * plotH} stroke="#0ea5e9" strokeWidth="1.25" strokeDasharray="4,2" />
           <text x={w - padR} y={padT + plotH - (Number(target) / maxVal) * plotH - 3} fontSize="7" fill="#0ea5e9" textAnchor="end">Goal {target}</text>
@@ -420,8 +422,10 @@ function WeeklyTrendChart({ weeks, goal }) {
   const useValues = weeks.some(wk => wk.hasValue);
   const totals = weeks.map(wk => useValues ? wk.value : wk.green + wk.amber + wk.red);
   const target = goal?.target;
-  const hasGoal = useValues && target !== undefined && target !== null && target !== '';
-  const maxVal = Math.max(1, ...totals, hasGoal ? Number(target) : 0);
+  const goalSet = target !== undefined && target !== null && target !== '';
+  const hasGoal = useValues && goalSet;
+  const rawMax = Math.max(1, ...totals, goalSet ? Number(target) : 0);
+  const maxVal = Math.ceil(rawMax / 5) * 5;
   const stepX = weeks.length > 1 ? plotW / (weeks.length - 1) : 0;
   const pts = totals.map((v, i) => [padL + i * stepX, padT + plotH - (v / maxVal) * plotH]);
   const trend = totals.map((_, i) => {
@@ -438,7 +442,7 @@ function WeeklyTrendChart({ weeks, goal }) {
         const y = padT + plotH - (i / 5) * plotH;
         return <line key={i} x1={padL} x2={w - padR} y1={y} y2={y} stroke="#eef2f7" strokeWidth="1" />;
       })}
-      {hasGoal && (
+      {goalSet && (
         <line x1={padL} x2={w - padR} y1={padT + plotH - (Number(target) / maxVal) * plotH} y2={padT + plotH - (Number(target) / maxVal) * plotH} stroke="#0ea5e9" strokeWidth="1.25" strokeDasharray="4,2" />
       )}
       <path d={trendLine} fill="none" stroke="#7c3aed" strokeWidth="1.5" strokeDasharray="3,2" />
