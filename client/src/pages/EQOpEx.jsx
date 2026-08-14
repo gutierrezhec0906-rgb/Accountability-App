@@ -7,8 +7,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore } from '../utils/scoring';
 import { compressImage } from '../utils/image';
-import { SQDIP_META, SQDIP_ORDER, daysInMonth } from '../utils/sqdipLetters';
-import { computeLetterMosaic } from '../utils/letterMosaic';
+import { SQDIP_META, SQDIP_ORDER, letterCells, letterGridSize, daysInMonth, FILLER_CELLS, EMPTY_LABEL_CELLS } from '../utils/sqdipLetters';
 
 const SCALE_LABELS = {
   1: { label: 'Rarely',    desc: 'This behavior is absent or reactive. Others would not recognize it as a strength. Immediate focus needed.' },
@@ -330,12 +329,13 @@ function LetterIcon({ letterKey, icon, size = '1.2rem' }) {
     </svg>
   );
 }
-// Every letter's mosaic shares the same cols/rows footprint (see
-// letterMosaic.js), so a single fixed square size/gap keeps every card the
-// same height and the "meet/behind/at risk" legend aligned underneath,
-// whichever letters are active.
-const SQDIP_SQUARE = 22;
-const SQDIP_GAP = 2;
+// Fixed square size/gap so day-squares are pixel-identical across every
+// letter regardless of card width, and a fixed grid height (sized for the
+// tallest letter, P) so the "meet/behind/at risk" legend lands at the same
+// vertical position under every card, whichever letters are active.
+const SQDIP_SQUARE = 32;
+const SQDIP_GAP = 3;
+const SQDIP_MAX_ROWS = Math.max(...SQDIP_ORDER.map(k => letterGridSize(k).rows));
 const SQDIP_STATUS_LABEL = { green: 'Meet Goal', amber: 'Behind Goal', red: 'At Risk' };
 const ACTION_STATUS = {
   open:    { label: 'Open',    color: '#2563eb', bg: '#eff6ff' },
@@ -545,11 +545,12 @@ function ActionPlanSection({ items, onChange }) {
 // Goal / At Risk / Clear options, so picking a status is a direct choice.
 function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellValues, onSetValue, goal, onGoalChange, metricName, onMetricNameChange, actionItems, onActionItemsChange }) {
   const meta = SQDIP_META[letterKey];
-  const mosaic = computeLetterMosaic(letterKey);
-  const { rows, cols } = mosaic;
-  const orderedCells = [...mosaic.cells].sort((a, b) => a.row - b.row || a.col - b.col);
+  const { rows, cols } = letterGridSize(letterKey);
+  const cells = letterCells(letterKey, days);
   const cellByPos = {};
-  orderedCells.forEach((c, i) => { cellByPos[`${c.row}-${c.col}`] = { day: i < days ? i + 1 : null }; });
+  cells.forEach(c => { cellByPos[`${c.row}-${c.col}`] = c; });
+  const fillerSet = new Set((FILLER_CELLS[letterKey] || []).map(([r, c]) => `${r}-${c}`));
+  const emptyLabelSet = new Set((EMPTY_LABEL_CELLS[letterKey] || []).map(([r, c]) => `${r}-${c}`));
 
   const [openDay, setOpenDay] = useState(null);
   const [valueDraft, setValueDraft] = useState('');
@@ -596,16 +597,20 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
           <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{filled}/{days} logged</span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0.9rem 0 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: SQDIP_MAX_ROWS * (SQDIP_SQUARE + SQDIP_GAP), margin: '0.9rem 0 0' }}>
         <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${SQDIP_SQUARE}px)`, gridAutoRows: `${SQDIP_SQUARE}px`, gap: SQDIP_GAP }}>
           {Array.from({ length: rows }).flatMap((_, row) =>
             Array.from({ length: cols }).map((_, col) => {
               const cell = cellByPos[`${row}-${col}`];
               if (!cell) {
-                return <div key={`${row}-${col}`} style={{ width: SQDIP_SQUARE, height: SQDIP_SQUARE }} />;
+                const posKey = `${row}-${col}`;
+                const isBlankSquare = fillerSet.has(posKey) || emptyLabelSet.has(posKey);
+                return <div key={posKey} style={isBlankSquare
+                  ? { width: SQDIP_SQUARE, height: SQDIP_SQUARE, borderRadius: 3, background: 'rgba(255,255,255,0.15)' }
+                  : { width: SQDIP_SQUARE, height: SQDIP_SQUARE }} />;
               }
               if (cell.day === null) {
-                return <div key={`${row}-${col}`} style={{ width: SQDIP_SQUARE, height: SQDIP_SQUARE, borderRadius: 5, background: 'rgba(255,255,255,0.15)' }} />;
+                return <div key={`${row}-${col}`} style={{ width: SQDIP_SQUARE, height: SQDIP_SQUARE, borderRadius: 3, background: 'rgba(255,255,255,0.15)' }} />;
               }
               const status = cellStatus[cell.day];
               const loggedValue = cellValues?.[cell.day];
@@ -617,10 +622,10 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
                   <button onClick={() => openPopover(cell.day)}
                     title={`Day ${cell.day}${status ? ` — ${SQDIP_STATUS_LABEL[status]}` : ' — click to log'}${hasLoggedValue ? ` — value ${loggedValue}` : ''}`}
                     style={{
-                      width: '100%', height: '100%', borderRadius: 5, border: 'none',
+                      width: '100%', height: '100%', borderRadius: 3, border: 'none',
                       background: bg, cursor: 'pointer', padding: 0,
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      fontSize: '0.48rem', fontWeight: 700, color: status ? 'rgba(255,255,255,0.9)' : meta.color,
+                      fontSize: '0.55rem', fontWeight: 700, color: status ? 'rgba(255,255,255,0.9)' : meta.color,
                       transition: 'background 0.15s',
                     }}>
                     {cell.day}
