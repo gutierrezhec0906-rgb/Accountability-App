@@ -144,7 +144,7 @@ export default function AdminPanel() {
       setNewCompany('');
       toast.success(`Company "${newCompany.trim()}" created`);
     } catch (e) {
-      toast.error('Failed to create company');
+      toast.error('Failed to create company: ' + (e?.code || e?.message || 'unknown error'));
     }
   }
 
@@ -167,7 +167,7 @@ export default function AdminPanel() {
       setNewTeamName('');
       toast.success(`Team "${newTeamName.trim()}" created`);
     } catch (e) {
-      toast.error('Failed to create team');
+      toast.error('Failed to create team: ' + (e?.code || e?.message || 'unknown error'));
     }
   }
 
@@ -188,7 +188,7 @@ export default function AdminPanel() {
       toast.success('Company/team updated');
       setEditingUser(null);
     } catch (e) {
-      toast.error('Failed to update company/team');
+      toast.error('Failed to update company/team: ' + (e?.code || e?.message || 'unknown error'));
     }
   }
 
