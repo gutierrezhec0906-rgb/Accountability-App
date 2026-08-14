@@ -606,11 +606,11 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
                 const posKey = `${row}-${col}`;
                 const isBlankSquare = fillerSet.has(posKey) || emptyLabelSet.has(posKey);
                 return <div key={posKey} style={isBlankSquare
-                  ? { width: SQDIP_SQUARE, height: SQDIP_SQUARE, borderRadius: 3, background: 'rgba(255,255,255,0.15)' }
+                  ? { width: SQDIP_SQUARE, height: SQDIP_SQUARE, borderRadius: 3, background: 'rgba(255,255,255,0.92)' }
                   : { width: SQDIP_SQUARE, height: SQDIP_SQUARE }} />;
               }
               if (cell.day === null) {
-                return <div key={`${row}-${col}`} style={{ width: SQDIP_SQUARE, height: SQDIP_SQUARE, borderRadius: 3, background: 'rgba(255,255,255,0.15)' }} />;
+                return <div key={`${row}-${col}`} style={{ width: SQDIP_SQUARE, height: SQDIP_SQUARE, borderRadius: 3, background: 'rgba(255,255,255,0.92)' }} />;
               }
               const status = cellStatus[cell.day];
               const loggedValue = cellValues?.[cell.day];
@@ -647,7 +647,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
                             style={{ background: SQDIP_COLORS.red, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>✕</button>
                           {status && (
                             <button onClick={() => choose(cell.day, null)} title="Clear"
-                              style={{ background: 'rgba(255,255,255,0.15)', color: 'white', border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700 }}>⨯</button>
+                              style={{ background: 'rgba(255,255,255,0.92)', color: 'white', border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700 }}>⨯</button>
                           )}
                         </div>
                         <div style={{ display: 'flex', gap: 4, alignItems: 'center', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: 6 }}>
