@@ -577,6 +577,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
 
 export default function EQOpEx() {
   const { currentUser, userProfile } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('eqopex-active-tab') || 'eq');
   const [eqScores, setEqScores] = useState({});
   const [opexChecks, setOpexChecks] = useState({});
