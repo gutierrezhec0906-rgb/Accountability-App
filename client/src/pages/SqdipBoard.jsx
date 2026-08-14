@@ -7,9 +7,8 @@ import { SQDIP_META, SQDIP_ORDER, letterCells, letterGridSize, daysInMonth, FILL
 import { SQDIP_COLORS, SQDIP_STATUS_LABEL, ACTION_STATUS, weeklyStatusCounts, WeeklyBarChart, WeeklyTrendChart, LetterIcon } from '../components/SqdipCharts';
 
 const REFRESH_INTERVAL = 60;
-const SQDIP_MAX_ROWS = Math.max(...SQDIP_ORDER.map(k => letterGridSize(k).rows));
-const SQUARE = 30;
-const GAP = 3;
+const SQUARE = 24;
+const GAP = 2;
 
 // Full-screen, TV-scaled walkthrough of the SQDIP Board — one letter fills
 // the whole screen at a time (grid, both charts, action plan), with Next/
@@ -146,110 +145,111 @@ export default function SqdipBoard() {
         </div>
       </div>
 
-      {/* Slide */}
-      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', justifyContent: 'center' }}>
-        <div style={{ width: '100%', maxWidth: 1400, padding: '24px 32px 40px', display: 'flex', flexDirection: 'column', gap: 20 }}>
+      {/* Slide — everything below fits within one viewport, no page scroll */}
+      <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', padding: '14px 24px 18px', gap: 10 }}>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-            <div style={{ width: 56, height: 56, borderRadius: 14, background: `linear-gradient(135deg, ${meta.color}, ${meta.color}cc)`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <LetterIcon letterKey={key} icon={meta.icon} size="1.8rem" />
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <h2 style={{ margin: 0, color: 'white', fontSize: '2rem', fontWeight: 900, letterSpacing: '-0.02em' }}>{label}</h2>
-              <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', fontWeight: 600 }}>{metricName} · {filled}/{days} logged</p>
-            </div>
-            <button onClick={goPrev} disabled={letters.length < 2}
-              style={{ padding: '10px 18px', borderRadius: 10, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', fontWeight: 800, fontSize: '0.9rem', cursor: letters.length < 2 ? 'default' : 'pointer', opacity: letters.length < 2 ? 0.4 : 1 }}>
-              ← Prev
-            </button>
-            <button onClick={goNext} disabled={letters.length < 2}
-              style={{ padding: '10px 18px', borderRadius: 10, background: meta.color, border: 'none', color: 'white', fontWeight: 800, fontSize: '0.9rem', cursor: letters.length < 2 ? 'default' : 'pointer', opacity: letters.length < 2 ? 0.4 : 1 }}>
-              Next →
-            </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+          <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(135deg, ${meta.color}, ${meta.color}cc)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <LetterIcon letterKey={key} icon={meta.icon} size="1.3rem" />
           </div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h2 style={{ margin: 0, color: 'white', fontSize: '1.35rem', fontWeight: 900, letterSpacing: '-0.02em' }}>{label}</h2>
+            <p style={{ margin: 0, color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontWeight: 600 }}>{metricName} · {filled}/{days} logged</p>
+          </div>
+          <button onClick={goPrev} disabled={letters.length < 2}
+            style={{ padding: '7px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', fontWeight: 800, fontSize: '0.8rem', cursor: letters.length < 2 ? 'default' : 'pointer', opacity: letters.length < 2 ? 0.4 : 1 }}>
+            ← Prev
+          </button>
+          <button onClick={goNext} disabled={letters.length < 2}
+            style={{ padding: '7px 14px', borderRadius: 8, background: meta.color, border: 'none', color: 'white', fontWeight: 800, fontSize: '0.8rem', cursor: letters.length < 2 ? 'default' : 'pointer', opacity: letters.length < 2 ? 0.4 : 1 }}>
+            Next →
+          </button>
+        </div>
+
+        {/* Main area: letter grid (left) + charts/action plan (right) */}
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 14 }}>
 
           {/* Letter grid */}
-          <div style={{ background: `linear-gradient(135deg, ${meta.color}, ${meta.color}cc)`, borderRadius: 16, padding: '1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <div style={{ height: SQDIP_MAX_ROWS * (SQUARE + GAP) }}>
-              <div style={{ display: 'flex', alignItems: 'center', height: '100%' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${SQUARE}px)`, gridAutoRows: `${SQUARE}px`, gap: GAP }}>
-                  {Array.from({ length: rows }).flatMap((_, row) =>
-                    Array.from({ length: cols }).map((_, col) => {
-                      const cell = cellByPos[`${row}-${col}`];
-                      if (!cell) {
-                        const posKey = `${row}-${col}`;
-                        const isBlank = fillerSet.has(posKey) || emptyLabelSet.has(posKey);
-                        return <div key={posKey} style={isBlank
-                          ? { width: SQUARE, height: SQUARE, borderRadius: 4, background: 'rgba(255,255,255,0.92)' }
-                          : { width: SQUARE, height: SQUARE }} />;
-                      }
-                      if (cell.day === null) {
-                        return <div key={`${row}-${col}`} style={{ width: SQUARE, height: SQUARE, borderRadius: 4, background: 'rgba(255,255,255,0.92)' }} />;
-                      }
-                      const status = cellStatus[cell.day];
-                      const bg = status ? SQDIP_COLORS[status] : 'rgba(255,255,255,0.92)';
-                      return (
-                        <div key={`${row}-${col}`} title={`Day ${cell.day}${status ? ` — ${SQDIP_STATUS_LABEL[status]}` : ''}`}
-                          style={{
-                            width: SQUARE, height: SQUARE, borderRadius: 5, background: bg,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            fontSize: '0.6rem', fontWeight: 700, color: status ? 'rgba(255,255,255,0.9)' : meta.color,
-                          }}>
-                          {cell.day}
-                        </div>
-                      );
-                    })
-                  )}
+          <div style={{ flexShrink: 0, background: `linear-gradient(135deg, ${meta.color}, ${meta.color}cc)`, borderRadius: 14, padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${SQUARE}px)`, gridAutoRows: `${SQUARE}px`, gap: GAP }}>
+              {Array.from({ length: rows }).flatMap((_, row) =>
+                Array.from({ length: cols }).map((_, col) => {
+                  const cell = cellByPos[`${row}-${col}`];
+                  if (!cell) {
+                    const posKey = `${row}-${col}`;
+                    const isBlank = fillerSet.has(posKey) || emptyLabelSet.has(posKey);
+                    return <div key={posKey} style={isBlank
+                      ? { width: SQUARE, height: SQUARE, borderRadius: 4, background: 'rgba(255,255,255,0.92)' }
+                      : { width: SQUARE, height: SQUARE }} />;
+                  }
+                  if (cell.day === null) {
+                    return <div key={`${row}-${col}`} style={{ width: SQUARE, height: SQUARE, borderRadius: 4, background: 'rgba(255,255,255,0.92)' }} />;
+                  }
+                  const status = cellStatus[cell.day];
+                  const bg = status ? SQDIP_COLORS[status] : 'rgba(255,255,255,0.92)';
+                  return (
+                    <div key={`${row}-${col}`} title={`Day ${cell.day}${status ? ` — ${SQDIP_STATUS_LABEL[status]}` : ''}`}
+                      style={{
+                        width: SQUARE, height: SQUARE, borderRadius: 5, background: bg,
+                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        fontSize: '0.55rem', fontWeight: 700, color: status ? 'rgba(255,255,255,0.9)' : meta.color,
+                      }}>
+                      {cell.day}
+                    </div>
+                  );
+                })
+              )}
+            </div>
+            <div style={{ display: 'flex', gap: 10, fontSize: '0.7rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700, flexWrap: 'wrap', justifyContent: 'center' }}>
+              <span>🟢 {greenCount}</span>
+              <span>🟡 {amberCount}</span>
+              <span>🔴 {redCount}</span>
+            </div>
+          </div>
+
+          {/* Charts + action plan */}
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ flex: '0 0 44%', minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+              <div style={{ background: '#111d3d', borderRadius: 12, padding: '0.6rem 0.9rem', border: '1px solid #1e3a6e', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <h4 style={{ margin: '0 0 4px', color: 'rgba(255,255,255,0.7)', fontSize: '0.72rem', fontWeight: 800, flexShrink: 0 }}>Weekly Trend</h4>
+                <div style={{ flex: 1, minHeight: 0 }}><WeeklyBarChart weeks={weeks} metricName={metricName} goal={goal} /></div>
+              </div>
+              <div style={{ background: '#111d3d', borderRadius: 12, padding: '0.6rem 0.9rem', border: '1px solid #1e3a6e', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <h4 style={{ margin: '0 0 4px', color: 'rgba(255,255,255,0.7)', fontSize: '0.72rem', fontWeight: 800, flexShrink: 0 }}>One Minute Manager</h4>
+                <div style={{ flex: 1, minHeight: 0 }}><WeeklyTrendChart weeks={weeks} goal={goal} /></div>
+              </div>
+            </div>
+
+            {/* Action plan */}
+            <div style={{ flex: 1, minHeight: 0, background: '#111d3d', borderRadius: 12, padding: '0.75rem 1rem', border: '1px solid #1e3a6e', display: 'flex', flexDirection: 'column' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6, flexWrap: 'wrap', gap: 6, flexShrink: 0 }}>
+                <h4 style={{ margin: 0, color: 'white', fontSize: '0.85rem', fontWeight: 800 }}>Action Plan</h4>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  {Object.entries(ACTION_STATUS).map(([k, s]) => (
+                    <span key={k} title={s.label} style={{ background: s.bg, color: s.color, fontWeight: 800, fontSize: '0.7rem', borderRadius: 7, padding: '2px 8px' }}>
+                      {String(counts[k]).padStart(2, '0')} {s.label}
+                    </span>
+                  ))}
                 </div>
               </div>
-            </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: 14, fontSize: '0.85rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700 }}>
-            <span>🟢 {greenCount} meet</span>
-            <span>🟡 {amberCount} behind</span>
-            <span>🔴 {redCount} at risk</span>
-          </div>
-
-          {/* Charts */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 16 }}>
-            <div style={{ background: '#111d3d', borderRadius: 14, padding: '1rem 1.25rem', border: '1px solid #1e3a6e' }}>
-              <h4 style={{ margin: '0 0 8px', color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 800 }}>Weekly Trend</h4>
-              <WeeklyBarChart weeks={weeks} metricName={metricName} goal={goal} />
-            </div>
-            <div style={{ background: '#111d3d', borderRadius: 14, padding: '1rem 1.25rem', border: '1px solid #1e3a6e' }}>
-              <h4 style={{ margin: '0 0 8px', color: 'rgba(255,255,255,0.7)', fontSize: '0.8rem', fontWeight: 800 }}>One Minute Manager</h4>
-              <WeeklyTrendChart weeks={weeks} goal={goal} />
-            </div>
-          </div>
-
-          {/* Action plan */}
-          <div style={{ background: '#111d3d', borderRadius: 14, padding: '1.25rem', border: '1px solid #1e3a6e' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-              <h4 style={{ margin: 0, color: 'white', fontSize: '1rem', fontWeight: 800 }}>Action Plan</h4>
-              <div style={{ display: 'flex', gap: 8 }}>
-                {Object.entries(ACTION_STATUS).map(([k, s]) => (
-                  <span key={k} title={s.label} style={{ background: s.bg, color: s.color, fontWeight: 800, fontSize: '0.8rem', borderRadius: 8, padding: '3px 10px' }}>
-                    {String(counts[k]).padStart(2, '0')} {s.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-            {actionItems.length === 0 ? (
-              <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem', margin: 0 }}>No action items logged.</p>
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                {actionItems.map(it => (
-                  <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0.55rem 0.75rem', borderRadius: 8, background: 'rgba(255,255,255,0.04)' }}>
-                    <span style={{ flex: 1, minWidth: 0, color: 'white', fontSize: '0.9rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.title}</span>
-                    {it.dueDate && <span style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', flexShrink: 0 }}>{it.dueDate}</span>}
-                    <span style={{ fontSize: '0.75rem', fontWeight: 700, color: ACTION_STATUS[it.status]?.color, background: ACTION_STATUS[it.status]?.bg, borderRadius: 999, padding: '3px 10px', flexShrink: 0 }}>
-                      {ACTION_STATUS[it.status]?.label || it.status}
-                    </span>
+              <div style={{ flex: 1, minHeight: 0, overflowY: 'auto' }}>
+                {actionItems.length === 0 ? (
+                  <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.78rem', margin: 0 }}>No action items logged.</p>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+                    {actionItems.map(it => (
+                      <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.4rem 0.6rem', borderRadius: 7, background: 'rgba(255,255,255,0.04)' }}>
+                        <span style={{ flex: 1, minWidth: 0, color: 'white', fontSize: '0.78rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.title}</span>
+                        {it.dueDate && <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', flexShrink: 0 }}>{it.dueDate}</span>}
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: ACTION_STATUS[it.status]?.color, background: ACTION_STATUS[it.status]?.bg, borderRadius: 999, padding: '2px 8px', flexShrink: 0 }}>
+                          {ACTION_STATUS[it.status]?.label || it.status}
+                        </span>
+                      </div>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
+            </div>
           </div>
         </div>
       </div>

@@ -66,7 +66,7 @@ export function WeeklyBarChart({ weeks, metricName, goal }) {
   const maxVal = Math.ceil(rawMax / yTicks) * yTicks;
   const barW = plotW / weeks.length * 0.55;
   return (
-    <svg width="100%" viewBox={`0 0 ${w} ${h}`} style={{ display: 'block' }}>
+    <svg width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block', maxHeight: '100%' }}>
       {Array.from({ length: yTicks + 1 }).map((_, i) => {
         const y = padT + plotH - (i / yTicks) * plotH;
         const val = Math.round((maxVal / yTicks) * i);
@@ -129,7 +129,7 @@ export function WeeklyTrendChart({ weeks, goal }) {
   const line = pts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
   const trendLine = trendPts.map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
   return (
-    <svg width="100%" viewBox={`0 0 ${w} ${h}`} style={{ display: 'block' }}>
+    <svg width="100%" viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="xMidYMid meet" style={{ display: 'block', maxHeight: '100%' }}>
       {Array.from({ length: 5 + 1 }).map((_, i) => {
         const y = padT + plotH - (i / 5) * plotH;
         return <line key={i} x1={padL} x2={w - padR} y1={y} y2={y} stroke="#eef2f7" strokeWidth="1" />;
