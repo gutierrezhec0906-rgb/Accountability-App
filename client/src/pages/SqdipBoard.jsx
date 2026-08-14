@@ -217,7 +217,7 @@ export default function SqdipBoard() {
                 <div style={{ flex: 1, minHeight: 0 }}><WeeklyBarChart weeks={weeks} metricName={metricName} goal={goal} /></div>
               </div>
               <div style={{ background: '#111d3d', borderRadius: 12, padding: '0.6rem 0.9rem', border: '1px solid #1e3a6e', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <h4 style={{ margin: '0 0 4px', color: 'rgba(255,255,255,0.7)', fontSize: '0.72rem', fontWeight: 800, flexShrink: 0 }}>One Minute Manager · Monthly Trend</h4>
+                <h4 style={{ margin: '0 0 4px', color: 'rgba(255,255,255,0.7)', fontSize: '0.72rem', fontWeight: 800, flexShrink: 0 }}>Monthly Trending</h4>
                 <div style={{ flex: 1, minHeight: 0 }}><WeeklyTrendChart weeks={months} goal={goal} /></div>
               </div>
             </div>

@@ -570,7 +570,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
 
       {/* One Minute Manager trend chart */}
       <div style={{ padding: '0.75rem 1.25rem 1.25rem', borderTop: '1px solid var(--border)' }}>
-        <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '0.85rem' }}>One Minute Manager · Monthly Trend</h4>
+        <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '0.85rem' }}>Monthly Trending</h4>
         <WeeklyTrendChart weeks={months} goal={goal} />
       </div>
     </div>
