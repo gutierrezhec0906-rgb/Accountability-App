@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore } from '../utils/scoring';
 import { compressImage } from '../utils/image';
 import { SQDIP_META, SQDIP_ORDER, letterCells, letterGridSize, daysInMonth, FILLER_CELLS, EMPTY_LABEL_CELLS } from '../utils/sqdipLetters';
-import { SQDIP_COLORS, SQDIP_STATUS_LABEL, ACTION_STATUS, weeklyStatusCounts, weekWorstColor, WeeklyBarChart, WeeklyTrendChart, LetterIcon } from '../components/SqdipCharts';
+import { SQDIP_COLORS, SQDIP_STATUS_LABEL, ACTION_STATUS, weeklyStatusCounts, weekWorstColor, WeeklyBarChart, WeeklyTrendChart, LetterIcon, monthSummary, buildMonthlyTrend } from '../components/SqdipCharts';
 import { useNavigate } from 'react-router-dom';
 
 const SCALE_LABELS = {
@@ -390,7 +390,7 @@ function ActionPlanSection({ items, onChange }) {
 // weekly chart, a trend chart, and a per-letter action plan underneath.
 // Clicking a square opens a small popover with explicit Meet Goal / Behind
 // Goal / At Risk / Clear options, so picking a status is a direct choice.
-function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellValues, onSetValue, goal, onGoalChange, metricName, onMetricNameChange, actionItems, onActionItemsChange }) {
+function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellValues, onSetValue, goal, onGoalChange, metricName, onMetricNameChange, actionItems, onActionItemsChange, monthlyHistory }) {
   const meta = SQDIP_META[letterKey];
   const { rows, cols } = letterGridSize(letterKey);
   const cells = letterCells(letterKey, days);
@@ -410,6 +410,8 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
   const redCount = Object.values(cellStatus).filter(v => v === 'red').length;
   const filled = greenCount + amberCount + redCount;
   const weeks = weeklyStatusCounts(cellStatus, cellValues, days);
+  const currentMonthKey = new Date().toISOString().slice(0, 7);
+  const months = buildMonthlyTrend(monthlyHistory, currentMonthKey, monthSummary(cellStatus, cellValues, days));
 
   function choose(day, status) {
     onSetDay(letterKey, day, status);
@@ -568,8 +570,8 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
 
       {/* One Minute Manager trend chart */}
       <div style={{ padding: '0.75rem 1.25rem 1.25rem', borderTop: '1px solid var(--border)' }}>
-        <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '0.85rem' }}>One Minute Manager</h4>
-        <WeeklyTrendChart weeks={weeks} goal={goal} />
+        <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '0.85rem' }}>One Minute Manager · Monthly Trend</h4>
+        <WeeklyTrendChart weeks={months} goal={goal} />
       </div>
     </div>
   );
@@ -599,6 +601,7 @@ export default function EQOpEx() {
   const [sqdipActionPlans, setSqdipActionPlans] = useState({ S: [], Q: [], D: [], I: [], P: [] });
   const [sqdipValues, setSqdipValues] = useState({ S: {}, Q: {}, D: {}, I: {}, P: {} });
   const [sqdipGoals, setSqdipGoals] = useState({});
+  const [sqdipMonthlyHistory, setSqdipMonthlyHistory] = useState({});
 
   // Personal Development Plan state
   const [pdpAreas, setPdpAreas] = useState(null); // null = not yet initialized
@@ -641,6 +644,27 @@ export default function EQOpEx() {
             if (board.month === currentMonthKey) {
               setSqdipCells(board.cells || { S: {}, Q: {}, D: {}, I: {}, P: {} });
               setSqdipValues(board.values || { S: {}, Q: {}, D: {}, I: {}, P: {} });
+              setSqdipMonthlyHistory(board.monthlyHistory || {});
+            } else if (board.month) {
+              // The stored board is from a previous month — fold that
+              // month's totals into history (for the "One Minute Manager"
+              // monthly trend) before the day grid/values reset for the
+              // new month.
+              const [py, pm] = board.month.split('-').map(Number);
+              const prevDays = daysInMonth(py, pm - 1);
+              const prevHistory = board.monthlyHistory || {};
+              const nextHistory = { ...prevHistory };
+              SQDIP_ORDER.forEach(k => {
+                if ((prevHistory[k] || []).some(m => m.month === board.month)) return;
+                const summary = monthSummary(board.cells?.[k] || {}, board.values?.[k] || {}, prevDays);
+                nextHistory[k] = [...(prevHistory[k] || []), { month: board.month, ...summary }].slice(-12);
+              });
+              setSqdipMonthlyHistory(nextHistory);
+              setDoc(doc(db, 'users', currentUser.uid), {
+                sqdipBoard: { ...board, monthlyHistory: nextHistory },
+              }, { merge: true }).catch(() => {});
+            } else {
+              setSqdipMonthlyHistory(board.monthlyHistory || {});
             }
           }
         }
@@ -661,6 +685,7 @@ export default function EQOpEx() {
       actionPlans: next.actionPlans ?? sqdipActionPlans,
       values: next.values ?? sqdipValues,
       goals: next.goals ?? sqdipGoals,
+      monthlyHistory: next.monthlyHistory ?? sqdipMonthlyHistory,
     };
     try {
       await setDoc(doc(db, 'users', currentUser.uid), { sqdipBoard: board }, { merge: true });
@@ -1671,6 +1696,7 @@ export default function EQOpEx() {
                   onSetValue={(day, val) => setSqdipValue(key, day, val)}
                   goal={sqdipGoals[key] || {}}
                   onGoalChange={g => setSqdipGoal(key, g)}
+                  monthlyHistory={sqdipMonthlyHistory[key] || []}
                 />
               ))}
             </div>

@@ -4,7 +4,7 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { SQDIP_META, SQDIP_ORDER, letterCells, letterGridSize, daysInMonth, FILLER_CELLS, EMPTY_LABEL_CELLS } from '../utils/sqdipLetters';
-import { SQDIP_COLORS, SQDIP_STATUS_LABEL, ACTION_STATUS, weeklyStatusCounts, WeeklyBarChart, WeeklyTrendChart, LetterIcon } from '../components/SqdipCharts';
+import { SQDIP_COLORS, SQDIP_STATUS_LABEL, ACTION_STATUS, weeklyStatusCounts, WeeklyBarChart, WeeklyTrendChart, LetterIcon, monthSummary, buildMonthlyTrend } from '../components/SqdipCharts';
 
 const REFRESH_INTERVAL = 60;
 const SQUARE = 24;
@@ -97,6 +97,8 @@ export default function SqdipBoard() {
   const goal = board?.goals?.[key] || {};
   const actionItems = board?.actionPlans?.[key] || [];
   const weeks = weeklyStatusCounts(cellStatus, cellValues, days);
+  const currentMonthKey = today.toISOString().slice(0, 7);
+  const months = buildMonthlyTrend(board?.monthlyHistory?.[key], currentMonthKey, monthSummary(cellStatus, cellValues, days));
 
   const { rows, cols } = letterGridSize(key);
   const cells = letterCells(key, days);
@@ -215,8 +217,8 @@ export default function SqdipBoard() {
                 <div style={{ flex: 1, minHeight: 0 }}><WeeklyBarChart weeks={weeks} metricName={metricName} goal={goal} /></div>
               </div>
               <div style={{ background: '#111d3d', borderRadius: 12, padding: '0.6rem 0.9rem', border: '1px solid #1e3a6e', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-                <h4 style={{ margin: '0 0 4px', color: 'rgba(255,255,255,0.7)', fontSize: '0.72rem', fontWeight: 800, flexShrink: 0 }}>One Minute Manager</h4>
-                <div style={{ flex: 1, minHeight: 0 }}><WeeklyTrendChart weeks={weeks} goal={goal} /></div>
+                <h4 style={{ margin: '0 0 4px', color: 'rgba(255,255,255,0.7)', fontSize: '0.72rem', fontWeight: 800, flexShrink: 0 }}>One Minute Manager · Monthly Trend</h4>
+                <div style={{ flex: 1, minHeight: 0 }}><WeeklyTrendChart weeks={months} goal={goal} /></div>
               </div>
             </div>
 

@@ -45,6 +45,38 @@ export function LetterIcon({ letterKey, icon, size = '1.2rem' }) {
   );
 }
 
+// Same shape as a weekly bucket (see weeklyStatusCounts) but summed across
+// an entire month — used to build the "One Minute Manager" monthly trend.
+export function monthSummary(cellStatus, cellValues, days) {
+  const counts = { green: 0, amber: 0, red: 0 };
+  let value = 0, hasValue = false;
+  for (let d = 1; d <= days; d++) {
+    const s = cellStatus[d];
+    if (s) counts[s]++;
+    const v = cellValues?.[d];
+    if (v !== undefined && v !== null && v !== '') { value += Number(v) || 0; hasValue = true; }
+  }
+  return { ...counts, value, hasValue };
+}
+
+export function monthShortLabel(monthKey) {
+  const [y, m] = monthKey.split('-').map(Number);
+  return new Date(y, m - 1, 1).toLocaleDateString('en-US', { month: 'short' });
+}
+
+// Combines archived past-month summaries with the current (in-progress)
+// month's live totals into the array WeeklyTrendChart/WeeklyBarChart expect
+// (they only care about {label, green, amber, red, value, hasValue} — not
+// specifically "weeks" — so the same chart renders a monthly trend here).
+export function buildMonthlyTrend(history, currentMonthKey, currentSummary) {
+  const list = (history || []).filter(m => m.month !== currentMonthKey);
+  list.push({ month: currentMonthKey, ...currentSummary });
+  return list.slice(-12).map(m => ({
+    ...m,
+    label: monthShortLabel(m.month) + (m.month === currentMonthKey ? '*' : ''),
+  }));
+}
+
 export function weekWorstColor(wk) {
   const total = wk.green + wk.amber + wk.red;
   return wk.red > 0 ? SQDIP_COLORS.red : wk.amber > 0 ? SQDIP_COLORS.amber : total > 0 ? SQDIP_COLORS.green : '#e2e8f0';
