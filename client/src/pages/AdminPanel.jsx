@@ -53,8 +53,14 @@ export default function AdminPanel() {
   const { currentUser, userProfile } = useAuth();
   const [users, setUsers] = useState([]);
   const [companies, setCompanies] = useState([]);
+  const [teams, setTeams] = useState([]);
   const [loading, setLoading] = useState(true);
   const [newCompany, setNewCompany] = useState('');
+  const [newTeamName, setNewTeamName] = useState('');
+  const [newTeamCompanyId, setNewTeamCompanyId] = useState('');
+  const [editingUser, setEditingUser] = useState(null); // uid currently being reassigned
+  const [editCompanyId, setEditCompanyId] = useState('');
+  const [editTeamId, setEditTeamId] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   const [expandedCompany, setExpandedCompany] = useState(null);
   const [toolVideos, setToolVideos] = useState({});
@@ -67,7 +73,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     if (!isMasterAdmin) return;
-    Promise.all([fetchUsers(), fetchCompanies(), fetchToolVideos()]).finally(() => setLoading(false));
+    Promise.all([fetchUsers(), fetchCompanies(), fetchTeams(), fetchToolVideos()]).finally(() => setLoading(false));
   }, [isMasterAdmin]);
 
   async function fetchToolVideos() {
@@ -142,6 +148,50 @@ export default function AdminPanel() {
     }
   }
 
+  async function fetchTeams() {
+    const snap = await getDocs(collection(db, 'teams'));
+    setTeams(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+  }
+
+  async function createTeam(e) {
+    e.preventDefault();
+    if (!newTeamName.trim() || !newTeamCompanyId) return;
+    try {
+      const ref = await addDoc(collection(db, 'teams'), {
+        name: newTeamName.trim(),
+        companyId: newTeamCompanyId,
+        createdAt: serverTimestamp(),
+        createdBy: currentUser.uid,
+      });
+      setTeams(t => [...t, { id: ref.id, name: newTeamName.trim(), companyId: newTeamCompanyId }]);
+      setNewTeamName('');
+      toast.success(`Team "${newTeamName.trim()}" created`);
+    } catch (e) {
+      toast.error('Failed to create team');
+    }
+  }
+
+  // Fixes a wrong company/team assignment after the fact — updates both the
+  // FK (companyId/teamId) and the denormalized display names in one write.
+  async function reassignUser(uid, companyId, teamId) {
+    const company = companies.find(c => c.id === companyId);
+    const team = teams.find(t => t.id === teamId);
+    try {
+      const patch = {
+        companyId: companyId || '',
+        companyName: company?.name || '',
+        teamId: teamId || '',
+        teamName: team?.name || '',
+      };
+      await updateDoc(doc(db, 'users', uid), patch);
+      setUsers(u => u.map(x => x.uid === uid ? { ...x, ...patch } : x));
+      toast.success('Company/team updated');
+      setEditingUser(null);
+    } catch (e) {
+      toast.error('Failed to update company/team');
+    }
+  }
+
   async function updateStatus(uid, status) {
     try {
       await updateDoc(doc(db, 'users', uid), { status });
@@ -165,17 +215,6 @@ export default function AdminPanel() {
     }
   }
 
-  async function assignCompany(uid, companyId) {
-    const company = companies.find(c => c.id === companyId);
-    try {
-      await updateDoc(doc(db, 'users', uid), { companyId, companyName: company?.name || '' });
-      setUsers(u => u.map(x => x.uid === uid ? { ...x, companyId, companyName: company?.name || '' } : x));
-      toast.success('Company assigned');
-    } catch (e) {
-      toast.error('Failed to assign company');
-    }
-  }
-
   // Score visibility: grant a viewer (leader/manager) the ability to see the
   // Accountability Scores of their direct reports. Stored as an array of report
   // uids on the viewer's own user doc (`visibleScoreUids`). The Scores page reads
@@ -194,6 +233,41 @@ export default function AdminPanel() {
       toast.error('Failed to update visibility');
     }
     setSavingVis(null);
+  }
+
+  // Inline "change company/team" control shown next to every user row —
+  // click to reveal company + team dropdowns (team list filters to the
+  // chosen company), Save writes both FK + denormalized name in one go.
+  function ReassignBlock({ u }) {
+    const isEditing = editingUser === u.uid;
+    if (!isEditing) {
+      return (
+        <button onClick={() => { setEditingUser(u.uid); setEditCompanyId(u.companyId || ''); setEditTeamId(u.teamId || ''); }}
+          title="Change company/team"
+          style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 7, padding: '4px 10px', fontSize: 11, fontWeight: 700, color: 'var(--text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+          ✏️ {u.companyId ? 'Reassign' : 'Assign'}
+        </button>
+      );
+    }
+    const teamOptions = teams.filter(t => t.companyId === editCompanyId);
+    return (
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+        <select value={editCompanyId} onChange={e => { setEditCompanyId(e.target.value); setEditTeamId(''); }}
+          style={{ padding: '4px 8px', borderRadius: 7, border: '1px solid var(--border)', fontSize: 11, background: 'var(--surface)', color: 'var(--text-primary)' }}>
+          <option value="">Company…</option>
+          {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <select value={editTeamId} onChange={e => setEditTeamId(e.target.value)} disabled={!editCompanyId}
+          style={{ padding: '4px 8px', borderRadius: 7, border: '1px solid var(--border)', fontSize: 11, background: 'var(--surface)', color: 'var(--text-primary)' }}>
+          <option value="">No team</option>
+          {teamOptions.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+        </select>
+        <button onClick={() => reassignUser(u.uid, editCompanyId, editTeamId)}
+          style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 7, padding: '4px 10px', fontSize: 11, fontWeight: 700, cursor: 'pointer' }}>Save</button>
+        <button onClick={() => setEditingUser(null)}
+          style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: 12 }}>✕</button>
+      </div>
+    );
   }
 
   if (!isMasterAdmin) {
@@ -257,7 +331,7 @@ export default function AdminPanel() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {[['overview', '🏢 Org View'], ['pending', `⏳ Pending (${pendingUsers.length})`], ['companies', '⚙️ Companies'], ['visibility', '👁️ Score Visibility'], ['videos', '🎬 Tool Videos']].map(([id, label]) => (
+        {[['overview', '🏢 Org View'], ['pending', `⏳ Pending (${pendingUsers.length})`], ['companies', '⚙️ Companies'], ['teams', '🧩 Teams'], ['visibility', '👁️ Score Visibility'], ['videos', '🎬 Tool Videos']].map(([id, label]) => (
           <button key={id} onClick={() => setActiveTab(id)}
             style={{
               padding: '8px 18px', borderRadius: 9999, fontSize: 13, fontWeight: 700,
@@ -321,15 +395,7 @@ export default function AdminPanel() {
                                       <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{u.email}</div>
                                     </div>
                                     <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: rc.bg, color: rc.text }}>{u.role}</span>
-                                    {!u.companyId && (
-                                      <select
-                                        defaultValue=""
-                                        onChange={e => e.target.value && assignCompany(u.uid, e.target.value)}
-                                        style={{ padding: '4px 8px', borderRadius: 7, border: '1px solid #fbbf24', fontSize: 11, color: '#92400e', background: '#fef9c3', cursor: 'pointer' }}>
-                                        <option value="">📌 Assign company</option>
-                                        {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                                      </select>
-                                    )}
+                                    <ReassignBlock u={u} />
                                     <button onClick={() => deleteUser(u.uid, u.displayName)}
                                       style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 14 }} title="Delete user">
                                       🗑
@@ -372,16 +438,7 @@ export default function AdminPanel() {
                       {u.teamName && <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: '#fdf4ff', color: '#7e22ce' }}>👥 {u.teamName}</span>}
                     </div>
                   </div>
-                  {/* Assign company if missing */}
-                  {!u.companyId && (
-                    <select
-                      style={{ padding: '6px 10px', borderRadius: 8, border: '1px solid var(--border)', fontSize: 12, color: 'var(--text-primary)', background: 'var(--surface)' }}
-                      defaultValue=""
-                      onChange={e => e.target.value && assignCompany(u.uid, e.target.value)}>
-                      <option value="">Assign company...</option>
-                      {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
-                  )}
+                  <ReassignBlock u={u} />
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button onClick={() => updateStatus(u.uid, 'approved')}
                       style={{ padding: '8px 20px', borderRadius: 8, background: '#16a34a', color: 'white', fontWeight: 700, fontSize: 13, border: 'none', cursor: 'pointer' }}>
@@ -425,7 +482,7 @@ export default function AdminPanel() {
             ) : (
               companies.map(c => {
                 const memberCount = users.filter(u => u.companyId === c.id).length;
-                const teamCount = new Set(users.filter(u => u.companyId === c.id).map(u => u.teamName)).size;
+                const teamCount = teams.filter(t => t.companyId === c.id).length;
                 return (
                   <div key={c.id} className="card p-4" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     <span style={{ fontSize: 24 }}>🏢</span>
@@ -438,6 +495,67 @@ export default function AdminPanel() {
               })
             )}
           </div>
+        </div>
+      )}
+
+      {/* TEAMS MANAGEMENT */}
+      {!loading && activeTab === 'teams' && (
+        <div className="space-y-4">
+          <form onSubmit={createTeam} style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <select
+              className="input"
+              style={{ flex: '0 0 220px' }}
+              value={newTeamCompanyId}
+              onChange={e => setNewTeamCompanyId(e.target.value)}
+              required>
+              <option value="">Company…</option>
+              {companies.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <input
+              className="input"
+              style={{ flex: 1, minWidth: 160 }}
+              placeholder="New team name..."
+              value={newTeamName}
+              onChange={e => setNewTeamName(e.target.value)}
+              required
+            />
+            <button type="submit" className="btn-primary">
+              + Add Team
+            </button>
+          </form>
+          {companies.length === 0 ? (
+            <div className="card p-6 text-center" style={{ color: 'var(--text-secondary)' }}>Add a company first — teams belong to a company.</div>
+          ) : teams.length === 0 ? (
+            <div className="card p-6 text-center" style={{ color: 'var(--text-secondary)' }}>No teams yet. Add your first one above.</div>
+          ) : (
+            <div className="space-y-4">
+              {companies.map(c => {
+                const companyTeams = teams.filter(t => t.companyId === c.id);
+                if (companyTeams.length === 0) return null;
+                return (
+                  <div key={c.id}>
+                    <div style={{ fontWeight: 800, fontSize: 13, color: 'var(--text-secondary)', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}>
+                      🏢 {c.name}
+                    </div>
+                    <div className="space-y-2">
+                      {companyTeams.map(t => {
+                        const memberCount = users.filter(u => u.teamId === t.id).length;
+                        return (
+                          <div key={t.id} className="card p-4" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                            <span style={{ fontSize: 22 }}>🧩</span>
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{t.name}</div>
+                              <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{memberCount} member{memberCount !== 1 ? 's' : ''}</div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </div>
       )}
 

@@ -33,6 +33,13 @@ service cloud.firestore {
       allow write: if isMasterAdmin();
     }
 
+    // Teams (sub-groups within a company) — readable by all authenticated
+    // users, writable by master admin only, same pattern as companies.
+    match /teams/{teamId} {
+      allow read: if request.auth != null;
+      allow write: if isMasterAdmin();
+    }
+
     // Users — own doc + admin access
     match /users/{userId} {
       allow get: if request.auth != null && (request.auth.uid == userId || isMasterAdmin() || isAdmin() || sameCompany(userId));
