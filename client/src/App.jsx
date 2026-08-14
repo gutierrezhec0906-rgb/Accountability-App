@@ -36,6 +36,7 @@ import Survey360 from './pages/Survey360';
 import CompleteProfile from './pages/CompleteProfile';
 import AdminPanel from './pages/AdminPanel';
 import TeamBoard from './pages/TeamBoard';
+import SqdipBoard from './pages/SqdipBoard';
 import { Terms, Privacy } from './pages/Legal';
 
 function PrivateLayout({ children }) {
@@ -87,6 +88,7 @@ export default function App() {
           <Route path="/admin" element={<PrivateLayout><AdminPanel /></PrivateLayout>} />
           <Route path="/survey/:surveyId" element={<Survey360 />} />
           <Route path="/team-board" element={<PrivateRoute><TeamBoard /></PrivateRoute>} />
+          <Route path="/sqdip-board" element={<PrivateRoute><SqdipBoard /></PrivateRoute>} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </AuthProvider>
