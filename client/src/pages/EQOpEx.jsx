@@ -756,10 +756,14 @@ export default function EQOpEx() {
     persistSqdip({ metricNames: next });
   }
 
-  function setSqdipActionItems(letterKey, items) {
+  async function setSqdipActionItems(letterKey, items) {
     const next = { ...sqdipActionPlans, [letterKey]: items };
     setSqdipActionPlans(next);
-    persistSqdip({ actionPlans: next });
+    await persistSqdip({ actionPlans: next });
+    // The SQDIP score is computed live from the saved action items (not a
+    // pointEvent), so it needs an explicit recalculation here — nothing else
+    // triggers it when an item is added, edited, or its due date changes.
+    if (currentUser) { try { await calculateScore(currentUser.uid); } catch {} }
   }
 
   function setSqdipValue(letterKey, day, value) {
