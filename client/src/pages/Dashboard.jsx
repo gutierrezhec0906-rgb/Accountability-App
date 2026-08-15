@@ -208,6 +208,11 @@ export default function Dashboard() {
         (d.coachingSessions || []).forEach(s => {
           if (getDateStatus(s.nextSession)?.level === 'warning') items.push({ key: `coaching-${s.id}`, icon: '📝', label: `Coaching follow-up — ${s.coachee || 'Untitled coachee'}`, due: s.nextSession, path: '/coaching' });
         });
+        Object.entries(d.sqdipBoard?.actionPlans || {}).forEach(([letterKey, list]) => {
+          (list || []).forEach(it => {
+            if (getDateStatus(it.dueDate)?.level === 'warning') items.push({ key: `sqdip-${letterKey}-${it.id}`, icon: '📋', label: `${letterKey} action — ${it.title || 'Untitled action'}`, due: it.dueDate, path: '/eq-opex' });
+          });
+        });
         const cp = d.careerPlan;
         if (cp?.completedAt) {
           const anchor = new Date(cp.completedAt).getTime();

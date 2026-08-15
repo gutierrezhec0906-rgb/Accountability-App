@@ -30,6 +30,7 @@ const BREAKDOWN_CONFIG = [
   { key: 'vision', label: 'Vision Builder', max: 20, icon: '🧭', desc: '+10 pts for your first Personal Vision and +10 for your first Team Vision statement (lifetime, no decay).' },
   { key: 'quotes', label: 'Leadership Quotes', max: 20, icon: '💬', desc: '+5 pts each time you reflect on a leadership quote. Points last one week only — last week’s quote points expire, so reflect again each week to keep them.' },
   { key: 'bonus',     label: 'Bonus Points',     max: 20, icon: '🏆',  desc: 'Extra points from other daily actions' },
+  { key: 'sqdip', label: 'SQDIP Action Plan', max: 10, icon: '📋', desc: '+1 pt per action item registered across any SQDIP letter (Safety/Quality/Delivery/Inventory/People), max 10. Computed live — the point is lost the moment that item\'s due date passes, and comes back if you push the date out again. Items with no due date always count.' },
 ];
 
 // Score Breakdown grouped into six sections: General Scores first, then the five
@@ -40,7 +41,7 @@ const SCORE_SECTIONS = [
   { title: 'General Scores', color: '#0f2044', keys: ['breadth', 'frequency', 'quality', 'bonus'] },
   { title: 'Set the Bar',            color: '#60a5fa', keys: ['actionsClosed', 'lob', 'urgency', 'eq'] },
   { title: 'Spark the Vision',       color: '#34d399', keys: ['vision', 'smart', 'mindfulness'] },
-  { title: 'Improve the Flow',       color: '#fbbf24', keys: ['lean5s', 'waste', 'problemSolving', 'disc'] },
+  { title: 'Improve the Flow',       color: '#fbbf24', keys: ['lean5s', 'waste', 'problemSolving', 'disc', 'sqdip'] },
   { title: 'Enable the Team',        color: '#a78bfa', keys: ['skills', 'mentoring', 'career'] },
   { title: 'Winning with Compassion', color: '#fb7185', keys: ['feedbackGiven', 'coaching', 'quotes'] },
 ];

@@ -34,6 +34,7 @@ const SECTIONS = [
   { kind: 'goal',     field: 'smartGoals',       label: 'SMART Goals',          icon: '🎯' },
   { kind: 'coaching', field: 'coachingSessions', label: 'Coaching Log',         icon: '📝' },
   { kind: 'career',   field: null,               label: 'Career Development',   icon: '🚀' },
+  { kind: 'sqdip',    field: 'sqdipBoard',       label: 'SQDIP Action Plan',    icon: '📋' },
 ];
 
 // Session-start reminder shown on EVERY module: lists every past-due activity across
@@ -58,7 +59,7 @@ export default function GlobalPastDueModal() {
       try {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
         const d = snap.exists() ? snap.data() : {};
-        setData({ visualBoard: d.visualBoard || [], trainings: d.trainings || [], smartGoals: d.smartGoals || [], coachingSessions: d.coachingSessions || [] });
+        setData({ visualBoard: d.visualBoard || [], trainings: d.trainings || [], smartGoals: d.smartGoals || [], coachingSessions: d.coachingSessions || [], sqdipBoard: d.sqdipBoard || null });
         const items = [];
         (d.visualBoard || []).forEach(i => {
           const due = i.recommitmentDate || i.dueDate;
@@ -72,6 +73,11 @@ export default function GlobalPastDueModal() {
         });
         (d.coachingSessions || []).forEach(s => {
           if (overdue(s.nextSession)) items.push({ key: `coaching-${s.id}`, kind: 'coaching', id: s.id, title: `Coaching follow-up — ${s.coachee || 'Untitled coachee'}`, sub: s.coachee, due: s.nextSession, recommits: s.recommitmentCount });
+        });
+        Object.entries(d.sqdipBoard?.actionPlans || {}).forEach(([letterKey, list]) => {
+          (list || []).forEach(it => {
+            if (overdue(it.dueDate)) items.push({ key: `sqdip-${letterKey}-${it.id}`, kind: 'sqdip', id: it.id, letterKey, title: it.title || 'Untitled action', sub: letterKey, due: it.dueDate, recommits: it.recommitmentCount });
+          });
         });
         // Career milestone check-ins that are past due with no progress note logged.
         const cp = d.careerPlan;
@@ -98,6 +104,23 @@ export default function GlobalPastDueModal() {
     const sec = SECTIONS.find(s => s.kind === item.kind);
     setSaving(item.key);
     try {
+      if (item.kind === 'sqdip') {
+        // Nested two levels deep (sqdipBoard.actionPlans[letterKey][]), unlike
+        // every other section's flat top-level array — handle it separately.
+        const board = data.sqdipBoard || {};
+        const actionPlans = { ...(board.actionPlans || {}) };
+        actionPlans[item.letterKey] = (actionPlans[item.letterKey] || []).map(row =>
+          row.id === item.id ? { ...row, dueDate: newDate, recommitmentCount: (row.recommitmentCount || 0) + 1 } : row
+        );
+        const nextBoard = { ...board, actionPlans };
+        await setDoc(doc(db, 'users', currentUser.uid), { sqdipBoard: nextBoard }, { merge: true });
+        setData(d => ({ ...d, sqdipBoard: nextBoard }));
+        const remaining = pending.filter(p => p.key !== item.key);
+        setPending(remaining);
+        if (!remaining.length) setOpen(false);
+        setSaving(null);
+        return;
+      }
       const arr = data[sec.field] || [];
       const updated = arr.map(row => {
         if (row.id !== item.id) return row;
@@ -163,7 +186,7 @@ export default function GlobalPastDueModal() {
                       <div key={item.key} style={{ border: '1px solid #fecaca', borderLeft: '4px solid #ef4444', borderRadius: 10, padding: '0.75rem 0.9rem', background: '#fff8f8' }}>
                         <p style={{ fontWeight: 800, color: '#1e293b', margin: '0 0 4px', fontSize: '0.9rem' }}>{item.title}</p>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, fontSize: '0.73rem', color: '#64748b', marginBottom: 6 }}>
-                          {item.sub && <span>{item.kind === 'training' ? '🏷️' : '👤'} {item.sub}</span>}
+                          {item.sub && <span>{item.kind === 'training' ? '🏷️' : item.kind === 'sqdip' ? '🔤' : '👤'} {item.sub}</span>}
                           <span style={{ color: '#dc2626', fontWeight: 700 }}>🚨 {daysOverdue(item.due)}d overdue</span>
                           <span>📅 was due {new Date(item.due + 'T00:00:00').toLocaleDateString()}</span>
                           {item.recommits > 0 && <span style={{ color: recommitColor(item.recommits).color, fontWeight: 700 }}>🔄 {item.recommits} prior</span>}

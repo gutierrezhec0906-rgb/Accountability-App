@@ -1,5 +1,6 @@
 import { getDoc, setDoc, doc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
+import { getDateStatus } from '../components/DateStatus';
 
 export const DAILY_POINTS_CAP = 25;
 
@@ -349,6 +350,19 @@ export async function calculateScore(uid) {
     careerPoints = Math.max(0, pts);
   }
 
+  // --- SQDIP Action Plan (0-10): +1 pt per action item registered across any
+  //     letter (S/Q/D/I/P). Computed live (not a pointEvent) so the point is
+  //     immediately lost the moment an item's due date passes — same overdue
+  //     rule (getDateStatus === 'overdue') used everywhere else in the app —
+  //     and immediately restored if the due date is pushed out again. An item
+  //     with no due date always counts (nothing to be overdue against). ---
+  const sqdipActionPlans = data.sqdipBoard?.actionPlans || {};
+  const sqdipNotOverdueCount = Object.values(sqdipActionPlans)
+    .flat()
+    .filter(it => it && it.title && (!it.dueDate || getDateStatus(it.dueDate)?.level !== 'overdue'))
+    .length;
+  const sqdipPoints = Math.min(10, sqdipNotOverdueCount);
+
   // --- Sense of Urgency (0-20): 4 pts/day max (ind survey + ind reflection + team survey + team reflection)
   //     rolling 7-day window, 4 pts/day × 5 active days = 20 pt ceiling
   const URGENCY_LABELS = ['Urgency Individual Survey', 'Urgency Individual Reflection', 'Urgency Team Survey', 'Urgency Team Reflection'];
@@ -403,7 +417,7 @@ export async function calculateScore(uid) {
   const CAPS = {
     breadth: 10, frequency: 20, quality: 5, smart: 15, coaching: 20, problemSolving: 20,
     disc: 5, eq: 5, mindfulness: 2, feedbackGiven: 5, actionsClosed: 25, mentoring: 10,
-    urgency: 20, skills: 3, lean5s: 5, waste: 5, career: 10, lob: 8, vision: 20, quotes: 20, bonus: 20,
+    urgency: 20, skills: 3, lean5s: 5, waste: 5, career: 10, lob: 8, vision: 20, quotes: 20, bonus: 20, sqdip: 10,
   };
   const parts = {
     breadth, frequency, quality, smart: smartScore, coaching: coachingScore, problemSolving: psScore,
@@ -411,6 +425,7 @@ export async function calculateScore(uid) {
     actionsClosed: Math.min(CAPS.actionsClosed, actionsClosedPoints), mentoring: mentoringPoints,
     urgency: urgencyPoints, skills: skillsPoints, lean5s: lean5sPoints, waste: wastePoints,
     career: careerPoints, lob: lobPoints, vision: visionScore, quotes: quotesScore, bonus: otherBonus,
+    sqdip: sqdipPoints,
   };
   const rawSum = Object.values(parts).reduce((a, b) => a + b, 0);
   const MAX_TOTAL = Object.values(CAPS).reduce((a, b) => a + b, 0);
@@ -449,6 +464,7 @@ export async function calculateScore(uid) {
     vision:         Math.round(visionScore),
     quotes:         Math.round(quotesScore),
     bonus:          Math.round(bonusRemaining),
+    sqdip:          Math.round(sqdipPoints),
   };
 
   await updateDoc(doc(db, 'users', uid), { scoreBreakdown: breakdown });
