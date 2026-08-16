@@ -95,7 +95,7 @@ function PodcastCard({ podcast }) {
 export default function Podcasts() {
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      <PageHeader icon="🎙️" title="Leadership Podcasts" subtitle="One show per pillar — listen, then bring it into how you lead" />
+      <PageHeader icon="🎙️" title="Leadership Podcast - The Five Pillars of Accountability" subtitle="One show per pillar — listen, then bring it into how you lead" />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
         {PODCASTS.map(p => <PodcastCard key={p.id} podcast={p} />)}
       </div>
