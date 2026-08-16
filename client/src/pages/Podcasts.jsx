@@ -8,7 +8,7 @@ const PODCASTS = [
   { id: 'inspire',   pillar: 'Spark the Vision',        icon: '🔭', color: '#34d399', episodeUrl: 'https://open.spotify.com/episode/3nkZUvhvOBjhPHwK8awL25?si=MDPWRVBYSuKMzXQdBo8tnQ' },
   { id: 'challenge', pillar: 'Improve the Flow',        icon: '⚙️', color: '#fbbf24', episodeUrl: 'https://open.spotify.com/episode/4p8TtCiYP796VBMNqFrSBM?si=r-mwc-HVT5eD_k8ZSSBRvA' },
   { id: 'enable',    pillar: 'Enable the Team',         icon: '🤝', color: '#a78bfa', episodeUrl: 'https://open.spotify.com/episode/14Or7RLH5wF2ZpFQFQkriF?si=x3SWK8tOTEqYLkTHW98MqA' },
-  { id: 'encourage', pillar: 'Winning with Compassion', icon: '❤️', color: '#fb7185', episodeUrl: null },
+  { id: 'encourage', pillar: 'Winning with Compassion', icon: '❤️', color: '#fb7185', episodeUrl: 'https://open.spotify.com/episode/5AsvXJWvPdxcY2NnOckabI?si=1EAjJtYmScSEqf0aNg_T5A' },
 ];
 
 // Spotify's oEmbed iframe wants /embed/episode/{id} (or /embed/show/{id}),
