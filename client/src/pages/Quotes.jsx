@@ -1,11 +1,157 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, getDocs, collection, query, where, setDoc, updateDoc, increment, deleteField } from 'firebase/firestore';
+import { doc, getDoc, getDocs, addDoc, deleteDoc, collection, query, where, setDoc, updateDoc, increment, deleteField, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import { logPointEvent } from '../utils/scoring';
 
 const REACTION_EMOJIS = ['👍', '❤️', '🎉', '🙏', '😍', '👎'];
+
+function Avatar({ name }) {
+  const initials = name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
+  const colors = ['#0d9488', '#0f2044', '#7c3aed', '#be185d', '#b45309', '#065f46'];
+  const bg = colors[(name?.charCodeAt(0) || 0) % colors.length];
+  return (
+    <div style={{ width: 32, height: 32, borderRadius: '50%', background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: '0.7rem', flexShrink: 0 }}>
+      {initials}
+    </div>
+  );
+}
+
+function fmtCommentTime(ts) {
+  if (!ts) return '';
+  const d = ts?.toDate ? ts.toDate() : new Date(ts);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+}
+
+// Facebook/Instagram-style comment thread scoped to the viewer's team —
+// expand/collapse mirrors the "Past Reflections" pattern elsewhere in this file.
+function QuoteComments({ quoteIdx, currentUser, teamId, authorName, light }) {
+  const [expanded, setExpanded] = useState(false);
+  const [comments, setComments] = useState(null); // null = not yet loaded
+  const [text, setText] = useState('');
+  const [posting, setPosting] = useState(false);
+
+  useEffect(() => {
+    if (!expanded || comments !== null) return;
+    async function load() {
+      if (!teamId) { setComments([]); return; }
+      try {
+        const snap = await getDocs(query(
+          collection(db, 'quoteComments'),
+          where('teamId', '==', teamId),
+          where('quoteIdx', '==', quoteIdx),
+        ));
+        const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        list.sort((a, b) => {
+          const at = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt || 0).getTime();
+          const bt = b.createdAt?.toMillis ? b.createdAt.toMillis() : new Date(b.createdAt || 0).getTime();
+          return at - bt;
+        });
+        setComments(list);
+      } catch (e) { console.error(e); setComments([]); }
+    }
+    load();
+  }, [expanded, teamId, quoteIdx]);
+
+  const count = comments?.length ?? null;
+
+  async function postComment() {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    if (!teamId) {
+      toast.error("You need to be assigned to a team before you can comment. Ask your admin.");
+      return;
+    }
+    setPosting(true);
+    try {
+      const newComment = {
+        quoteIdx, teamId, uid: currentUser.uid, authorName: authorName || 'Teammate',
+        text: trimmed, createdAt: serverTimestamp(),
+      };
+      const ref = await addDoc(collection(db, 'quoteComments'), newComment);
+      setComments(c => [...(c || []), { id: ref.id, ...newComment, createdAt: new Date() }]);
+      setText('');
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not post comment. Please try again.');
+    }
+    setPosting(false);
+  }
+
+  async function removeComment(id) {
+    try {
+      await deleteDoc(doc(db, 'quoteComments', id));
+      setComments(c => c.filter(x => x.id !== id));
+    } catch (e) { console.error(e); toast.error('Could not delete comment.'); }
+  }
+
+  return (
+    <div>
+      <style>{`
+        .qc-scroll::-webkit-scrollbar { width: 8px; -webkit-appearance: none; }
+        .qc-scroll::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 8px; }
+        .qc-scroll::-webkit-scrollbar-thumb { background: #64748b; border-radius: 8px; border: 1px solid #e2e8f0; }
+      `}</style>
+      <button onClick={() => setExpanded(e => !e)}
+        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.78rem', fontWeight: 700, color: light ? '#99f6e4' : '#64748b', display: 'flex', alignItems: 'center', gap: 4 }}>
+        💬 {count === null ? 'Comments' : count === 0 ? 'Comment' : `${count} comment${count === 1 ? '' : 's'}`}
+        <span style={{ fontSize: '0.68rem', color: light ? '#5eead4' : '#94a3b8' }}>{expanded ? '▲' : '▼'}</span>
+      </button>
+      {expanded && (
+        <div style={{ marginTop: 8, borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', padding: '0.65rem' }}>
+          {!teamId && (
+            <p style={{ fontSize: '0.72rem', color: '#b45309', margin: '0 0 8px' }}>
+              Ask your admin to assign you to a team to see and post your team's comments.
+            </p>
+          )}
+          {comments === null ? (
+            <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: 0 }}>Loading…</p>
+          ) : comments.length === 0 ? (
+            <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: 0 }}>No comments yet — be the first to say something.</p>
+          ) : (
+            <div className="qc-scroll" style={{ maxHeight: 260, overflowY: 'scroll', scrollbarWidth: 'thin', scrollbarColor: '#64748b #e2e8f0', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
+              {comments.map(c => (
+                <div key={c.id} style={{ flexShrink: 0, display: 'flex', gap: 8 }}>
+                  <Avatar name={c.authorName} />
+                  <div style={{ flex: 1, minWidth: 0, background: 'white', borderRadius: 10, padding: '0.5rem 0.7rem', border: '1px solid #e8edf5' }}>
+                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 6 }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.78rem', color: '#0f2044' }}>{c.authorName}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>{fmtCommentTime(c.createdAt)}</span>
+                        {c.uid === currentUser?.uid && (
+                          <button onClick={() => removeComment(c.id)} title="Delete"
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.72rem', color: '#94a3b8', padding: 0 }}>🗑</button>
+                        )}
+                      </div>
+                    </div>
+                    <p style={{ margin: '2px 0 0', fontSize: '0.8rem', color: '#374151', lineHeight: 1.5, wordBreak: 'break-word' }}>{c.text}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', gap: 6 }}>
+            <input
+              className="input"
+              placeholder="Write a comment…"
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !posting) postComment(); }}
+              style={{ flex: 1, background: 'white', fontSize: '0.82rem', padding: '0.45rem 0.65rem' }}
+            />
+            <button onClick={postComment} disabled={posting || !text.trim()}
+              style={{ border: 'none', borderRadius: 8, padding: '0.45rem 0.9rem', background: text.trim() ? '#0d9488' : '#cbd5e1', color: 'white', fontWeight: 700, fontSize: '0.78rem', cursor: text.trim() ? 'pointer' : 'not-allowed' }}>
+              Post
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 // Team-visible reactions on a quote — shows every emoji that has at least one
 // reaction from ANYONE on the team (with a live count), plus the full picker.
@@ -87,12 +233,15 @@ export default function Quotes() {
   const [toast, setToast] = useState('');
   const [expandedRef, setExpandedRef] = useState(null);
 
-  // Team-wide quote reactions — each teammate's own pick lives on their own
+  // Team-scoped quote reactions — each teammate's own pick lives on their own
   // users/{uid}.quoteReactions.{quoteIdx} field (no rules change needed, same
-  // pattern as everything else in this doc); we aggregate everyone in the
-  // company client-side so likes accumulate visibly across the team.
+  // pattern as everything else in this doc); we aggregate everyone sharing
+  // the current user's teamId client-side so likes accumulate visibly across
+  // the team (not the whole company).
   const [myReactions, setMyReactions] = useState({});   // { quoteIdx: emoji }
   const [teamCounts, setTeamCounts] = useState({});     // { quoteIdx: { emoji: count } }
+  const [myTeamId, setMyTeamId] = useState(null);
+  const [myName, setMyName] = useState('');
 
   const alreadyDoneToday = reflections.some(r => r.date === today);
 
@@ -105,12 +254,14 @@ export default function Quotes() {
           const data = snap.data();
           setReflections(data.quoteReflections || []);
           setMyReactions(data.quoteReactions || {});
+          setMyName(data.name || data.displayName || currentUser.email || 'Teammate');
 
-          const companyId = data.companyId;
-          if (companyId) {
+          const teamId = data.teamId || null;
+          setMyTeamId(teamId);
+          if (teamId) {
             const membersSnap = await getDocs(query(
               collection(db, 'users'),
-              where('companyId', '==', companyId)
+              where('teamId', '==', teamId)
             ));
             const counts = {};
             membersSnap.docs.forEach(d => {
@@ -119,6 +270,13 @@ export default function Quotes() {
                 counts[qIdx] = counts[qIdx] || {};
                 counts[qIdx][emoji] = (counts[qIdx][emoji] || 0) + 1;
               });
+            });
+            setTeamCounts(counts);
+          } else {
+            // No team assigned yet — show just the current user's own reactions.
+            const counts = {};
+            Object.entries(data.quoteReactions || {}).forEach(([qIdx, emoji]) => {
+              counts[qIdx] = { [emoji]: 1 };
             });
             setTeamCounts(counts);
           }
@@ -247,6 +405,9 @@ export default function Quotes() {
             {favorites.includes(todayIdx) ? '⭐ Saved' : '☆ Save to Favorites'}
           </button>
           <TeamReactionRow counts={teamCounts[String(todayIdx)]} myEmoji={myReactions[String(todayIdx)]} onToggle={emoji => toggleQuoteReaction(todayIdx, emoji)} />
+        </div>
+        <div style={{ marginTop: 14, background: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: '0.5rem 0.75rem' }}>
+          <QuoteComments quoteIdx={todayIdx} currentUser={currentUser} teamId={myTeamId} authorName={myName} light />
         </div>
       </div>
 
@@ -404,6 +565,7 @@ export default function Quotes() {
               </div>
             </div>
             <TeamReactionRow counts={teamCounts[String(idx)]} myEmoji={myReactions[String(idx)]} onToggle={emoji => toggleQuoteReaction(idx, emoji)} />
+            <QuoteComments quoteIdx={idx} currentUser={currentUser} teamId={myTeamId} authorName={myName} />
           </div>
         ))}
         {showFavs && favorites.length === 0 && (
