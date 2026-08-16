@@ -73,7 +73,7 @@ const statusColors  = { Preparing: '#f59e0b', 'In Progress': '#0d9488', 'Report-
 
 const WASTES = ['Defects','Overproduction','Waiting','Non-Utilized Talent','Transportation','Inventory','Motion','Extra-Processing'];
 
-const tabs = [{ id: '5s', label: '5S Checklist' }, { id: 'waste', label: 'Waste Types' }, { id: 'kaizen', label: 'Kaizen Log' }];
+const tabs = [{ id: '5s', label: '5S Audit' }, { id: 'waste', label: 'Waste Types' }, { id: 'kaizen', label: 'Kaizen Log' }];
 
 const emptyFollowUpRow = () => ({ action: '', owner: '', deadline: '' });
 
