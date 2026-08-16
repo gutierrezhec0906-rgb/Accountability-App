@@ -656,6 +656,58 @@ function FiveSTrendChart({ points }) {
   );
 }
 
+// Bar chart of the last 8 individual audit records for one area — date +
+// raw score per audit, distinct from FiveSTrendChart's period-bucketed
+// average line above it.
+function FiveSRecordsBarChart({ records }) {
+  const W = 480, H = 160, PAD_L = 30, PAD_R = 16, PAD_T = 18, PAD_B = 32;
+  const chartW = W - PAD_L - PAD_R;
+  const chartH = H - PAD_T - PAD_B;
+
+  if (records.length === 0) {
+    return (
+      <div style={{ height: H, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.78rem', textAlign: 'center', padding: '0 1rem' }}>
+        No audits logged for this area yet
+      </div>
+    );
+  }
+
+  const n = records.length;
+  const slot = chartW / n;
+  const barW = Math.min(36, slot * 0.6);
+  function cx(i) { return PAD_L + slot * (i + 0.5); }
+  function py(v) { return PAD_T + chartH - (v / 5) * chartH; }
+
+  return (
+    <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
+      {[0, 1, 2, 3, 4, 5].map(tick => {
+        const y = py(tick);
+        return (
+          <g key={tick}>
+            <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y} stroke="#e2e8f0" strokeWidth="1" />
+            <text x={PAD_L - 6} y={y + 4} textAnchor="end" fontSize="10" fill="#94a3b8">{tick}</text>
+          </g>
+        );
+      })}
+      {records.map((r, i) => {
+        const x = cx(i);
+        const y = py(r.avgScore);
+        const barH = PAD_T + chartH - y;
+        const color = auditScoreColor(r.avgScore);
+        const label = new Date(r.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        return (
+          <g key={r.id}>
+            <rect x={x - barW / 2} y={y} width={barW} height={barH} fill={color} rx="3" />
+            <text x={x} y={y - 5} textAnchor="middle" fontSize="10" fontWeight="700" fill={color}>{r.avgScore.toFixed(1)}</text>
+            <text x={x} y={H - 4} textAnchor="middle" fontSize="9.5" fill="#94a3b8">{label}</text>
+          </g>
+        );
+      })}
+      <line x1={PAD_L} y1={PAD_T + chartH} x2={W - PAD_R} y2={PAD_T + chartH} stroke="#e2e8f0" strokeWidth="1" />
+    </svg>
+  );
+}
+
 function useIsMobile(breakpoint = 1024) {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= breakpoint);
   useEffect(() => {
@@ -1296,6 +1348,20 @@ export default function Lean() {
             ) : (
               <FiveSTrendChart points={buildTrendPoints(auditHistory.filter(a => a.areaId === progressAreaId), progressPeriod)} />
             )}
+          </div>
+
+          {/* Last 8 individual audit records for the selected area — raw scores, not period-averaged */}
+          <div className="card" style={{ padding: '1.25rem' }}>
+            <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '0.9rem' }}>📊 Last 8 Audits — Score by Date</h4>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 12px' }}>
+              {fiveSAreas.find(a => a.id === progressAreaId)?.name || 'Selected area'} — each bar is one audit record, oldest to newest.
+            </p>
+            <FiveSRecordsBarChart
+              records={auditHistory
+                .filter(a => a.areaId === progressAreaId)
+                .slice(0, 8)
+                .reverse()}
+            />
           </div>
 
           </div>{/* end left checklist */}
