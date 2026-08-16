@@ -5,7 +5,7 @@ import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../context/AuthContext';
-import { logPointEvent, calculateScore, localDateStr } from '../utils/scoring';
+import { logPointEvent, calculateScore, localDateStr, weekMonday } from '../utils/scoring';
 import { compressImage, withTimeout } from '../utils/image';
 import { generateKaizenPDF } from '../utils/moduleReports';
 import NameField from '../components/NameField';
@@ -527,6 +527,135 @@ function WasteParetoChart({ tally }) {
   );
 }
 
+const PERIODS = [
+  { key: 'weekly',    label: 'Weekly' },
+  { key: 'monthly',   label: 'Monthly' },
+  { key: 'quarterly', label: 'Quarterly' },
+];
+
+function bucketKeyAndLabel(dateStr, period) {
+  const d = new Date(dateStr + 'T12:00:00');
+  if (period === 'weekly') {
+    const key = weekMonday(dateStr);
+    const kd = new Date(key + 'T12:00:00');
+    return { key, label: kd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) };
+  }
+  if (period === 'monthly') {
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return { key, label: d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) };
+  }
+  // quarterly
+  const q = Math.floor(d.getMonth() / 3) + 1;
+  const key = `${d.getFullYear()}-Q${q}`;
+  return { key, label: `Q${q} ${d.getFullYear()}` };
+}
+
+// Bucket an area's audits by period, averaging avgScore within each bucket.
+function buildTrendPoints(audits, period) {
+  const buckets = new Map();
+  for (const a of audits) {
+    if (typeof a.avgScore !== 'number' || !a.date) continue;
+    const dateOnly = a.date.split('T')[0];
+    const { key, label } = bucketKeyAndLabel(dateOnly, period);
+    if (!buckets.has(key)) buckets.set(key, { key, label, sum: 0, count: 0 });
+    const b = buckets.get(key);
+    b.sum += a.avgScore;
+    b.count += 1;
+  }
+  return Array.from(buckets.values())
+    .sort((a, b) => a.key.localeCompare(b.key))
+    .map(b => ({ key: b.key, label: b.label, avg: b.sum / b.count }));
+}
+
+// 0–5 scale line chart matching ScoreLineChart's visual language.
+function FiveSTrendChart({ points }) {
+  const W = 480, H = 160, PAD_L = 30, PAD_R = 16, PAD_T = 12, PAD_B = 32;
+  const chartW = W - PAD_L - PAD_R;
+  const chartH = H - PAD_T - PAD_B;
+
+  if (points.length === 0) {
+    return (
+      <div style={{ height: H, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.78rem', textAlign: 'center', padding: '0 1rem' }}>
+        No audits logged for this area yet
+      </div>
+    );
+  }
+
+  if (points.length === 1) {
+    return (
+      <div style={{ height: H, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+        <svg width="60" height="60" viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="22" fill="#f0fdfa" stroke="#0d9488" strokeWidth="3" />
+          <text x="30" y="34" textAnchor="middle" fontSize="16" fontWeight="900" fill="#0d9488">{points[0].avg.toFixed(1)}</text>
+        </svg>
+        <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: 0 }}>{points[0].label} — audit again to see the trend</p>
+      </div>
+    );
+  }
+
+  function px(i) { return PAD_L + (i / (points.length - 1)) * chartW; }
+  function py(v) { return PAD_T + chartH - (v / 5) * chartH; }
+
+  const pts = points.map((p, i) => [px(i), py(p.avg)]);
+  let d = `M ${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length; i++) {
+    const cpx = (pts[i - 1][0] + pts[i][0]) / 2;
+    d += ` C ${cpx} ${pts[i - 1][1]}, ${cpx} ${pts[i][1]}, ${pts[i][0]} ${pts[i][1]}`;
+  }
+  const fillD = d + ` L ${pts[pts.length - 1][0]} ${PAD_T + chartH} L ${pts[0][0]} ${PAD_T + chartH} Z`;
+
+  const step = Math.ceil(points.length / 4);
+  const xLabels = points.filter((_, i) => i % step === 0 || i === points.length - 1);
+
+  const delta = points[points.length - 1].avg - points[points.length - 2].avg;
+  const deltaColor = delta > 0 ? '#15803d' : delta < 0 ? '#dc2626' : '#94a3b8';
+  const deltaArrow = delta > 0 ? '↑' : delta < 0 ? '↓' : '→';
+
+  return (
+    <div>
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
+        <defs>
+          <linearGradient id="fiveSTrendGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#0d9488" stopOpacity="0.18" />
+            <stop offset="100%" stopColor="#0d9488" stopOpacity="0" />
+          </linearGradient>
+          <clipPath id="fiveSTrendClip">
+            <rect x={PAD_L} y={PAD_T} width={chartW} height={chartH} />
+          </clipPath>
+        </defs>
+
+        {[0, 1, 2, 3, 4, 5].map(tick => {
+          const y = py(tick);
+          return (
+            <g key={tick}>
+              <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y} stroke="#e2e8f0" strokeWidth="1" />
+              <text x={PAD_L - 6} y={y + 4} textAnchor="end" fontSize="10" fill="#94a3b8">{tick}</text>
+            </g>
+          );
+        })}
+
+        <path d={fillD} fill="url(#fiveSTrendGrad)" clipPath="url(#fiveSTrendClip)" />
+        <path d={d} fill="none" stroke="#0d9488" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" clipPath="url(#fiveSTrendClip)" />
+        {pts.map(([x, y], i) => (
+          <circle key={i} cx={x} cy={y} r="3.5" fill="white" stroke="#0d9488" strokeWidth="2" clipPath="url(#fiveSTrendClip)" />
+        ))}
+
+        {xLabels.map((p) => {
+          const idx = points.indexOf(p);
+          return (
+            <text key={p.key} x={px(idx)} y={H - 4} textAnchor="middle" fontSize="10" fill="#94a3b8">{p.label}</text>
+          );
+        })}
+
+        <line x1={PAD_L} y1={PAD_T + chartH} x2={W - PAD_R} y2={PAD_T + chartH} stroke="#e2e8f0" strokeWidth="1" />
+      </svg>
+      <p style={{ fontSize: '0.75rem', fontWeight: 700, color: deltaColor, textAlign: 'center', margin: '4px 0 0' }}>
+        {deltaArrow} {delta > 0 ? '+' : ''}{delta.toFixed(1)} vs last period
+      </p>
+    </div>
+  );
+}
+
 function useIsMobile(breakpoint = 1024) {
   const [isMobile, setIsMobile] = useState(typeof window !== 'undefined' && window.innerWidth <= breakpoint);
   useEffect(() => {
@@ -541,14 +670,19 @@ export default function Lean() {
   const { currentUser } = useAuth();
   const isMobile = useIsMobile();
   const [activeTab, setActiveTab] = useState('5s');
+  const [fiveSSubTab, setFiveSSubTab] = useState('checklist'); // 'checklist' | 'history' | 'progress'
   const [checks, setChecks]       = useState({});
-  const [auditArea, setAuditArea] = useState('');
+  const [auditAreaId, setAuditAreaId] = useState('');
   const [findings, setFindings]   = useState({});
   const [opportunities, setOpportunities] = useState(['', '', '']);
   const [expandedItem, setExpandedItem] = useState(null);
   const [auditHistory, setAuditHistory] = useState([]);
   const [expandedAudit, setExpandedAudit] = useState(null);
   const [weekPtsEarned, setWeekPtsEarned] = useState(false);
+  const [fiveSAreas, setFiveSAreas] = useState([]);
+  const [newAreaName, setNewAreaName] = useState('');
+  const [progressPeriod, setProgressPeriod] = useState('weekly');
+  const [progressAreaId, setProgressAreaId] = useState('');
   const [kaizen, setKaizen]       = useState([]);
   const [showForm, setShowForm]   = useState(false);
   const [editingEntry, setEditingEntry] = useState(null);
@@ -618,6 +752,7 @@ export default function Lean() {
       if (snap.exists()) {
         const data = snap.data();
         setAuditHistory(data.fiveSAudits || []);
+        setFiveSAreas(data.fiveSAreas || []);
         setWasteLogs(data.wasteLogs || []);
         const cutoff = localDateStr(new Date(Date.now() - SEVEN_DAYS_MS));
         setWeekPtsEarned((data.pointEvents || []).some(
@@ -724,16 +859,44 @@ export default function Lean() {
     toast.success('Waste log deleted');
   }
 
+  async function addArea() {
+    const name = newAreaName.trim();
+    if (!name) return toast.error('Please enter an area name');
+    if (fiveSAreas.some(a => a.name.toLowerCase() === name.toLowerCase())) {
+      return toast.error(`"${name}" is already in your areas list`);
+    }
+    if (!currentUser) return toast.error('Not logged in');
+    const area = { id: Date.now().toString(), name, createdAt: new Date().toISOString() };
+    const updated = [...fiveSAreas, area];
+    try {
+      await setDoc(doc(db, 'users', currentUser.uid), { fiveSAreas: updated }, { merge: true });
+      setFiveSAreas(updated);
+      setNewAreaName('');
+      toast.success(`Added area "${name}"`);
+    } catch (e) { toast.error('Save failed: ' + e.message); }
+  }
+
+  async function removeArea(id) {
+    const area = fiveSAreas.find(a => a.id === id);
+    if (!area) return;
+    if (!window.confirm(`Remove "${area.name}" from your areas list? Past audit history for this area is kept.`)) return;
+    const updated = fiveSAreas.filter(a => a.id !== id);
+    try {
+      await setDoc(doc(db, 'users', currentUser.uid), { fiveSAreas: updated }, { merge: true });
+      setFiveSAreas(updated);
+      if (auditAreaId === id) setAuditAreaId('');
+      toast.success(`Removed "${area.name}"`);
+    } catch (e) { toast.error('Save failed: ' + e.message); }
+  }
+
+  const selectedArea = fiveSAreas.find(a => a.id === auditAreaId);
+
   async function saveAudit() {
-    if (!auditArea.trim()) return toast.error('Please enter the area being audited');
+    if (!selectedArea) return toast.error('Please select the area being audited');
     if (ratedItems < totalItems) {
       return toast.error(`Rate all ${totalItems} items across the 5 areas before saving — ${totalItems - ratedItems} still unrated.`);
     }
     if (!currentUser) return toast.error('Not logged in');
-    const dupName = auditArea.trim().toLowerCase();
-    if (auditHistory.some(a => a.area.toLowerCase() === dupName)) {
-      return toast.error(`An audit for "${auditArea.trim()}" already exists. Use a different name or delete the existing one first.`);
-    }
     try {
       // Strip base64 images before saving — Firestore has a 1 MB document limit
       const findingsNoImages = Object.fromEntries(
@@ -744,7 +907,8 @@ export default function Lean() {
       const cleanOpps = opportunities.map(o => o.trim()).filter(Boolean);
       const record = {
         id: Date.now().toString(),
-        area: auditArea.trim(),
+        areaId: selectedArea.id,
+        area: selectedArea.name,
         avgScore: Number(avgScore.toFixed(2)), // audit score = average of 1–5 ratings
         completion: pct,                        // % of items rated
         score: pct,                             // legacy field kept for old readers
@@ -766,14 +930,14 @@ export default function Lean() {
         const { awarded } = await logPointEvent(currentUser.uid, {
           points: 5,
           toolLabel: 'Lean 5S Audit',
-          reason: `Weekly 5S audit of "${auditArea.trim()}" with ${describedOpps} areas of opportunity`,
+          reason: `Weekly 5S audit of "${selectedArea.name}" with ${describedOpps} areas of opportunity`,
         });
         if (awarded) {
           await calculateScore(currentUser.uid);
           setWeekPtsEarned(true);
           toast.success(`Audit saved — score ${scoreStr}. +5 pts for this week's 5S audit!`, { duration: 4000 });
         } else {
-          toast.success(`Audit saved — score ${scoreStr} for "${auditArea}"`);
+          toast.success(`Audit saved — score ${scoreStr} for "${selectedArea.name}"`);
         }
       } else if (oppsQualified && weekPtsEarned) {
         toast.success(`Audit saved — score ${scoreStr}. (This week's +5 pts already earned.)`);
@@ -786,10 +950,11 @@ export default function Lean() {
   function loadAudit(record) {
     setChecks(record.checks || {});
     setFindings(record.findings || {});
-    setAuditArea(record.area || '');
+    setAuditAreaId(record.areaId && fiveSAreas.some(a => a.id === record.areaId) ? record.areaId : '');
     const opps = record.opportunities && record.opportunities.length ? record.opportunities : ['', '', ''];
     setOpportunities(opps.length < MIN_OPPS ? [...opps, ...Array(MIN_OPPS - opps.length).fill('')] : opps);
     setExpandedItem(null);
+    setFiveSSubTab('checklist');
     toast.success(`Loaded audit: ${record.area}`);
   }
 
@@ -803,7 +968,7 @@ export default function Lean() {
   function resetAudit() {
     setChecks({});
     setFindings({});
-    setAuditArea('');
+    setAuditAreaId('');
     setOpportunities(['', '', '']);
     setExpandedItem(null);
   }
@@ -823,6 +988,10 @@ export default function Lean() {
   }
 
   useEffect(() => { fetchKaizen(); loadAuditHistory(); }, [currentUser]);
+
+  useEffect(() => {
+    if (!progressAreaId && fiveSAreas.length) setProgressAreaId(fiveSAreas[0].id);
+  }, [fiveSAreas, progressAreaId]);
 
   async function handleSaveNew(form) {
     if (!form.title.trim()) return toast.error('Please enter a Kaizen event title');
@@ -870,12 +1039,46 @@ export default function Lean() {
           {/* ── Left: checklist ── */}
           <div style={{ flex: isMobile ? '0 0 100%' : 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 14 }}>
 
-          {/* Area input + score */}
+          {/* Step 1: Areas management */}
+          <div className="card" style={{ padding: '1.25rem' }}>
+            <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '0.9rem' }}>Step 1 — Areas to Audit</h4>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 10px' }}>
+              Define the areas/locations in your company you want audited. You'll pick one below each time you perform an audit.
+            </p>
+            <div style={{ display: 'flex', gap: 8, marginBottom: fiveSAreas.length ? 10 : 0, flexWrap: 'wrap' }}>
+              <input className="input" style={{ flex: 1, minWidth: 160 }} value={newAreaName}
+                onChange={e => setNewAreaName(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') addArea(); }}
+                placeholder="e.g. Assembly Line 3, Warehouse Zone B…" />
+              <button className="btn-primary" style={{ fontSize: '0.78rem', padding: '0.4rem 0.875rem' }} onClick={addArea}>+ Add Area</button>
+            </div>
+            {fiveSAreas.length > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {fiveSAreas.map(a => (
+                  <span key={a.id} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: '#f0fdfa', border: '1px solid #99f6e4', color: '#0d9488', borderRadius: 9999, padding: '4px 6px 4px 12px', fontSize: '0.78rem', fontWeight: 700 }}>
+                    {a.name}
+                    <button onClick={() => removeArea(a.id)} title="Remove area"
+                      style={{ background: '#0d9488', border: 'none', borderRadius: '50%', width: 18, height: 18, color: 'white', fontSize: '0.65rem', fontWeight: 900, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Step 2: Area picker + score */}
           <div className="card" style={{ padding: '1.25rem' }}>
             <div style={{ marginBottom: 12 }}>
-              <label className="label">Area / Location Being Audited</label>
-              <input className="input" value={auditArea} onChange={e => setAuditArea(e.target.value)}
-                placeholder="e.g. Assembly Line 3, Warehouse Zone B, Office Floor 2…" />
+              <label className="label">Step 2 — Area / Location Being Audited</label>
+              {fiveSAreas.length === 0 ? (
+                <p style={{ fontSize: '0.8rem', color: '#b45309', background: '#fef9c3', border: '1px solid #fde68a', borderRadius: 8, padding: '0.6rem 0.875rem', margin: 0 }}>
+                  Add an area above first, then come back here to start an audit.
+                </p>
+              ) : (
+                <select className="input" value={auditAreaId} onChange={e => setAuditAreaId(e.target.value)}>
+                  <option value="">Select an area…</option>
+                  {fiveSAreas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                </select>
+              )}
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 10 }}>
               <div>
@@ -896,10 +1099,10 @@ export default function Lean() {
               </p>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button className="btn-secondary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem' }} onClick={resetAudit}>↺ Reset</button>
-                <button className="btn-primary" disabled={ratedItems < totalItems}
-                  style={{ fontSize: '0.78rem', padding: '0.3rem 0.875rem', opacity: ratedItems < totalItems ? 0.5 : 1, cursor: ratedItems < totalItems ? 'not-allowed' : 'pointer' }}
+                <button className="btn-primary" disabled={ratedItems < totalItems || !selectedArea}
+                  style={{ fontSize: '0.78rem', padding: '0.3rem 0.875rem', opacity: (ratedItems < totalItems || !selectedArea) ? 0.5 : 1, cursor: (ratedItems < totalItems || !selectedArea) ? 'not-allowed' : 'pointer' }}
                   onClick={saveAudit}>💾 Save Audit</button>
-                {(auditArea.trim() || checkedItems > 0) && (
+                {(auditAreaId || checkedItems > 0) && (
                   <button
                     style={{ fontSize: '0.78rem', padding: '0.3rem 0.875rem', borderRadius: 9999, fontWeight: 700, border: '1.5px solid #0d9488', background: 'white', color: '#0d9488', cursor: 'pointer' }}
                     onClick={resetAudit}>
@@ -1054,6 +1257,45 @@ export default function Lean() {
             <button onClick={addOpportunity} className="btn-secondary" style={{ fontSize: '0.78rem', padding: '0.35rem 0.875rem', marginTop: 10 }}>
               ＋ Add another area
             </button>
+          </div>
+
+          {/* Step 3: Progress — score trend by area, over a selectable period */}
+          <div className="card" style={{ padding: '1.25rem' }}>
+            <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '0.9rem' }}>📈 Progress — Score Trend by Area</h4>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 12px' }}>
+              Track how an area's 5S score is trending over time, bucketed by the period you choose.
+            </p>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: 14 }}>
+              <div style={{ flex: '1 1 160px', minWidth: 160 }}>
+                <label className="label" style={{ fontSize: '0.7rem' }}>Area</label>
+                {fiveSAreas.length === 0 ? (
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>No areas yet — add one above.</p>
+                ) : (
+                  <select className="input" value={progressAreaId} onChange={e => setProgressAreaId(e.target.value)}>
+                    {fiveSAreas.map(a => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </select>
+                )}
+              </div>
+              <div style={{ flex: '1 1 200px', minWidth: 200 }}>
+                <label className="label" style={{ fontSize: '0.7rem' }}>Period</label>
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  {PERIODS.map(p => (
+                    <button key={p.key} onClick={() => setProgressPeriod(p.key)}
+                      style={{ padding: '0.4rem 0.9rem', borderRadius: 9999, fontWeight: 700, fontSize: '0.75rem', border: 'none', cursor: 'pointer',
+                        background: progressPeriod === p.key ? '#0f2044' : '#f1f5f9', color: progressPeriod === p.key ? 'white' : '#475569' }}>
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {fiveSAreas.length === 0 ? (
+              <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.78rem', textAlign: 'center' }}>
+                Add an area above to start tracking its audit trend.
+              </div>
+            ) : (
+              <FiveSTrendChart points={buildTrendPoints(auditHistory.filter(a => a.areaId === progressAreaId), progressPeriod)} />
+            )}
           </div>
 
           </div>{/* end left checklist */}
