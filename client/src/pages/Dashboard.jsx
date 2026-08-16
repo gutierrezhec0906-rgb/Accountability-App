@@ -19,7 +19,7 @@ const categories = [
       { id: 'visual-board',  label: 'Visual Management', icon: '🔴', path: '/visual-board',   iconBg: 'linear-gradient(135deg,#fca5a5,#f87171)' },
       { id: 'lob',           label: 'Line of Balance',   icon: '📈', path: '/lob',             iconBg: 'linear-gradient(135deg,#a5b4fc,#818cf8)' },
       { id: 'urgency',       label: 'Sense of Urgency',  icon: '⚡', path: '/urgency',         iconBg: 'linear-gradient(135deg,#fb923c,#ea580c)' },
-      { id: 'eq-opex',       label: 'EQ & OpEx Tools',   icon: '💡', path: '/eq-opex',         iconBg: 'linear-gradient(135deg,#fef08a,#facc15)' },
+      { id: 'eq-opex',       label: 'OpEx Tools',        icon: '⚙️', path: '/eq-opex',         iconBg: 'linear-gradient(135deg,#fef08a,#facc15)' },
     ],
   },
   {
@@ -73,6 +73,7 @@ const categories = [
       { id: 'feedback', label: 'Feedback Box',      icon: '📬', path: '/feedback', iconBg: 'linear-gradient(135deg,#6ee7b7,#34d399)' },
       { id: 'coaching', label: 'Coaching Log',      icon: '📝', path: '/coaching', iconBg: 'linear-gradient(135deg,#fde68a,#fbbf24)' },
       { id: 'quotes',   label: 'Leadership Quotes', icon: '💬', path: '/quotes',   iconBg: 'linear-gradient(135deg,#c084fc,#a855f7)' },
+      { id: 'eq',       label: 'EQ Assessment',     icon: '💡', path: '/eq',       iconBg: 'linear-gradient(135deg,#fef08a,#facc15)' },
     ],
   },
 ];

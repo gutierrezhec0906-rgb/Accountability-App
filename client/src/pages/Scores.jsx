@@ -39,11 +39,11 @@ const BREAKDOWN_CONFIG = [
 // with the category.
 const SCORE_SECTIONS = [
   { title: 'General Scores', color: '#0f2044', keys: ['breadth', 'frequency', 'quality', 'bonus'] },
-  { title: 'Set the Bar',            color: '#60a5fa', keys: ['actionsClosed', 'lob', 'urgency', 'eq'] },
+  { title: 'Set the Bar',            color: '#60a5fa', keys: ['actionsClosed', 'lob', 'urgency'] },
   { title: 'Spark the Vision',       color: '#34d399', keys: ['vision', 'smart', 'mindfulness'] },
   { title: 'Improve the Flow',       color: '#fbbf24', keys: ['lean5s', 'waste', 'problemSolving', 'disc', 'sqdip'] },
   { title: 'Enable the Team',        color: '#a78bfa', keys: ['skills', 'mentoring', 'career'] },
-  { title: 'Winning with Compassion', color: '#fb7185', keys: ['feedbackGiven', 'coaching', 'quotes'] },
+  { title: 'Winning with Compassion', color: '#fb7185', keys: ['feedbackGiven', 'coaching', 'quotes', 'eq'] },
 ];
 const BREAKDOWN_BY_KEY = Object.fromEntries(BREAKDOWN_CONFIG.map(c => [c.key, c]));
 

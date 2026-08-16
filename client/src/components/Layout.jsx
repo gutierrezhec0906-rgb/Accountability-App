@@ -27,7 +27,7 @@ const navCategories = [
       { id: 'visual-board', label: 'Visual Management', icon: '🔴', path: '/visual-board' },
       { id: 'lob',          label: 'Line of Balance',   icon: '📈', path: '/lob' },
       { id: 'urgency',      label: 'Sense of Urgency',  icon: '⚡', path: '/urgency' },
-      { id: 'eq-opex',      label: 'EQ & OpEx Tools',   icon: '💡', path: '/eq-opex' },
+      { id: 'eq-opex',      label: 'OpEx Tools',        icon: '⚙️', path: '/eq-opex' },
     ],
   },
   {
@@ -73,6 +73,7 @@ const navCategories = [
       { id: 'feedback', label: 'Feedback Box',     icon: '📬', path: '/feedback' },
       { id: 'coaching', label: 'Coaching Log',     icon: '📝', path: '/coaching' },
       { id: 'quotes',   label: 'Leadership Quotes',icon: '💬', path: '/quotes' },
+      { id: 'eq',       label: 'EQ Assessment',    icon: '💡', path: '/eq' },
     ],
   },
 ];
@@ -88,7 +89,7 @@ const VIDEO_TOOL_IDS = new Set([
   'dashboard',
   'visual-board','quotes','training','coaching','smart-goals','mentoring',
   'skills','lob','urgency','feedback','problem-solving','vision','lean',
-  'mindfulness','career','disc','eq-opex','scores',
+  'mindfulness','career','disc','eq-opex','eq','scores',
 ]);
 
 export default function Layout({ children }) {

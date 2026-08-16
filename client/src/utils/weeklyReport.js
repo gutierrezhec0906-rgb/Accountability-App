@@ -8,7 +8,7 @@ export const REPORT_TOOLS = [
   { key: 'visual-board',    label: 'The Accountability Board', icon: '🔴' },
   { key: 'lob',             label: 'Line of Balance',   icon: '📈' },
   { key: 'urgency',         label: 'Sense of Urgency',  icon: '⚡' },
-  { key: 'eq-opex',         label: 'EQ & OpEx Tools',   icon: '💡' },
+  { key: 'eq-opex',         label: 'OpEx Tools',        icon: '⚙️' },
   { key: 'vision',          label: 'Vision Builder',    icon: '🔭' },
   { key: 'smart-goals',     label: 'SMART Goals',       icon: '🎯' },
   { key: 'mindfulness',     label: 'Mindfulness',       icon: '🧘' },

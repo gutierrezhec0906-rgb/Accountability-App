@@ -25,7 +25,7 @@ const FREE_MODULE_IDS = new Set([
 ]);
 
 const PREMIUM_MODULE_IDS = new Set([
-  'visual-board', 'lob', 'urgency', 'eq-opex',
+  'visual-board', 'lob', 'urgency', 'eq-opex', 'eq',
   'vision', 'mindfulness',
   'lean', 'problem-solving', 'disc',
   'skills', 'training', 'mentoring', 'career',

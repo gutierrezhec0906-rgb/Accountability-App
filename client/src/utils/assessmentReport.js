@@ -15,7 +15,7 @@ const TOOL_MODULE_MAP = {
   'Accountability Board':     { label: 'The Accountability Board', path: '/visual-board' },
   'Line of Balance':          { label: 'Line of Balance',         path: '/lob'          },
   'Sense of Urgency':         { label: 'Sense of Urgency',        path: '/urgency'      },
-  'EQ Assessment':            { label: 'EQ & OpEx Tools',         path: '/eq-opex'      },
+  'EQ Assessment':            { label: 'EQ Assessment',           path: '/eq'           },
   'Vision Builder':           { label: 'Vision Builder',          path: '/vision'       },
   'SMART Goals':              { label: 'SMART Goals',             path: '/smart-goals'  },
   'Mindfulness':              { label: 'Mindfulness',             path: '/mindfulness'  },

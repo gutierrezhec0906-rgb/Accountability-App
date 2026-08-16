@@ -26,6 +26,7 @@ import Mindfulness from './pages/Mindfulness';
 import Career from './pages/Career';
 import DISC from './pages/DISC';
 import EQOpEx from './pages/EQOpEx';
+import EQAssessment from './pages/EQAssessment';
 import Scores from './pages/Scores';
 import Profile from './pages/Profile';
 import SmartGoals from './pages/SmartGoals';
@@ -79,6 +80,7 @@ export default function App() {
           <Route path="/career" element={<PrivateLayout><Career /></PrivateLayout>} />
           <Route path="/disc" element={<PrivateLayout><DISC /></PrivateLayout>} />
           <Route path="/eq-opex" element={<PrivateLayout><EQOpEx /></PrivateLayout>} />
+          <Route path="/eq" element={<PrivateLayout><EQAssessment /></PrivateLayout>} />
           <Route path="/scores" element={<PrivateLayout><Scores /></PrivateLayout>} />
           <Route path="/smart-goals" element={<PrivateLayout><SmartGoals /></PrivateLayout>} />
           <Route path="/profile" element={<PrivateLayout><Profile /></PrivateLayout>} />
