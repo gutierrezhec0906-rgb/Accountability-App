@@ -1,4 +1,5 @@
 import PageHeader from '../components/PageHeader';
+import toast from 'react-hot-toast';
 
 // One podcast per leadership pillar — mirrors the sidebar categories'
 // icon/color scheme in Layout.jsx so this page reads as an extension of
@@ -22,6 +23,27 @@ function spotifyEmbedSrc(url) {
     return `https://open.spotify.com/embed/${parts[0]}/${parts[1]}`;
   } catch {
     return null;
+  }
+}
+
+// Opens the device's native share sheet (WhatsApp, Messenger, Mail, etc.) on
+// mobile. Desktop browsers mostly don't support navigator.share, so fall
+// back to copying the link to the clipboard.
+async function sharePodcast(podcast) {
+  const shareData = {
+    title: `${podcast.pillar} — Leadership Podcast`,
+    text: `Check out this ${podcast.pillar} episode from the Accountability App podcast series.`,
+    url: podcast.episodeUrl,
+  };
+  if (navigator.share) {
+    try { await navigator.share(shareData); } catch { /* user cancelled */ }
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(podcast.episodeUrl);
+    toast.success('Link copied to clipboard');
+  } catch {
+    toast.error('Could not copy link');
   }
 }
 
@@ -50,10 +72,16 @@ function PodcastCard({ podcast }) {
             allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
             loading="lazy"
           />
-          <a href={podcast.episodeUrl} target="_blank" rel="noopener noreferrer"
-            style={{ fontSize: '0.78rem', fontWeight: 700, color: podcast.color, textAlign: 'center' }}>
-            🎧 Open in Spotify
-          </a>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
+            <a href={podcast.episodeUrl} target="_blank" rel="noopener noreferrer"
+              style={{ fontSize: '0.78rem', fontWeight: 700, color: podcast.color, textAlign: 'center' }}>
+              🎧 Open in Spotify
+            </a>
+            <button onClick={() => sharePodcast(podcast)} title="Share this episode"
+              style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', padding: 0 }}>
+              ↗ Share
+            </button>
+          </div>
         </>
       ) : (
         <div style={{ background: '#f8fafc', borderRadius: 12, padding: '1.5rem 1rem', textAlign: 'center', border: '1px dashed #e2e8f0' }}>
