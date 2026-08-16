@@ -62,6 +62,7 @@ const quotes = [
   { text: "Knowing is not enough; we must apply. Willing is not enough; we must do.", author: "Goethe" },
   { text: "Leaders must be close enough to relate to others, but far enough ahead to motivate them.", author: "John C. Maxwell" },
   { text: "Real integrity is doing the right thing, knowing that nobody's going to know whether you did it or not.", author: "Oprah Winfrey" },
+  { text: "As we look ahead into the next century, leaders will be those who empower others.", author: "Bill Gates" },
 ];
 
 function fmtDate(iso) {
