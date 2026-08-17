@@ -157,5 +157,14 @@ service cloud.firestore {
       allow update: if false;
       allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || isMasterAdmin());
     }
+
+    // Podcast comments — same team-scoped pattern as quoteComments.
+    match /podcastComments/{docId} {
+      allow read: if request.auth != null && myTeamId() != null && resource.data.teamId == myTeamId();
+      allow create: if request.auth != null && request.resource.data.uid == request.auth.uid &&
+        myTeamId() != null && request.resource.data.teamId == myTeamId();
+      allow update: if false;
+      allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || isMasterAdmin());
+    }
   }
 }
