@@ -313,8 +313,14 @@ export default function Team() {
 
       {/* List View */}
       {view === 'list' && (
-        <div className="card" style={{ overflow: 'hidden' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
+        <div className="card" style={{ overflow: 'hidden', padding: 0 }}>
+          <style>{`
+            .team-list-scroll::-webkit-scrollbar { height: 8px; -webkit-appearance: none; }
+            .team-list-scroll::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 8px; }
+            .team-list-scroll::-webkit-scrollbar-thumb { background: #64748b; border-radius: 8px; border: 1px solid #e2e8f0; }
+          `}</style>
+          <div className="team-list-scroll" style={{ overflowX: 'scroll', scrollbarWidth: 'thin', scrollbarColor: '#64748b #e2e8f0' }}>
+          <table style={{ width: '100%', minWidth: 640, borderCollapse: 'collapse', fontSize: '0.875rem' }}>
             <thead>
               <tr style={{ background: '#0f2044' }}>
                 <th style={{ textAlign: 'left', padding: '0.75rem 1.25rem', color: 'white', fontWeight: 600 }}>Member</th>
@@ -353,6 +359,7 @@ export default function Team() {
               })}
             </tbody>
           </table>
+          </div>
           {filtered.length === 0 && (
             <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No members match your search.</div>
           )}
