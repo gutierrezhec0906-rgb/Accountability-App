@@ -7,8 +7,8 @@ import { SQDIP_META, SQDIP_ORDER, letterCells, letterGridSize, daysInMonth, FILL
 import { SQDIP_COLORS, SQDIP_STATUS_LABEL, ACTION_STATUS, weeklyStatusCounts, WeeklyBarChart, WeeklyTrendChart, LetterIcon, monthSummary, buildMonthlyTrend } from '../components/SqdipCharts';
 
 const REFRESH_INTERVAL = 60;
-const SQUARE = 24;
-const GAP = 2;
+const SQUARE = 40;
+const GAP = 4;
 
 // Full-screen, TV-scaled walkthrough of the SQDIP Board — one letter fills
 // the whole screen at a time (grid, both charts, action plan), with Next/
@@ -171,8 +171,8 @@ export default function SqdipBoard() {
         {/* Main area: letter grid (left) + charts/action plan (right) */}
         <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 14 }}>
 
-          {/* Letter grid */}
-          <div style={{ flexShrink: 0, background: `linear-gradient(135deg, ${meta.color}, ${meta.color}cc)`, borderRadius: 14, padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          {/* Letter grid — fixed at ~1/3 of the screen width so it reads clearly on a TV, regardless of how narrow that letter's own shape is */}
+          <div style={{ flex: '0 0 33%', minWidth: 0, overflow: 'auto', background: `linear-gradient(135deg, ${meta.color}, ${meta.color}cc)`, borderRadius: 14, padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${SQUARE}px)`, gridAutoRows: `${SQUARE}px`, gap: GAP }}>
               {Array.from({ length: rows }).flatMap((_, row) =>
                 Array.from({ length: cols }).map((_, col) => {
@@ -194,7 +194,7 @@ export default function SqdipBoard() {
                       style={{
                         width: SQUARE, height: SQUARE, borderRadius: 5, background: bg,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '0.55rem', fontWeight: 700, color: status ? 'rgba(255,255,255,0.9)' : meta.color,
+                        fontSize: '0.85rem', fontWeight: 700, color: status ? 'rgba(255,255,255,0.9)' : meta.color,
                       }}>
                       {cell.day}
                     </div>
@@ -211,7 +211,7 @@ export default function SqdipBoard() {
 
           {/* Charts + action plan */}
           <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <div style={{ flex: '0 0 44%', minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ flex: '0 0 30%', minHeight: 0, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
               <div style={{ background: '#111d3d', borderRadius: 12, padding: '0.6rem 0.9rem', border: '1px solid #1e3a6e', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
                 <h4 style={{ margin: '0 0 4px', color: 'rgba(255,255,255,0.7)', fontSize: '0.72rem', fontWeight: 800, flexShrink: 0 }}>Weekly Trend</h4>
                 <div style={{ flex: 1, minHeight: 0 }}><WeeklyBarChart weeks={weeks} metricName={metricName} goal={goal} /></div>
