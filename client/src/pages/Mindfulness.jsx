@@ -46,6 +46,31 @@ const affirmations = [
   "I make decisions with both urgency and wisdom.",
   "I am accountable to my team, my goals, and myself.",
   "I bring calm energy to high-pressure situations.",
+
+  // Set the Bar — standards, urgency, ownership
+  "I set the standard through my actions, not just my words.",
+  "I hold the line on what matters, even when it's uncomfortable.",
+  "Urgency and integrity guide how I follow through on every commitment.",
+
+  // Spark the Vision — purpose, direction, inspiration
+  "I paint a picture of the future my team wants to build toward.",
+  "My vision gives others a reason to bring their best every day.",
+  "I turn a clear purpose into goals people are proud to chase.",
+
+  // Improve the Flow — continuous improvement, problem-solving
+  "I look for a better way, even when today's way is working.",
+  "I treat every problem as data, not a reason to place blame.",
+  "Small, steady improvements compound into lasting change under my watch.",
+
+  // Enable the Team — development, capability, trust
+  "I grow leaders, not just followers.",
+  "I give my team the tools, trust, and space to succeed.",
+  "Developing others is not separate from my job — it is my job.",
+
+  // Winning with Compassion — recognition, empathy, connection
+  "I see the person behind the performance.",
+  "I recognize effort as generously as I expect results.",
+  "Compassion and accountability grow stronger when they lead together.",
 ];
 
 function formatDate(iso) {
