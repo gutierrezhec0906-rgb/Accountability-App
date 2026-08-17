@@ -202,10 +202,10 @@ export default function SqdipBoard() {
                 })
               )}
             </div>
-            <div style={{ display: 'flex', gap: 10, fontSize: '0.7rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700, flexWrap: 'wrap', justifyContent: 'center' }}>
-              <span>🟢 {greenCount}</span>
-              <span>🟡 {amberCount}</span>
-              <span>🔴 {redCount}</span>
+            <div style={{ display: 'flex', gap: 16, fontSize: '0.95rem', color: 'white', fontWeight: 800, flexWrap: 'wrap', justifyContent: 'center', marginTop: 4 }}>
+              <span>🟢 {greenCount} meet</span>
+              <span>🟡 {amberCount} behind</span>
+              <span>🔴 {redCount} at risk</span>
             </div>
           </div>
 
