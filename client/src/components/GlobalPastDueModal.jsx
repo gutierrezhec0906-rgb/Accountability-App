@@ -133,8 +133,9 @@ export default function GlobalPastDueModal() {
           return { ...row, nextSession: newDate, recommitmentCount: (row.recommitmentCount || 0) + 1 };
         }
         // Trainings & goals: recommitting means a new due date; count each
-        // recommitment so modules can show "🔄 N recommitment(s)".
-        return { ...row, dueDate: newDate, recommitmentCount: (row.recommitmentCount || 0) + 1 };
+        // recommitment so modules can show "🔄 N recommitment(s)". Trainings
+        // also reset pastDuePenaltyApplied so a future miss can deduct again.
+        return { ...row, dueDate: newDate, recommitmentCount: (row.recommitmentCount || 0) + 1, ...(item.kind === 'training' ? { pastDuePenaltyApplied: false } : {}) };
       });
       await setDoc(doc(db, 'users', currentUser.uid), { [sec.field]: updated }, { merge: true });
       setData(d => ({ ...d, [sec.field]: updated }));

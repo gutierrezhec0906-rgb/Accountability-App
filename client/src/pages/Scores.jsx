@@ -31,6 +31,7 @@ const BREAKDOWN_CONFIG = [
   { key: 'quotes', label: 'Leadership Quotes', max: 20, icon: '💬', desc: '+5 pts each time you reflect on a leadership quote. Points last one week only — last week’s quote points expire, so reflect again each week to keep them.' },
   { key: 'bonus',     label: 'Bonus Points',     max: 20, icon: '🏆',  desc: 'Extra points from other daily actions' },
   { key: 'sqdip', label: 'SQDIP Action Plan', max: 10, icon: '📋', desc: '+1 pt per action item registered across any SQDIP letter (Safety/Quality/Delivery/Inventory/People), max 10. Computed live — the point is lost the moment that item\'s due date passes, and comes back if you push the date out again. Items with no due date always count.' },
+  { key: 'training', label: 'Training Center', max: 10, icon: '🎓', desc: '+1 pt per training completed on time (rolling 30 days), max 10. Letting a training go past due costs 1 pt — recommit to a new due date to stop the bleeding and re-earn it by finishing on time.' },
 ];
 
 // Score Breakdown grouped into six sections: General Scores first, then the five
@@ -42,7 +43,7 @@ const SCORE_SECTIONS = [
   { title: 'Set the Bar',            color: '#60a5fa', keys: ['actionsClosed', 'lob', 'urgency'] },
   { title: 'Spark the Vision',       color: '#34d399', keys: ['vision', 'smart', 'mindfulness'] },
   { title: 'Improve the Flow',       color: '#fbbf24', keys: ['lean5s', 'waste', 'problemSolving', 'disc', 'sqdip'] },
-  { title: 'Enable the Team',        color: '#a78bfa', keys: ['skills', 'mentoring', 'career'] },
+  { title: 'Enable the Team',        color: '#a78bfa', keys: ['skills', 'mentoring', 'career', 'training'] },
   { title: 'Winning with Compassion', color: '#fb7185', keys: ['feedbackGiven', 'coaching', 'quotes', 'eq'] },
 ];
 const BREAKDOWN_BY_KEY = Object.fromEntries(BREAKDOWN_CONFIG.map(c => [c.key, c]));

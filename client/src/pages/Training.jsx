@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import DateStatus, { getDateStatus, RecommitBadge } from '../components/DateStatus';
+import { logPointEvent, calculateScore } from '../utils/scoring';
 
 const sampleTrainings = [
   { id: 1, title: 'Lean Manufacturing Fundamentals', category: 'Lean',       duration: '4h',   dueDate: '2024-08-31', completed: true,  completedDate: '2024-07-20', mandatory: true  },
@@ -62,11 +63,57 @@ export default function Training() {
     }
   }
 
-  function toggleComplete(id) {
-    persist(trainings.map(x => x.id === id
+  async function toggleComplete(id) {
+    const t = trainings.find(x => x.id === id);
+    const completingNow = t && !t.completed;
+    const onTime = completingNow && (!t.dueDate || getDateStatus(t.dueDate)?.level !== 'overdue');
+    await persist(trainings.map(x => x.id === id
       ? { ...x, completed: !x.completed, completedDate: !x.completed ? new Date().toISOString().split('T')[0] : null }
       : x));
+
+    if (onTime && currentUser) {
+      const { awarded, capReached } = await logPointEvent(currentUser.uid, {
+        points: 1,
+        toolLabel: 'Training Completed On Time',
+        reason: `Completed "${t.title}" on time`,
+      });
+      if (awarded) {
+        calculateScore(currentUser.uid).catch(() => {});
+        toast.success('+1 pt — training completed on time!', { duration: 4000 });
+      } else if (capReached) {
+        toast('Training completed! Daily 25-pt cap reached today.', { icon: '📅', duration: 4000 });
+      }
+    }
   }
+
+  // Deduct 1 pt (once) for any training that's gone past due without being
+  // completed — flagged per-item so it isn't charged twice; the flag resets
+  // on recommit (GlobalPastDueModal) so a future miss can deduct again.
+  useEffect(() => {
+    if (!currentUser || !trainings.length) return;
+    const overdue = trainings.filter(t =>
+      !t.completed && t.dueDate && getDateStatus(t.dueDate)?.level === 'overdue' && !t.pastDuePenaltyApplied
+    );
+    if (!overdue.length) return;
+    (async () => {
+      try {
+        const updated = trainings.map(t =>
+          overdue.some(o => o.id === t.id) ? { ...t, pastDuePenaltyApplied: true } : t
+        );
+        await setDoc(doc(db, 'users', currentUser.uid), { trainings: updated }, { merge: true });
+        setTrainings(updated);
+        await updateDoc(doc(db, 'users', currentUser.uid), { penaltyPoints: increment(overdue.length) });
+        for (const t of overdue) {
+          await logPointEvent(currentUser.uid, {
+            points: -1,
+            toolLabel: 'Training Past Due',
+            reason: `Training went past due: "${t.title}"`,
+          });
+        }
+        calculateScore(currentUser.uid).catch(() => {});
+      } catch { /* ignore */ }
+    })();
+  }, [currentUser, trainings]);
 
   function startEdit(t) {
     setEditingId(t.id);
