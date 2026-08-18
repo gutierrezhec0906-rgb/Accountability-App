@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { doc, getDoc } from 'firebase/firestore';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { doc, getDoc, getDocs, collection, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { SQDIP_META, SQDIP_ORDER, letterCells, letterGridSize, daysInMonth, FILLER_CELLS, EMPTY_LABEL_CELLS } from '../utils/sqdipLetters';
@@ -19,28 +19,75 @@ const GAP = 4;
 export default function SqdipBoard() {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [board, setBoard] = useState(null);
   const [loading, setLoading] = useState(true);
   const [index, setIndex] = useState(0);
   const [countdown, setCountdown] = useState(REFRESH_INTERVAL);
+  const [teammates, setTeammates] = useState([]); // [{uid, name, hasBoard}] — same team, for the board-owner picker
+  const [ownerUid, setOwnerUid] = useState(null);
+  const [ownerName, setOwnerName] = useState('');
+
+  // Find teammates (same teamId) so a team member can pick which teammate's
+  // board to view — SQDIP boards are per-person (usually the leader's), so
+  // without this a member could only ever see their own, empty board.
+  useEffect(() => {
+    if (!currentUser) return;
+    (async () => {
+      try {
+        const meSnap = await getDoc(doc(db, 'users', currentUser.uid));
+        const me = meSnap.exists() ? meSnap.data() : {};
+        const teamId = me.teamId || null;
+        let mates = [{ uid: currentUser.uid, name: me.displayName || me.email || 'Me', role: me.role, hasBoard: !!me.sqdipBoard }];
+        if (teamId) {
+          const snap = await getDocs(query(collection(db, 'users'), where('teamId', '==', teamId)));
+          mates = snap.docs.map(d => ({ uid: d.id, name: d.data().displayName || d.data().email || 'Teammate', role: d.data().role, hasBoard: !!d.data().sqdipBoard }));
+        }
+        setTeammates(mates);
+
+        const requested = searchParams.get('uid');
+        const requestedValid = requested && mates.some(m => m.uid === requested);
+        if (requestedValid) {
+          setOwnerUid(requested);
+        } else if (me.sqdipBoard) {
+          setOwnerUid(currentUser.uid);
+        } else {
+          // My own board is empty — default to a teammate's (prefer a Leader) if one exists.
+          const withBoard = mates.filter(m => m.hasBoard && m.uid !== currentUser.uid);
+          const best = withBoard.find(m => m.role === 'Leader') || withBoard[0];
+          setOwnerUid(best ? best.uid : currentUser.uid);
+        }
+      } catch (e) { console.error('Could not load teammates', e); setOwnerUid(currentUser.uid); }
+    })();
+  }, [currentUser]);
+
+  function chooseOwner(uid) {
+    setOwnerUid(uid);
+    setBoard(null);
+    setLoading(true);
+    setSearchParams(uid === currentUser.uid ? {} : { uid });
+  }
 
   const fetchBoard = useCallback(async () => {
-    if (!currentUser) return;
+    if (!ownerUid) return;
     try {
-      const snap = await getDoc(doc(db, 'users', currentUser.uid));
-      setBoard(snap.exists() ? (snap.data().sqdipBoard || null) : null);
+      const snap = await getDoc(doc(db, 'users', ownerUid));
+      const data = snap.exists() ? snap.data() : {};
+      setBoard(data.sqdipBoard || null);
+      setOwnerName(data.displayName || data.email || 'Teammate');
       setCountdown(REFRESH_INTERVAL);
     } catch (e) {
       console.error('SQDIP board fetch error', e);
     }
     setLoading(false);
-  }, [currentUser]);
+  }, [ownerUid]);
 
   useEffect(() => {
+    if (!ownerUid) return;
     fetchBoard();
     const interval = setInterval(fetchBoard, REFRESH_INTERVAL * 1000);
     return () => clearInterval(interval);
-  }, [fetchBoard]);
+  }, [fetchBoard, ownerUid]);
 
   useEffect(() => {
     const tick = setInterval(() => setCountdown(c => (c <= 1 ? REFRESH_INTERVAL : c - 1)), 1000);
@@ -127,6 +174,17 @@ export default function SqdipBoard() {
           <h1 style={{ margin: 0, color: 'white', fontSize: '1.15rem', fontWeight: 900, letterSpacing: '-0.02em' }}>SQDIP Board</h1>
           <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem', fontWeight: 500 }}>{monthLabel}</p>
         </div>
+        {teammates.length > 1 && (
+          <select value={ownerUid || ''} onChange={e => chooseOwner(e.target.value)}
+            title="Choose whose SQDIP board to view"
+            style={{ padding: '6px 10px', borderRadius: 8, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', fontSize: '0.78rem', fontWeight: 700, flexShrink: 0 }}>
+            {teammates.map(m => (
+              <option key={m.uid} value={m.uid} style={{ color: '#0f2044' }}>
+                {m.uid === currentUser.uid ? `${m.name} (me)` : m.name}{!m.hasBoard ? ' — no board' : ''}
+              </option>
+            ))}
+          </select>
+        )}
         {/* Letter dots */}
         <div style={{ display: 'flex', gap: 8 }}>
           {letters.map((k, i) => (
