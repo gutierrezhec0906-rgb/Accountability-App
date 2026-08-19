@@ -148,6 +148,12 @@ export default function SqdipBoard() {
   const months = buildMonthlyTrend(board?.monthlyHistory?.[key], currentMonthKey, monthSummary(cellStatus, cellValues, days));
 
   const { rows, cols } = letterGridSize(key);
+  // Cap each square at SQUARE px, but shrink to whatever actually fits the
+  // panel's available height (~230px of chrome above/below it: header,
+  // slide title row, legend, card padding) and its ~33vw-wide column —
+  // whichever constraint is tighter — so a tall letter's grid always fits
+  // on one screen instead of scrolling off the bottom.
+  const squareSize = `min(${SQUARE}px, calc((100vh - 230px) / ${rows} - ${GAP}px), calc(30vw / ${cols} - ${GAP}px))`;
   const cells = letterCells(key, days);
   const cellByPos = {};
   cells.forEach(c => { cellByPos[`${c.row}-${c.col}`] = c; });
@@ -229,9 +235,12 @@ export default function SqdipBoard() {
         {/* Main area: letter grid (left) + charts/action plan (right) */}
         <div style={{ flex: 1, minHeight: 0, display: 'flex', gap: 14 }}>
 
-          {/* Letter grid — fixed at ~1/3 of the screen width so it reads clearly on a TV, regardless of how narrow that letter's own shape is */}
-          <div style={{ flex: '0 0 33%', minWidth: 0, overflow: 'auto', background: `linear-gradient(135deg, ${meta.color}, ${meta.color}cc)`, borderRadius: 14, padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${SQUARE}px)`, gridAutoRows: `${SQUARE}px`, gap: GAP }}>
+          {/* Letter grid — fixed at ~1/3 of the screen width so it reads clearly on a TV,
+              regardless of how narrow that letter's own shape is. Square size scales down
+              to whatever fits the panel's actual height/width (via CSS min()) instead of a
+              fixed px, so a tall letter (more rows) never gets clipped/scrolled off-screen. */}
+          <div style={{ flex: '0 0 33%', minWidth: 0, overflow: 'hidden', background: `linear-gradient(135deg, ${meta.color}, ${meta.color}cc)`, borderRadius: 14, padding: '0.75rem 1rem', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: `repeat(${cols}, ${squareSize})`, gridAutoRows: squareSize, gap: GAP }}>
               {Array.from({ length: rows }).flatMap((_, row) =>
                 Array.from({ length: cols }).map((_, col) => {
                   const cell = cellByPos[`${row}-${col}`];
@@ -239,20 +248,20 @@ export default function SqdipBoard() {
                     const posKey = `${row}-${col}`;
                     const isBlank = fillerSet.has(posKey) || emptyLabelSet.has(posKey);
                     return <div key={posKey} style={isBlank
-                      ? { width: SQUARE, height: SQUARE, borderRadius: 4, background: 'rgba(255,255,255,0.92)' }
-                      : { width: SQUARE, height: SQUARE }} />;
+                      ? { width: squareSize, height: squareSize, borderRadius: 4, background: 'rgba(255,255,255,0.92)' }
+                      : { width: squareSize, height: squareSize }} />;
                   }
                   if (cell.day === null) {
-                    return <div key={`${row}-${col}`} style={{ width: SQUARE, height: SQUARE, borderRadius: 4, background: 'rgba(255,255,255,0.92)' }} />;
+                    return <div key={`${row}-${col}`} style={{ width: squareSize, height: squareSize, borderRadius: 4, background: 'rgba(255,255,255,0.92)' }} />;
                   }
                   const status = cellStatus[cell.day];
                   const bg = status ? SQDIP_COLORS[status] : 'rgba(255,255,255,0.92)';
                   return (
                     <div key={`${row}-${col}`} title={`Day ${cell.day}${status ? ` — ${SQDIP_STATUS_LABEL[status]}` : ''}`}
                       style={{
-                        width: SQUARE, height: SQUARE, borderRadius: 5, background: bg,
+                        width: squareSize, height: squareSize, borderRadius: 5, background: bg,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: '0.85rem', fontWeight: 700, color: status ? 'rgba(255,255,255,0.9)' : meta.color,
+                        fontSize: 'clamp(0.45rem, 1.6vh, 0.85rem)', fontWeight: 700, color: status ? 'rgba(255,255,255,0.9)' : meta.color,
                       }}>
                       {cell.day}
                     </div>
