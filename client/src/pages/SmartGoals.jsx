@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
-import { db } from '../firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore, localDateStr } from '../utils/scoring';
+import { compressImage, withTimeout } from '../utils/image';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import DateStatus, { RecommitBadge } from '../components/DateStatus';
@@ -99,6 +101,10 @@ export default function SmartGoals() {
   const [pendingTeamGoals, setPendingTeamGoals] = useState([]); // for leaders/admins
   const [returningGoal, setReturningGoal] = useState(null); // goal being returned — opens the reason modal
   const [returnComment, setReturnComment] = useState('');
+  const [requestingGoal, setRequestingGoal] = useState(null); // goal being submitted — opens the proof/notes modal
+  const [approvalNote, setApprovalNote] = useState('');
+  const [approvalFile, setApprovalFile] = useState(null); // { file, isImage }
+  const [submittingApproval, setSubmittingApproval] = useState(false);
 
   const isLeader = userProfile?.isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager';
 
@@ -209,11 +215,51 @@ export default function SmartGoals() {
     toast.success('Goal deleted');
   }
 
-  async function handleRequestApproval(id) {
+  async function handleRequestApproval(id, note, attachment) {
     const goal = goals.find(g => g.id === id);
-    if (!goal) return;
-    await persist(goals.map(g => g.id === id ? { ...g, status: 'pending_approval', approvalRequestedAt: new Date().toISOString(), returnComment: null } : g));
-    toast.success('Completion approval requested — your leader will review it.');
+    if (!goal || !currentUser) return;
+    setSubmittingApproval(true);
+    try {
+      let attachmentUrl = null, attachmentName = null;
+      if (attachment?.file) {
+        const { file, isImage } = attachment;
+        const ext = (file.name.split('.').pop() || 'bin').toLowerCase();
+        const path = `smartGoalProofs/${currentUser.uid}/${id}-${Date.now()}.${isImage ? 'jpg' : ext}`;
+        const storageRef = ref(storage, path);
+        if (isImage) {
+          const { blob } = await compressImage(file);
+          await withTimeout(uploadBytes(storageRef, blob, { contentType: 'image/jpeg' }), 45000, 'Attachment upload');
+        } else {
+          await withTimeout(uploadBytes(storageRef, file), 45000, 'Attachment upload');
+        }
+        attachmentUrl = await withTimeout(getDownloadURL(storageRef), 15000, 'Attachment link');
+        attachmentName = file.name;
+      }
+      await persist(goals.map(g => g.id === id ? {
+        ...g, status: 'pending_approval', approvalRequestedAt: new Date().toISOString(), returnComment: null,
+        approvalNote: (note || '').trim(),
+        approvalAttachmentUrl: attachmentUrl,
+        approvalAttachmentName: attachmentName,
+      } : g));
+      setRequestingGoal(null);
+      setApprovalNote('');
+      setApprovalFile(null);
+      toast.success('Completion approval requested — your leader will review it.');
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not submit for approval: ' + (e?.message || 'try again'));
+    }
+    setSubmittingApproval(false);
+  }
+
+  function pickApprovalFile(e) {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    const isImage = file.type.startsWith('image/');
+    if (isImage && file.size > 25 * 1024 * 1024) return toast.error('Image is too large (max 25 MB)');
+    if (!isImage && file.size > 10 * 1024 * 1024) return toast.error('File is too large (max 10 MB)');
+    setApprovalFile({ file, isImage });
   }
 
   async function handleApproveGoal(ownerUid, goalId) {
@@ -301,6 +347,17 @@ export default function SmartGoals() {
                     </span>
                   ))}
                 </div>
+                {g.approvalNote && (
+                  <p style={{ margin: '8px 0 0', fontSize: '0.78rem', color: '#374151', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.5rem 0.65rem', lineHeight: 1.4 }}>
+                    📝 {g.approvalNote}
+                  </p>
+                )}
+                {g.approvalAttachmentUrl && (
+                  <a href={g.approvalAttachmentUrl} target="_blank" rel="noopener noreferrer"
+                    style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: '0.75rem', fontWeight: 700, color: '#0d9488' }}>
+                    📎 {g.approvalAttachmentName || 'View attachment'} ↗
+                  </a>
+                )}
               </div>
               <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                 <button onClick={() => handleApproveGoal(g.ownerUid, g.id)}
@@ -344,6 +401,55 @@ export default function SmartGoals() {
                 disabled={!returnComment.trim()}
                 style={{ padding: '0.45rem 1rem', borderRadius: 8, border: 'none', background: returnComment.trim() ? '#ef4444' : '#fca5a5', color: 'white', fontWeight: 800, fontSize: '0.82rem', cursor: returnComment.trim() ? 'pointer' : 'not-allowed' }}>
                 ↩ Return with Comment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Request-approval modal — notes + optional proof attachment */}
+      {requestingGoal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+          onClick={() => !submittingApproval && setRequestingGoal(null)}>
+          <div className="card" style={{ maxWidth: 440, width: '100%', padding: '1.25rem' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 4px', fontWeight: 800, color: '#1e293b', fontSize: '1rem' }}>Request Approval — "{requestingGoal.title}"</h3>
+            <p style={{ margin: '0 0 12px', fontSize: '0.8rem', color: '#64748b' }}>
+              Add notes and, if you have it, attach proof (a photo, screenshot, or document) so your leader can review and approve faster.
+            </p>
+            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Notes (optional)</label>
+            <textarea
+              className="input"
+              rows={3}
+              autoFocus
+              placeholder="e.g. Completed the training rollout across all 3 shifts — attendance sheet attached."
+              value={approvalNote}
+              onChange={e => setApprovalNote(e.target.value)}
+              style={{ fontSize: '0.85rem', resize: 'vertical', width: '100%' }}
+            />
+            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', margin: '12px 0 4px' }}>Attachment (optional — image, PDF, or document)</label>
+            {approvalFile ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem 0.75rem', borderRadius: 8, background: '#f0fdfa', border: '1px solid #99f6e4' }}>
+                <span style={{ fontSize: '0.8rem', color: '#0f2044', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {approvalFile.isImage ? '🖼️' : '📎'} {approvalFile.file.name}
+                </span>
+                <button onClick={() => setApprovalFile(null)} title="Remove"
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '0.8rem' }}>✕</button>
+              </div>
+            ) : (
+              <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem 1rem', borderRadius: 8, border: '1.5px dashed #cbd5e1', cursor: 'pointer', background: 'white', fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
+                📎 Click to attach a file
+                <input type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style={{ display: 'none' }} onChange={pickApprovalFile} />
+              </label>
+            )}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
+              <button onClick={() => setRequestingGoal(null)} disabled={submittingApproval}
+                style={{ padding: '0.45rem 1rem', borderRadius: 8, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 700, fontSize: '0.82rem', cursor: submittingApproval ? 'wait' : 'pointer' }}>
+                Cancel
+              </button>
+              <button onClick={() => handleRequestApproval(requestingGoal.id, approvalNote, approvalFile)}
+                disabled={submittingApproval}
+                style={{ padding: '0.45rem 1rem', borderRadius: 8, border: 'none', background: '#0f2044', color: 'white', fontWeight: 800, fontSize: '0.82rem', cursor: submittingApproval ? 'wait' : 'pointer', opacity: submittingApproval ? 0.7 : 1 }}>
+                {submittingApproval ? 'Submitting…' : '📤 Submit for Approval'}
               </button>
             </div>
           </div>
@@ -453,7 +559,7 @@ export default function SmartGoals() {
                       )}
                       {goal.status === 'active' && (
                         <button
-                          onClick={() => handleRequestApproval(goal.id)}
+                          onClick={() => { setRequestingGoal(goal); setApprovalNote(''); setApprovalFile(null); }}
                           style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem', borderRadius: 8, fontWeight: 700, border: 'none', background: '#0f2044', color: 'white', cursor: 'pointer' }}>
                           📤 Request Completion Approval
                         </button>

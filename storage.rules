@@ -28,5 +28,16 @@ service firebase.storage {
                    && request.resource.size < 5 * 1024 * 1024
                    && request.resource.contentType.matches('image/.*');
     }
+
+    // SMART goal completion proof (photo, screenshot, or document) attached
+    // when requesting leader approval — readable by any signed-in user so the
+    // approving leader can open it, writable only by the goal's own owner.
+    // No contentType restriction since images, PDFs, and office docs are all
+    // allowed here (unlike the image-only rules above).
+    match /smartGoalProofs/{userId}/{fileName} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.auth.uid == userId
+                   && request.resource.size < 25 * 1024 * 1024;
+    }
   }
 }
