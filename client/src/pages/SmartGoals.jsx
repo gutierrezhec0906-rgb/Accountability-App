@@ -97,6 +97,8 @@ export default function SmartGoals() {
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState(null);
   const [pendingTeamGoals, setPendingTeamGoals] = useState([]); // for leaders/admins
+  const [returningGoal, setReturningGoal] = useState(null); // goal being returned — opens the reason modal
+  const [returnComment, setReturnComment] = useState('');
 
   const isLeader = userProfile?.isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager';
 
@@ -210,7 +212,7 @@ export default function SmartGoals() {
   async function handleRequestApproval(id) {
     const goal = goals.find(g => g.id === id);
     if (!goal) return;
-    await persist(goals.map(g => g.id === id ? { ...g, status: 'pending_approval', approvalRequestedAt: new Date().toISOString() } : g));
+    await persist(goals.map(g => g.id === id ? { ...g, status: 'pending_approval', approvalRequestedAt: new Date().toISOString(), returnComment: null } : g));
     toast.success('Completion approval requested — your leader will review it.');
   }
 
@@ -240,17 +242,26 @@ export default function SmartGoals() {
     }
   }
 
-  async function handleRejectGoal(ownerUid, goalId) {
+  async function handleRejectGoal(ownerUid, goalId, comment) {
+    const trimmed = (comment || '').trim();
+    if (!trimmed) return toast.error('Please add a reason for the return so the owner knows what to fix.');
     try {
       const ownerSnap = await getDoc(doc(db, 'users', ownerUid));
       if (!ownerSnap.exists()) return;
       const ownerGoals = ownerSnap.data().smartGoals || [];
       const updatedGoals = ownerGoals.map(g =>
-        g.id === goalId ? { ...g, status: 'active', approvalRequestedAt: null } : g
+        g.id === goalId ? {
+          ...g, status: 'active', approvalRequestedAt: null,
+          returnComment: trimmed,
+          returnedAt: new Date().toISOString(),
+          returnedBy: currentUser?.displayName || currentUser?.email || 'Your leader',
+        } : g
       );
       await setDoc(doc(db, 'users', ownerUid), { smartGoals: updatedGoals }, { merge: true });
       setPendingTeamGoals(prev => prev.filter(g => !(g.ownerUid === ownerUid && g.id === goalId)));
-      toast.success('Goal returned to Active — owner will be notified.');
+      setReturningGoal(null);
+      setReturnComment('');
+      toast.success('Goal returned to Active with your comment — owner will see the reason.');
     } catch (e) {
       toast.error('Could not reject — try again.');
     }
@@ -296,13 +307,46 @@ export default function SmartGoals() {
                   style={{ padding: '0.4rem 0.875rem', borderRadius: 8, fontSize: '0.78rem', fontWeight: 700, border: 'none', background: '#0d9488', color: 'white', cursor: 'pointer' }}>
                   ✅ Approve (+2 pts)
                 </button>
-                <button onClick={() => handleRejectGoal(g.ownerUid, g.id)}
+                <button onClick={() => { setReturningGoal(g); setReturnComment(''); }}
                   style={{ padding: '0.4rem 0.875rem', borderRadius: 8, fontSize: '0.78rem', fontWeight: 700, border: '1.5px solid #fca5a5', background: 'white', color: '#ef4444', cursor: 'pointer' }}>
                   ↩ Return
                 </button>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Return-with-comment modal */}
+      {returningGoal && (
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
+          onClick={() => setReturningGoal(null)}>
+          <div className="card" style={{ maxWidth: 440, width: '100%', padding: '1.25rem' }} onClick={e => e.stopPropagation()}>
+            <h3 style={{ margin: '0 0 4px', fontWeight: 800, color: '#1e293b', fontSize: '1rem' }}>Return "{returningGoal.title}"</h3>
+            <p style={{ margin: '0 0 12px', fontSize: '0.8rem', color: '#64748b' }}>
+              Let {returningGoal.ownerName} know what needs to change before you can approve this goal's completion.
+            </p>
+            <textarea
+              className="input"
+              rows={4}
+              autoFocus
+              placeholder="e.g. The Measurable field doesn't specify a target number — add one and resubmit."
+              value={returnComment}
+              onChange={e => setReturnComment(e.target.value)}
+              style={{ fontSize: '0.85rem', resize: 'vertical', width: '100%' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
+              <button onClick={() => setReturningGoal(null)}
+                style={{ padding: '0.45rem 1rem', borderRadius: 8, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
+                Cancel
+              </button>
+              <button onClick={() => handleRejectGoal(returningGoal.ownerUid, returningGoal.id, returnComment)}
+                disabled={!returnComment.trim()}
+                style={{ padding: '0.45rem 1rem', borderRadius: 8, border: 'none', background: returnComment.trim() ? '#ef4444' : '#fca5a5', color: 'white', fontWeight: 800, fontSize: '0.82rem', cursor: returnComment.trim() ? 'pointer' : 'not-allowed' }}>
+                ↩ Return with Comment
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -354,6 +398,14 @@ export default function SmartGoals() {
                 {/* Expanded SMART fields */}
                 {isOpen && (
                   <div style={{ borderTop: '1px solid #f1f5f9', padding: '1.25rem' }}>
+                    {goal.returnComment && goal.status !== 'completed' && goal.status !== 'pending_approval' && (
+                      <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: 16 }}>
+                        <p style={{ margin: '0 0 4px', fontWeight: 800, color: '#b91c1c', fontSize: '0.8rem' }}>
+                          ↩ Returned by {goal.returnedBy || 'your leader'}{goal.returnedAt ? ` · ${new Date(goal.returnedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                        </p>
+                        <p style={{ margin: 0, color: '#7f1d1d', fontSize: '0.85rem', lineHeight: 1.5 }}>{goal.returnComment}</p>
+                      </div>
+                    )}
                     <div className="space-y-4">
                       {SMART.map(s => (
                         <div key={s.key}>
