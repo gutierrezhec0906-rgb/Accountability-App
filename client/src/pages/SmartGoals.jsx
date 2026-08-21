@@ -98,6 +98,7 @@ export default function SmartGoals() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState(null);
+  const [statusFilter, setStatusFilter] = useState(null); // clicking a stat tile filters the list to that status
   const [pendingTeamGoals, setPendingTeamGoals] = useState([]); // for leaders/admins
   const [returningGoal, setReturningGoal] = useState(null); // goal being returned — opens the reason modal
   const [returnComment, setReturnComment] = useState('');
@@ -456,15 +457,26 @@ export default function SmartGoals() {
         </div>
       )}
 
-      {/* Stats */}
+      {/* Stats — click a tile to filter the list below to that status; click again to clear */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 12 }}>
         {Object.entries(STATUS_STYLES).map(([key, s]) => (
-          <div key={key} className="stat-tile" style={{ textAlign: 'center' }}>
+          <div key={key} className="stat-tile"
+            onClick={() => setStatusFilter(f => f === key ? null : key)}
+            style={{ textAlign: 'center', cursor: 'pointer', outline: statusFilter === key ? `2px solid ${s.text}` : 'none', outlineOffset: -2 }}>
             <div style={{ fontSize: '1.75rem', fontWeight: 900, color: s.text }}>{counts[key] || 0}</div>
             <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: 4 }}>{s.label}</div>
           </div>
         ))}
       </div>
+      {statusFilter && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: -8, fontSize: '0.8rem', color: '#64748b' }}>
+          Showing only <strong style={{ color: STATUS_STYLES[statusFilter].text }}>{STATUS_STYLES[statusFilter].label}</strong> goals
+          <button onClick={() => setStatusFilter(null)}
+            style={{ background: 'none', border: 'none', color: '#0d9488', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}>
+            Clear filter
+          </button>
+        </div>
+      )}
 
       {/* Goals list */}
       {loading ? (
@@ -478,7 +490,12 @@ export default function SmartGoals() {
         </div>
       ) : (
         <div className="space-y-3">
-          {goals.map(goal => {
+          {goals.filter(goal => !statusFilter || goal.status === statusFilter).length === 0 && (
+            <div className="card" style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
+              No {STATUS_STYLES[statusFilter]?.label.toLowerCase()} goals.
+            </div>
+          )}
+          {goals.filter(goal => !statusFilter || goal.status === statusFilter).map(goal => {
             const st = STATUS_STYLES[goal.status] || STATUS_STYLES.draft;
             const qpct = goalQualityPct(goal);
             const isOpen = expanded === goal.id;
