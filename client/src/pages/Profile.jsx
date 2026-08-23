@@ -16,12 +16,16 @@ function Avatar({ name, photoURL, size = 80 }) {
       <img
         src={photoURL}
         alt={name}
-        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '3px solid #e2e8f0' }}
+        style={{
+          width: size, height: size, minWidth: size, minHeight: size, maxWidth: size, maxHeight: size,
+          aspectRatio: '1 / 1', borderRadius: '50%', objectFit: 'cover', objectPosition: 'center',
+          display: 'block', boxSizing: 'border-box', flexShrink: 0, border: '3px solid #e2e8f0',
+        }}
       />
     );
   }
   return (
-    <div style={{ width: size, height: size, borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: size * 0.35, flexShrink: 0 }}>
+    <div style={{ width: size, height: size, minWidth: size, minHeight: size, aspectRatio: '1 / 1', borderRadius: '50%', background: color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: size * 0.35, flexShrink: 0 }}>
       {initials}
     </div>
   );
@@ -90,7 +94,7 @@ export default function Profile() {
         <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', marginBottom: 20 }}>Profile Photo</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <div style={{ position: 'relative' }}>
-            <Avatar name={currentUser?.displayName} photoURL={photoURL} size={88} />
+            <Avatar name={currentUser?.displayName} photoURL={photoURL} size={110} />
             {uploading && (
               <div style={{ position: 'absolute', inset: 0, borderRadius: '50%', background: 'rgba(0,0,0,0.45)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ color: 'white', fontSize: '0.7rem', fontWeight: 700 }}>...</span>

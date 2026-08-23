@@ -407,7 +407,7 @@ export default function Layout({ children }) {
               <img
                 src={userProfile?.photoURL || currentUser?.photoURL}
                 alt={currentUser?.displayName}
-                style={{ width: 32, height: 32, borderRadius: '50%', objectFit: 'cover', border: '2px solid #0d9488', flexShrink: 0 }}
+                style={{ width: 32, height: 32, minWidth: 32, minHeight: 32, aspectRatio: '1 / 1', borderRadius: '50%', objectFit: 'cover', objectPosition: 'center', display: 'block', boxSizing: 'border-box', border: '2px solid #0d9488', flexShrink: 0 }}
               />
             ) : (
               <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'linear-gradient(135deg,#0d9488,#0f766e)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.8rem', fontWeight: 800, flexShrink: 0 }}>
