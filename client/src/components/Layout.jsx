@@ -24,10 +24,10 @@ const navCategories = [
     icon: '🧭',
     color: '#60a5fa',
     items: [
-      { id: 'visual-board', label: 'Visual Management', icon: '🔴', path: '/visual-board' },
-      { id: 'lob',          label: 'Line of Balance',   icon: '📈', path: '/lob' },
-      { id: 'urgency',      label: 'Sense of Urgency',  icon: '⚡', path: '/urgency' },
-      { id: 'eq-opex',      label: 'OpEx Tools',        icon: '⚙️', path: '/eq-opex' },
+      { id: 'visual-board', label: 'Visual Management', icon: '🔴', path: '/visual-board', num: 1 },
+      { id: 'lob',          label: 'Line of Balance',   icon: '📈', path: '/lob', num: 2 },
+      { id: 'urgency',      label: 'Sense of Urgency',  icon: '⚡', path: '/urgency', num: 3 },
+      { id: 'eq-opex',      label: 'OpEx Tools',        icon: '⚙️', path: '/eq-opex', num: 4 },
     ],
   },
   {
@@ -36,9 +36,9 @@ const navCategories = [
     icon: '🔭',
     color: '#34d399',
     items: [
-      { id: 'vision',      label: 'Vision Builder', icon: '🔭', path: '/vision' },
-      { id: 'smart-goals', label: 'SMART Goals',    icon: '🎯', path: '/smart-goals' },
-      { id: 'mindfulness', label: 'Mindfulness',    icon: '🧘', path: '/mindfulness' },
+      { id: 'vision',      label: 'Vision Builder', icon: '🔭', path: '/vision', num: 5 },
+      { id: 'smart-goals', label: 'SMART Goals',    icon: '🎯', path: '/smart-goals', num: 6 },
+      { id: 'mindfulness', label: 'Mindfulness',    icon: '🧘', path: '/mindfulness', num: 7 },
     ],
   },
   {
@@ -47,9 +47,9 @@ const navCategories = [
     icon: '⚙️',
     color: '#fbbf24',
     items: [
-      { id: 'lean',          label: 'Lean Toolkit',    icon: '🏭', path: '/lean' },
-      { id: 'problem-solving',label: 'Problem Solving', icon: '🔍', path: '/problem-solving' },
-      { id: 'disc',          label: 'DISC Assessment', icon: '🎯', path: '/disc' },
+      { id: 'lean',          label: 'Lean Toolkit',    icon: '🏭', path: '/lean', num: 8 },
+      { id: 'problem-solving',label: 'Problem Solving', icon: '🔍', path: '/problem-solving', num: 9 },
+      { id: 'disc',          label: 'DISC Assessment', icon: '🎯', path: '/disc', num: 10 },
     ],
   },
   {
@@ -58,10 +58,10 @@ const navCategories = [
     icon: '🤝',
     color: '#a78bfa',
     items: [
-      { id: 'skills',   label: 'Skills Development', icon: '⭐', path: '/skills' },
-      { id: 'training', label: 'Training Center',    icon: '🎓', path: '/training' },
-      { id: 'mentoring',label: 'Mentoring Tracker',  icon: '🫂', path: '/mentoring' },
-      { id: 'career',   label: 'Career Development', icon: '🚀', path: '/career' },
+      { id: 'skills',   label: 'Skills Development', icon: '⭐', path: '/skills', num: 11 },
+      { id: 'training', label: 'Training Center',    icon: '🎓', path: '/training', num: 12 },
+      { id: 'mentoring',label: 'Mentoring Tracker',  icon: '🫂', path: '/mentoring', num: 13 },
+      { id: 'career',   label: 'Career Development', icon: '🚀', path: '/career', num: 14 },
     ],
   },
   {
@@ -70,10 +70,10 @@ const navCategories = [
     icon: '❤️',
     color: '#fb7185',
     items: [
-      { id: 'feedback', label: 'Feedback Box',     icon: '📬', path: '/feedback' },
-      { id: 'coaching', label: 'Coaching Log',     icon: '📝', path: '/coaching' },
-      { id: 'quotes',   label: 'Leadership Quotes',icon: '💬', path: '/quotes' },
-      { id: 'eq',       label: 'EQ Assessment',    icon: '💡', path: '/eq' },
+      { id: 'feedback', label: 'Feedback Box',     icon: '📬', path: '/feedback', num: 15 },
+      { id: 'coaching', label: 'Coaching Log',     icon: '📝', path: '/coaching', num: 16 },
+      { id: 'quotes',   label: 'Leadership Quotes',icon: '💬', path: '/quotes', num: 17 },
+      { id: 'eq',       label: 'EQ Assessment',    icon: '💡', path: '/eq', num: 18 },
     ],
   },
 ];
@@ -319,7 +319,7 @@ export default function Layout({ children }) {
                           title={collapsed ? item.label : ''}
                           style={{ fontSize: '0.8rem', opacity: locked ? 0.65 : 1 }}>
                           <span style={{ fontSize: '0.875rem', flexShrink: 0 }}>{locked ? '🔒' : item.icon}</span>
-                          {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.8rem' }}>{item.label}</span>}
+                          {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.8rem' }}>{item.num ? `${item.num}. ` : ''}{item.label}</span>}
                           {!collapsed && locked && (
                             <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#f59e0b', letterSpacing: '0.04em', flexShrink: 0 }}>PRO</span>
                           )}
