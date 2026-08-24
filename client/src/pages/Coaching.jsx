@@ -177,6 +177,7 @@ export default function Coaching() {
   const [closingId, setClosingId]         = useState(null);
   const [closeForm, setCloseForm]         = useState({ comments: '', outcome: '' });
   const [closing, setClosing]             = useState(false);
+  const [statusFilter, setStatusFilter]   = useState(null); // clicking a stat tile filters the list to that status
 
   // Log 5 pts the first time a complete coaching session is saved in a given week
   async function maybeLogCoachingPoints(session) {
@@ -339,6 +340,14 @@ export default function Coaching() {
 
   const coachees = new Set(sessions.map(s => s.coachee)).size;
   const actions  = sessions.reduce((a, s) => a + (s.actionItems?.length || 0), 0);
+  const openCount   = sessions.filter(s => !s.closed).length;
+  const closedCount = sessions.filter(s => s.closed).length;
+
+  const STATUS_LABELS = { open: 'Open', closed: 'Closed' };
+  const filteredSessions = sessions.filter(s => {
+    if (!statusFilter) return true;
+    return statusFilter === 'closed' ? !!s.closed : !s.closed;
+  });
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }}>
@@ -346,7 +355,7 @@ export default function Coaching() {
         action={<button className="btn-primary" onClick={() => setShowForm(s => !s)}>+ Log Session</button>} />
 
       {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: '0.75rem' }}>
         {[
           { label: 'Total Sessions', value: sessions.length, icon: '📝', color: '#0d9488' },
           { label: 'Coachees',        value: coachees,        icon: '👥', color: '#0f2044' },
@@ -359,6 +368,31 @@ export default function Coaching() {
           </div>
         ))}
       </div>
+
+      {/* Status filter tiles — click to show only Open or Closed sessions */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12, marginBottom: '1.5rem' }}>
+        {[
+          { key: 'open',   label: 'Open',   value: openCount,   icon: '🟡', color: '#b45309' },
+          { key: 'closed', label: 'Closed', value: closedCount, icon: '✅', color: '#15803d' },
+        ].map(s => (
+          <button key={s.key} className="stat-tile" onClick={() => setStatusFilter(f => f === s.key ? null : s.key)}
+            style={{ textAlign: 'center', cursor: 'pointer', border: 'none', outline: statusFilter === s.key ? `2px solid ${s.color}` : 'none', outlineOffset: -2 }}>
+            <span style={{ fontSize: '1.5rem' }}>{s.icon}</span>
+            <p style={{ fontSize: '2rem', fontWeight: 900, color: s.color, margin: '4px 0 0', lineHeight: 1 }}>{s.value}</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '4px 0 0', fontWeight: 600 }}>{s.label} Sessions</p>
+          </button>
+        ))}
+      </div>
+
+      {statusFilter && (
+        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '-0.75rem 0 1rem' }}>
+          Showing only <strong style={{ color: 'var(--text-primary)' }}>{STATUS_LABELS[statusFilter]}</strong> sessions
+          <button onClick={() => setStatusFilter(null)}
+            style={{ marginLeft: 10, background: 'none', border: 'none', color: '#0d9488', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}>
+            Clear filter
+          </button>
+        </p>
+      )}
 
       {/* Worked example banner */}
       <div style={{ background: 'linear-gradient(90deg,#0f2044,#1e3a6e)', borderRadius: 12, padding: '0.85rem 1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: '1rem' }}>
@@ -422,9 +456,15 @@ export default function Coaching() {
         </div>
       )}
 
+      {!loading && sessions.length > 0 && filteredSessions.length === 0 && (
+        <div className="card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+          <p style={{ fontWeight: 700, margin: 0 }}>No {STATUS_LABELS[statusFilter]?.toLowerCase()} sessions.</p>
+        </div>
+      )}
+
       {/* Session cards */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {sessions.map(s => (
+        {filteredSessions.map(s => (
           <div key={s.id} className="card" style={{ padding: '1.25rem' }}>
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
