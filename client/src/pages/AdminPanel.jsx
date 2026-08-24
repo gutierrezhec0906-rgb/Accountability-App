@@ -67,6 +67,9 @@ export default function AdminPanel() {
   const [toolVideos, setToolVideos] = useState({});
   const [uploadingTool, setUploadingTool] = useState(null);
   const [previewTool, setPreviewTool] = useState(null);
+  const [welcomeVideoUrl, setWelcomeVideoUrl] = useState('');
+  const [uploadingWelcome, setUploadingWelcome] = useState(false);
+  const [previewWelcome, setPreviewWelcome] = useState(false);
   const [expandedViewer, setExpandedViewer] = useState(null); // uid of viewer whose report list is open
   const [savingVis, setSavingVis] = useState(null);
 
@@ -74,7 +77,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     if (!isMasterAdmin) return;
-    Promise.all([fetchUsers(), fetchCompanies(), fetchTeams(), fetchToolVideos()]).finally(() => setLoading(false));
+    Promise.all([fetchUsers(), fetchCompanies(), fetchTeams(), fetchToolVideos(), fetchWelcomeVideo()]).finally(() => setLoading(false));
   }, [isMasterAdmin]);
 
   async function fetchToolVideos() {
@@ -117,6 +120,52 @@ export default function AdminPanel() {
       await setDoc(doc(db, 'appConfig', 'toolVideos'), { [toolId]: '' }, { merge: true });
       setToolVideos(prev => ({ ...prev, [toolId]: '' }));
       toast.success('Video removed');
+    } catch (e) {
+      toast.error('Could not remove: ' + (e?.message || e));
+    }
+  }
+
+  // The very first video a brand-new user sees on their first Dashboard visit
+  // (WelcomeModal.jsx reads appConfig/welcome.videoUrl) — same upload flow as
+  // the per-tool "How to use" videos, just a single video, not one per tool.
+  async function fetchWelcomeVideo() {
+    try {
+      const snap = await getDoc(doc(db, 'appConfig', 'welcome'));
+      if (snap.exists()) setWelcomeVideoUrl(snap.data().videoUrl || '');
+    } catch {}
+  }
+
+  async function uploadWelcomeVideo(file) {
+    if (!file) return;
+    if (!file.type.startsWith('video/')) { toast.error('Please choose a video file'); return; }
+    if (file.size > 200 * 1024 * 1024) { toast.error('Video must be under 200 MB'); return; }
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    const risky = ['mov', 'mkv', 'avi', 'wmv', 'flv', 'm4v', 'hevc'];
+    if (risky.includes(ext) || file.type === 'video/quicktime') {
+      if (!window.confirm(`This looks like a .${ext || 'mov'} file, which most browsers can't play inside the app (it may show blank even though it plays on your computer). For reliable playback, upload an MP4 (H.264 + AAC). Upload anyway?`)) {
+        return;
+      }
+    }
+    setUploadingWelcome(true);
+    try {
+      const storageRef = ref(storage, `welcomeVideo/welcome.${ext || 'mp4'}`);
+      await uploadBytes(storageRef, file);
+      const url = await getDownloadURL(storageRef);
+      await setDoc(doc(db, 'appConfig', 'welcome'), { videoUrl: url }, { merge: true });
+      setWelcomeVideoUrl(url);
+      toast.success('Welcome video uploaded — it will play for every new user\'s first login.');
+    } catch (e) {
+      toast.error('Upload failed: ' + (e?.code || e?.message || 'check Storage rules'));
+    } finally {
+      setUploadingWelcome(false);
+    }
+  }
+
+  async function removeWelcomeVideo() {
+    try {
+      await setDoc(doc(db, 'appConfig', 'welcome'), { videoUrl: '' }, { merge: true });
+      setWelcomeVideoUrl('');
+      toast.success('Welcome video removed');
     } catch (e) {
       toast.error('Could not remove: ' + (e?.message || e));
     }
@@ -675,6 +724,40 @@ export default function AdminPanel() {
               and any time they click the <strong>▶ See Why</strong> button. Max 200 MB, MP4 recommended.
             </p>
           </div>
+          {/* Welcome video — plays once for a brand-new user's very first Dashboard visit */}
+          <div className="card p-4" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', border: '2px solid #0d9488' }}>
+            <span style={{ fontSize: 20 }}>{welcomeVideoUrl ? '✅' : '👋'}</span>
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>Welcome Video</div>
+              <div style={{ fontSize: 12, color: welcomeVideoUrl ? '#0d9488' : 'var(--text-secondary)' }}>
+                {uploadingWelcome ? 'Uploading…' : welcomeVideoUrl ? 'Plays on every new user\'s first login' : 'No video yet'}
+              </div>
+            </div>
+            {welcomeVideoUrl && !uploadingWelcome && (
+              <button onClick={() => setPreviewWelcome(p => !p)}
+                style={{ background: 'none', border: 'none', color: '#0f2044', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>
+                {previewWelcome ? 'Hide' : 'Preview'}
+              </button>
+            )}
+            <label className="btn-secondary" style={{ cursor: uploadingWelcome ? 'wait' : 'pointer', margin: 0, opacity: uploadingWelcome ? 0.6 : 1 }}>
+              {welcomeVideoUrl ? 'Replace' : 'Upload'}
+              <input type="file" accept="video/*" disabled={uploadingWelcome} style={{ display: 'none' }}
+                onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; uploadWelcomeVideo(f); }} />
+            </label>
+            {welcomeVideoUrl && !uploadingWelcome && (
+              <button onClick={removeWelcomeVideo}
+                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: 13, fontWeight: 700 }}>Remove</button>
+            )}
+            {welcomeVideoUrl && previewWelcome && (
+              <div style={{ flexBasis: '100%', width: '100%', marginTop: 8 }}>
+                <video src={welcomeVideoUrl} controls playsInline preload="metadata"
+                  style={{ width: '100%', maxHeight: 320, borderRadius: 8, background: '#000' }}
+                  onError={() => toast.error(`This video can't play in the browser — it's likely a .mov/HEVC file. Re-upload as MP4 (H.264).`)} />
+                <a href={welcomeVideoUrl} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#64748b' }}>Open in new tab ↗</a>
+              </div>
+            )}
+          </div>
+
           <div className="space-y-2">
             {VIDEO_TOOLS.map(tool => {
               const url = toolVideos[tool.id];
