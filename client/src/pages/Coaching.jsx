@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import DateStatus from '../components/DateStatus';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { calculateScore, logPointEvent, isCompleteCoachingSession, weekMonday } from '../utils/scoring';
@@ -174,6 +174,9 @@ export default function Coaching() {
   const [editingId, setEditingId]         = useState(null);
   const [editForm, setEditForm]           = useState(null);
   const [form, setForm]                   = useState(emptyForm);
+  const [closingId, setClosingId]         = useState(null);
+  const [closeForm, setCloseForm]         = useState({ comments: '', outcome: '' });
+  const [closing, setClosing]             = useState(false);
 
   // Log 5 pts the first time a complete coaching session is saved in a given week
   async function maybeLogCoachingPoints(session) {
@@ -253,6 +256,47 @@ export default function Coaching() {
     } catch (e) {
       toast.error('Save failed: ' + e.message);
     }
+  }
+
+  function startClose(s) {
+    setClosingId(s.id);
+    setCloseForm({ comments: s.closingComments || '', outcome: s.outcome || '' });
+  }
+
+  async function closeSession(e) {
+    e.preventDefault();
+    if (!currentUser) return;
+    if (!closeForm.outcome.trim()) return toast.error('Please describe the outcome before closing');
+    setClosing(true);
+    try {
+      const s = sessions.find(x => x.id === closingId);
+      const now = new Date().toISOString().split('T')[0];
+      const updated = sessions.map(x => x.id === closingId
+        ? { ...x, closed: true, closedAt: now, closingComments: closeForm.comments.trim(), outcome: closeForm.outcome.trim() }
+        : x);
+      await persist(updated);
+      setSelectedSession(updated.find(x => x.id === closingId) || null);
+      setClosingId(null);
+      const { awarded, capReached } = await logPointEvent(currentUser.uid, {
+        points: 5,
+        toolLabel: 'Coaching Session Closed',
+        reason: `Closed coaching session with ${s?.coachee || 'coachee'}`,
+      });
+      if (awarded) {
+        await updateDoc(doc(db, 'users', currentUser.uid), { bonusPoints: increment(5) });
+      }
+      calculateScore(currentUser.uid).catch(() => {});
+      if (awarded) {
+        toast.success('⭐ Session closed — +5 pts!', { duration: 6000, icon: '🌟' });
+      } else if (capReached) {
+        toast('Session closed. Daily 25-pt cap reached — come back tomorrow! 🗓', { duration: 6000, icon: '📅' });
+      } else {
+        toast.success('Session closed');
+      }
+    } catch (e) {
+      toast.error('Failed to close session: ' + e.message);
+    }
+    setClosing(false);
   }
 
   function startEdit(s) {
@@ -391,6 +435,7 @@ export default function Coaching() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
                     <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>{s.coachee}</h4>
                     <span style={{ background: typeColors[s.type] || '#0d9488', color: 'white', borderRadius: 9999, padding: '2px 10px', fontSize: '0.7rem', fontWeight: 700 }}>{s.type}</span>
+                    {s.closed && <span className="badge-green" style={{ fontSize: '0.68rem' }}>✅ Closed {s.closedAt}</span>}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>📅 {s.date} · ⏱ {s.duration}</p>
@@ -399,11 +444,11 @@ export default function Coaching() {
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => { startEdit(s); setSelectedSession(null); }}
+                <button onClick={() => { startEdit(s); setSelectedSession(null); setClosingId(null); }}
                   style={{ background: 'none', border: '1px solid #0d9488', borderRadius: 8, padding: '0.3rem 0.875rem', fontSize: '0.78rem', fontWeight: 700, color: '#0d9488', cursor: 'pointer' }}>
                   ✏️ Edit
                 </button>
-                <button onClick={() => { setSelectedSession(selectedSession?.id === s.id ? null : s); setEditingId(null); }}
+                <button onClick={() => { setSelectedSession(selectedSession?.id === s.id ? null : s); setEditingId(null); setClosingId(null); }}
                   style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '0.3rem 0.875rem', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>
                   {selectedSession?.id === s.id ? 'Collapse' : 'View Details'}
                 </button>
@@ -486,6 +531,48 @@ export default function Coaching() {
                   </div>
                 )}
                 {s.nextSession && <div style={{ marginTop: 10 }}><DateStatus date={s.nextSession} prefix="Next session · " /></div>}
+
+                {/* Close Session — the very last thing in the details view */}
+                <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px dashed var(--border)' }}>
+                  {s.closed ? (
+                    <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '0.875rem 1rem' }}>
+                      <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>✅ Session Closed — {s.closedAt}</p>
+                      <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#166534', margin: '0 0 2px' }}>Outcome</p>
+                      <p style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.6, margin: '0 0 8px' }}>{s.outcome}</p>
+                      {s.closingComments && (
+                        <>
+                          <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#166534', margin: '0 0 2px' }}>Additional Comments</p>
+                          <p style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.6, margin: 0 }}>{s.closingComments}</p>
+                        </>
+                      )}
+                    </div>
+                  ) : closingId === s.id ? (
+                    <form onSubmit={closeSession}>
+                      <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.875rem', margin: '0 0 0.75rem' }}>Close Session</h4>
+                      <div style={{ marginBottom: 10 }}>
+                        <label className="label">Outcome</label>
+                        <textarea className="input" rows={2} required value={closeForm.outcome}
+                          onChange={e => setCloseForm(f => ({ ...f, outcome: e.target.value }))}
+                          placeholder="What was the result of this coaching session?" />
+                      </div>
+                      <div style={{ marginBottom: 12 }}>
+                        <label className="label">Additional Comments (optional)</label>
+                        <textarea className="input" rows={2} value={closeForm.comments}
+                          onChange={e => setCloseForm(f => ({ ...f, comments: e.target.value }))}
+                          placeholder="Anything else worth noting before closing this session..." />
+                      </div>
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button className="btn-primary" type="submit" disabled={closing}>{closing ? 'Closing...' : '✅ Close Session (+5 pts)'}</button>
+                        <button className="btn-secondary" type="button" onClick={() => setClosingId(null)}>Cancel</button>
+                      </div>
+                    </form>
+                  ) : (
+                    <button onClick={() => startClose(s)}
+                      style={{ background: '#0d9488', border: 'none', borderRadius: 8, padding: '0.5rem 1.25rem', fontWeight: 700, fontSize: '0.85rem', color: 'white', cursor: 'pointer' }}>
+                      ✅ Close Session
+                    </button>
+                  )}
+                </div>
               </div>
             )}
           </div>
