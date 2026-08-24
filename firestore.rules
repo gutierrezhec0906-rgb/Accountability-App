@@ -158,6 +158,18 @@ service cloud.firestore {
       allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || isMasterAdmin());
     }
 
+    // Invites — created only by the sendInvite Cloud Function (admin SDK, bypasses
+    // rules), so clients never write these directly. The inviter can read/list the
+    // invites they sent; the invited person can read/accept their own invite once
+    // they've signed up (their auth email must match the invite's email).
+    match /invites/{inviteId} {
+      allow read: if request.auth != null &&
+        (resource.data.invitedByUid == request.auth.uid || resource.data.email == request.auth.token.email || isMasterAdmin());
+      allow create: if false;
+      allow update: if request.auth != null && resource.data.email == request.auth.token.email;
+      allow delete: if request.auth != null && (resource.data.invitedByUid == request.auth.uid || isMasterAdmin());
+    }
+
     // Podcast comments — same team-scoped pattern as quoteComments.
     match /podcastComments/{docId} {
       allow read: if request.auth != null && myTeamId() != null && resource.data.teamId == myTeamId();

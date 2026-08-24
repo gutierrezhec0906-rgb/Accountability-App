@@ -1,7 +1,86 @@
 import { useState, useEffect } from 'react';
 import { collection, getDocs, query, where } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import toast from 'react-hot-toast';
+
+const INVITE_ROLES = ['Supervisor', 'Manager', 'Individual Contributor'];
+
+function InvitePanel({ userProfile, uid }) {
+  const [email, setEmail] = useState('');
+  const [role, setRole] = useState('Individual Contributor');
+  const [sending, setSending] = useState(false);
+  const [invites, setInvites] = useState([]);
+  const [loadingInvites, setLoadingInvites] = useState(true);
+
+  async function fetchInvites() {
+    try {
+      const snap = await getDocs(query(collection(db, 'invites'), where('invitedByUid', '==', uid)));
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      list.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+      setInvites(list);
+    } catch { /* ignore — index may still be building on first deploy */ }
+    setLoadingInvites(false);
+  }
+
+  useEffect(() => { fetchInvites(); }, []);
+
+  async function handleInvite(e) {
+    e.preventDefault();
+    if (!email.trim()) return toast.error('Enter an email address');
+    setSending(true);
+    try {
+      const sendInvite = httpsCallable(getFunctions(), 'sendInvite');
+      await sendInvite({ email: email.trim(), role });
+      toast.success(`Invitation sent to ${email.trim()}!`);
+      setEmail('');
+      fetchInvites();
+    } catch (err) {
+      toast.error(err?.message || 'Failed to send invitation');
+    }
+    setSending(false);
+  }
+
+  return (
+    <div className="card" style={{ padding: '1.5rem' }}>
+      <h3 style={{ fontWeight: 800, color: '#1e293b', margin: '0 0 4px', fontSize: '1rem' }}>✉️ Invite a Team Member</h3>
+      <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '0 0 16px' }}>
+        Invite someone to join <strong>{userProfile.companyName || 'your company'}</strong>. They'll receive an email with a link to create their account.
+      </p>
+      <form onSubmit={handleInvite} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: invites.length || loadingInvites ? 20 : 0 }}>
+        <div style={{ flex: '1 1 220px' }}>
+          <label className="label">Email Address</label>
+          <input className="input" type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="teammate@company.com" />
+        </div>
+        <div style={{ flex: '0 1 200px' }}>
+          <label className="label">Position</label>
+          <select className="input" value={role} onChange={e => setRole(e.target.value)}>
+            {INVITE_ROLES.map(r => <option key={r}>{r}</option>)}
+          </select>
+        </div>
+        <button className="btn-primary" type="submit" disabled={sending}>{sending ? 'Sending...' : '📧 Send Invitation'}</button>
+      </form>
+
+      {!loadingInvites && invites.length > 0 && (
+        <div>
+          <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 8px' }}>Invitations Sent</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {invites.map(inv => (
+              <div key={inv.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '0.5rem 0.75rem', background: '#f8fafc', borderRadius: 8, flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '0.8rem', color: '#334155', fontWeight: 600 }}>{inv.email}</span>
+                <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{inv.role}</span>
+                <span className={inv.status === 'accepted' ? 'badge-green' : 'badge-yellow'} style={{ fontSize: '0.68rem' }}>
+                  {inv.status === 'accepted' ? '✅ Joined' : '⏳ Pending'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const roleColors = {
   Leader: { bg: '#eff6ff', text: '#1d4ed8', border: '#bfdbfe' },
@@ -138,6 +217,11 @@ export default function Team() {
           <button onClick={() => setView('list')} className={view === 'list' ? 'btn-primary' : 'btn-secondary'} style={{ padding: '0.4rem 0.75rem' }}>≡ List</button>
         </div>
       </div>
+
+      {/* Invite panel — Leaders/Managers/Admins can invite new members into their own company */}
+      {(isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager') && userProfile?.companyId && (
+        <InvitePanel userProfile={userProfile} uid={currentUser.uid} />
+      )}
 
       {/* Stats row */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: 12 }}>

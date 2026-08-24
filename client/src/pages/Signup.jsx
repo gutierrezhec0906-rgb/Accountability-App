@@ -1,14 +1,29 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 export default function Signup() {
-  const [form, setForm] = useState({ name: '', email: '', password: '', confirm: '', role: 'Leader' });
+  const [searchParams] = useSearchParams();
+  const inviteId = searchParams.get('invite');
+  const invitedEmail = searchParams.get('email') || '';
+  const invitedRole = searchParams.get('role') || '';
+  const invitedCompany = searchParams.get('company') || '';
+  const isInvited = !!(inviteId && invitedEmail);
+
+  const [form, setForm] = useState({
+    name: '', email: invitedEmail, password: '', confirm: '',
+    role: isInvited ? invitedRole : 'Leader',
+  });
   const [agreed, setAgreed] = useState(false);
   const [loading, setLoading] = useState(false);
   const { signup } = useAuth();
   const navigate = useNavigate();
+
+  // Carry the invite through to CompleteProfile, where it's verified server-side.
+  useEffect(() => {
+    if (isInvited) sessionStorage.setItem('pendingInviteId', inviteId);
+  }, [isInvited, inviteId]);
 
   function handleChange(e) {
     setForm(f => ({ ...f, [e.target.name]: e.target.value }));
@@ -42,6 +57,13 @@ export default function Signup() {
         </div>
         <div className="card p-8">
           <h2 className="text-xl font-bold text-slate-800 mb-6">Create Account</h2>
+          {isInvited && (
+            <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: '1.25rem' }}>
+              <p style={{ fontSize: '0.82rem', color: '#0f766e', margin: 0, lineHeight: 1.5 }}>
+                🎉 You've been invited to join <strong>{invitedCompany || 'your team'}</strong> as a <strong>{invitedRole}</strong>. Just fill in your name and password to get started.
+              </p>
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="label">Full Name</label>
@@ -49,16 +71,19 @@ export default function Signup() {
             </div>
             <div>
               <label className="label">Email Address</label>
-              <input className="input" type="email" name="email" value={form.email} onChange={handleChange} required placeholder="you@company.com" />
+              <input className="input" type="email" name="email" value={form.email} onChange={handleChange} required placeholder="you@company.com" readOnly={isInvited} style={isInvited ? { background: '#f1f5f9', color: '#64748b' } : undefined} />
             </div>
             <div>
               <label className="label">Role</label>
-              <select className="input" name="role" value={form.role} onChange={handleChange}>
-                <option>Leader</option>
-                <option>Manager</option>
-                <option>Supervisor</option>
-                <option>Individual Contributor</option>
-              </select>
+              {isInvited
+                ? <input className="input" value={form.role} readOnly style={{ background: '#f1f5f9', color: '#64748b' }} />
+                : <select className="input" name="role" value={form.role} onChange={handleChange}>
+                    <option>Leader</option>
+                    <option>Manager</option>
+                    <option>Supervisor</option>
+                    <option>Individual Contributor</option>
+                  </select>
+              }
             </div>
             <div>
               <label className="label">Password</label>

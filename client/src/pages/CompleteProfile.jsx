@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -10,7 +10,30 @@ export default function CompleteProfile() {
   const [companies, setCompanies] = useState([]);
   const [form, setForm] = useState({ companyId: '', teamName: '' });
   const [loading, setLoading] = useState(false);
+  const [invite, setInvite] = useState(null); // { id, companyId, companyName } if joining via invite link
   const navigate = useNavigate();
+
+  // If this account was created from an invite link, look up the invite (now
+  // readable since the signed-in email matches it) and skip company selection.
+  useEffect(() => {
+    async function loadInvite() {
+      const inviteId = sessionStorage.getItem('pendingInviteId');
+      if (!inviteId || !currentUser) return;
+      try {
+        const snap = await getDoc(doc(db, 'invites', inviteId));
+        if (snap.exists() && snap.data().status === 'pending') {
+          const data = snap.data();
+          setInvite({ id: inviteId, companyId: data.companyId, companyName: data.companyName });
+          setForm(f => ({ ...f, companyId: data.companyId }));
+        } else {
+          sessionStorage.removeItem('pendingInviteId');
+        }
+      } catch {
+        sessionStorage.removeItem('pendingInviteId');
+      }
+    }
+    loadInvite();
+  }, [currentUser]);
 
   useEffect(() => {
     if (userProfile?.companyId && userProfile?.teamName) {
@@ -36,12 +59,16 @@ export default function CompleteProfile() {
     if (!form.teamName.trim()) return toast.error('Please enter your team name');
     setLoading(true);
     try {
-      const company = companies.find(c => c.id === form.companyId);
+      const companyName = invite ? invite.companyName : (companies.find(c => c.id === form.companyId)?.name || '');
       await updateDoc(doc(db, 'users', currentUser.uid), {
         companyId: form.companyId,
-        companyName: company?.name || '',
+        companyName,
         teamName: form.teamName.trim(),
       });
+      if (invite) {
+        try { await updateDoc(doc(db, 'invites', invite.id), { status: 'accepted' }); } catch { /* ignore */ }
+        sessionStorage.removeItem('pendingInviteId');
+      }
       await fetchProfile(currentUser.uid);
       toast.success('Profile completed!');
       navigate('/dashboard');
@@ -67,7 +94,9 @@ export default function CompleteProfile() {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="label">Company</label>
-              {companies.length === 0 ? (
+              {invite ? (
+                <input className="input" value={invite.companyName} readOnly style={{ background: '#f1f5f9', color: '#64748b' }} />
+              ) : companies.length === 0 ? (
                 <div className="input text-slate-400 flex items-center">Loading companies...</div>
               ) : (
                 <select className="input" value={form.companyId} onChange={e => setForm(f => ({ ...f, companyId: e.target.value }))} required>

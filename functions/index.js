@@ -805,6 +805,96 @@ exports.sendMyWeeklyReport = onCall(async (request) => {
   return { success: true, to: data.email };
 });
 
+// Leaders/Managers/Admins invite a new team member by email + role. Only the
+// inviter's own company can be assigned — the invite record and the outbound
+// email are both built server-side so a client can't forge a different
+// companyId onto the invite.
+const INVITE_ROLES = ['Supervisor', 'Manager', 'Individual Contributor'];
+
+exports.sendInvite = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+  const email = String(request.data?.email || '').trim().toLowerCase();
+  const role = request.data?.role;
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    throw new HttpsError('invalid-argument', 'A valid email address is required');
+  }
+  if (!INVITE_ROLES.includes(role)) {
+    throw new HttpsError('invalid-argument', 'Position must be Supervisor, Manager, or Individual Contributor');
+  }
+
+  const inviterSnap = await admin.firestore().collection('users').doc(request.auth.uid).get();
+  const inviter = inviterSnap.exists ? inviterSnap.data() : null;
+  if (!inviter) throw new HttpsError('not-found', 'Inviter profile not found');
+
+  const canInvite = inviter.isAdmin || inviter.role === 'Leader' || inviter.role === 'Manager';
+  if (!canInvite) throw new HttpsError('permission-denied', 'Only Leaders, Managers, or Admins can send invitations');
+  if (!inviter.companyId) throw new HttpsError('failed-precondition', 'You must be assigned to a company before you can invite members');
+
+  const existingUser = await admin.firestore().collection('users').where('email', '==', email).limit(1).get();
+  if (!existingUser.empty) throw new HttpsError('already-exists', 'Someone with this email already has an account');
+
+  const companySnap = await admin.firestore().collection('companies').doc(inviter.companyId).get();
+  const companyName = companySnap.exists ? (companySnap.data().name || '') : '';
+
+  const inviteRef = await admin.firestore().collection('invites').add({
+    email,
+    role,
+    companyId: inviter.companyId,
+    companyName,
+    invitedByUid: request.auth.uid,
+    invitedByName: inviter.displayName || inviter.email || 'A leader',
+    status: 'pending',
+    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+  });
+
+  const signupUrl = `${APP_URL}/signup?invite=${inviteRef.id}&email=${encodeURIComponent(email)}&role=${encodeURIComponent(role)}&company=${encodeURIComponent(companyName)}`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: #0f2044; padding: 32px; text-align: center;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">Leadership Flow Technologies</h1>
+        <p style="color: #93c5fd; margin: 8px 0 0;">Accountability App</p>
+      </div>
+      <div style="padding: 32px; background: #f8fafc;">
+        <h2 style="color: #0f2044; margin-top: 0;">You're Invited to Grow as a Leader! 🚀</h2>
+        <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+          Welcome to the Accountability App! <strong>${inviter.displayName || 'Your leader'}</strong> at <strong>${companyName}</strong> has personally invited you to join as a <strong>${role}</strong>.
+        </p>
+        <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+          This is where you'll build lasting leadership habits, sharpen your accountability, and track real, measurable growth — one action at a time. Every tool inside is designed to help you become a stronger, more capable leader on your team.
+        </p>
+        <p style="color: #475569; font-size: 16px; line-height: 1.6;">
+          Your journey starts with one click. Create your account and let's get to work.
+        </p>
+        <div style="margin: 32px 0; text-align: center;">
+          <a href="${signupUrl}"
+             style="background: #0d9488; color: white; padding: 14px 34px; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: bold;">
+            Create Your Account →
+          </a>
+        </div>
+        <p style="color: #94a3b8; font-size: 13px;">
+          Or copy and paste this link into your browser:<br/>
+          <a href="${signupUrl}" style="color: #0d9488; word-break: break-all;">${signupUrl}</a>
+        </p>
+      </div>
+      <div style="background: #0f2044; padding: 16px; text-align: center;">
+        <p style="color: #93c5fd; font-size: 12px; margin: 0;">
+          © 2026 Leadership Flow Technologies. All rights reserved.
+        </p>
+      </div>
+    </div>
+  `;
+
+  await transporter.sendMail({
+    from: `"Leadership Flow Technologies" <${ADMIN_EMAIL}>`,
+    to: email,
+    subject: `${inviter.displayName || 'Your leader'} invited you to join ${companyName} on the Accountability App`,
+    html,
+  });
+
+  return { success: true, inviteId: inviteRef.id };
+});
+
 exports.deleteUser = onCall(async (request) => {
   if (request.auth?.token?.email !== 'hectorg@accountability-app.com') {
     throw new HttpsError('permission-denied', 'Only master admin can delete users');
