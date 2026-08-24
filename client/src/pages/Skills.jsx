@@ -13,10 +13,13 @@ function thirtyDayCutoff() {
   return localDateStr(new Date(Date.now() - THIRTY_DAYS_MS));
 }
 
+// self: 0 = not yet rated (RatingDots renders all dots empty, levelLabels[0] is
+// blank) — a brand-new account should start with a clean, unrated matrix, not
+// a pre-filled 3/5 "Proficient" average.
 const defaultCategories = [
-  { category: 'Leadership',    skills: [{ name: 'Strategic Thinking', self: 3, peer: 0 },{ name: 'Team Development', self: 3, peer: 0 },{ name: 'Decision Making', self: 3, peer: 0 },{ name: 'Communication', self: 3, peer: 0 }] },
-  { category: 'Technical',     skills: [{ name: 'Lean Principles', self: 3, peer: 0 },{ name: 'Data Analysis', self: 3, peer: 0 },{ name: 'Root Cause Analysis', self: 3, peer: 0 },{ name: 'Project Management', self: 3, peer: 0 }] },
-  { category: 'Interpersonal', skills: [{ name: 'Conflict Resolution', self: 3, peer: 0 },{ name: 'Coaching & Mentoring', self: 3, peer: 0 },{ name: 'Emotional Intelligence', self: 3, peer: 0 },{ name: 'Active Listening', self: 3, peer: 0 }] },
+  { category: 'Leadership',    skills: [{ name: 'Strategic Thinking', self: 0, peer: 0 },{ name: 'Team Development', self: 0, peer: 0 },{ name: 'Decision Making', self: 0, peer: 0 },{ name: 'Communication', self: 0, peer: 0 }] },
+  { category: 'Technical',     skills: [{ name: 'Lean Principles', self: 0, peer: 0 },{ name: 'Data Analysis', self: 0, peer: 0 },{ name: 'Root Cause Analysis', self: 0, peer: 0 },{ name: 'Project Management', self: 0, peer: 0 }] },
+  { category: 'Interpersonal', skills: [{ name: 'Conflict Resolution', self: 0, peer: 0 },{ name: 'Coaching & Mentoring', self: 0, peer: 0 },{ name: 'Emotional Intelligence', self: 0, peer: 0 },{ name: 'Active Listening', self: 0, peer: 0 }] },
 ];
 
 const levelLabels = ['','Novice','Developing','Proficient','Advanced','Expert'];
@@ -146,7 +149,16 @@ export default function Skills() {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
         if (snap.exists()) {
           const data = snap.data();
-          if (data.skillsMatrix)  setMatrix(data.skillsMatrix);
+          // Repair accounts that got the old pre-filled matrix (every skill self:3,
+          // peer:0) written to Firestore before it was ever actually assessed (no
+          // skillsHistory saved) — reset to a clean, unrated matrix like a new account.
+          const isUntouchedDefault = Array.isArray(data.skillsMatrix) && !data.skillsHistory?.length &&
+            data.skillsMatrix.flatMap(c => c.skills || []).every(s => s.self === 3 && (s.peer || 0) === 0);
+          if (isUntouchedDefault) {
+            try { await setDoc(doc(db, 'users', currentUser.uid), { skillsMatrix: defaultCategories }, { merge: true }); } catch { /* ignore */ }
+          } else if (data.skillsMatrix) {
+            setMatrix(data.skillsMatrix);
+          }
           if (data.skillsHistory) setHistory(data.skillsHistory);
           if (data.skillsPeerRequest) setMyRequest(data.skillsPeerRequest);
 
