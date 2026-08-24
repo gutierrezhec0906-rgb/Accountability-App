@@ -6,8 +6,10 @@ import {
   onAuthStateChanged,
   updateProfile,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, getDocs, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, getDocs, collection, serverTimestamp, increment } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { buildSampleTrainings } from '../utils/sampleTrainings';
+import { logPointEvent, calculateScore } from '../utils/scoring';
 
 const AuthContext = createContext();
 
@@ -71,6 +73,44 @@ export function AuthProvider({ children }) {
             profile = { ...profile, companyName };
           }
         } catch { /* ignore */ }
+      }
+      // One-time repair for accounts seeded before the hardcoded-2024-date
+      // Training Center bug was fixed: those sample trainings are still stuck
+      // on 2024 due dates, showing as hundreds of days past due everywhere
+      // (Dashboard, the app-wide GlobalPastDueModal), not just on the Training
+      // Center page itself — so this has to run on every app load, not only
+      // when the user happens to visit /training. Detects untouched seed items
+      // (matching title + a stale 2024-* dueDate), re-baselines them relative
+      // to today, and refunds any false "past due" penalty already charged.
+      if (Array.isArray(profile.trainings) && profile.trainings.length) {
+        const freshSample = buildSampleTrainings();
+        const staleIds = [];
+        const repaired = profile.trainings.map(t => {
+          const fresh = freshSample.find(f => f.id === t.id && f.title === t.title);
+          if (fresh && typeof t.dueDate === 'string' && t.dueDate.startsWith('2024-')) {
+            staleIds.push(t.id);
+            return { ...fresh, recommitmentCount: t.recommitmentCount || 0 };
+          }
+          return t;
+        });
+        if (staleIds.length) {
+          try {
+            await setDoc(doc(db, 'users', uid), { trainings: repaired }, { merge: true });
+            const refunded = profile.trainings.filter(t => staleIds.includes(t.id) && t.pastDuePenaltyApplied);
+            if (refunded.length) {
+              await setDoc(doc(db, 'users', uid), { penaltyPoints: increment(-refunded.length) }, { merge: true });
+              for (const t of refunded) {
+                await logPointEvent(uid, {
+                  points: 1,
+                  toolLabel: 'Training Past Due Penalty Refunded',
+                  reason: `Refunded false past-due penalty for "${t.title}" (stale seed data bug)`,
+                });
+              }
+              calculateScore(uid).catch(() => {});
+            }
+            profile = { ...profile, trainings: repaired };
+          } catch { /* ignore */ }
+        }
       }
       setUserProfile(profile);
     } catch (e) {
