@@ -10,6 +10,9 @@ const INVITE_ROLES = ['Supervisor', 'Manager', 'Individual Contributor'];
 function InvitePanel({ userProfile, uid }) {
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('Individual Contributor');
+  const [teamId, setTeamId] = useState('');
+  const [newTeamName, setNewTeamName] = useState('');
+  const [teams, setTeams] = useState([]);
   const [sending, setSending] = useState(false);
   const [invites, setInvites] = useState([]);
   const [loadingInvites, setLoadingInvites] = useState(true);
@@ -24,18 +27,33 @@ function InvitePanel({ userProfile, uid }) {
     setLoadingInvites(false);
   }
 
-  useEffect(() => { fetchInvites(); }, []);
+  async function fetchTeams() {
+    try {
+      const snap = await getDocs(query(collection(db, 'teams'), where('companyId', '==', userProfile.companyId)));
+      setTeams(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    } catch { /* ignore */ }
+  }
+
+  useEffect(() => { fetchInvites(); fetchTeams(); }, []);
 
   async function handleInvite(e) {
     e.preventDefault();
     if (!email.trim()) return toast.error('Enter an email address');
+    if (!teamId && !newTeamName.trim()) return toast.error('Select a team or enter a new team name');
     setSending(true);
     try {
       const sendInvite = httpsCallable(getFunctions(), 'sendInvite');
-      await sendInvite({ email: email.trim(), role });
+      await sendInvite({
+        email: email.trim(),
+        role,
+        teamId: teamId || null,
+        newTeamName: teamId ? null : newTeamName.trim(),
+      });
       toast.success(`Invitation sent to ${email.trim()}!`);
       setEmail('');
+      setNewTeamName('');
       fetchInvites();
+      fetchTeams();
     } catch (err) {
       toast.error(err?.message || 'Failed to send invitation');
     }
@@ -46,7 +64,7 @@ function InvitePanel({ userProfile, uid }) {
     <div className="card" style={{ padding: '1.5rem' }}>
       <h3 style={{ fontWeight: 800, color: '#1e293b', margin: '0 0 4px', fontSize: '1rem' }}>✉️ Invite a Team Member</h3>
       <p style={{ color: '#64748b', fontSize: '0.8rem', margin: '0 0 16px' }}>
-        Invite someone to join <strong>{userProfile.companyName || 'your company'}</strong>. They'll receive an email with a link to create their account.
+        Invite someone to join <strong>{userProfile.companyName || 'your company'}</strong>. Their company and team are set here — they won't need to pick anything when they sign up.
       </p>
       <form onSubmit={handleInvite} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: invites.length || loadingInvites ? 20 : 0 }}>
         <div style={{ flex: '1 1 220px' }}>
@@ -59,6 +77,19 @@ function InvitePanel({ userProfile, uid }) {
             {INVITE_ROLES.map(r => <option key={r}>{r}</option>)}
           </select>
         </div>
+        <div style={{ flex: '0 1 200px' }}>
+          <label className="label">Team</label>
+          <select className="input" value={teamId} onChange={e => { setTeamId(e.target.value); if (e.target.value) setNewTeamName(''); }}>
+            <option value="">— New team —</option>
+            {teams.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+          </select>
+        </div>
+        {!teamId && (
+          <div style={{ flex: '1 1 200px' }}>
+            <label className="label">New Team Name</label>
+            <input className="input" value={newTeamName} onChange={e => setNewTeamName(e.target.value)} placeholder="e.g. Sales Team A" />
+          </div>
+        )}
         <button className="btn-primary" type="submit" disabled={sending}>{sending ? 'Sending...' : '📧 Send Invitation'}</button>
       </form>
 
@@ -69,7 +100,7 @@ function InvitePanel({ userProfile, uid }) {
             {invites.map(inv => (
               <div key={inv.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '0.5rem 0.75rem', background: '#f8fafc', borderRadius: 8, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '0.8rem', color: '#334155', fontWeight: 600 }}>{inv.email}</span>
-                <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{inv.role}</span>
+                <span style={{ fontSize: '0.72rem', color: '#64748b' }}>{inv.role}{inv.teamName ? ` · ${inv.teamName}` : ''}</span>
                 <span className={inv.status === 'accepted' ? 'badge-green' : 'badge-yellow'} style={{ fontSize: '0.68rem' }}>
                   {inv.status === 'accepted' ? '✅ Joined' : '⏳ Pending'}
                 </span>

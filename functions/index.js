@@ -821,6 +821,11 @@ exports.sendInvite = onCall(async (request) => {
   if (!INVITE_ROLES.includes(role)) {
     throw new HttpsError('invalid-argument', 'Position must be Supervisor, Manager, or Individual Contributor');
   }
+  const requestedTeamId = request.data?.teamId || null;
+  const newTeamName = String(request.data?.newTeamName || '').trim();
+  if (!requestedTeamId && !newTeamName) {
+    throw new HttpsError('invalid-argument', 'Select a team or provide a new team name');
+  }
 
   const inviterSnap = await admin.firestore().collection('users').doc(request.auth.uid).get();
   const inviter = inviterSnap.exists ? inviterSnap.data() : null;
@@ -836,11 +841,36 @@ exports.sendInvite = onCall(async (request) => {
   const companySnap = await admin.firestore().collection('companies').doc(inviter.companyId).get();
   const companyName = companySnap.exists ? (companySnap.data().name || '') : '';
 
+  // Resolve the team: either an existing team the inviter's company owns, or
+  // create a new one on the fly (client can't write teams/* directly — that's
+  // master-admin only in firestore.rules — so the invited member's team is
+  // always set here by the leader, never picked by the invitee at signup).
+  let teamId, teamName;
+  if (requestedTeamId) {
+    const teamSnap = await admin.firestore().collection('teams').doc(requestedTeamId).get();
+    if (!teamSnap.exists || teamSnap.data().companyId !== inviter.companyId) {
+      throw new HttpsError('invalid-argument', 'Selected team does not belong to your company');
+    }
+    teamId = requestedTeamId;
+    teamName = teamSnap.data().name || '';
+  } else {
+    const teamRef = await admin.firestore().collection('teams').add({
+      name: newTeamName,
+      companyId: inviter.companyId,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      createdBy: request.auth.uid,
+    });
+    teamId = teamRef.id;
+    teamName = newTeamName;
+  }
+
   const inviteRef = await admin.firestore().collection('invites').add({
     email,
     role,
     companyId: inviter.companyId,
     companyName,
+    teamId,
+    teamName,
     invitedByUid: request.auth.uid,
     invitedByName: inviter.displayName || inviter.email || 'A leader',
     status: 'pending',
