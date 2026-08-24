@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { collection, getDocs, doc, getDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
 import WelcomeModal from './WelcomeModal';
@@ -100,6 +100,8 @@ export default function Layout({ children }) {
   function toggleCategory(id) { setOpenCategories(prev => ({ ...prev, [id]: !prev[id] })); }
   const [pendingCount, setPendingCount] = useState(0);
   const [unreadFeedback, setUnreadFeedback] = useState(0);
+  const [pendingSmartGoals, setPendingSmartGoals] = useState(0);
+  const [pendingSkillsRequests, setPendingSkillsRequests] = useState(0);
   const [toolVideoOpen, setToolVideoOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
@@ -185,6 +187,42 @@ export default function Layout({ children }) {
     const interval = setInterval(fetchUnreadFeedback, 30000);
     return () => clearInterval(interval);
   }, [currentUser, location.pathname]);
+
+  // Other cross-module "you have pending action items" badges — SMART Goals
+  // completion requests waiting on a leader's approval, and Skills peer
+  // assessments someone requested from this user. Shares one company-wide
+  // fetch (same pattern as SmartGoals.jsx's own pending-approvals query).
+  useEffect(() => {
+    if (!currentUser || !userProfile) return;
+    const companyId = userProfile.companyId;
+    async function fetchActionCounts() {
+      try {
+        let snap;
+        if (userProfile.isAdmin) {
+          snap = await getDocs(collection(db, 'users'));
+        } else if (companyId) {
+          snap = await getDocs(query(collection(db, 'users'), where('companyId', '==', companyId)));
+        } else {
+          return;
+        }
+        let goalsCount = 0, skillsCount = 0;
+        snap.docs.forEach(d => {
+          const data = d.data();
+          if (canApprove) {
+            goalsCount += (data.smartGoals || []).filter(g => g.status === 'pending_approval').length;
+          }
+          if (data.skillsPeerRequest?.status === 'pending' && data.skillsPeerRequest?.toUid === currentUser.uid) {
+            skillsCount += 1;
+          }
+        });
+        setPendingSmartGoals(goalsCount);
+        setPendingSkillsRequests(skillsCount);
+      } catch {}
+    }
+    fetchActionCounts();
+    const interval = setInterval(fetchActionCounts, 30000);
+    return () => clearInterval(interval);
+  }, [currentUser, userProfile, canApprove]);
 
   async function handleLogout() {
     await logout();
@@ -325,6 +363,12 @@ export default function Layout({ children }) {
                           )}
                           {item.id === 'feedback' && unreadFeedback > 0 && (
                             <span style={{ background: '#ef4444', color: 'white', borderRadius: 9999, fontSize: '0.6rem', fontWeight: 700, padding: '1px 5px', minWidth: 16, textAlign: 'center', flexShrink: 0 }}>{unreadFeedback}</span>
+                          )}
+                          {item.id === 'smart-goals' && pendingSmartGoals > 0 && (
+                            <span title="Pending SMART Goal approvals" style={{ background: '#ef4444', color: 'white', borderRadius: 9999, fontSize: '0.6rem', fontWeight: 700, padding: '1px 5px', minWidth: 16, textAlign: 'center', flexShrink: 0 }}>{pendingSmartGoals}</span>
+                          )}
+                          {item.id === 'skills' && pendingSkillsRequests > 0 && (
+                            <span title="Pending peer assessment requests" style={{ background: '#ef4444', color: 'white', borderRadius: 9999, fontSize: '0.6rem', fontWeight: 700, padding: '1px 5px', minWidth: 16, textAlign: 'center', flexShrink: 0 }}>{pendingSkillsRequests}</span>
                           )}
                         </button>
                       );
