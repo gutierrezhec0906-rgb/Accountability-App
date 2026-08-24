@@ -106,7 +106,7 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, onMarkReviewed, activeT
   const list     = activeTab === 'personal' ? personal : team;
 
   return (
-    <div style={{ width: 290, flexShrink: 0, background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', alignSelf: 'flex-start', position: 'sticky', top: 24 }}>
+    <div className="vision-saved-panel" style={{ width: 290, flexShrink: 0, background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', alignSelf: 'flex-start', position: 'sticky', top: 24 }}>
       <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)', margin: '0 0 12px' }}>Saved Visions</p>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
@@ -460,7 +460,13 @@ export default function Vision() {
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
+      <style>{`
+        @media (max-width: 860px) {
+          .vision-layout { flex-direction: column !important; }
+          .vision-saved-panel { width: 100% !important; position: static !important; top: auto !important; }
+        }
+      `}</style>
+      <div className="vision-layout" style={{ display: 'flex', gap: 24, alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* Mode toggle */}
           <div style={{ display: 'flex', gap: 8, marginBottom: '1.5rem' }}>
