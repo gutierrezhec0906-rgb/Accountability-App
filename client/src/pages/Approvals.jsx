@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -32,15 +32,25 @@ export default function Approvals() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('pending');
 
-  const canApprove = userProfile?.isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager';
+  const isMasterAdmin = currentUser?.email === 'hectorg@accountability-app.com' || userProfile?.isAdmin;
+  const canApprove = isMasterAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager';
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [userProfile]);
 
   async function fetchUsers() {
     try {
-      const snap = await getDocs(collection(db, 'users'));
+      let snap;
+      if (isMasterAdmin) {
+        // Master admin sees everyone across every company
+        snap = await getDocs(collection(db, 'users'));
+      } else {
+        // Leaders/Managers only see + approve members of their own company
+        const companyId = userProfile?.companyId;
+        if (!companyId) { setUsers([]); setLoading(false); return; }
+        snap = await getDocs(query(collection(db, 'users'), where('companyId', '==', companyId)));
+      }
       const list = snap.docs
         .map(d => ({ uid: d.id, ...d.data() }))
         .filter(u => u.uid !== currentUser?.uid);
