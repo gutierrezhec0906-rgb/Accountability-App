@@ -403,7 +403,7 @@ export default function Coaching() {
                   style={{ background: 'none', border: '1px solid #0d9488', borderRadius: 8, padding: '0.3rem 0.875rem', fontSize: '0.78rem', fontWeight: 700, color: '#0d9488', cursor: 'pointer' }}>
                   ✏️ Edit
                 </button>
-                <button onClick={() => setSelectedSession(selectedSession?.id === s.id ? null : s)}
+                <button onClick={() => { setSelectedSession(selectedSession?.id === s.id ? null : s); setEditingId(null); }}
                   style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '0.3rem 0.875rem', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>
                   {selectedSession?.id === s.id ? 'Collapse' : 'View Details'}
                 </button>
