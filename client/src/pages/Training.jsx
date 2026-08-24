@@ -53,7 +53,42 @@ export default function Training() {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
         const saved = snap.exists() ? snap.data().trainings : null;
         if (Array.isArray(saved)) {
-          setTrainings(saved);
+          // One-time repair for accounts seeded before the hardcoded-2024-date bug
+          // was fixed: those sample trainings are still stuck on 2024 due dates,
+          // showing as hundreds of days past due. Detect the untouched seed items
+          // (matching title + a stale 2024-* dueDate) and re-baseline them relative
+          // to today, refunding any false "past due" penalty already charged.
+          const freshSample = buildSampleTrainings();
+          const staleIds = [];
+          const repaired = saved.map(t => {
+            const fresh = freshSample.find(f => f.id === t.id && f.title === t.title);
+            if (fresh && typeof t.dueDate === 'string' && t.dueDate.startsWith('2024-')) {
+              staleIds.push(t.id);
+              return { ...fresh, recommitmentCount: t.recommitmentCount || 0 };
+            }
+            return t;
+          });
+          if (staleIds.length) {
+            const refunded = saved.filter(t => staleIds.includes(t.id) && t.pastDuePenaltyApplied);
+            try {
+              await setDoc(doc(db, 'users', currentUser.uid), { trainings: repaired }, { merge: true });
+              if (refunded.length) {
+                await updateDoc(doc(db, 'users', currentUser.uid), { penaltyPoints: increment(-refunded.length) });
+                for (const t of refunded) {
+                  await logPointEvent(currentUser.uid, {
+                    points: 1,
+                    toolLabel: 'Training Past Due Penalty Refunded',
+                    reason: `Refunded false past-due penalty for "${t.title}" (stale seed data bug)`,
+                  });
+                }
+                calculateScore(currentUser.uid).catch(() => {});
+              }
+              toast.success('Training due dates refreshed — some sample trainings had stale dates.', { duration: 5000 });
+            } catch { /* ignore */ }
+            setTrainings(repaired);
+          } else {
+            setTrainings(saved);
+          }
         } else {
           // First-time users: seed the sample list AND persist it, so other
           // features (e.g. the app-wide past-due reminder) can read the trainings.
