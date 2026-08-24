@@ -102,6 +102,10 @@ export default function Profile() {
             )}
           </div>
           <div>
+            <p style={{ fontWeight: 800, color: '#1e293b', fontSize: '1rem', margin: '0 0 2px' }}>{currentUser?.displayName || 'User'}</p>
+            {userProfile?.companyName && (
+              <p style={{ color: '#0d9488', fontWeight: 700, fontSize: '0.8rem', margin: '0 0 10px' }}>🏢 {userProfile.companyName}</p>
+            )}
             <p style={{ color: '#475569', fontSize: '0.875rem', marginBottom: 12 }}>
               Upload a photo to personalize your profile. It will appear on the Team page and sidebar.
             </p>

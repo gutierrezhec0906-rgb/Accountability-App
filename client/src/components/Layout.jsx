@@ -419,6 +419,7 @@ export default function Layout({ children }) {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ color: 'white', fontSize: '0.78rem', fontWeight: 700, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentUser?.displayName || 'User'}</p>
                   <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.68rem', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentUser?.email}</p>
+                  {userProfile?.companyName && <p style={{ color: '#5eead4', fontSize: '0.66rem', fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>🏢 {userProfile.companyName}</p>}
                   {userProfile?.isAdmin && <p style={{ color: '#fbbf24', fontSize: '0.62rem', fontWeight: 700, margin: 0 }}>⭐ Admin</p>}
                 </div>
                 <button
