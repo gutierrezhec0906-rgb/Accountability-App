@@ -57,7 +57,22 @@ export function AuthProvider({ children }) {
   async function fetchProfile(uid) {
     try {
       const snap = await getDoc(doc(db, 'users', uid));
-      if (snap.exists()) setUserProfile(snap.data());
+      if (!snap.exists()) return;
+      let profile = snap.data();
+      // Backfill companyName for accounts whose companyId was set before this
+      // field existed (or set directly, bypassing CompleteProfile) — otherwise
+      // the sidebar/profile UI has nothing to show even though companyId is set.
+      if (profile.companyId && !profile.companyName) {
+        try {
+          const companySnap = await getDoc(doc(db, 'companies', profile.companyId));
+          const companyName = companySnap.exists() ? companySnap.data().name : '';
+          if (companyName) {
+            await setDoc(doc(db, 'users', uid), { companyName }, { merge: true });
+            profile = { ...profile, companyName };
+          }
+        } catch { /* ignore */ }
+      }
+      setUserProfile(profile);
     } catch (e) {
       console.warn('Could not fetch profile', e);
     }
