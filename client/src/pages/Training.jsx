@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import DateStatus, { getDateStatus, RecommitBadge } from '../components/DateStatus';
 import { logPointEvent, calculateScore } from '../utils/scoring';
-import { buildSampleTrainings } from '../utils/sampleTrainings';
+import { isUntouchedSampleTrainings } from '../utils/sampleTrainings';
 
 const categories = ['All', 'Lean', 'Leadership', 'Safety', 'Soft Skills', 'Analytics', 'Quality'];
 const catColors = { Lean: '#0d9488', Leadership: '#0f2044', Safety: '#ef4444', 'Soft Skills': '#8b5cf6', Analytics: '#0891b2', Quality: '#f59e0b' };
@@ -22,7 +22,9 @@ export default function Training() {
   const [form, setForm] = useState(emptyForm);
   const [statusFilter, setStatusFilter] = useState('all'); // all | completed | ontrack | warning | overdue
 
-  // Load saved trainings; first-time users are seeded with the sample list.
+  // Load saved trainings. Training Center starts 100% empty for a new
+  // account — this is the user's own plan to build with their leader, not a
+  // pre-filled demo list.
   useEffect(() => {
     if (!currentUser) return;
     (async () => {
@@ -30,51 +32,34 @@ export default function Training() {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
         const saved = snap.exists() ? snap.data().trainings : null;
         if (Array.isArray(saved)) {
-          // One-time repair for accounts seeded before the hardcoded-2024-date bug
-          // was fixed: those sample trainings are still stuck on 2024 due dates,
-          // showing as hundreds of days past due. Detect the untouched seed items
-          // (matching title + a stale 2024-* dueDate) and re-baseline them relative
-          // to today, refunding any false "past due" penalty already charged.
-          const freshSample = buildSampleTrainings();
-          const staleIds = [];
-          const repaired = saved.map(t => {
-            const fresh = freshSample.find(f => f.id === t.id && f.title === t.title);
-            if (fresh && typeof t.dueDate === 'string' && t.dueDate.startsWith('2024-')) {
-              staleIds.push(t.id);
-              return { ...fresh, recommitmentCount: t.recommitmentCount || 0 };
-            }
-            return t;
-          });
-          if (staleIds.length) {
-            const refunded = saved.filter(t => staleIds.includes(t.id) && t.pastDuePenaltyApplied);
+          if (isUntouchedSampleTrainings(saved)) {
+            // Still the old starter placeholders, never customized — clear
+            // them out and refund any false past-due penalty they racked up.
+            const refunded = saved.filter(t => t.pastDuePenaltyApplied);
             try {
-              await setDoc(doc(db, 'users', currentUser.uid), { trainings: repaired }, { merge: true });
+              await setDoc(doc(db, 'users', currentUser.uid), { trainings: [] }, { merge: true });
               if (refunded.length) {
                 await updateDoc(doc(db, 'users', currentUser.uid), { penaltyPoints: increment(-refunded.length) });
                 for (const t of refunded) {
                   await logPointEvent(currentUser.uid, {
                     points: 1,
                     toolLabel: 'Training Past Due Penalty Refunded',
-                    reason: `Refunded false past-due penalty for "${t.title}" (stale seed data bug)`,
+                    reason: `Refunded false past-due penalty for "${t.title}" (starter placeholder removed)`,
                   });
                 }
                 calculateScore(currentUser.uid).catch(() => {});
               }
-              toast.success('Training due dates refreshed — some sample trainings had stale dates.', { duration: 5000 });
             } catch { /* ignore */ }
-            setTrainings(repaired);
+            setTrainings([]);
           } else {
             setTrainings(saved);
           }
         } else {
-          // First-time users: seed the sample list AND persist it, so other
-          // features (e.g. the app-wide past-due reminder) can read the trainings.
-          const sampleTrainings = buildSampleTrainings();
-          setTrainings(sampleTrainings);
-          try { await setDoc(doc(db, 'users', currentUser.uid), { trainings: sampleTrainings }, { merge: true }); } catch { /* ignore */ }
+          setTrainings([]);
+          try { await setDoc(doc(db, 'users', currentUser.uid), { trainings: [] }, { merge: true }); } catch { /* ignore */ }
         }
       } catch {
-        setTrainings(buildSampleTrainings());
+        setTrainings([]);
       }
     })();
   }, [currentUser]);

@@ -9,6 +9,15 @@ export function daysFromToday(offset) {
   return d.toISOString().split('T')[0];
 }
 
+// True when every item is still exactly one of the original 8 sample
+// trainings (matched by id+title) — i.e. the user hasn't built their own
+// plan yet, they're just looking at the untouched starter placeholders.
+export function isUntouchedSampleTrainings(trainings) {
+  if (!Array.isArray(trainings) || trainings.length !== 8) return false;
+  const sample = buildSampleTrainings();
+  return trainings.every(t => sample.some(s => s.id === t.id && s.title === t.title));
+}
+
 export function buildSampleTrainings() {
   return [
     { id: 1, title: 'Lean Manufacturing Fundamentals',    category: 'Lean',        duration: '4h',   dueDate: daysFromToday(-40), completed: true,  completedDate: daysFromToday(-60), mandatory: true  },
