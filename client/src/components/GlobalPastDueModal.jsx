@@ -72,7 +72,7 @@ export default function GlobalPastDueModal() {
           if (g && g.status !== 'completed' && g.status !== 'deleted' && overdue(g.dueDate)) items.push({ key: `goal-${g.id}`, kind: 'goal', id: g.id, title: g.title || 'Untitled goal', due: g.dueDate, recommits: g.recommitmentCount });
         });
         (d.coachingSessions || []).forEach(s => {
-          if (overdue(s.nextSession)) items.push({ key: `coaching-${s.id}`, kind: 'coaching', id: s.id, title: `Coaching follow-up — ${s.coachee || 'Untitled coachee'}`, sub: s.coachee, due: s.nextSession, recommits: s.recommitmentCount });
+          if (!s.closed && overdue(s.nextSession)) items.push({ key: `coaching-${s.id}`, kind: 'coaching', id: s.id, title: `Coaching follow-up — ${s.coachee || 'Untitled coachee'}`, sub: s.coachee, due: s.nextSession, recommits: s.recommitmentCount });
         });
         Object.entries(d.sqdipBoard?.actionPlans || {}).forEach(([letterKey, list]) => {
           (list || []).forEach(it => {

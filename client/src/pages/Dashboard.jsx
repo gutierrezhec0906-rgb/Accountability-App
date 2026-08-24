@@ -207,7 +207,7 @@ export default function Dashboard() {
           if (g && g.status !== 'completed' && g.status !== 'deleted' && getDateStatus(g.dueDate)?.level === 'warning') items.push({ key: `goal-${g.id}`, icon: '🎯', label: g.title || 'Untitled goal', due: g.dueDate, path: '/smart-goals' });
         });
         (d.coachingSessions || []).forEach(s => {
-          if (getDateStatus(s.nextSession)?.level === 'warning') items.push({ key: `coaching-${s.id}`, icon: '📝', label: `Coaching follow-up — ${s.coachee || 'Untitled coachee'}`, due: s.nextSession, path: '/coaching' });
+          if (!s.closed && getDateStatus(s.nextSession)?.level === 'warning') items.push({ key: `coaching-${s.id}`, icon: '📝', label: `Coaching follow-up — ${s.coachee || 'Untitled coachee'}`, due: s.nextSession, path: '/coaching' });
         });
         Object.entries(d.sqdipBoard?.actionPlans || {}).forEach(([letterKey, list]) => {
           (list || []).forEach(it => {
