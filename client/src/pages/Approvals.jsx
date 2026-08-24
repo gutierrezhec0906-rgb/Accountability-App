@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { TIER_ICONS, TIER_LABELS, TIER_COLORS } from '../utils/subscription';
 
 const TIER_OPTIONS = ['free', 'premium', 'all-inclusive'];
+const ROLE_OPTIONS = ['Leader', 'Manager', 'Supervisor', 'Individual Contributor'];
 
 const roleColors = {
   Leader: { bg: '#eff6ff', text: '#1d4ed8' },
@@ -68,6 +69,16 @@ export default function Approvals() {
       toast.success(status === 'approved' ? '✅ Member approved!' : '❌ Member rejected');
     } catch (e) {
       toast.error('Failed to update status');
+    }
+  }
+
+  async function setRole(uid, role) {
+    try {
+      await updateDoc(doc(db, 'users', uid), { role });
+      setUsers(u => u.map(x => x.uid === uid ? { ...x, role } : x));
+      toast.success(`Role changed to ${role}`);
+    } catch (e) {
+      toast.error('Failed to update role');
     }
   }
 
@@ -164,8 +175,17 @@ export default function Approvals() {
                     {user.isAdmin && <span className="px-2 py-0.5 rounded-full text-xs font-bold" style={{ background: '#fef9c3', color: '#ca8a04' }}>⭐ Admin</span>}
                   </div>
                   <p className="text-xs text-slate-400">{user.email}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: rc.bg, color: rc.text }}>{user.role}</span>
+                  <div className="flex items-center gap-2 mt-1 flex-wrap">
+                    <select
+                      value={user.role || ''}
+                      onChange={e => setRole(user.uid, e.target.value)}
+                      title="Change position"
+                      style={{
+                        padding: '2px 8px', borderRadius: 999, fontSize: '0.75rem', fontWeight: 700,
+                        background: rc.bg, color: rc.text, border: `1px solid ${rc.text}33`, cursor: 'pointer',
+                      }}>
+                      {ROLE_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                    </select>
                     <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${user.status === 'approved' ? 'badge-green' : user.status === 'rejected' ? 'badge-red' : 'badge-yellow'}`}>
                       {user.status === 'approved' ? '✅ Approved' : user.status === 'rejected' ? '❌ Rejected' : '⏳ Pending'}
                     </span>
