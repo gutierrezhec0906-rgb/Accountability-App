@@ -70,6 +70,8 @@ export default function AdminPanel() {
   const [welcomeVideoUrl, setWelcomeVideoUrl] = useState('');
   const [uploadingWelcome, setUploadingWelcome] = useState(false);
   const [previewWelcome, setPreviewWelcome] = useState(false);
+  const [invites, setInvites] = useState([]);
+  const [invitesLoaded, setInvitesLoaded] = useState(false);
   const [expandedViewer, setExpandedViewer] = useState(null); // uid of viewer whose report list is open
   const [savingVis, setSavingVis] = useState(null);
 
@@ -77,7 +79,7 @@ export default function AdminPanel() {
 
   useEffect(() => {
     if (!isMasterAdmin) return;
-    Promise.all([fetchUsers(), fetchCompanies(), fetchTeams(), fetchToolVideos(), fetchWelcomeVideo()]).finally(() => setLoading(false));
+    Promise.all([fetchUsers(), fetchCompanies(), fetchTeams(), fetchToolVideos(), fetchWelcomeVideo(), fetchInvites()]).finally(() => setLoading(false));
   }, [isMasterAdmin]);
 
   async function fetchToolVideos() {
@@ -169,6 +171,21 @@ export default function AdminPanel() {
     } catch (e) {
       toast.error('Could not remove: ' + (e?.message || e));
     }
+  }
+
+  // Every invite ever sent, across every company/leader — firestore.rules lets
+  // the master admin read the whole invites collection (isMasterAdmin() in the
+  // read rule), unlike a Leader who only sees the ones where invitedByUid is theirs.
+  async function fetchInvites() {
+    try {
+      const snap = await getDocs(collection(db, 'invites'));
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      list.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+      setInvites(list);
+    } catch (e) {
+      console.warn('Could not load invites', e);
+    }
+    setInvitesLoaded(true);
   }
 
   async function fetchUsers() {
@@ -404,7 +421,7 @@ export default function AdminPanel() {
 
       {/* Tabs */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {[['overview', '🏢 Org View'], ['pending', `⏳ Pending (${pendingUsers.length})`], ['companies', '⚙️ Companies'], ['teams', '🧩 Teams'], ['visibility', '👁️ Score Visibility'], ['videos', '🎬 Tool Videos']].map(([id, label]) => (
+        {[['overview', '🏢 Org View'], ['pending', `⏳ Pending (${pendingUsers.length})`], ['companies', '⚙️ Companies'], ['teams', '🧩 Teams'], ['visibility', '👁️ Score Visibility'], ['videos', '🎬 Tool Videos'], ['invites', `✉️ Invites (${invites.filter(i => i.status === 'pending').length})`]].map(([id, label]) => (
           <button key={id} onClick={() => setActiveTab(id)}
             style={{
               padding: '8px 18px', borderRadius: 9999, fontSize: 13, fontWeight: 700,
@@ -798,6 +815,39 @@ export default function AdminPanel() {
               );
             })}
           </div>
+        </div>
+      )}
+
+      {/* INVITES — every invite sent by any leader/admin, across every company */}
+      {!loading && activeTab === 'invites' && (
+        <div className="space-y-3">
+          <div className="card p-4" style={{ background: '#f0fdfa', border: '1px solid #99f6e4' }}>
+            <p style={{ fontWeight: 700, color: '#0f766e', margin: '0 0 4px', fontSize: 14 }}>✉️ Team member invitations</p>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>
+              Every invite sent from the Team page, across every company — who invited them, what role/team, and whether they've joined yet.
+            </p>
+          </div>
+          {invitesLoaded && invites.length === 0 ? (
+            <div className="card p-6 text-center" style={{ color: 'var(--text-secondary)' }}>No invitations have been sent yet.</div>
+          ) : (
+            <div className="space-y-2">
+              {invites.map(inv => (
+                <div key={inv.id} className="card p-4" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: 20 }}>{inv.status === 'accepted' ? '✅' : '⏳'}</span>
+                  <div style={{ flex: 1, minWidth: 200 }}>
+                    <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{inv.email}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>
+                      Invited by {inv.invitedByName || 'Unknown'} · {inv.role}{inv.teamName ? ` · ${inv.teamName}` : ''}
+                    </div>
+                  </div>
+                  <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: '#f0fdf4', color: '#15803d' }}>🏢 {inv.companyName}</span>
+                  <span className={inv.status === 'accepted' ? 'badge-green' : 'badge-yellow'} style={{ fontSize: 12 }}>
+                    {inv.status === 'accepted' ? '✅ Joined' : '⏳ Pending'}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>
