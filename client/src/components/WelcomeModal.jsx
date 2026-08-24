@@ -4,7 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 
 export default function WelcomeModal() {
-  const { currentUser, userProfile } = useAuth();
+  const { currentUser, userProfile, fetchProfile } = useAuth();
   const [show, setShow] = useState(false);
   const [videoUrl, setVideoUrl] = useState('');
 
@@ -19,6 +19,12 @@ export default function WelcomeModal() {
       if (url) {
         setVideoUrl(url);
         setShow(true);
+      } else {
+        // No welcome video configured — mark it seen right away so Layout's
+        // auto-tool-video gate (which waits on hasSeenWelcome) isn't blocked forever.
+        updateDoc(doc(db, 'users', currentUser.uid), { hasSeenWelcome: true })
+          .then(() => fetchProfile(currentUser.uid))
+          .catch(() => {});
       }
     }).catch(() => {});
   }, [currentUser, userProfile]);
@@ -27,6 +33,10 @@ export default function WelcomeModal() {
     setShow(false);
     try {
       await updateDoc(doc(db, 'users', currentUser.uid), { hasSeenWelcome: true });
+      // Refresh userProfile so Layout's own auto-tool-video effect (gated on
+      // hasSeenWelcome, so it doesn't play a second video on top of this one)
+      // sees the updated flag and can run.
+      await fetchProfile(currentUser.uid);
     } catch {}
   }
 

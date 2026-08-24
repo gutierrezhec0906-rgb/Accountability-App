@@ -144,10 +144,13 @@ export default function Layout({ children }) {
   // would carry over and replay the next module's (already-seen) video.
   useEffect(() => { setToolVideoOpen(false); }, [location.pathname]);
 
-  // Auto-show tool help video on first visit
+  // Auto-show tool help video on first visit. Waits for the org welcome video
+  // (WelcomeModal) to be dismissed first — otherwise both autoPlay videos
+  // fire together on a brand-new account's very first Dashboard load.
   useEffect(() => {
     if (!currentUser || !userProfile) return;
     if (userProfile.status === 'pending') return;
+    if (!userProfile.hasSeenWelcome) return;
     const toolId = location.pathname.replace('/', '') || 'dashboard';
     if (!VIDEO_TOOL_IDS.has(toolId)) return;
     // "Seen" = recorded in the profile OR in this device's localStorage mirror,
