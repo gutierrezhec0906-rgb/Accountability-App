@@ -104,6 +104,7 @@ export default function VisualBoard() {
   const [sortBy, setSortBy] = useState('date-asc');
   const [ownerFilter, setOwnerFilter] = useState('All');
   const [closingId, setClosingId] = useState(null);   // id of card showing close-confirm
+  const [closingNotes, setClosingNotes] = useState(''); // optional note typed before confirming close
   const [showClosed, setShowClosed] = useState(false);
 
   async function fetchItems() {
@@ -213,12 +214,14 @@ export default function VisualBoard() {
     const st = computeStatus(item.dueDate, item.recommitmentDate);
     const recommitCount = item.recommitmentCount || 0;
     const closedOnTime  = !st.overdue && recommitCount === 0;
+    const notes = closingNotes.trim();
     try {
       await persist(items.map(i => i.id === item.id
-        ? { ...i, closed: true, closedAt: { seconds: Math.floor(Date.now() / 1000) }, closedOnTime }
+        ? { ...i, closed: true, closedAt: { seconds: Math.floor(Date.now() / 1000) }, closedOnTime, closingNotes: notes }
         : i
       ));
       setClosingId(null);
+      setClosingNotes('');
 
       if (closedOnTime) {
         const { awarded, capReached } = await logPointEvent(currentUser.uid, {
@@ -402,6 +405,9 @@ export default function VisualBoard() {
                       {item.closedAt?.seconds && <span>Closed {new Date(item.closedAt.seconds * 1000).toLocaleDateString()}</span>}
                       <RecommitBadge count={item.recommitmentCount} />
                     </div>
+                    {item.closingNotes && (
+                      <p style={{ fontSize: '0.75rem', color: '#64748b', margin: '4px 0 0', fontStyle: 'italic' }}>📝 {item.closingNotes}</p>
+                    )}
                   </div>
                   <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 800,
                     background: item.closedOnTime ? '#dcfce7' : '#f1f5f9',
@@ -494,7 +500,7 @@ export default function VisualBoard() {
                 {/* Action buttons */}
                 <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
                   {!isConfirmingClose && (
-                    <button onClick={() => { setClosingId(item.id); setEditingId(null); }} title="Mark as closed"
+                    <button onClick={() => { setClosingId(item.id); setClosingNotes(''); setEditingId(null); }} title="Mark as closed"
                       style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 7, color: '#0d9488', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, padding: '4px 10px', lineHeight: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
                       ✅ Close
                     </button>
@@ -508,30 +514,40 @@ export default function VisualBoard() {
 
               {/* Close confirmation inline */}
               {isConfirmingClose && (
-                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '2px dashed #0d9488', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', background: '#f0fdfa', borderRadius: '0 0 10px 10px', margin: '12px -1.25rem -1rem', padding: '0.75rem 1.25rem 1rem' }}>
-                  <span style={{ fontSize: '1rem' }}>✅</span>
-                  <div style={{ flex: 1 }}>
-                    <p style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0d9488', margin: 0 }}>
-                      Mark this action as closed?
-                    </p>
-                    <p style={{ fontSize: '0.72rem', color: '#0d9488', margin: '2px 0 0' }}>
-                      {recommitCount === 0 && !computeStatus(item.dueDate, item.recommitmentDate).overdue
-                        ? '+5 pts will be added (on time, no recommitments)'
-                        : recommitCount > 0
-                          ? 'No points — action had recommitments'
-                          : 'No points — action is past due'}
-                    </p>
+                <div style={{ marginTop: 12, paddingTop: 12, borderTop: '2px dashed #0d9488', background: '#f0fdfa', borderRadius: '0 0 10px 10px', margin: '12px -1.25rem -1rem', padding: '0.75rem 1.25rem 1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: '1rem' }}>✅</span>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0d9488', margin: 0 }}>
+                        Mark this action as closed?
+                      </p>
+                      <p style={{ fontSize: '0.72rem', color: '#0d9488', margin: '2px 0 0' }}>
+                        {recommitCount === 0 && !computeStatus(item.dueDate, item.recommitmentDate).overdue
+                          ? '+5 pts will be added (on time, no recommitments)'
+                          : recommitCount > 0
+                            ? 'No points — action had recommitments'
+                            : 'No points — action is past due'}
+                      </p>
+                    </div>
+                    <button onClick={() => handleClose(item)}
+                      style={{ padding: '0.4rem 1.1rem', borderRadius: 8, background: '#0d9488', color: 'white', fontWeight: 800, fontSize: '0.8rem', border: 'none', cursor: 'pointer' }}>
+                      Yes, Close
+                    </button>
+                    <button onClick={() => { setClosingId(null); setClosingNotes(''); }}
+                      style={{ padding: '0.4rem 0.875rem', borderRadius: 8, background: 'white', color: '#64748b', fontWeight: 700, fontSize: '0.8rem', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
+                      Cancel
+                    </button>
                   </div>
-                  <button onClick={() => handleClose(item)}
-                    style={{ padding: '0.4rem 1.1rem', borderRadius: 8, background: '#0d9488', color: 'white', fontWeight: 800, fontSize: '0.8rem', border: 'none', cursor: 'pointer' }}>
-                    Yes, Close
-                  </button>
-                  <button onClick={() => setClosingId(null)}
-                    style={{ padding: '0.4rem 0.875rem', borderRadius: 8, background: 'white', color: '#64748b', fontWeight: 700, fontSize: '0.8rem', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
-                    Cancel
-                  </button>
+                  <textarea
+                    value={closingNotes}
+                    onChange={e => setClosingNotes(e.target.value)}
+                    placeholder="Optional notes for the record (not required)..."
+                    rows={2}
+                    style={{ width: '100%', marginTop: 10, padding: '0.5rem 0.65rem', borderRadius: 8, border: '1px solid #99f6e4', fontSize: '0.8rem', fontFamily: 'inherit', resize: 'vertical', background: 'white' }}
+                  />
                 </div>
               )}
+
 
               {/* Inline edit form */}
               {editingId === item.id && (
