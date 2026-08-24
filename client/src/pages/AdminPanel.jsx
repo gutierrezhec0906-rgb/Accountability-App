@@ -206,6 +206,16 @@ export default function AdminPanel() {
     }
   }
 
+  async function setRole(uid, role) {
+    try {
+      await updateDoc(doc(db, 'users', uid), { role });
+      setUsers(u => u.map(x => x.uid === uid ? { ...x, role } : x));
+      toast.success(`Role changed to ${role}`);
+    } catch (e) {
+      toast.error('Failed to update role');
+    }
+  }
+
   async function updateStatus(uid, status) {
     try {
       await updateDoc(doc(db, 'users', uid), { status });
@@ -408,7 +418,13 @@ export default function AdminPanel() {
                                       <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>{u.displayName}</div>
                                       <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{u.email}</div>
                                     </div>
-                                    <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: rc.bg, color: rc.text }}>{u.role}</span>
+                                    <select
+                                      value={u.role || ''}
+                                      onChange={e => setRole(u.uid, e.target.value)}
+                                      title="Change position"
+                                      style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: rc.bg, color: rc.text, border: `1px solid ${rc.text}33`, cursor: 'pointer' }}>
+                                      {ROLE_ORDER.map(r => <option key={r} value={r}>{r}</option>)}
+                                    </select>
                                     <ReassignBlock u={u} />
                                     <button onClick={() => deleteUser(u.uid, u.displayName)}
                                       style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#f87171', fontSize: 14 }} title="Delete user">
@@ -446,8 +462,14 @@ export default function AdminPanel() {
                   <div style={{ flex: 1 }}>
                     <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 15 }}>{u.displayName}</div>
                     <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{u.email}</div>
-                    <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap' }}>
-                      <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: '#eff6ff', color: '#1d4ed8' }}>{u.role}</span>
+                    <div style={{ display: 'flex', gap: 6, marginTop: 4, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <select
+                        value={u.role || ''}
+                        onChange={e => setRole(u.uid, e.target.value)}
+                        title="Change position"
+                        style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 700, background: '#eff6ff', color: '#1d4ed8', border: '1px solid #1d4ed833', cursor: 'pointer' }}>
+                        {ROLE_ORDER.map(r => <option key={r} value={r}>{r}</option>)}
+                      </select>
                       {u.companyName && <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: '#f0fdf4', color: '#15803d' }}>🏢 {u.companyName}</span>}
                       {u.teamName && <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: 11, fontWeight: 600, background: '#fdf4ff', color: '#7e22ce' }}>👥 {u.teamName}</span>}
                     </div>
