@@ -175,14 +175,27 @@ export default function AdminPanel() {
   // Fixes a wrong company/team assignment after the fact — updates both the
   // FK (companyId/teamId) and the denormalized display names in one write.
   async function reassignUser(uid, companyId, teamId) {
-    const company = companies.find(c => c.id === companyId);
-    const team = teams.find(t => t.id === teamId);
     try {
+      // Fetch the company/team docs directly rather than trusting the local
+      // `companies`/`teams` state — if those lists hadn't finished loading yet
+      // when this ran, company?.name would silently resolve to '', writing a
+      // companyId with no companyName (the user's profile then shows no
+      // company name anywhere, even though they're correctly attached to it).
+      let companyName = '';
+      if (companyId) {
+        const companySnap = await getDoc(doc(db, 'companies', companyId));
+        companyName = companySnap.exists() ? (companySnap.data().name || '') : '';
+      }
+      let teamName = '';
+      if (teamId) {
+        const teamSnap = await getDoc(doc(db, 'teams', teamId));
+        teamName = teamSnap.exists() ? (teamSnap.data().name || '') : '';
+      }
       const patch = {
         companyId: companyId || '',
-        companyName: company?.name || '',
+        companyName,
         teamId: teamId || '',
-        teamName: team?.name || '',
+        teamName,
       };
       await updateDoc(doc(db, 'users', uid), patch);
       setUsers(u => u.map(x => x.uid === uid ? { ...x, ...patch } : x));
