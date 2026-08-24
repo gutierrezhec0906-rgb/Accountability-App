@@ -218,8 +218,8 @@ export default function Team() {
         </div>
       </div>
 
-      {/* Invite panel — Leaders/Managers/Admins can invite new members into their own company */}
-      {(isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager') && userProfile?.companyId && (
+      {/* Invite panel — only Leaders and Admins can invite new members into their own company */}
+      {(isAdmin || userProfile?.role === 'Leader') && userProfile?.companyId && (
         <InvitePanel userProfile={userProfile} uid={currentUser.uid} />
       )}
 

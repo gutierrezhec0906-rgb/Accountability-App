@@ -826,8 +826,8 @@ exports.sendInvite = onCall(async (request) => {
   const inviter = inviterSnap.exists ? inviterSnap.data() : null;
   if (!inviter) throw new HttpsError('not-found', 'Inviter profile not found');
 
-  const canInvite = inviter.isAdmin || inviter.role === 'Leader' || inviter.role === 'Manager';
-  if (!canInvite) throw new HttpsError('permission-denied', 'Only Leaders, Managers, or Admins can send invitations');
+  const canInvite = inviter.isAdmin || inviter.role === 'Leader';
+  if (!canInvite) throw new HttpsError('permission-denied', 'Only Leaders or Admins can send invitations');
   if (!inviter.companyId) throw new HttpsError('failed-precondition', 'You must be assigned to a company before you can invite members');
 
   const existingUser = await admin.firestore().collection('users').where('email', '==', email).limit(1).get();
