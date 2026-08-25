@@ -4,6 +4,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore, localDateStr } from '../utils/scoring';
 import PageHeader from '../components/PageHeader';
+import UrgencyTrendChart from '../components/UrgencyTrendChart';
 
 const tips = [
   { title: 'Bias for Action — Start Now, Polish Later', desc: "Perfection is the enemy of momentum. Launch the initiative today — even an imperfect start generates learning, feedback, and energy that waiting never will. Jump into the idea, get alignment, then build and refine in motion. Leaders who act first and adjust along the way consistently outpace those who plan indefinitely. Done and improving beats perfect and delayed every time.", icon: '⚡', type: 'individual' },
@@ -497,12 +498,20 @@ export default function Urgency() {
         )}
       </div>
 
+      {/* Trend chart — last 8 assessments (individual + team combined) */}
+      {records.length > 0 && (
+        <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
+          <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.9rem' }}>Score Trend — Last 8 Assessments</h4>
+          <UrgencyTrendChart records={records} />
+        </div>
+      )}
+
       {/* Assessment records */}
       {records.length > 0 && (
         <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
           <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.9rem' }}>Assessment Records</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {records.slice(0, 10).map((rec, i) => (
+            {records.slice(0, 8).map((rec, i) => (
               <div key={rec.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0.6rem 0.875rem', background: i === 0 ? '#f5f3ff' : '#f8fafc', borderRadius: 10, border: `1px solid ${i === 0 ? '#c4b5fd' : '#e2e8f0'}` }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
