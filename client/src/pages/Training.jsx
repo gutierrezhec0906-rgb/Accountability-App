@@ -7,6 +7,7 @@ import PageHeader from '../components/PageHeader';
 import DateStatus, { getDateStatus, RecommitBadge } from '../components/DateStatus';
 import { logPointEvent, calculateScore } from '../utils/scoring';
 import { isUntouchedSampleTrainings } from '../utils/sampleTrainings';
+import { TRAINING_CATALOG } from '../utils/trainingCatalog';
 
 const categories = ['All', 'Lean', 'Leadership', 'Safety', 'Soft Skills', 'Analytics', 'Quality'];
 const catColors = { Lean: '#0d9488', Leadership: '#0f2044', Safety: '#ef4444', 'Soft Skills': '#8b5cf6', Analytics: '#0891b2', Quality: '#f59e0b' };
@@ -238,8 +239,15 @@ export default function Training() {
         <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
           <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>{editingId != null ? 'Edit Training' : 'Add Training'}</h3>
           <form onSubmit={submitTraining} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <div style={{ gridColumn: '1/-1' }}><label className="label">Training Title</label><input className="input" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Six Sigma Green Belt" /></div>
             <div><label className="label">Category</label><select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>{categories.filter(c => c !== 'All').map(c => <option key={c}>{c}</option>)}</select></div>
+            <div>
+              <label className="label">Choose from Catalog</label>
+              <select className="input" value="" onChange={e => { if (e.target.value) setForm(f => ({ ...f, title: e.target.value })); }}>
+                <option value="">— Select a suggested training —</option>
+                {(TRAINING_CATALOG[form.category] || []).map(t => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div style={{ gridColumn: '1/-1' }}><label className="label">Training Title</label><input className="input" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Pick from the catalog above, or type a custom title" /></div>
             <div><label className="label">Duration</label><input className="input" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))} placeholder="e.g. 2h" /></div>
             <div><label className="label">Due Date</label><input className="input" type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
