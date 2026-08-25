@@ -21,6 +21,7 @@ export default function Training() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [form, setForm] = useState(emptyForm);
+  const [customCategory, setCustomCategory] = useState(false); // form's Category select is set to "Other"
   const [statusFilter, setStatusFilter] = useState('all'); // all | completed | ontrack | warning | overdue
 
   // Load saved trainings. Training Center starts 100% empty for a new
@@ -130,6 +131,7 @@ export default function Training() {
   function startEdit(t) {
     setEditingId(t.id);
     setForm({ title: t.title, category: t.category, duration: t.duration || '', dueDate: t.dueDate || '', mandatory: !!t.mandatory });
+    setCustomCategory(!categories.includes(t.category));
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -145,6 +147,7 @@ export default function Training() {
     setShowForm(false);
     setEditingId(null);
     setForm(emptyForm);
+    setCustomCategory(false);
   }
 
   function submitTraining(e) {
@@ -191,7 +194,7 @@ export default function Training() {
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }}>
       <PageHeader icon="🎓" title="Training Center — Accountability Continuous Learning" subtitle="Track learning progress and certifications"
-        action={<button className="btn-primary" onClick={() => { if (showForm) { cancelForm(); } else { setEditingId(null); setForm(emptyForm); setShowForm(true); } }}>+ Add Training</button>} />
+        action={<button className="btn-primary" onClick={() => { if (showForm) { cancelForm(); } else { setEditingId(null); setForm(emptyForm); setCustomCategory(false); setShowForm(true); } }}>+ Add Training</button>} />
 
       {/* Progress hero */}
       <div style={{ background: 'linear-gradient(135deg,#0f2044,#1e3a6e)', borderRadius: 16, padding: '1.5rem', marginBottom: '1.5rem', color: 'white' }}>
@@ -239,10 +242,26 @@ export default function Training() {
         <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
           <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>{editingId != null ? 'Edit Training' : 'Add Training'}</h3>
           <form onSubmit={submitTraining} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <div><label className="label">Category</label><select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>{categories.filter(c => c !== 'All').map(c => <option key={c}>{c}</option>)}</select></div>
+            <div>
+              <label className="label">Category</label>
+              {customCategory ? (
+                <input className="input" required value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                  placeholder="Type a new category" />
+              ) : (
+                <select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+                  {categories.filter(c => c !== 'All').map(c => <option key={c}>{c}</option>)}
+                </select>
+              )}
+              <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, cursor: 'pointer' }}>
+                <input type="checkbox" checked={customCategory}
+                  onChange={e => { setCustomCategory(e.target.checked); setForm(f => ({ ...f, category: e.target.checked ? '' : 'Leadership' })); }}
+                  style={{ width: 14, height: 14 }} />
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Not one of these — add a new category</span>
+              </label>
+            </div>
             <div>
               <label className="label">Choose from Catalog</label>
-              <select className="input" value="" onChange={e => { if (e.target.value) setForm(f => ({ ...f, title: e.target.value })); }}>
+              <select className="input" value="" disabled={customCategory} onChange={e => { if (e.target.value) setForm(f => ({ ...f, title: e.target.value })); }}>
                 <option value="">— Select a suggested training —</option>
                 {(TRAINING_CATALOG[form.category] || []).map(t => <option key={t} value={t}>{t}</option>)}
               </select>
