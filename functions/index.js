@@ -925,16 +925,54 @@ exports.sendInvite = onCall(async (request) => {
   return { success: true, inviteId: inviteRef.id };
 });
 
-// AI assistant for the Coaching Log — two modes:
-//   'questions' — suggest 4 open-ended coaching questions from a coaching goal
-//   'outcome'   — draft a short outcome summary from session notes + action items
-// Uses Anthropic's API directly via fetch (Node 20 has it built in) rather than
-// pulling in the SDK, since this is the only AI call in the app so far.
-exports.coachingAiAssist = onCall(async (request) => {
-  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+// Shared helper for every AI-assist Cloud Function — calls Anthropic's API
+// directly via fetch (Node 20 has it built in) rather than pulling in the SDK,
+// since these are the only AI calls in the app so far.
+async function callClaude(systemPrompt, userPrompt, maxTokens = 400) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new HttpsError('failed-precondition', 'AI assistant is not configured yet — ask your admin to add the ANTHROPIC_API_KEY secret.');
 
+  let resp;
+  try {
+    resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: maxTokens,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+      }),
+    });
+  } catch (e) {
+    throw new HttpsError('unavailable', 'Could not reach the AI service: ' + (e?.message || 'network error'));
+  }
+
+  if (!resp.ok) {
+    const errText = await resp.text().catch(() => '');
+    throw new HttpsError('internal', `AI request failed (${resp.status}): ${errText.slice(0, 200)}`);
+  }
+
+  const data = await resp.json();
+  return (data.content || []).map(b => b.text || '').join('').trim();
+}
+
+// Strips a ```json ... ``` (or bare ```) fence some models wrap a JSON answer
+// in, so a parse failure doesn't fall back to leaking "```json"/"["/"]" as
+// fake list items.
+function stripCodeFence(text) {
+  return text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+}
+
+// AI assistant for the Coaching Log — two modes:
+//   'questions' — suggest 4 open-ended coaching questions from a coaching goal
+//   'outcome'   — draft a short outcome summary from session notes + action items
+exports.coachingAiAssist = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
   const { mode, goal, notes, actionItems } = request.data || {};
   let systemPrompt, userPrompt;
 
@@ -954,38 +992,10 @@ exports.coachingAiAssist = onCall(async (request) => {
     throw new HttpsError('invalid-argument', 'Unknown mode');
   }
 
-  let resp;
-  try {
-    resp = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 400,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }],
-      }),
-    });
-  } catch (e) {
-    throw new HttpsError('unavailable', 'Could not reach the AI service: ' + (e?.message || 'network error'));
-  }
-
-  if (!resp.ok) {
-    const errText = await resp.text().catch(() => '');
-    throw new HttpsError('internal', `AI request failed (${resp.status}): ${errText.slice(0, 200)}`);
-  }
-
-  const data = await resp.json();
-  const text = (data.content || []).map(b => b.text || '').join('').trim();
+  const text = await callClaude(systemPrompt, userPrompt);
 
   if (mode === 'questions') {
-    // Strip a ```json ... ``` (or bare ```) fence some models wrap the array in
-    // before parsing, so it doesn't leak "```json" / "[" / "]" as fake questions.
-    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+    const cleaned = stripCodeFence(text);
     let questions;
     try {
       questions = JSON.parse(cleaned);
@@ -998,6 +1008,36 @@ exports.coachingAiAssist = onCall(async (request) => {
     return { questions: (Array.isArray(questions) ? questions : []).slice(0, 4) };
   }
   return { outcome: text };
+});
+
+// AI assistant for the 5 Whys tool — two modes:
+//   'suggestWhy'       — propose one plausible next-level cause, continuing the chain
+//   'suggestRootCause' — synthesize a root cause + countermeasure from the full chain
+exports.fiveWhysAiAssist = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+  const { mode, problem, whys, index } = request.data || {};
+  if (!(problem || '').trim()) throw new HttpsError('invalid-argument', 'Fill in the Problem Statement first');
+  const chain = (whys || []).map(w => (w || '').trim()).filter(Boolean);
+
+  let systemPrompt, userPrompt;
+  if (mode === 'suggestWhy') {
+    const i = Number.isInteger(index) ? index : chain.length;
+    const priorAnswer = i === 0 ? problem.trim() : chain[i - 1];
+    if (i > 0 && !priorAnswer) throw new HttpsError('invalid-argument', 'Fill in the previous Why first');
+    systemPrompt = 'You are an expert in root cause analysis using the 5 Whys method. Given a problem statement and the causal chain of Why answers built so far, suggest ONE plausible next-level cause that logically continues the chain — focus on process, system, or standard-work factors, never blame an individual. Return ONLY the suggested answer as one or two sentences — no preamble, no quotes, no markdown, no numbering.';
+    const chainText = chain.length ? chain.map((w, idx) => `Why ${idx + 1}: ${w}`).join('\n') : 'None yet';
+    userPrompt = `Problem statement: ${problem.trim()}\n\nChain so far:\n${chainText}\n\nSuggest the answer to: "${i === 0 ? 'Why did this happen?' : 'Why did that happen?'}" (continuing from: "${priorAnswer}")`;
+  } else if (mode === 'suggestRootCause') {
+    if (chain.length < 2) throw new HttpsError('invalid-argument', 'Fill in at least 2 Whys first');
+    systemPrompt = 'You are an expert in root cause analysis using the 5 Whys method. Given a problem statement and a full chain of Why answers, write a concise root cause statement plus a proposed countermeasure (a process/system fix, not blaming a person). 2-3 sentences total. Return ONLY that text — no preamble, no quotes, no markdown.';
+    const chainText = chain.map((w, idx) => `Why ${idx + 1}: ${w}`).join('\n');
+    userPrompt = `Problem statement: ${problem.trim()}\n\nChain:\n${chainText}`;
+  } else {
+    throw new HttpsError('invalid-argument', 'Unknown mode');
+  }
+
+  const text = await callClaude(systemPrompt, userPrompt, 300);
+  return { suggestion: text };
 });
 
 exports.deleteUser = onCall(async (request) => {

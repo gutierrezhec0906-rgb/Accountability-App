@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -285,7 +286,37 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
   const [problem,   setProblem]   = useState('');
   const [whys,      setWhys]      = useState(['', '', '', '', '']);
   const [rootCause, setRootCause] = useState('');
+  const [suggestingWhy, setSuggestingWhy] = useState(null); // index currently being suggested
+  const [suggestingRootCause, setSuggestingRootCause] = useState(false);
   const isMobile = useIsMobile();
+
+  async function suggestWhy(i) {
+    if (!problemReady) return toast.error('Fill in the Problem Statement first');
+    if (i > 0 && !whys[i - 1].trim()) return toast.error('Fill in the previous Why first');
+    setSuggestingWhy(i);
+    try {
+      const fn = httpsCallable(getFunctions(), 'fiveWhysAiAssist');
+      const res = await fn({ mode: 'suggestWhy', problem, whys, index: i });
+      if (res.data?.suggestion) setWhys(ws => ws.map((w, j) => j === i ? res.data.suggestion : w));
+    } catch (e) {
+      toast.error(e?.message || 'AI suggestion failed');
+    }
+    setSuggestingWhy(null);
+  }
+
+  async function suggestRootCause() {
+    const filled = whys.filter(w => w.trim()).length;
+    if (filled < 2) return toast.error('Fill in at least 2 Whys first');
+    setSuggestingRootCause(true);
+    try {
+      const fn = httpsCallable(getFunctions(), 'fiveWhysAiAssist');
+      const res = await fn({ mode: 'suggestRootCause', problem, whys });
+      if (res.data?.suggestion) setRootCause(res.data.suggestion);
+    } catch (e) {
+      toast.error(e?.message || 'AI suggestion failed');
+    }
+    setSuggestingRootCause(false);
+  }
 
   const problemReady = problem.trim().length >= 15;
   const problemWarn  = problemStatementWarning(problem);
@@ -385,7 +416,12 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
                       <textarea className="input" rows={2} value={w}
                         onChange={e => setWhys(ws => ws.map((x, j) => j === i ? e.target.value : x))}
                         placeholder={i === 0 ? 'What directly caused this? What would you have seen?' : 'What allowed that to happen?'}
-                        style={{ marginBottom: nudge ? 6 : 0 }} />
+                        style={{ marginBottom: 6 }} />
+
+                      <button type="button" onClick={() => suggestWhy(i)} disabled={suggestingWhy !== null}
+                        style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, color: '#6d28d9', fontWeight: 700, fontSize: '0.72rem', padding: '3px 9px', cursor: 'pointer', marginBottom: nudge ? 6 : 0 }}>
+                        {suggestingWhy === i ? 'Thinking…' : '✨ Suggest an Answer (AI)'}
+                      </button>
 
                       {/* Human error nudge */}
                       {nudge && (
@@ -418,7 +454,11 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
           <p style={{ fontSize: '0.73rem', color: '#0f766e', margin: '0 0 8px', lineHeight: 1.5 }}>
             Stop here when the answer points to a process, standard, or system — something you can actually act on. If fixing this would prevent recurrence (not just patch this instance), you've found it.
           </p>
-          <textarea className="input" rows={2} value={rootCause} onChange={e => setRootCause(e.target.value)} placeholder="State the root cause and proposed countermeasure..." />
+          <textarea className="input" rows={2} value={rootCause} onChange={e => setRootCause(e.target.value)} placeholder="State the root cause and proposed countermeasure..." style={{ marginBottom: 6 }} />
+          <button type="button" onClick={suggestRootCause} disabled={suggestingRootCause}
+            style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, color: '#6d28d9', fontWeight: 700, fontSize: '0.72rem', padding: '3px 9px', cursor: 'pointer' }}>
+            {suggestingRootCause ? 'Thinking…' : '✨ Suggest Root Cause (AI)'}
+          </button>
         </div>
 
         {(() => {
