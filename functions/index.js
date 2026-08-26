@@ -925,6 +925,75 @@ exports.sendInvite = onCall(async (request) => {
   return { success: true, inviteId: inviteRef.id };
 });
 
+// AI assistant for the Coaching Log — two modes:
+//   'questions' — suggest 4 open-ended coaching questions from a coaching goal
+//   'outcome'   — draft a short outcome summary from session notes + action items
+// Uses Anthropic's API directly via fetch (Node 20 has it built in) rather than
+// pulling in the SDK, since this is the only AI call in the app so far.
+exports.coachingAiAssist = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) throw new HttpsError('failed-precondition', 'AI assistant is not configured yet — ask your admin to add the ANTHROPIC_API_KEY secret.');
+
+  const { mode, goal, notes, actionItems } = request.data || {};
+  let systemPrompt, userPrompt;
+
+  if (mode === 'questions') {
+    if (!(goal || '').trim()) throw new HttpsError('invalid-argument', 'Enter a coaching goal first');
+    systemPrompt = 'You are an expert executive coach. Given a coaching goal, suggest exactly 4 short, open-ended coaching questions a manager could ask in the session to help the coachee reach their own insights (questions-first coaching, not advice-giving). Return ONLY a JSON array of 4 strings — no other text, no markdown.';
+    userPrompt = `Coaching goal: ${goal.trim()}`;
+  } else if (mode === 'outcome') {
+    if (!(notes || '').trim()) throw new HttpsError('invalid-argument', 'Add session notes first');
+    const itemsText = (actionItems || [])
+      .map(a => (typeof a === 'string' ? a : a?.action || ''))
+      .filter(Boolean)
+      .join('; ');
+    systemPrompt = 'You are an expert executive coach. Given coaching session notes and action items, write a concise 2-3 sentence outcome summary suitable for a coaching log record. Return ONLY the outcome text — no preamble, no quotes, no markdown.';
+    userPrompt = `Session notes: ${notes.trim()}\n\nAction items: ${itemsText || 'None recorded'}`;
+  } else {
+    throw new HttpsError('invalid-argument', 'Unknown mode');
+  }
+
+  let resp;
+  try {
+    resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 400,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userPrompt }],
+      }),
+    });
+  } catch (e) {
+    throw new HttpsError('unavailable', 'Could not reach the AI service: ' + (e?.message || 'network error'));
+  }
+
+  if (!resp.ok) {
+    const errText = await resp.text().catch(() => '');
+    throw new HttpsError('internal', `AI request failed (${resp.status}): ${errText.slice(0, 200)}`);
+  }
+
+  const data = await resp.json();
+  const text = (data.content || []).map(b => b.text || '').join('').trim();
+
+  if (mode === 'questions') {
+    let questions;
+    try {
+      questions = JSON.parse(text);
+    } catch {
+      questions = text.split('\n').map(s => s.replace(/^[-*\d.\s]+/, '').trim()).filter(Boolean);
+    }
+    return { questions: (Array.isArray(questions) ? questions : []).slice(0, 4) };
+  }
+  return { outcome: text };
+});
+
 exports.deleteUser = onCall(async (request) => {
   if (request.auth?.token?.email !== 'hectorg@accountability-app.com') {
     throw new HttpsError('permission-denied', 'Only master admin can delete users');

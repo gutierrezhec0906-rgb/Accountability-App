@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import DateStatus from '../components/DateStatus';
 import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { calculateScore, logPointEvent, isCompleteCoachingSession, weekMonday } from '../utils/scoring';
@@ -174,6 +175,9 @@ export default function Coaching() {
   const [editingId, setEditingId]         = useState(null);
   const [editForm, setEditForm]           = useState(null);
   const [form, setForm]                   = useState(emptyForm);
+  const [suggestedQuestions, setSuggestedQuestions] = useState([]);
+  const [suggestingQuestions, setSuggestingQuestions] = useState(false);
+  const [suggestingOutcome, setSuggestingOutcome]     = useState(false);
   const [closingId, setClosingId]         = useState(null);
   const [closeForm, setCloseForm]         = useState({ comments: '', outcome: '' });
   const [closing, setClosing]             = useState(false);
@@ -244,6 +248,7 @@ export default function Coaching() {
       await persist(updated);
       rememberName(form.coachee);
       setForm(emptyForm);
+      setSuggestedQuestions([]);
       setShowForm(false);
       const earned = await maybeLogCoachingPoints(newSession);
       calculateScore(currentUser.uid).catch(() => {});
@@ -257,6 +262,35 @@ export default function Coaching() {
     } catch (e) {
       toast.error('Save failed: ' + e.message);
     }
+  }
+
+  // AI assistant (coachingAiAssist Cloud Function) — suggest coaching questions
+  // from a goal, or draft an outcome summary from notes + action items.
+  async function suggestQuestions(goal) {
+    if (!(goal || '').trim()) return toast.error('Enter a coaching goal first');
+    setSuggestingQuestions(true);
+    setSuggestedQuestions([]);
+    try {
+      const fn = httpsCallable(getFunctions(), 'coachingAiAssist');
+      const res = await fn({ mode: 'questions', goal });
+      setSuggestedQuestions(res.data?.questions || []);
+    } catch (e) {
+      toast.error(e?.message || 'AI suggestion failed');
+    }
+    setSuggestingQuestions(false);
+  }
+
+  async function suggestOutcome(session) {
+    if (!(session?.notes || '').trim()) return toast.error('This session has no notes to summarize');
+    setSuggestingOutcome(true);
+    try {
+      const fn = httpsCallable(getFunctions(), 'coachingAiAssist');
+      const res = await fn({ mode: 'outcome', notes: session.notes, actionItems: session.actionItems });
+      if (res.data?.outcome) setCloseForm(f => ({ ...f, outcome: res.data.outcome }));
+    } catch (e) {
+      toast.error(e?.message || 'AI suggestion failed');
+    }
+    setSuggestingOutcome(false);
   }
 
   function startClose(s) {
@@ -423,6 +457,20 @@ export default function Coaching() {
               <label className="label">Coaching Goal</label>
               <textarea className="input" rows={2} value={form.coachingGoal} onChange={e => setForm(f => ({ ...f, coachingGoal: e.target.value }))} placeholder="What is the specific outcome you want from this session?" />
               <FieldGuide guideKey="coachingGoal" />
+              <button type="button" onClick={() => suggestQuestions(form.coachingGoal)} disabled={suggestingQuestions}
+                style={{ marginTop: 6, background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, color: '#6d28d9', fontWeight: 700, fontSize: '0.75rem', padding: '4px 10px', cursor: 'pointer' }}>
+                {suggestingQuestions ? 'Thinking…' : '✨ Suggest Coaching Questions (AI)'}
+              </button>
+              {suggestedQuestions.length > 0 && (
+                <div style={{ marginTop: 8, background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 10, padding: '0.6rem 0.875rem' }}>
+                  <p style={{ fontSize: '0.68rem', fontWeight: 800, color: '#6d28d9', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 6px' }}>AI-Suggested Questions</p>
+                  <ul style={{ margin: 0, paddingLeft: 18 }}>
+                    {suggestedQuestions.map((q, i) => (
+                      <li key={i} style={{ fontSize: '0.82rem', color: '#4c1d95', marginBottom: 4 }}>{q}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
             <div style={{ gridColumn: '1/-1' }}>
               <label className="label">Session Notes</label>
@@ -441,7 +489,7 @@ export default function Coaching() {
             </div>
             <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10 }}>
               <button className="btn-primary" type="submit">Save Session</button>
-              <button className="btn-secondary" type="button" onClick={() => setShowForm(false)}>Cancel</button>
+              <button className="btn-secondary" type="button" onClick={() => { setShowForm(false); setSuggestedQuestions([]); }}>Cancel</button>
             </div>
           </form>
         </div>
@@ -594,6 +642,10 @@ export default function Coaching() {
                         <textarea className="input" rows={2} required value={closeForm.outcome}
                           onChange={e => setCloseForm(f => ({ ...f, outcome: e.target.value }))}
                           placeholder="What was the result of this coaching session?" />
+                        <button type="button" onClick={() => suggestOutcome(s)} disabled={suggestingOutcome}
+                          style={{ marginTop: 6, background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, color: '#6d28d9', fontWeight: 700, fontSize: '0.75rem', padding: '4px 10px', cursor: 'pointer' }}>
+                          {suggestingOutcome ? 'Thinking…' : '✨ Draft Outcome from Notes (AI)'}
+                        </button>
                       </div>
                       <div style={{ marginBottom: 12 }}>
                         <label className="label">Additional Comments (optional)</label>

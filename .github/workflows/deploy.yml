@@ -37,6 +37,7 @@ jobs:
         run: |
           echo "ZOHO_EMAIL=${{ secrets.ZOHO_EMAIL }}" > functions/.env
           echo "ZOHO_APP_PASSWORD=${{ secrets.ZOHO_APP_PASSWORD }}" >> functions/.env
+          echo "ANTHROPIC_API_KEY=${{ secrets.ANTHROPIC_API_KEY }}" >> functions/.env
 
       - name: Deploy to Firebase Hosting
         uses: FirebaseExtended/action-hosting-deploy@v0
