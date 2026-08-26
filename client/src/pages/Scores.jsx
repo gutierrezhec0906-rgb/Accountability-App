@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, getDocs, collection, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { calculateScore, localDateStr } from '../utils/scoring';
@@ -363,33 +363,50 @@ export default function Scores() {
     fetchHistory();
   }, [currentUser, score]);
 
+  // Mirrors Team.jsx's member-visibility rule: an Admin sees every approved
+  // user, a Leader/Manager sees their whole company, and everyone else only
+  // sees whoever the master admin explicitly granted via visibleScoreUids.
+  // Previously this table ONLY ever read visibleScoreUids, regardless of role
+  // — so an Admin/Leader/Manager (already allowed onto this table by
+  // canSeeTeam) saw an empty/partial list unless someone manually curated it,
+  // missing teammates that Team.jsx already shows them.
   useEffect(() => {
     if (!currentUser) return;
+    const isMasterAdmin = currentUser?.email === 'hectorg@accountability-app.com' || userProfile?.isAdmin;
     async function fetchTeam() {
       setLoadingTeam(true);
       try {
-        const snap = await getDoc(doc(db, 'users', currentUser.uid));
-        const visibleUids = snap.exists() ? (snap.data().visibleScoreUids || []) : [];
-        if (!visibleUids.length) { setTeamScores([]); setLoadingTeam(false); return; }
-        // Read each direct report's live score from their user doc.
-        const docs = await Promise.all(
-          visibleUids
-            .filter(uid => uid !== currentUser.uid)
-            .map(uid => getDoc(doc(db, 'users', uid)).catch(() => null))
-        );
-        const members = docs
-          .filter(d => d && d.exists())
-          .map(d => {
-            const u = d.data();
-            return { uid: d.id, displayName: u.displayName || u.email, role: u.role || '', calculatedScore: u.calculatedScore ?? 0 };
-          })
+        let members;
+        if (isMasterAdmin) {
+          const snap = await getDocs(query(collection(db, 'users'), where('status', '==', 'approved')));
+          members = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+        } else if ((userProfile?.role === 'Leader' || userProfile?.role === 'Manager') && userProfile?.companyId) {
+          const snap = await getDocs(query(
+            collection(db, 'users'),
+            where('companyId', '==', userProfile.companyId),
+            where('status', '==', 'approved'),
+          ));
+          members = snap.docs.map(d => ({ uid: d.id, ...d.data() }));
+        } else {
+          const snap = await getDoc(doc(db, 'users', currentUser.uid));
+          const visibleUids = snap.exists() ? (snap.data().visibleScoreUids || []) : [];
+          const docs = await Promise.all(
+            visibleUids
+              .filter(uid => uid !== currentUser.uid)
+              .map(uid => getDoc(doc(db, 'users', uid)).catch(() => null))
+          );
+          members = docs.filter(d => d && d.exists()).map(d => ({ uid: d.id, ...d.data() }));
+        }
+        const list = members
+          .filter(u => u.uid !== currentUser.uid)
+          .map(u => ({ uid: u.uid, displayName: u.displayName || u.email, role: u.role || '', calculatedScore: u.calculatedScore ?? 0 }))
           .sort((a, b) => (b.calculatedScore || 0) - (a.calculatedScore || 0));
-        setTeamScores(members);
+        setTeamScores(list);
       } catch {}
       setLoadingTeam(false);
     }
     fetchTeam();
-  }, [currentUser, userProfile?.visibleScoreUids]);
+  }, [currentUser, userProfile?.visibleScoreUids, userProfile?.role, userProfile?.companyId, userProfile?.isAdmin]);
 
   async function handleCalculate() {
     setCalculating(true);
