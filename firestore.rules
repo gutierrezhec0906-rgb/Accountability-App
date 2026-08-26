@@ -22,9 +22,18 @@ service cloud.firestore {
     }
 
     // True when the requester has a non-null teamId — used to scope
-    // quoteComments reads/writes to teammates only (narrower than sameCompany).
+    // podcastComments reads/writes to teammates only (narrower than sameCompany).
     function myTeamId() {
       return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.teamId;
+    }
+
+    // True when the requester's own companyId matches the given companyId —
+    // used to scope quoteComments reads/writes to every member of the same
+    // company (the whole "team" as the Team page defines it), not a narrower
+    // teamId sub-group.
+    function myCompanyIdIs(companyId) {
+      return request.auth != null && companyId != null &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.companyId == companyId;
     }
 
     // App config — readable by all authenticated users
@@ -148,12 +157,13 @@ service cloud.firestore {
       allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
     }
 
-    // Leadership Quotes comments — team-scoped (not company-wide): only
-    // members sharing a teamId can read/post each other's comments.
+    // Leadership Quotes comments — company-wide: every member of the same
+    // company can read/post each other's comments, not just a narrower teamId
+    // sub-group (so nobody is isolated just for lacking a specific team assignment).
     match /quoteComments/{docId} {
-      allow read: if request.auth != null && myTeamId() != null && resource.data.teamId == myTeamId();
+      allow read: if myCompanyIdIs(resource.data.companyId);
       allow create: if request.auth != null && request.resource.data.uid == request.auth.uid &&
-        myTeamId() != null && request.resource.data.teamId == myTeamId();
+        myCompanyIdIs(request.resource.data.companyId);
       allow update: if false;
       allow delete: if request.auth != null && (resource.data.uid == request.auth.uid || isMasterAdmin());
     }

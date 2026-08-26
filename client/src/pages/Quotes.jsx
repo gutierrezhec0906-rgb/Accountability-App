@@ -26,9 +26,10 @@ function fmtCommentTime(ts) {
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
-// Facebook/Instagram-style comment thread scoped to the viewer's team —
-// expand/collapse mirrors the "Past Reflections" pattern elsewhere in this file.
-function QuoteComments({ quoteIdx, currentUser, teamId, authorName, light }) {
+// Facebook/Instagram-style comment thread scoped to the viewer's whole
+// company (every teammate, not just a narrower sub-team) — expand/collapse
+// mirrors the "Past Reflections" pattern elsewhere in this file.
+function QuoteComments({ quoteIdx, currentUser, companyId, authorName, light }) {
   const [expanded, setExpanded] = useState(false);
   const [comments, setComments] = useState(null); // null = not yet loaded
   const [text, setText] = useState('');
@@ -37,11 +38,11 @@ function QuoteComments({ quoteIdx, currentUser, teamId, authorName, light }) {
   useEffect(() => {
     if (!expanded || comments !== null) return;
     async function load() {
-      if (!teamId) { setComments([]); return; }
+      if (!companyId) { setComments([]); return; }
       try {
         const snap = await getDocs(query(
           collection(db, 'quoteComments'),
-          where('teamId', '==', teamId),
+          where('companyId', '==', companyId),
           where('quoteIdx', '==', quoteIdx),
         ));
         const list = snap.docs.map(d => ({ id: d.id, ...d.data() }));
@@ -54,21 +55,21 @@ function QuoteComments({ quoteIdx, currentUser, teamId, authorName, light }) {
       } catch (e) { console.error(e); setComments([]); }
     }
     load();
-  }, [expanded, teamId, quoteIdx]);
+  }, [expanded, companyId, quoteIdx]);
 
   const count = comments?.length ?? null;
 
   async function postComment() {
     const trimmed = text.trim();
     if (!trimmed) return;
-    if (!teamId) {
-      toast.error("You need to be assigned to a team before you can comment. Ask your admin.");
+    if (!companyId) {
+      toast.error("You need to be assigned to a company before you can comment. Ask your admin.");
       return;
     }
     setPosting(true);
     try {
       const newComment = {
-        quoteIdx, teamId, uid: currentUser.uid, authorName: authorName || 'Teammate',
+        quoteIdx, companyId, uid: currentUser.uid, authorName: authorName || 'Teammate',
         text: trimmed, createdAt: serverTimestamp(),
       };
       const ref = await addDoc(collection(db, 'quoteComments'), newComment);
@@ -102,9 +103,9 @@ function QuoteComments({ quoteIdx, currentUser, teamId, authorName, light }) {
       </button>
       {expanded && (
         <div style={{ marginTop: 8, borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', padding: '0.65rem' }}>
-          {!teamId && (
+          {!companyId && (
             <p style={{ fontSize: '0.72rem', color: '#b45309', margin: '0 0 8px' }}>
-              Ask your admin to assign you to a team to see and post your team's comments.
+              Ask your admin to assign you to a company to see and post your team's comments.
             </p>
           )}
           {comments === null ? (
@@ -233,14 +234,14 @@ export default function Quotes() {
   const [toast, setToast] = useState('');
   const [expandedRef, setExpandedRef] = useState(null);
 
-  // Team-scoped quote reactions — each teammate's own pick lives on their own
-  // users/{uid}.quoteReactions.{quoteIdx} field (no rules change needed, same
-  // pattern as everything else in this doc); we aggregate everyone sharing
-  // the current user's teamId client-side so likes accumulate visibly across
-  // the team (not the whole company).
+  // Company-scoped quote reactions — each teammate's own pick lives on their
+  // own users/{uid}.quoteReactions.{quoteIdx} field (no rules change needed,
+  // same pattern as everything else in this doc); we aggregate everyone
+  // sharing the current user's companyId client-side so likes accumulate
+  // visibly across the whole team (every company member), not a narrower sub-team.
   const [myReactions, setMyReactions] = useState({});   // { quoteIdx: emoji }
   const [teamCounts, setTeamCounts] = useState({});     // { quoteIdx: { emoji: count } }
-  const [myTeamId, setMyTeamId] = useState(null);
+  const [myCompanyId, setMyCompanyId] = useState(null);
   const [myName, setMyName] = useState('');
 
   const alreadyDoneToday = reflections.some(r => r.date === today);
@@ -256,12 +257,12 @@ export default function Quotes() {
           setMyReactions(data.quoteReactions || {});
           setMyName(data.name || data.displayName || currentUser.email || 'Teammate');
 
-          const teamId = data.teamId || null;
-          setMyTeamId(teamId);
-          if (teamId) {
+          const companyId = data.companyId || null;
+          setMyCompanyId(companyId);
+          if (companyId) {
             const membersSnap = await getDocs(query(
               collection(db, 'users'),
-              where('teamId', '==', teamId)
+              where('companyId', '==', companyId)
             ));
             const counts = {};
             membersSnap.docs.forEach(d => {
@@ -273,7 +274,7 @@ export default function Quotes() {
             });
             setTeamCounts(counts);
           } else {
-            // No team assigned yet — show just the current user's own reactions.
+            // No company assigned yet — show just the current user's own reactions.
             const counts = {};
             Object.entries(data.quoteReactions || {}).forEach(([qIdx, emoji]) => {
               counts[qIdx] = { [emoji]: 1 };
@@ -407,7 +408,7 @@ export default function Quotes() {
           <TeamReactionRow counts={teamCounts[String(todayIdx)]} myEmoji={myReactions[String(todayIdx)]} onToggle={emoji => toggleQuoteReaction(todayIdx, emoji)} />
         </div>
         <div style={{ marginTop: 14, background: 'rgba(255,255,255,0.06)', borderRadius: 10, padding: '0.5rem 0.75rem' }}>
-          <QuoteComments quoteIdx={todayIdx} currentUser={currentUser} teamId={myTeamId} authorName={myName} light />
+          <QuoteComments quoteIdx={todayIdx} currentUser={currentUser} companyId={myCompanyId} authorName={myName} light />
         </div>
       </div>
 
@@ -565,7 +566,7 @@ export default function Quotes() {
               </div>
             </div>
             <TeamReactionRow counts={teamCounts[String(idx)]} myEmoji={myReactions[String(idx)]} onToggle={emoji => toggleQuoteReaction(idx, emoji)} />
-            <QuoteComments quoteIdx={idx} currentUser={currentUser} teamId={myTeamId} authorName={myName} />
+            <QuoteComments quoteIdx={idx} currentUser={currentUser} companyId={myCompanyId} authorName={myName} />
           </div>
         ))}
         {showFavs && favorites.length === 0 && (
