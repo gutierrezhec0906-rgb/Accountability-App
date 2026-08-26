@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db, storage } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore, localDateStr } from '../utils/scoring';
@@ -97,6 +98,7 @@ export default function SmartGoals() {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
+  const [draftingSmart, setDraftingSmart] = useState(false);
   const [expanded, setExpanded] = useState(null);
   const [statusFilter, setStatusFilter] = useState(null); // clicking a stat tile filters the list to that status
   const [pendingTeamGoals, setPendingTeamGoals] = useState([]); // for leaders/admins
@@ -146,6 +148,20 @@ export default function SmartGoals() {
   useEffect(() => { fetchPendingTeamGoals(); }, [userProfile?.companyId, isLeader]);
 
   function openCreate() { setForm(emptyForm); setEditing(null); setShowForm(true); }
+
+  async function draftSmartGoal() {
+    if (!form.title.trim()) return toast.error('Enter a goal title first');
+    setDraftingSmart(true);
+    try {
+      const fn = httpsCallable(getFunctions(), 'smartGoalAiAssist');
+      const res = await fn({ title: form.title, dueDate: form.dueDate });
+      const draft = res.data?.draft;
+      if (draft) setForm(f => ({ ...f, ...draft }));
+    } catch (e) {
+      toast.error(e?.message || 'AI suggestion failed');
+    }
+    setDraftingSmart(false);
+  }
   function openEdit(goal) {
     setForm({ title: goal.title, specific: goal.specific || '', measurable: goal.measurable || '', achievable: goal.achievable || '', relevant: goal.relevant || '', timeBound: goal.timeBound || '', dueDate: goal.dueDate || '', status: goal.status });
     setEditing(goal.id);
@@ -622,6 +638,11 @@ export default function SmartGoals() {
                   <input className="input" type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} />
                 </div>
               </div>
+
+              <button type="button" onClick={draftSmartGoal} disabled={draftingSmart}
+                style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, color: '#6d28d9', fontWeight: 700, fontSize: '0.78rem', padding: '6px 12px', cursor: 'pointer', alignSelf: 'flex-start' }}>
+                {draftingSmart ? 'Drafting…' : '✨ Draft All 5 SMART Fields from Title (AI)'}
+              </button>
 
               {/* SMART fields */}
               {SMART.map(s => (

@@ -1040,6 +1040,31 @@ exports.fiveWhysAiAssist = onCall(async (request) => {
   return { suggestion: text };
 });
 
+// AI assistant for SMART Goals — drafts all 5 SMART components (Specific,
+// Measurable, Achievable, Relevant, Time-Bound) from a rough goal title/idea,
+// so a user can start from a draft instead of a blank field for each one.
+exports.smartGoalAiAssist = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+  const { title, dueDate } = request.data || {};
+  if (!(title || '').trim()) throw new HttpsError('invalid-argument', 'Enter a goal title first');
+
+  const systemPrompt = 'You are an expert in SMART goal-setting for leadership development. Given a rough goal title (and optionally a target date), draft a strong, specific version of each SMART component: Specific, Measurable, Achievable, Relevant, and Time-Bound. Each should be 1-2 concrete sentences (20-40 words), written as if the goal-owner wrote it themselves in first person. Return ONLY a JSON object with exactly these keys: specific, measurable, achievable, relevant, timeBound. No other text, no markdown.';
+  const userPrompt = `Goal title: ${title.trim()}${dueDate ? `\nTarget date: ${dueDate}` : ''}`;
+
+  const text = await callClaude(systemPrompt, userPrompt, 600);
+  const cleaned = stripCodeFence(text);
+  let draft;
+  try {
+    draft = JSON.parse(cleaned);
+  } catch {
+    throw new HttpsError('internal', 'AI response could not be parsed — try again');
+  }
+  const fields = ['specific', 'measurable', 'achievable', 'relevant', 'timeBound'];
+  const result = {};
+  fields.forEach(k => { result[k] = typeof draft?.[k] === 'string' ? draft[k].trim() : ''; });
+  return { draft: result };
+});
+
 exports.deleteUser = onCall(async (request) => {
   if (request.auth?.token?.email !== 'hectorg@accountability-app.com') {
     throw new HttpsError('permission-denied', 'Only master admin can delete users');
