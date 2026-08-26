@@ -983,11 +983,17 @@ exports.coachingAiAssist = onCall(async (request) => {
   const text = (data.content || []).map(b => b.text || '').join('').trim();
 
   if (mode === 'questions') {
+    // Strip a ```json ... ``` (or bare ```) fence some models wrap the array in
+    // before parsing, so it doesn't leak "```json" / "[" / "]" as fake questions.
+    const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
     let questions;
     try {
-      questions = JSON.parse(text);
+      questions = JSON.parse(cleaned);
     } catch {
-      questions = text.split('\n').map(s => s.replace(/^[-*\d.\s]+/, '').trim()).filter(Boolean);
+      questions = cleaned
+        .split('\n')
+        .map(s => s.replace(/^[-*\d.\s]+/, '').replace(/^["'[]+|["',\]]+$/g, '').trim())
+        .filter(s => s && s !== '[' && s !== ']');
     }
     return { questions: (Array.isArray(questions) ? questions : []).slice(0, 4) };
   }
