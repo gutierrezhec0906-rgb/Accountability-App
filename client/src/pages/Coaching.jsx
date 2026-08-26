@@ -527,7 +527,7 @@ export default function Coaching() {
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>📅 {s.date} · ⏱ {s.duration}</p>
-                    {s.nextSession && <span><DateStatus date={s.nextSession} prefix="Next · " /></span>}
+                    {!s.closed && s.nextSession && <span><DateStatus date={s.nextSession} prefix="Next · " /></span>}
                   </div>
                 </div>
               </div>
@@ -618,7 +618,7 @@ export default function Coaching() {
                     ))}
                   </div>
                 )}
-                {s.nextSession && <div style={{ marginTop: 10 }}><DateStatus date={s.nextSession} prefix="Next session · " /></div>}
+                {!s.closed && s.nextSession && <div style={{ marginTop: 10 }}><DateStatus date={s.nextSession} prefix="Next session · " /></div>}
 
                 {/* Close Session — the very last thing in the details view */}
                 <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px dashed var(--border)' }}>
