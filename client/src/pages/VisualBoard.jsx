@@ -9,7 +9,7 @@ import { logPointEvent, calculateScore } from '../utils/scoring';
 import { RecommitBadge } from '../components/DateStatus';
 import NameField from '../components/NameField';
 import { useSavedNames } from '../utils/savedNames';
-import { downloadCSV } from '../utils/csvExport';
+import { downloadXLSX } from '../utils/excelExport';
 
 // Grows with its content so a long action title/description is never clipped
 // to a single line — matches the pattern used for Fishbone/5S notes.
@@ -308,7 +308,7 @@ export default function VisualBoard() {
       ];
     });
     const dateStr = new Date().toISOString().split('T')[0];
-    downloadCSV(`${filenameBase}_${dateStr}.csv`, headers, rows);
+    downloadXLSX(`${filenameBase}_${dateStr}.xlsx`, 'Actions', headers, rows);
     toast.success(`Exported ${list.length} ${label.toLowerCase()}`);
   }
 
