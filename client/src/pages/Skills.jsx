@@ -13,6 +13,74 @@ function thirtyDayCutoff() {
   return localDateStr(new Date(Date.now() - THIRTY_DAYS_MS));
 }
 
+// Two-line trend chart — self-assessment (purple) vs peer-assessment (blue)
+// average score (1-5) across the last 8 saved records, chronological.
+function SkillsTrendChart({ history }) {
+  const last8 = [...history]
+    .sort((a, b) => new Date(a.savedAt) - new Date(b.savedAt))
+    .slice(-8);
+
+  const W = 480, H = 200, PAD_L = 30, PAD_R = 16, PAD_T = 18, PAD_B = 28;
+  const chartW = W - PAD_L - PAD_R;
+  const chartH = H - PAD_T - PAD_B;
+
+  if (last8.length === 0) {
+    return (
+      <div style={{ height: H, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.78rem', textAlign: 'center', padding: '0 1rem' }}>
+        No assessments saved yet — save a self or peer assessment to start your trend.
+      </div>
+    );
+  }
+
+  function px(i) { return last8.length === 1 ? PAD_L + chartW / 2 : PAD_L + (i / (last8.length - 1)) * chartW; }
+  function py(v) { return PAD_T + chartH - (v / 5) * chartH; }
+
+  const selfPts = last8.map((r, i) => (r.avgSelf != null ? [px(i), py(r.avgSelf)] : null)).filter(Boolean);
+  const peerPts = last8.map((r, i) => (r.avgPeer != null ? [px(i), py(r.avgPeer)] : null)).filter(Boolean);
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: 16, marginBottom: 8 }}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 700, color: '#6d28d9' }}>
+          <span style={{ width: 14, height: 3, background: '#7c3aed', borderRadius: 2, display: 'inline-block' }} /> Self-Assessment
+        </span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 700, color: '#0f2044' }}>
+          <span style={{ width: 14, height: 3, background: '#1d4ed8', borderRadius: 2, display: 'inline-block' }} /> Peer Assessment
+        </span>
+      </div>
+      <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
+        {[0, 1, 2, 3, 4, 5].map(tick => {
+          const y = py(tick);
+          return (
+            <g key={tick}>
+              <line x1={PAD_L} y1={y} x2={W - PAD_R} y2={y} stroke="#e2e8f0" strokeWidth="1" />
+              <text x={PAD_L - 6} y={y + 4} textAnchor="end" fontSize="10" fill="#94a3b8">{tick}</text>
+            </g>
+          );
+        })}
+
+        {selfPts.length > 0 && (
+          <polyline points={selfPts.map(([x, y]) => `${x},${y}`).join(' ')} fill="none" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        )}
+        {peerPts.length > 0 && (
+          <polyline points={peerPts.map(([x, y]) => `${x},${y}`).join(' ')} fill="none" stroke="#1d4ed8" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+        )}
+
+        {selfPts.map(([x, y], i) => <circle key={`s${i}`} cx={x} cy={y} r="4" fill="white" stroke="#7c3aed" strokeWidth="2.5" />)}
+        {peerPts.map(([x, y], i) => <circle key={`p${i}`} cx={x} cy={y} r="4" fill="white" stroke="#1d4ed8" strokeWidth="2.5" />)}
+
+        {last8.map((r, i) => (
+          <text key={r.id} x={px(i)} y={H - 6} textAnchor="middle" fontSize="9.5" fill="#94a3b8">
+            {new Date(r.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          </text>
+        ))}
+
+        <line x1={PAD_L} y1={PAD_T + chartH} x2={W - PAD_R} y2={PAD_T + chartH} stroke="#e2e8f0" strokeWidth="1" />
+      </svg>
+    </div>
+  );
+}
+
 // self: 0 = not yet rated (RatingDots renders all dots empty, levelLabels[0] is
 // blank) — a brand-new account should start with a clean, unrated matrix, not
 // a pre-filled 3/5 "Proficient" average.
@@ -661,6 +729,14 @@ export default function Skills() {
           </div>
         ))}
       </div>
+
+      {/* Trend chart — last 8 assessments, self vs peer */}
+      {history.length > 0 && (
+        <div className="card" style={{ padding: '1rem 1.25rem', marginTop: '1.5rem' }}>
+          <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.9rem' }}>Score Trend — Last 8 Assessments</h4>
+          <SkillsTrendChart history={history} />
+        </div>
+      )}
 
       {/* Assessment records */}
       {history.length > 0 && (
