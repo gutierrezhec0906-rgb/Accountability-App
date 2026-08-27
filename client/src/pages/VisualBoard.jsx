@@ -289,22 +289,26 @@ export default function VisualBoard() {
     }
   }
 
-  // Excel export — Title/Action, Owner, Due Date, Notes, Status (Red/Yellow/Green)
+  // Excel export — Title/Action, Owner, Due Date, Notes, Status, Date Closed.
+  // Status is Red/Yellow/Green for open items, but a closed item is just "Closed" —
+  // its due-date color no longer means anything once the action is done.
   function exportActions(list, label, filenameBase) {
     if (list.length === 0) {
       toast(`No ${label.toLowerCase()} to export`, { icon: '📭' });
       return;
     }
-    const headers = ['Title/Action', 'Owner', 'Due Date', 'Notes', 'Status'];
+    const headers = ['Title/Action', 'Owner', 'Due Date', 'Notes', 'Status', 'Date Closed'];
     const rows = list.map(item => {
       const activeDue = item.recommitmentDate || item.dueDate;
       const st = computeStatus(item.dueDate, item.recommitmentDate);
+      const closedDate = item.closedAt?.seconds ? new Date(item.closedAt.seconds * 1000).toLocaleDateString('en-US') : '';
       return [
         item.title || '',
         item.owner || '',
         activeDue ? new Date(activeDue + 'T00:00:00').toLocaleDateString('en-US') : '',
         item.notes || '',
-        st.label,
+        item.closed ? 'Closed' : st.label,
+        closedDate,
       ];
     });
     const dateStr = new Date().toISOString().split('T')[0];
