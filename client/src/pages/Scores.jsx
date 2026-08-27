@@ -31,7 +31,7 @@ const BREAKDOWN_CONFIG = [
   { key: 'quotes', label: 'Leadership Quotes', max: 20, icon: '💬', desc: '+5 pts each time you reflect on a leadership quote. Points last one week only — last week’s quote points expire, so reflect again each week to keep them.' },
   { key: 'bonus',     label: 'Bonus Points',     max: 20, icon: '🏆',  desc: 'Extra points from other daily actions' },
   { key: 'sqdip', label: 'SQDIP Action Plan', max: 10, icon: '📋', desc: '+1 pt per action item registered across any SQDIP letter (Safety/Quality/Delivery/Inventory/People), max 10. Computed live — the point is lost the moment that item\'s due date passes, and comes back if you push the date out again. Items with no due date always count.' },
-  { key: 'training', label: 'Training Center', max: 10, icon: '🎓', desc: '+1 pt per training completed on time (rolling 30 days), max 10. Letting a training go past due costs 1 pt — recommit to a new due date to stop the bleeding and re-earn it by finishing on time.' },
+  { key: 'training', label: 'Training Center', max: 20, icon: '🎓', desc: '+1 pt per training created (max 10) + 2 pts per training completed on time (max 10), both rolling 30 days. Letting a training go past due costs 1 pt — recommit to a new due date to stop the bleeding and re-earn it by finishing on time.' },
 ];
 
 // Score Breakdown grouped into six sections: General Scores first, then the five

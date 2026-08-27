@@ -304,14 +304,21 @@ export async function calculateScore(uid) {
     .filter(e => e.toolLabel === 'Action Closed On Time' && e.date >= sevenDaysAgoStr && e.points > 0)
     .reduce((s, e) => s + e.points, 0);
 
-  // --- Training Center (0-10): +1 pt per training completed on time, rolling
-  //     30-day window. Going past due costs 1 pt each — applied once via the
+  // --- Training Center (0-20): +1 pt per training created (max 10, rolling
+  //     30-day window) + 2 pts per training completed on time (max 10, rolling
+  //     30-day window). Going past due costs 1 pt each — applied once via the
   //     global penaltyPoints counter (Training.jsx sets a per-item flag so it
   //     isn't deducted twice, and resets it on recommit so a future miss can
   //     deduct again). ---
-  const trainingPoints = Math.min(10,
-    allEvents.filter(e => e.toolLabel === 'Training Completed On Time' && e.date >= thirtyDaysAgoStr && e.points > 0).length
+  const trainingCreationPoints = Math.min(10,
+    allEvents.filter(e => e.toolLabel === 'Training Created' && e.date >= thirtyDaysAgoStr && e.points > 0)
+      .reduce((s, e) => s + e.points, 0)
   );
+  const trainingCompletionPoints = Math.min(10,
+    allEvents.filter(e => e.toolLabel === 'Training Completed On Time' && e.date >= thirtyDaysAgoStr && e.points > 0)
+      .reduce((s, e) => s + e.points, 0)
+  );
+  const trainingPoints = trainingCreationPoints + trainingCompletionPoints;
 
   // --- Mentoring (0-10): +5 pts per fully-logged session (date, progress review,
   //     challenge, and action item all filled). Rolling 60-day window — sessions
@@ -426,7 +433,7 @@ export async function calculateScore(uid) {
   const CAPS = {
     breadth: 10, frequency: 20, quality: 5, smart: 15, coaching: 20, problemSolving: 20,
     disc: 5, eq: 5, mindfulness: 2, feedbackGiven: 5, actionsClosed: 25, mentoring: 10,
-    urgency: 20, skills: 3, lean5s: 5, waste: 5, career: 10, lob: 8, vision: 20, quotes: 20, bonus: 20, sqdip: 10, training: 10,
+    urgency: 20, skills: 3, lean5s: 5, waste: 5, career: 10, lob: 8, vision: 20, quotes: 20, bonus: 20, sqdip: 10, training: 20,
   };
   const parts = {
     breadth, frequency, quality, smart: smartScore, coaching: coachingScore, problemSolving: psScore,

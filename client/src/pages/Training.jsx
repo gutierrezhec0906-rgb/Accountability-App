@@ -86,13 +86,13 @@ export default function Training() {
 
     if (onTime && currentUser) {
       const { awarded, capReached } = await logPointEvent(currentUser.uid, {
-        points: 1,
+        points: 2,
         toolLabel: 'Training Completed On Time',
         reason: `Completed "${t.title}" on time`,
       });
       if (awarded) {
         calculateScore(currentUser.uid).catch(() => {});
-        toast.success('+1 pt — training completed on time!', { duration: 4000 });
+        toast.success('+2 pts — training completed on time!', { duration: 4000 });
       } else if (capReached) {
         toast('Training completed! Daily 25-pt cap reached today.', { icon: '📅', duration: 4000 });
       }
@@ -150,14 +150,27 @@ export default function Training() {
     setCustomCategory(false);
   }
 
-  function submitTraining(e) {
+  async function submitTraining(e) {
     e.preventDefault();
     if (editingId != null) {
       persist(trainings.map(x => x.id === editingId ? { ...x, ...form } : x));
       toast.success('Training updated');
     } else {
-      persist([...trainings, { ...form, id: Date.now(), completed: false }]);
+      await persist([...trainings, { ...form, id: Date.now(), completed: false }]);
       toast.success('Training added');
+      if (currentUser) {
+        const { awarded, capReached } = await logPointEvent(currentUser.uid, {
+          points: 1,
+          toolLabel: 'Training Created',
+          reason: `Created training "${form.title}"`,
+        });
+        if (awarded) {
+          calculateScore(currentUser.uid).catch(() => {});
+          toast.success('+1 pt — training created!', { duration: 4000 });
+        } else if (capReached) {
+          toast('Training added! Daily 25-pt cap reached today.', { icon: '📅', duration: 4000 });
+        }
+      }
     }
     cancelForm();
   }
