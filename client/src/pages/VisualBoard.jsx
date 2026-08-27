@@ -468,8 +468,21 @@ export default function VisualBoard() {
         )}
       </div>}
 
-      {/* Board items — hidden when viewing closed actions */}
-      {!showClosed && <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Board items — hidden when viewing closed actions. Independently
+          scrollable so the filter/sort toolbar above stays visible while
+          scrolling a long list (scrollable-panel pattern: maxHeight+overflowY
+          on this element, flexShrink:0 on every card, custom scrollbar). */}
+      <style>{`
+        .board-items-scroll::-webkit-scrollbar { width: 8px; -webkit-appearance: none; }
+        .board-items-scroll::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 8px; }
+        .board-items-scroll::-webkit-scrollbar-thumb { background: #64748b; border-radius: 8px; border: 1px solid #e2e8f0; }
+      `}</style>
+      {!showClosed && <div className="board-items-scroll" style={{
+        display: 'flex', flexDirection: 'column', gap: 10,
+        maxHeight: 'clamp(320px, calc(100dvh - 420px), 640px)',
+        overflowY: 'scroll', paddingRight: 6, paddingBottom: 8,
+        scrollbarWidth: 'thin', scrollbarColor: '#64748b #e2e8f0',
+      }}>
         {filtered.map(item => {
           const { st } = item;
           const activeDue = item.recommitmentDate || item.dueDate;
@@ -478,7 +491,7 @@ export default function VisualBoard() {
           const isConfirmingClose = closingId === item.id;
           const recommitCount = item.recommitmentCount || 0;
           return (
-            <div key={item.id} className="card" style={{ padding: '1rem 1.25rem', borderLeft: `4px solid ${st.color}`, background: st.overdue ? '#fff8f8' : 'white' }}>
+            <div key={item.id} className="card" style={{ flexShrink: 0, padding: '1rem 1.25rem', borderLeft: `4px solid ${st.color}`, background: st.overdue ? '#fff8f8' : 'white' }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
