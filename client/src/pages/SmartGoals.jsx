@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -10,6 +10,19 @@ import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import DateStatus, { RecommitBadge } from '../components/DateStatus';
 import { generateSmartGoalsPDF } from '../utils/moduleReports';
+
+// Grows with its content so a long goal title is never clipped to one line —
+// matches the pattern used for Fishbone/5S notes and Visual Board actions.
+function AutoGrowTextarea({ value, style, ...props }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight + 2}px`;
+  }, [value]);
+  return <textarea ref={ref} rows={1} value={value} style={{ ...style, overflow: 'hidden', resize: 'vertical' }} {...props} />;
+}
 
 const STATUS_STYLES = {
   draft:              { bg: '#f1f5f9', text: '#64748b',  label: 'Draft' },
@@ -631,7 +644,7 @@ export default function SmartGoals() {
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12 }}>
                 <div>
                   <label className="label">Goal Title *</label>
-                  <input className="input" placeholder="e.g. Improve team coaching frequency by Q3" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
+                  <AutoGrowTextarea className="input" placeholder="e.g. Improve team coaching frequency by Q3" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required style={{ minHeight: 38 }} />
                 </div>
                 <div>
                   <label className="label">Due Date</label>
