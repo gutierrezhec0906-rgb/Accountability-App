@@ -9,6 +9,7 @@ import { logPointEvent, calculateScore } from '../utils/scoring';
 import { RecommitBadge } from '../components/DateStatus';
 import NameField from '../components/NameField';
 import { useSavedNames } from '../utils/savedNames';
+import { downloadCSV } from '../utils/csvExport';
 
 // Grows with its content so a long action title/description is never clipped
 // to a single line — matches the pattern used for Fishbone/5S notes.
@@ -288,6 +289,29 @@ export default function VisualBoard() {
     }
   }
 
+  // Excel export — Title/Action, Owner, Due Date, Notes, Status (Red/Yellow/Green)
+  function exportActions(list, label, filenameBase) {
+    if (list.length === 0) {
+      toast(`No ${label.toLowerCase()} to export`, { icon: '📭' });
+      return;
+    }
+    const headers = ['Title/Action', 'Owner', 'Due Date', 'Notes', 'Status'];
+    const rows = list.map(item => {
+      const activeDue = item.recommitmentDate || item.dueDate;
+      const st = computeStatus(item.dueDate, item.recommitmentDate);
+      return [
+        item.title || '',
+        item.owner || '',
+        activeDue ? new Date(activeDue + 'T00:00:00').toLocaleDateString('en-US') : '',
+        item.notes || '',
+        st.label,
+      ];
+    });
+    const dateStr = new Date().toISOString().split('T')[0];
+    downloadCSV(`${filenameBase}_${dateStr}.csv`, headers, rows);
+    toast.success(`Exported ${list.length} ${label.toLowerCase()}`);
+  }
+
   const activeItems = items.filter(i => !i.closed);
   const closedItems = items.filter(i => i.closed);
 
@@ -361,6 +385,18 @@ export default function VisualBoard() {
           <p style={{ fontSize: '2rem', fontWeight: 900, color: '#0d9488', margin: 0, lineHeight: 1 }}>{closedItems.length}</p>
           <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0d9488', margin: '4px 0 0' }}>Closed ✓</p>
         </div>
+      </div>
+
+      {/* Excel export */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: '1.5rem', flexWrap: 'wrap' }}>
+        <button className="btn-secondary" onClick={() => exportActions(closedItems, 'Closed Actions', 'Closed_Actions')}
+          style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          📥 Export Closed Actions (Excel)
+        </button>
+        <button className="btn-secondary" onClick={() => exportActions(items, 'All Actions', 'All_Actions')}
+          style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          📥 Export All Actions (Excel)
+        </button>
       </div>
 
       {/* Add form */}
