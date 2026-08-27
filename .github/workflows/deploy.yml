@@ -3,7 +3,7 @@ name: Deploy to Firebase
 on:
   push:
     branches:
-      - claude/jolly-ptolemy-upy370
+      - 'claude/**'
 
 jobs:
   build_and_deploy:
