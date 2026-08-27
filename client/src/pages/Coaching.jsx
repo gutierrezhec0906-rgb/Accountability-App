@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import DateStatus from '../components/DateStatus';
@@ -104,6 +104,19 @@ function FieldGuide({ guideKey }) {
   );
 }
 
+// Grows with its content so a long action item is never clipped to one line —
+// matches the pattern used for Visual Board actions and SMART goal titles.
+function AutoGrowTextarea({ value, style, ...props }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight + 2}px`;
+  }, [value]);
+  return <textarea ref={ref} rows={1} value={value} style={{ ...style, overflow: 'hidden', resize: 'vertical' }} {...props} />;
+}
+
 function ActionItemsGrid({ rows, onChange }) {
   function updateRow(i, field, value) {
     const updated = rows.map((r, idx) => idx === i ? { ...r, [field]: value } : r);
@@ -126,10 +139,10 @@ function ActionItemsGrid({ rows, onChange }) {
       </div>
       {/* Data rows */}
       {rows.map((row, i) => (
-        <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 160px 140px 32px', gap: 6, marginBottom: 6 }}>
-          <input
+        <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 160px 140px 32px', gap: 6, marginBottom: 6, alignItems: 'start' }}>
+          <AutoGrowTextarea
             className="input"
-            style={{ fontSize: '0.82rem', padding: '0.45rem 0.6rem' }}
+            style={{ fontSize: '0.82rem', padding: '0.45rem 0.6rem', minHeight: 34 }}
             placeholder="Describe the action..."
             value={row.action}
             onChange={e => updateRow(i, 'action', e.target.value)}
