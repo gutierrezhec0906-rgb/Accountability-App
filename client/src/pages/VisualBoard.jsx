@@ -157,16 +157,10 @@ export default function VisualBoard() {
       await persist([newItem, ...items]);
       rememberName(form.owner);
 
-      // Notify the team — Microsoft Teams channel (if a webhook is configured)
-      // and text message to any teammate who added a phone number in Profile
-      // Settings. Both fire-and-forget — never block or fail the save itself.
-      httpsCallable(getFunctions(), 'notifyTeamsNewAction')({
-        title: form.title,
-        owner: form.owner,
-        dueDate: form.dueDate,
-        createdByName: currentUser.displayName || currentUser.email,
-      }).catch(() => {});
-      httpsCallable(getFunctions(), 'notifySmsNewAction')({
+      // Email the whole company when a new action is added. Fire-and-forget —
+      // never blocks or fails the save itself. (Teams webhook notification is
+      // built too but intentionally not wired up here yet — see notifyTeamsNewAction.)
+      httpsCallable(getFunctions(), 'notifyEmailNewAction')({
         title: form.title,
         owner: form.owner,
         dueDate: form.dueDate,

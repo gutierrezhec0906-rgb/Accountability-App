@@ -1160,6 +1160,56 @@ exports.notifySmsNewAction = onCall(async (request) => {
   return { sent, attempted: recipients.length };
 });
 
+// Emails every teammate in the same company (except whoever created it)
+// whenever a new Visual Management action item is added. Uses the existing
+// Zoho transporter/brandedEmail helper already wired up for every other
+// notification in the app — no new secrets needed.
+exports.notifyEmailNewAction = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+  const { title, owner, dueDate } = request.data || {};
+  if (!(title || '').trim()) throw new HttpsError('invalid-argument', 'Missing action title');
+
+  const callerSnap = await admin.firestore().collection('users').doc(request.auth.uid).get();
+  const caller = callerSnap.exists ? callerSnap.data() : null;
+  if (!caller?.companyId) return { sent: 0, reason: 'no-company' };
+
+  const teamSnap = await admin.firestore().collection('users')
+    .where('companyId', '==', caller.companyId)
+    .get();
+  const recipients = teamSnap.docs
+    .map(d => ({ uid: d.id, ...d.data() }))
+    .filter(u => u.uid !== request.auth.uid && (u.email || '').trim());
+
+  if (!recipients.length) return { sent: 0, reason: 'no-recipients' };
+
+  const creatorName = caller.displayName || caller.email || 'A teammate';
+  const html = brandedEmail(
+    '📋 New Action Item on the Accountability Board',
+    `<p style="color:#475569;font-size:16px;line-height:1.6;">
+       <strong>${creatorName}</strong> just added a new action to the Accountability Board:
+     </p>
+     <div style="background:white;border-radius:10px;padding:18px 20px;margin:16px 0;border:1px solid #e2e8f0;">
+       <table style="width:100%;border-collapse:collapse;">
+         <tr><td style="padding:6px 0;color:#94a3b8;font-size:13px;width:110px;">Action</td><td style="padding:6px 0;font-weight:700;color:#0f2044;">${title}</td></tr>
+         <tr><td style="padding:6px 0;color:#94a3b8;font-size:13px;">Owner</td><td style="padding:6px 0;color:#0f2044;">${owner || 'Unassigned'}</td></tr>
+         <tr><td style="padding:6px 0;color:#94a3b8;font-size:13px;">Due Date</td><td style="padding:6px 0;color:#0f2044;">${dueDate || 'No due date'}</td></tr>
+       </table>
+     </div>`,
+    'Open the Accountability Board',
+    '/visual-board'
+  );
+
+  const results = await Promise.allSettled(recipients.map(u => transporter.sendMail({
+    from: `"Accountability App" <${ADMIN_EMAIL}>`,
+    to: u.email,
+    subject: `New Action Item: "${title}"`,
+    html,
+  })));
+
+  const sent = results.filter(r => r.status === 'fulfilled').length;
+  return { sent, attempted: recipients.length };
+});
+
 exports.deleteUser = onCall(async (request) => {
   if (request.auth?.token?.email !== 'hectorg@accountability-app.com') {
     throw new HttpsError('permission-denied', 'Only master admin can delete users');
