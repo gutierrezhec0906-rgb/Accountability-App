@@ -219,6 +219,7 @@ export default function Feedback() {
   const [received, setReceived] = useState([]);
   const [requests, setRequests] = useState([]);
   const [submitting, setSubmitting] = useState(false);
+  const [improvingSBI, setImprovingSBI] = useState(false);
   const [monthlyFeedbackCount, setMonthlyFeedbackCount] = useState(0);
 
   const myName = userProfile?.displayName || currentUser?.displayName || currentUser?.email || '';
@@ -308,6 +309,28 @@ export default function Feedback() {
     await setDoc(doc(db, 'users', currentUser.uid), update, { merge: true });
     if (entries !== undefined) setGiven(entries);
     if (reqs    !== undefined) setRequests(reqs);
+  }
+
+  async function improveSBI() {
+    if (!form.when.trim() && !form.what.trim() && !form.effect.trim()) {
+      return toast.error('Fill in at least one field first');
+    }
+    setImprovingSBI(true);
+    try {
+      const fn = httpsCallable(getFunctions(), 'improveFeedbackSBI');
+      const res = await fn({ when: form.when, what: form.what, effect: form.effect });
+      if (res.data) {
+        setForm(f => ({
+          ...f,
+          when: res.data.when || f.when,
+          what: res.data.what || f.what,
+          effect: res.data.effect || f.effect,
+        }));
+      }
+    } catch (e) {
+      toast.error(e?.message || 'AI improvement failed');
+    }
+    setImprovingSBI(false);
   }
 
   async function submitFeedback(e) {
@@ -591,6 +614,10 @@ export default function Feedback() {
                       style={{ resize: 'vertical' }} />
                   </div>
                 ))}
+                <button type="button" onClick={improveSBI} disabled={improvingSBI}
+                  style={{ alignSelf: 'flex-start', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, color: '#6d28d9', fontWeight: 700, fontSize: '0.78rem', padding: '5px 12px', cursor: 'pointer' }}>
+                  {improvingSBI ? 'Improving…' : '✨ Improve When/What/Effect with AI'}
+                </button>
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button className="btn-primary" type="submit" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit Feedback'}</button>
                   <button className="btn-secondary" type="button" onClick={() => setShowForm(false)}>Cancel</button>

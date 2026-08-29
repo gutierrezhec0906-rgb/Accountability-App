@@ -1318,6 +1318,34 @@ exports.improveFeedbackMessage = onCall(async (request) => {
   return { improved };
 });
 
+// Feedback Box — Submit Feedback form. Polishes the Situation-Behavior-Impact
+// fields (When / What / Effect) into clear, specific, behavior-based language,
+// without inventing details the user didn't provide.
+exports.improveFeedbackSBI = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+  const { when, what, effect } = request.data || {};
+  if (!(when || '').trim() && !(what || '').trim() && !(effect || '').trim()) {
+    throw new HttpsError('invalid-argument', 'Fill in at least one field first');
+  }
+
+  const systemPrompt = 'You are an expert in giving effective, specific, behavior-based feedback (Situation-Behavior-Impact model). Given a leader\'s rough notes for the When/What/Effect fields of a piece of feedback, rewrite each field to be clearer, more specific, and more impactful — 1-2 sentences each. Do not invent new facts or details not implied by the input; only sharpen and clarify what was given. If a field is empty, leave it as an empty string in your output. Return ONLY a JSON object with exactly these keys: when, what, effect. No other text, no markdown.';
+  const userPrompt = `When: ${(when || '').trim() || '(empty)'}\nWhat: ${(what || '').trim() || '(empty)'}\nEffect: ${(effect || '').trim() || '(empty)'}`;
+
+  const text = await callClaude(systemPrompt, userPrompt, 400);
+  const cleaned = stripCodeFence(text);
+  let improved;
+  try {
+    improved = JSON.parse(cleaned);
+  } catch {
+    throw new HttpsError('internal', 'AI response could not be parsed — try again');
+  }
+  return {
+    when: typeof improved?.when === 'string' ? improved.when.trim() : (when || ''),
+    what: typeof improved?.what === 'string' ? improved.what.trim() : (what || ''),
+    effect: typeof improved?.effect === 'string' ? improved.effect.trim() : (effect || ''),
+  };
+});
+
 exports.deleteUser = onCall(async (request) => {
   if (request.auth?.token?.email !== 'hectorg@accountability-app.com') {
     throw new HttpsError('permission-denied', 'Only master admin can delete users');
