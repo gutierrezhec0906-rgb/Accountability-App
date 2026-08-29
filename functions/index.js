@@ -602,8 +602,17 @@ function buildWeeklyReport(data) {
     const days = Math.round((new Date(active + 'T00:00:00') - today) / 86400000);
     if (days < 0) return 'Red'; if (days <= 5) return 'Yellow'; return 'Green';
   };
-  const openActions = (data.visualBoard || []).filter(a => !a.closed)
+  const allActionsEver = data.visualBoard || [];
+  const openActions = allActionsEver.filter(a => !a.closed)
     .map(a => ({ title: a.title || 'Untitled', owner: a.owner || '', due: a.recommitmentDate || a.dueDate || '', status: actStatusOf(a) }));
+  // Say-Do Ratio — accountability-board actions, all-time since account creation:
+  // committed (every action ever created) vs. actually delivered on the original
+  // commitment (closed on time, no recommitments needed). recommitmentCount > 0
+  // means the due date slipped and had to be pushed at least once.
+  const totalCommitted = allActionsEver.length;
+  const totalClosedOnTime = allActionsEver.filter(a => a.closed && a.closedOnTime).length;
+  const totalMultipleCommitments = allActionsEver.filter(a => (a.recommitmentCount || 0) > 1).length;
+  const sayDoRatioPct = totalCommitted > 0 ? Math.round((totalClosedOnTime / totalCommitted) * 100) : null;
   const redA = openActions.filter(a => a.status === 'Red');
   const yelA = openActions.filter(a => a.status === 'Yellow');
   const grnC = openActions.filter(a => a.status === 'Green').length;
@@ -746,6 +755,20 @@ function buildWeeklyReport(data) {
           <a href="${APP_URL}" style="background:#0d9488;color:#fff;padding:13px 32px;border-radius:8px;text-decoration:none;font-size:15px;font-weight:bold;">Open the App & Keep Growing →</a>
         </div>
         <p style="text-align:center;font-size:13px;color:#64748b;margin:14px 0 0;">You've got this, ${name}. See you in the app next week! 🚀</p>
+
+        ${totalCommitted > 0 ? `
+        <h2 style="font-size:15px;color:#0f2044;margin:28px 0 4px;border-top:1px solid #e2e8f0;padding-top:20px;">🎯 Say-Do Ratio — Accountability Board, All-Time</h2>
+        <p style="font-size:13px;color:#475569;margin:0 0 10px;line-height:1.6;">A say-do ratio measures whether what you commit to gets delivered — every action you've ever created on the Accountability Board, since you opened your account, versus how many you actually closed on time with no recommitments.</p>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:8px;"><tr>
+          <td style="width:33%;padding:4px;"><div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;padding:12px 6px;text-align:center;"><div style="font-size:24px;line-height:1;">📋</div><div style="font-size:22px;font-weight:900;color:#0f2044;margin-top:4px;">${totalCommitted}</div><div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;">Total Actions Committed</div></div></td>
+          <td style="width:33%;padding:4px;"><div style="background:#f0fdf4;border:1.5px solid #86efac;border-radius:8px;padding:12px 6px;text-align:center;"><div style="font-size:24px;line-height:1;">✅</div><div style="font-size:22px;font-weight:900;color:#15803d;margin-top:4px;">${totalClosedOnTime}</div><div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;">Closed On Time</div></div></td>
+          <td style="width:33%;padding:4px;"><div style="background:#fffbeb;border:1.5px solid #fde68a;border-radius:8px;padding:12px 6px;text-align:center;"><div style="font-size:24px;line-height:1;">🔁</div><div style="font-size:22px;font-weight:900;color:#b45309;margin-top:4px;">${totalMultipleCommitments}</div><div style="font-size:10px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:.04em;margin-top:2px;">Multiple Commitments</div></div></td>
+        </tr></table>
+        <div style="background:linear-gradient(135deg,#0b1a38,#0f2044 60%,#0d9488 140%);border-radius:10px;padding:18px;text-align:center;">
+          <div style="font-size:11px;color:#93c5fd;font-weight:700;text-transform:uppercase;letter-spacing:.06em;">🎯 Say-Do Ratio</div>
+          <div style="font-size:34px;font-weight:900;color:#fff;line-height:1.2;margin-top:4px;">${sayDoRatioPct}%</div>
+          <div style="font-size:12px;color:#cbd5e1;margin-top:2px;">${totalClosedOnTime} of ${totalCommitted} committed actions closed on time</div>
+        </div>` : ''}
       </div>
 
       <div style="background:#0f2044;padding:16px;text-align:center;">
