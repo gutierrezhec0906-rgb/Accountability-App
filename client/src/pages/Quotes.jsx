@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { doc, getDoc, getDocs, addDoc, deleteDoc, collection, query, where, setDoc, updateDoc, increment, deleteField, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -7,6 +7,19 @@ import PageHeader from '../components/PageHeader';
 import { logPointEvent } from '../utils/scoring';
 
 const REACTION_EMOJIS = ['👍', '❤️', '🎉', '🙏', '😍', '👎'];
+
+// Grows with its content instead of scrolling the text sideways off-screen —
+// same pattern used for the Visual Board's title field.
+function AutoGrowTextarea({ value, style, ...props }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${el.scrollHeight + 2}px`;
+  }, [value]);
+  return <textarea ref={ref} rows={1} value={value} style={{ ...style, overflow: 'hidden', resize: 'none' }} {...props} />;
+}
 
 function Avatar({ name }) {
   const initials = name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
@@ -133,14 +146,14 @@ function QuoteComments({ quoteIdx, currentUser, teamId, authorName, light }) {
               ))}
             </div>
           )}
-          <div style={{ display: 'flex', gap: 6 }}>
-            <input
+          <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
+            <AutoGrowTextarea
               className="input"
               placeholder="Write a comment…"
               value={text}
               onChange={e => setText(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !posting) postComment(); }}
-              style={{ flex: 1, background: 'white', fontSize: '0.82rem', padding: '0.45rem 0.65rem' }}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (!posting) postComment(); } }}
+              style={{ flex: 1, background: 'white', fontSize: '0.82rem', padding: '0.45rem 0.65rem', maxHeight: 160, overflowY: 'auto' }}
             />
             <button onClick={postComment} disabled={posting || !text.trim()}
               style={{ border: 'none', borderRadius: 8, padding: '0.45rem 0.9rem', background: text.trim() ? '#0d9488' : '#cbd5e1', color: 'white', fontWeight: 700, fontSize: '0.78rem', cursor: text.trim() ? 'pointer' : 'not-allowed' }}>
