@@ -1117,6 +1117,49 @@ exports.notifyTeamsNewAction = onCall(async (request) => {
   }
 });
 
+// Sends a text message (via Twilio) to every teammate who has opted in with a
+// phoneNumber on their profile, whenever a new Visual Management action item
+// is created. Twilio credentials are secrets — live only server-side as env
+// vars, never exposed to the client.
+exports.notifySmsNewAction = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken   = process.env.TWILIO_AUTH_TOKEN;
+  const fromNumber  = process.env.TWILIO_FROM_NUMBER;
+  if (!accountSid || !authToken || !fromNumber) return { sent: 0, reason: 'not-configured' };
+
+  const { title, owner, dueDate } = request.data || {};
+  if (!(title || '').trim()) throw new HttpsError('invalid-argument', 'Missing action title');
+
+  const callerSnap = await admin.firestore().collection('users').doc(request.auth.uid).get();
+  const caller = callerSnap.exists ? callerSnap.data() : null;
+  if (!caller?.companyId) return { sent: 0, reason: 'no-company' };
+
+  const teamSnap = await admin.firestore().collection('users')
+    .where('companyId', '==', caller.companyId)
+    .get();
+  const recipients = teamSnap.docs
+    .map(d => ({ uid: d.id, ...d.data() }))
+    .filter(u => u.uid !== request.auth.uid && (u.phoneNumber || '').trim());
+
+  if (!recipients.length) return { sent: 0, reason: 'no-recipients' };
+
+  const body = `📋 New action item on the Accountability Board: "${title.trim()}" — Owner: ${owner || 'Unassigned'}${dueDate ? `, Due ${dueDate}` : ''}. ${APP_URL}/visual-board`;
+  const authHeader = 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+
+  const results = await Promise.allSettled(recipients.map(u => {
+    const params = new URLSearchParams({ To: u.phoneNumber.trim(), From: fromNumber, Body: body });
+    return fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded', authorization: authHeader },
+      body: params,
+    }).then(resp => { if (!resp.ok) throw new Error(`Twilio ${resp.status}`); });
+  }));
+
+  const sent = results.filter(r => r.status === 'fulfilled').length;
+  return { sent, attempted: recipients.length };
+});
+
 exports.deleteUser = onCall(async (request) => {
   if (request.auth?.token?.email !== 'hectorg@accountability-app.com') {
     throw new HttpsError('permission-denied', 'Only master admin can delete users');

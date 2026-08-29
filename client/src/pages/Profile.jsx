@@ -36,6 +36,8 @@ export default function Profile() {
   const [uploading, setUploading] = useState(false);
   const [displayName, setDisplayName] = useState(currentUser?.displayName || '');
   const [savingName, setSavingName] = useState(false);
+  const [phoneNumber, setPhoneNumber] = useState(userProfile?.phoneNumber || '');
+  const [savingPhone, setSavingPhone] = useState(false);
   const fileRef = useRef();
 
   const photoURL = userProfile?.photoURL || currentUser?.photoURL || null;
@@ -65,6 +67,19 @@ export default function Profile() {
       toast.error('Upload failed or timed out. Please try again.');
     }
     setUploading(false);
+  }
+
+  async function handleSavePhone(e) {
+    e.preventDefault();
+    setSavingPhone(true);
+    try {
+      await updateDoc(doc(db, 'users', currentUser.uid), { phoneNumber: phoneNumber.trim() });
+      await fetchProfile(currentUser.uid);
+      toast.success(phoneNumber.trim() ? 'Phone number saved!' : 'Phone number removed');
+    } catch {
+      toast.error('Failed to save phone number.');
+    }
+    setSavingPhone(false);
   }
 
   async function handleSaveName(e) {
@@ -138,6 +153,28 @@ export default function Profile() {
             {savingName ? 'Saving...' : 'Save'}
           </button>
         </form>
+      </div>
+
+      {/* Phone number card */}
+      <div className="card" style={{ padding: '1.75rem' }}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>📱 Phone Number</h2>
+        <p style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: 16 }}>
+          Add your phone number to receive a text message whenever a new action item is created on the Accountability Board. Leave blank to opt out.
+        </p>
+        <form onSubmit={handleSavePhone} style={{ display: 'flex', gap: 10 }}>
+          <input
+            className="input"
+            type="tel"
+            style={{ flex: 1 }}
+            value={phoneNumber}
+            onChange={e => setPhoneNumber(e.target.value)}
+            placeholder="+1 555 123 4567"
+          />
+          <button className="btn-primary" type="submit" disabled={savingPhone}>
+            {savingPhone ? 'Saving...' : 'Save'}
+          </button>
+        </form>
+        <p style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 8 }}>Use full international format, e.g. +1 for the US.</p>
       </div>
 
       {/* Read-only info */}
