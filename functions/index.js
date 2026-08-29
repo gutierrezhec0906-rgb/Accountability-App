@@ -950,10 +950,17 @@ exports.sendInvite = onCall(async (request) => {
 
 // Shared helper for every AI-assist Cloud Function — calls Anthropic's API
 // directly via fetch (Node 20 has it built in) rather than pulling in the SDK,
-// since these are the only AI calls in the app so far.
-async function callClaude(systemPrompt, userPrompt, maxTokens = 400) {
+// since these are the only AI calls in the app so far. `userPromptOrMessages`
+// is either a single user-turn string (existing single-shot callers) or a
+// full messages array [{role,content},...] for multi-turn conversations
+// (the coaching practice roleplay).
+async function callClaude(systemPrompt, userPromptOrMessages, maxTokens = 400) {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new HttpsError('failed-precondition', 'AI assistant is not configured yet — ask your admin to add the ANTHROPIC_API_KEY secret.');
+
+  const messages = Array.isArray(userPromptOrMessages)
+    ? userPromptOrMessages
+    : [{ role: 'user', content: userPromptOrMessages }];
 
   let resp;
   try {
@@ -968,7 +975,7 @@ async function callClaude(systemPrompt, userPrompt, maxTokens = 400) {
         model: 'claude-haiku-4-5-20251001',
         max_tokens: maxTokens,
         system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }],
+        messages,
       }),
     });
   } catch (e) {
@@ -1231,6 +1238,70 @@ exports.notifyEmailNewAction = onCall(async (request) => {
 
   const sent = results.filter(r => r.status === 'fulfilled').length;
   return { sent, attempted: recipients.length };
+});
+
+// Coaching Log — AI-powered voice practice. The coach speaks (browser mic +
+// speech-to-text on the client), Claude plays a realistic coachee persona and
+// writes the reply in character, and ElevenLabs turns that reply into speech
+// so the coach hears a "real" voice talking back. Multi-turn: the client
+// sends the running transcript each time so the coachee stays consistent.
+const PRACTICE_SCENARIOS = {
+  underperformance: 'You are Jordan, an employee whose performance has slipped over the last month — missed two deadlines and a quality issue on a deliverable. You are a bit defensive at first, feel a little overwhelmed and possibly burnt out, but you are not a bad employee and you do want to improve if the manager approaches this with empathy rather than blame. Open up gradually as the conversation goes well; stay guarded or push back if the manager is accusatory.',
+  conflict: 'You are Sam, a team member who has been in a tense conflict with a coworker over shared responsibilities on a project. You feel unheard and a little frustrated, and you believe the other person hasn\'t been pulling their weight. You are willing to talk it through but you want to feel like your side is genuinely being heard before you soften.',
+  career: 'You are Alex, an ambitious employee who wants to grow into a leadership role but isn\'t sure what steps to take or whether your manager sees that potential in you. You are enthusiastic but also a little insecure about whether you are "ready." You ask thoughtful questions and respond well to specific, concrete guidance.',
+  resistance: 'You are Casey, a longtime team member who is skeptical and resistant to a new process or tool the company wants to roll out. You liked how things worked before and worry the change will slow you down. You are polite but push back with specific objections; you can be won over by a manager who listens to your concerns and involves you in the solution rather than just dictating it.',
+  disciplinary: 'You are Taylor, receiving a serious conversation about a repeated conduct or attendance issue that has already been discussed once before. You are anxious and a little defensive, possibly minimizing the issue at first. You respond to a manager who is direct but respectful and fair; you shut down or get combative if the manager is harsh or dismissive.',
+};
+
+exports.coachingPracticeReply = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+  const { scenario, history, message } = request.data || {};
+  const persona = PRACTICE_SCENARIOS[scenario];
+  if (!persona) throw new HttpsError('invalid-argument', 'Unknown or missing scenario');
+  if (!(message || '').trim()) throw new HttpsError('invalid-argument', 'Missing coach message');
+
+  const systemPrompt = `${persona}\n\nStay fully in character as this person for the entire conversation. Respond naturally and conversationally, as if speaking out loud — 1 to 4 sentences, no stage directions, no asterisks, no narration, just what you would actually say. Never break character to give coaching advice or acknowledge you are an AI.`;
+
+  const messages = (Array.isArray(history) ? history : [])
+    .filter(h => (h?.text || '').trim())
+    .map(h => ({ role: h.role === 'coachee' ? 'assistant' : 'user', content: h.text.trim() }));
+  messages.push({ role: 'user', content: message.trim() });
+
+  const replyText = await callClaude(systemPrompt, messages, 250);
+
+  // Text-to-speech via ElevenLabs, so the reply is heard, not just read.
+  // Optional: if no key is configured, still return the text so the practice
+  // tool works in text-only mode.
+  const elevenKey = process.env.ELEVENLABS_API_KEY;
+  const voiceId = process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM'; // "Rachel" — a default premade voice
+  let audioBase64 = null;
+  if (elevenKey) {
+    try {
+      const ttsResp = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          accept: 'audio/mpeg',
+          'xi-api-key': elevenKey,
+        },
+        body: JSON.stringify({
+          text: replyText,
+          model_id: 'eleven_turbo_v2',
+          voice_settings: { stability: 0.4, similarity_boost: 0.75 },
+        }),
+      });
+      if (ttsResp.ok) {
+        const buf = Buffer.from(await ttsResp.arrayBuffer());
+        audioBase64 = buf.toString('base64');
+      } else {
+        console.warn(`ElevenLabs TTS failed (${ttsResp.status})`);
+      }
+    } catch (e) {
+      console.warn('Could not reach ElevenLabs: ' + (e?.message || 'network error'));
+    }
+  }
+
+  return { replyText, audioBase64 };
 });
 
 exports.deleteUser = onCall(async (request) => {

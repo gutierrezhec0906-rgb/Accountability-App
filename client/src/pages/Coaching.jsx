@@ -6,6 +6,7 @@ import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import CoachingPractice from '../components/CoachingPractice';
 import { calculateScore, logPointEvent, isCompleteCoachingSession, weekMonday } from '../utils/scoring';
 import NameField from '../components/NameField';
 import { useSavedNames } from '../utils/savedNames';
@@ -182,6 +183,7 @@ export default function Coaching() {
   const [closeForm, setCloseForm]         = useState({ comments: '', outcome: '' });
   const [closing, setClosing]             = useState(false);
   const [statusFilter, setStatusFilter]   = useState(null); // clicking a stat tile filters the list to that status
+  const [showPractice, setShowPractice]   = useState(false);
 
   // Log 5 pts the first time a complete coaching session is saved in a given week
   async function maybeLogCoachingPoints(session) {
@@ -434,11 +436,19 @@ export default function Coaching() {
           <p style={{ color: 'white', fontWeight: 700, fontSize: '0.85rem', margin: '0 0 2px' }}>💬 New to coaching? See how a real conversation flows.</p>
           <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.75rem', margin: 0 }}>A full manager–coachee dialogue showing questions-first coaching — every action owned by the coachee.</p>
         </div>
-        <button onClick={() => window.open('/coaching-example.html', '_blank', 'width=860,height=800')}
-          style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 9, padding: '0.5rem 1.1rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
-          Worked Example →
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
+          <button onClick={() => setShowPractice(true)}
+            style={{ background: '#7c3aed', color: 'white', border: 'none', borderRadius: 9, padding: '0.5rem 1.1rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            🎙️ Practice with AI →
+          </button>
+          <button onClick={() => window.open('/coaching-example.html', '_blank', 'width=860,height=800')}
+            style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 9, padding: '0.5rem 1.1rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
+            Worked Example →
+          </button>
+        </div>
       </div>
+
+      {showPractice && <CoachingPractice onClose={() => setShowPractice(false)} />}
 
       {/* New session form */}
       {showForm && (
