@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { collection, getDocs, query, where, doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -25,6 +26,13 @@ const SELECT_STYLE = {
 
 export default function TeamBoard() {
   const { userProfile } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    function onKeyDown(e) { if (e.key === 'Escape') navigate(-1); }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [navigate]);
   const [actions, setActions]       = useState([]);
   const [loading, setLoading]       = useState(true);
   const [lastRefresh, setLastRefresh] = useState(null);
@@ -133,6 +141,10 @@ export default function TeamBoard() {
 
       {/* ── Header ── */}
       <div style={{ background: '#0f2044', borderBottom: '1px solid #1e3a6e', padding: '12px 32px', display: 'flex', alignItems: 'center', gap: 20, flexShrink: 0 }}>
+        <button onClick={() => navigate(-1)} title="Exit (Esc)"
+          style={{ padding: '6px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700, flexShrink: 0 }}>
+          ← Exit
+        </button>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
           <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,#ef4444,#b91c1c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>📋</div>
           <div>
