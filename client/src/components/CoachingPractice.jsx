@@ -22,6 +22,7 @@ export default function CoachingPractice({ onClose }) {
   const [thinking, setThinking] = useState(false);
   const [speechSupported, setSpeechSupported] = useState(false);
   const recognitionRef = useRef(null);
+  const transcriptRef = useRef(''); // accumulated final speech while the mic button is held
   const audioRef = useRef(null);
   const transcriptEndRef = useRef(null);
 
@@ -33,27 +34,42 @@ export default function CoachingPractice({ onClose }) {
     transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [history, thinking]);
 
+  // Push-to-talk: hold the mic button down to keep listening — a brief pause
+  // to think no longer cuts you off and sends an incomplete sentence.
+  // `continuous` keeps the recognizer running through pauses instead of
+  // auto-stopping on silence; only releasing the button (or leaving the
+  // window) ends the turn and sends whatever was said.
   function startListening() {
     const SR = getSpeechRecognition();
-    if (!SR) return;
+    if (!SR || thinking) return;
+    transcriptRef.current = '';
     const recognition = new SR();
     recognition.lang = 'en-US';
-    recognition.interimResults = false;
+    recognition.continuous = true;
+    recognition.interimResults = true;
     recognition.maxAlternatives = 1;
     recognition.onresult = (e) => {
-      const text = e.results[0][0].transcript;
-      sendMessage(text);
+      let finalText = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalText += e.results[i][0].transcript;
+      }
+      if (finalText) transcriptRef.current += finalText;
     };
     recognition.onerror = () => setListening(false);
-    recognition.onend = () => setListening(false);
     recognitionRef.current = recognition;
     setListening(true);
     recognition.start();
   }
 
   function stopListening() {
-    recognitionRef.current?.stop();
-    setListening(false);
+    if (!recognitionRef.current) return;
+    recognitionRef.current.onend = () => {
+      setListening(false);
+      const text = transcriptRef.current.trim();
+      if (text) sendMessage(text);
+    };
+    recognitionRef.current.stop();
+    recognitionRef.current = null;
   }
 
   async function sendMessage(text) {
@@ -81,7 +97,12 @@ export default function CoachingPractice({ onClose }) {
   }
 
   function endPractice() {
-    stopListening();
+    if (recognitionRef.current) {
+      recognitionRef.current.onend = null;
+      recognitionRef.current.stop();
+      recognitionRef.current = null;
+    }
+    setListening(false);
     setScenario(null);
     setHistory([]);
   }
@@ -122,7 +143,7 @@ export default function CoachingPractice({ onClose }) {
             <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: 10, minHeight: 200 }}>
               {history.length === 0 && (
                 <p style={{ fontSize: '0.82rem', color: '#94a3b8', textAlign: 'center', marginTop: 20 }}>
-                  {speechSupported ? 'Tap the mic and start the conversation.' : 'Type your opening line below to start the conversation.'}
+                  {speechSupported ? 'Press and hold the mic to talk, release when you\'re done speaking.' : 'Type your opening line below to start the conversation.'}
                 </p>
               )}
               {history.map((h, i) => (
@@ -148,14 +169,20 @@ export default function CoachingPractice({ onClose }) {
 
             <div style={{ padding: '1rem 1.5rem', borderTop: '1px solid #e2e8f0', display: 'flex', gap: 8, alignItems: 'center' }}>
               {speechSupported && (
-                <button onClick={listening ? stopListening : startListening} disabled={thinking}
-                  title={listening ? 'Stop listening' : 'Start speaking'}
+                <button
+                  onMouseDown={startListening}
+                  onMouseUp={stopListening}
+                  onMouseLeave={() => { if (listening) stopListening(); }}
+                  onTouchStart={e => { e.preventDefault(); startListening(); }}
+                  onTouchEnd={e => { e.preventDefault(); stopListening(); }}
+                  disabled={thinking}
+                  title={listening ? 'Release to send' : 'Hold to talk'}
                   style={{
                     width: 44, height: 44, borderRadius: '50%', border: 'none', flexShrink: 0, fontSize: '1.2rem', cursor: 'pointer',
-                    background: listening ? '#dc2626' : '#0d9488', color: 'white',
+                    background: listening ? '#dc2626' : '#0d9488', color: 'white', userSelect: 'none', touchAction: 'none',
                     animation: listening ? 'pulse 1.2s infinite' : 'none',
                   }}>
-                  {listening ? '⏹' : '🎤'}
+                  🎤
                 </button>
               )}
               <input
