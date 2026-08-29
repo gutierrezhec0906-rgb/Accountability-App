@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore } from '../utils/scoring';
@@ -155,6 +156,15 @@ export default function VisualBoard() {
       };
       await persist([newItem, ...items]);
       rememberName(form.owner);
+
+      // Notify the team's Microsoft Teams channel, if a webhook is configured.
+      // Fire-and-forget — never blocks or fails the save itself.
+      httpsCallable(getFunctions(), 'notifyTeamsNewAction')({
+        title: form.title,
+        owner: form.owner,
+        dueDate: form.dueDate,
+        createdByName: currentUser.displayName || currentUser.email,
+      }).catch(() => {});
 
       const qaTs = localStorage.getItem('ps_quick_action_ts');
       if (qaTs && Date.now() - parseInt(qaTs, 10) < 5 * 60 * 1000) {

@@ -1065,6 +1065,58 @@ exports.smartGoalAiAssist = onCall(async (request) => {
   return { draft: result };
 });
 
+// Posts to a Microsoft Teams channel via an Incoming Webhook when a new
+// Visual Management action item is created — so the whole team sees it in
+// Teams without opening the app. The webhook URL is a secret (posting to it
+// requires no auth at all), so it lives only server-side as an env var, never
+// exposed to the client.
+exports.notifyTeamsNewAction = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+  const webhookUrl = process.env.TEAMS_WEBHOOK_URL;
+  if (!webhookUrl) return { posted: false, reason: 'not-configured' };
+
+  const { title, owner, dueDate, createdByName } = request.data || {};
+  if (!(title || '').trim()) throw new HttpsError('invalid-argument', 'Missing action title');
+
+  const card = {
+    '@type': 'MessageCard',
+    '@context': 'http://schema.org/extensions',
+    themeColor: '0D9488',
+    summary: 'New action item on the Accountability Board',
+    title: '🔴 New Action Item — Accountability Board',
+    sections: [{
+      facts: [
+        { name: 'Action', value: title },
+        { name: 'Owner', value: owner || 'Unassigned' },
+        { name: 'Due Date', value: dueDate || 'No due date' },
+        { name: 'Created By', value: createdByName || 'A teammate' },
+      ],
+    }],
+    potentialAction: [{
+      '@type': 'OpenUri',
+      name: 'Open the Accountability Board',
+      targets: [{ os: 'default', uri: `${APP_URL}/visual-board` }],
+    }],
+  };
+
+  try {
+    const resp = await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(card),
+    });
+    if (!resp.ok) {
+      const errText = await resp.text().catch(() => '');
+      console.warn(`Teams webhook failed (${resp.status}): ${errText.slice(0, 200)}`);
+      return { posted: false, reason: 'webhook-error' };
+    }
+    return { posted: true };
+  } catch (e) {
+    console.warn('Could not reach Teams webhook: ' + (e?.message || 'network error'));
+    return { posted: false, reason: 'network-error' };
+  }
+});
+
 exports.deleteUser = onCall(async (request) => {
   if (request.auth?.token?.email !== 'hectorg@accountability-app.com') {
     throw new HttpsError('permission-denied', 'Only master admin can delete users');
