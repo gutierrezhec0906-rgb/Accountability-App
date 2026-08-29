@@ -1304,6 +1304,20 @@ exports.coachingPracticeReply = onCall(async (request) => {
   return { replyText, audioBase64 };
 });
 
+// Feedback Box — turns a rough main idea into a clear, well-phrased request
+// for feedback from a coworker, peer, or direct report.
+exports.improveFeedbackMessage = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+  const { note, category } = request.data || {};
+  if (!(note || '').trim()) throw new HttpsError('invalid-argument', 'Write your main idea first');
+
+  const systemPrompt = 'You are an expert in workplace communication and leadership development. Given a rough, unpolished idea for a request for feedback from a coworker, peer, or direct report, rewrite it as a clear, warm, specific, and professional message — 2-4 sentences. Keep the original intent and any specifics the person mentioned (what/when/topic). Make it easy for the recipient to know exactly what kind of feedback would help. Return ONLY the rewritten message — no preamble, no quotes, no markdown.';
+  const userPrompt = `Feedback topic: ${category || 'General'}\nRough idea: ${note.trim()}`;
+
+  const improved = await callClaude(systemPrompt, userPrompt, 250);
+  return { improved };
+});
+
 exports.deleteUser = onCall(async (request) => {
   if (request.auth?.token?.email !== 'hectorg@accountability-app.com') {
     throw new HttpsError('permission-denied', 'Only master admin can delete users');

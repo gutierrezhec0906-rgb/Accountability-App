@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { doc, getDoc, getDocs, collection, query, where, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
@@ -96,9 +97,23 @@ function RequestModal({ teamMembers, onClose, onSave }) {
   const [selected, setSelected] = useState([]);
   const [category, setCategory] = useState('General');
   const [note, setNote] = useState('');
+  const [improving, setImproving] = useState(false);
 
   function toggleMember(uid) {
     setSelected(s => s.includes(uid) ? s.filter(id => id !== uid) : [...s, uid]);
+  }
+
+  async function improveNote() {
+    if (!note.trim()) return toast.error('Write your main idea first');
+    setImproving(true);
+    try {
+      const fn = httpsCallable(getFunctions(), 'improveFeedbackMessage');
+      const res = await fn({ note, category });
+      if (res.data?.improved) setNote(res.data.improved);
+    } catch (e) {
+      toast.error(e?.message || 'AI improvement failed');
+    }
+    setImproving(false);
   }
 
   function handleSend() {
@@ -168,9 +183,13 @@ function RequestModal({ teamMembers, onClose, onSave }) {
               Add a note <span style={{ fontWeight: 400, textTransform: 'none' }}>(optional)</span>
             </label>
             <textarea className="input" rows={3}
-              placeholder="e.g. I'd appreciate your feedback on my communication style during last week's project..."
+              placeholder="Write your main idea — e.g. feedback on my communication style during last week's project..."
               value={note} onChange={e => setNote(e.target.value)}
-              style={{ resize: 'vertical' }} />
+              style={{ resize: 'vertical', marginBottom: 6 }} />
+            <button type="button" onClick={improveNote} disabled={improving || !note.trim()}
+              style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, color: '#6d28d9', fontWeight: 700, fontSize: '0.75rem', padding: '4px 10px', cursor: note.trim() ? 'pointer' : 'not-allowed', opacity: note.trim() ? 1 : 0.5 }}>
+              {improving ? 'Improving…' : '✨ Improve with AI'}
+            </button>
           </div>
         </div>
 
