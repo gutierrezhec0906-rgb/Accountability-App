@@ -730,6 +730,7 @@ export default function Lean() {
   const [expandedItem, setExpandedItem] = useState(null);
   const [auditHistory, setAuditHistory] = useState([]);
   const [expandedAudit, setExpandedAudit] = useState(null);
+  const [auditHistoryOpen, setAuditHistoryOpen] = useState(true);
   const [weekPtsEarned, setWeekPtsEarned] = useState(false);
   const [fiveSAreas, setFiveSAreas] = useState([]);
   const [newAreaName, setNewAreaName] = useState('');
@@ -1369,8 +1370,12 @@ export default function Lean() {
           {/* ── Right: audit history ── */}
           <div style={{ width: isMobile ? '100%' : 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: '1.125rem' }}>
-              <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px', fontSize: '0.9rem' }}>📋 Audit History</h4>
-              {auditHistory.length === 0 ? (
+              <button onClick={() => setAuditHistoryOpen(o => !o)}
+                style={{ width: '100%', background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: auditHistoryOpen ? 12 : 0 }}>
+                <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9rem' }}>📋 Audit History{auditHistory.length > 0 && ` (${auditHistory.length})`}</h4>
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{auditHistoryOpen ? '▲' : '▼'}</span>
+              </button>
+              {auditHistoryOpen && (auditHistory.length === 0 ? (
                 <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', margin: '1.5rem 0' }}>No audits saved yet. Complete the checklist and click Save Audit.</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1431,7 +1436,7 @@ export default function Lean() {
                     );
                   })}
                 </div>
-              )}
+              ))}
             </div>
           </div>
         </div>
