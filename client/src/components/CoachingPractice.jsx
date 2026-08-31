@@ -49,11 +49,11 @@ export default function CoachingPractice({ onClose }) {
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
     recognition.onresult = (e) => {
-      let finalText = '';
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        if (e.results[i].isFinal) finalText += e.results[i][0].transcript;
+      let combined = '';
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) combined += e.results[i][0].transcript;
       }
-      if (finalText) transcriptRef.current += finalText;
+      transcriptRef.current = combined;
     };
     recognition.onerror = () => setListening(false);
     recognitionRef.current = recognition;
