@@ -262,6 +262,36 @@ exports.sendRequestEmails = onDocumentUpdated('users/{uid}', async (event) => {
     } catch (e) { console.error('Could not load leaders for SMART approval email', e); }
   }
 
+  // 4. New team member pending approval — fires once the signup flow attaches
+  // a companyId to the new user's doc (a client update, not the initial
+  // create), at which point we know which company's leaders to notify.
+  const justJoinedCompany = !before.companyId && after.companyId;
+  if (justJoinedCompany && after.status === 'pending') {
+    try {
+      const leadersSnap = await admin.firestore().collection('users')
+        .where('companyId', '==', after.companyId).get();
+      const leaders = leadersSnap.docs
+        .map(d => ({ uid: d.id, ...d.data() }))
+        .filter(u => u.uid !== event.params.uid && u.email &&
+                     (u.isAdmin || u.role === 'Leader' || u.role === 'Manager'));
+      for (const leader of leaders) {
+        mails.push({
+          to: leader.email,
+          subject: `🙋 ${requesterName} is awaiting your approval`,
+          html: brandedEmail(
+            'New team member pending approval',
+            `<p style="color: #475569; font-size: 15px; line-height: 1.6;">
+               <strong>${requesterName}</strong> (${after.email || 'no email on file'}) joined
+               <strong>${after.companyName || 'your company'}</strong>${after.teamName ? ` on the <strong>${after.teamName}</strong> team` : ''}
+               and is waiting for your approval before they can access the app.
+             </p>`,
+            'Review in Team Approvals', '/approvals'
+          ),
+        });
+      }
+    } catch (e) { console.error('Could not load leaders for new-member approval email', e); }
+  }
+
   if (mails.length === 0) return;
   await Promise.all(mails.map(m => transporter.sendMail({
     from: `"Accountability App" <${ADMIN_EMAIL}>`,
