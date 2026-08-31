@@ -23,6 +23,7 @@ export default function CoachingPractice({ onClose }) {
   const [speechSupported, setSpeechSupported] = useState(false);
   const recognitionRef = useRef(null);
   const transcriptRef = useRef(''); // accumulated final speech while the mic button is held
+  const heldRef = useRef(false); // true while the mic button is physically pressed
   const audioRef = useRef(null);
   const transcriptEndRef = useRef(null);
 
@@ -36,40 +37,61 @@ export default function CoachingPractice({ onClose }) {
 
   // Push-to-talk: hold the mic button down to keep listening — a brief pause
   // to think no longer cuts you off and sends an incomplete sentence.
-  // `continuous` keeps the recognizer running through pauses instead of
-  // auto-stopping on silence; only releasing the button (or leaving the
-  // window) ends the turn and sends whatever was said.
-  function startListening() {
+  //
+  // Android Chrome's `continuous: true` mode restarts its recognizer
+  // internally while listening and re-emits duplicated/garbled results on
+  // restart (desktop Chrome doesn't do this, which is why the bug was
+  // mobile-only). To avoid it entirely, we run short single-utterance
+  // recognition sessions (`continuous: false`) and, as long as the button is
+  // still held down when a session ends, immediately start a fresh one —
+  // gluing each clean final transcript onto the accumulated text. Releasing
+  // the button stops the restart loop and sends whatever was accumulated.
+  function runSession() {
     const SR = getSpeechRecognition();
-    if (!SR || thinking) return;
-    transcriptRef.current = '';
+    if (!SR) return;
     const recognition = new SR();
     recognition.lang = 'en-US';
-    recognition.continuous = true;
-    recognition.interimResults = true;
+    recognition.continuous = false;
+    recognition.interimResults = false;
     recognition.maxAlternatives = 1;
     recognition.onresult = (e) => {
-      let combined = '';
+      let finalText = '';
       for (let i = 0; i < e.results.length; i++) {
-        if (e.results[i].isFinal) combined += e.results[i][0].transcript;
+        if (e.results[i].isFinal) finalText += e.results[i][0].transcript;
       }
-      transcriptRef.current = combined;
+      if (finalText) {
+        transcriptRef.current = (transcriptRef.current + ' ' + finalText).trim();
+      }
     };
-    recognition.onerror = () => setListening(false);
+    recognition.onerror = (e) => {
+      if (e.error !== 'no-speech') heldRef.current = false;
+    };
+    recognition.onend = () => {
+      if (heldRef.current) {
+        runSession();
+      } else {
+        setListening(false);
+        recognitionRef.current = null;
+        const text = transcriptRef.current.trim();
+        if (text) sendMessage(text);
+      }
+    };
     recognitionRef.current = recognition;
-    setListening(true);
     recognition.start();
   }
 
+  function startListening() {
+    if (!getSpeechRecognition() || thinking || heldRef.current) return;
+    transcriptRef.current = '';
+    heldRef.current = true;
+    setListening(true);
+    runSession();
+  }
+
   function stopListening() {
-    if (!recognitionRef.current) return;
-    recognitionRef.current.onend = () => {
-      setListening(false);
-      const text = transcriptRef.current.trim();
-      if (text) sendMessage(text);
-    };
-    recognitionRef.current.stop();
-    recognitionRef.current = null;
+    heldRef.current = false;
+    // onend (fired by the in-progress session) sends the accumulated text.
+    recognitionRef.current?.stop();
   }
 
   async function sendMessage(text) {
@@ -97,6 +119,7 @@ export default function CoachingPractice({ onClose }) {
   }
 
   function endPractice() {
+    heldRef.current = false;
     if (recognitionRef.current) {
       recognitionRef.current.onend = null;
       recognitionRef.current.stop();
