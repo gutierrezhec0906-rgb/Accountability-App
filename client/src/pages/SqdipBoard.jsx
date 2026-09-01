@@ -82,25 +82,16 @@ export default function SqdipBoard() {
       // display-only fold (not persisted here) — the entry screen persists
       // the real rollover the next time its owner logs a day.
       const currentMonthKey = localMonthKey();
-      // Same contamination guard as the entry screen: no day past today's
-      // date-of-month can legitimately be logged yet, so treat any cell
-      // beyond that as stale data left over from the old UTC-vs-local month
-      // key mismatch, even if raw.month happens to already match.
-      const todayDate = new Date().getDate();
-      const hasImpossibleFutureDays = raw?.month === currentMonthKey &&
-        SQDIP_ORDER.some(k => Object.keys(raw.cells?.[k] || {}).some(d => Number(d) > todayDate));
-      if (raw && raw.month && (raw.month !== currentMonthKey || hasImpossibleFutureDays)) {
+      if (raw && raw.month && raw.month !== currentMonthKey) {
+        const [py, pm] = raw.month.split('-').map(Number);
+        const prevDays = daysInMonth(py, pm - 1);
         const prevHistory = raw.monthlyHistory || {};
         const nextHistory = { ...prevHistory };
-        if (raw.month !== currentMonthKey) {
-          const [py, pm] = raw.month.split('-').map(Number);
-          const prevDays = daysInMonth(py, pm - 1);
-          SQDIP_ORDER.forEach(k => {
-            if ((prevHistory[k] || []).some(m => m.month === raw.month)) return;
-            const summary = monthSummary(raw.cells?.[k] || {}, raw.values?.[k] || {}, prevDays);
-            nextHistory[k] = [...(prevHistory[k] || []), { month: raw.month, ...summary }].slice(-12);
-          });
-        }
+        SQDIP_ORDER.forEach(k => {
+          if ((prevHistory[k] || []).some(m => m.month === raw.month)) return;
+          const summary = monthSummary(raw.cells?.[k] || {}, raw.values?.[k] || {}, prevDays);
+          nextHistory[k] = [...(prevHistory[k] || []), { month: raw.month, ...summary }].slice(-12);
+        });
         setBoard({ ...raw, month: currentMonthKey, cells: {}, values: {}, monthlyHistory: nextHistory });
       } else {
         setBoard(raw);
