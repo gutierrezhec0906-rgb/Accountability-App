@@ -1100,6 +1100,47 @@ exports.fiveWhysAiAssist = onCall(async (request) => {
   return { suggestion: text };
 });
 
+// Fishbone (Ishikawa) Diagram — once the user finishes brainstorming causes,
+// give AI feedback per category: NOT rewriting their answers, just pointing
+// out other angles/perspectives worth considering for potential root causes
+// in each of the 6 categories (People, Process, Materials, Machine,
+// Environment, Measurement).
+const FISHBONE_CATS = [
+  { id: 'people',      label: 'People' },
+  { id: 'process',     label: 'Process' },
+  { id: 'materials',   label: 'Materials' },
+  { id: 'machine',     label: 'Machine' },
+  { id: 'environment', label: 'Environment' },
+  { id: 'measurement', label: 'Measurement' },
+];
+
+exports.fishboneAiFeedback = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+  const { problem, causes } = request.data || {};
+  if (!(problem || '').trim()) throw new HttpsError('invalid-argument', 'Missing effect/problem statement');
+
+  const causesText = FISHBONE_CATS.map(cat => {
+    const list = (causes?.[cat.id] || []).map(v => (v || '').trim()).filter(Boolean);
+    return `${cat.label}: ${list.length ? list.join('; ') : '(nothing entered)'}`;
+  }).join('\n');
+
+  const systemPrompt = `You are an expert Lean/Six Sigma facilitator reviewing a completed Fishbone (Ishikawa) diagram. You do NOT rewrite or judge the user's own entries — you add value by offering OTHER perspectives and potential root causes they may not have considered yet, category by category, plus one short overall coaching note. For any category with nothing entered, suggest 1-2 realistic causes worth considering for that type of problem. Keep each category's feedback to 1-2 sentences, practical and specific to the stated problem — no generic filler. Return ONLY a JSON object with exactly these keys: people, process, materials, machine, environment, measurement, overall — each a string. No markdown, no code fences, no other text.`;
+  const userPrompt = `Effect / Problem: ${problem.trim()}\n\nCauses already identified by the user:\n${causesText}`;
+
+  const text = await callClaude(systemPrompt, userPrompt, 700);
+  const cleaned = stripCodeFence(text);
+  let draft;
+  try {
+    draft = JSON.parse(cleaned);
+  } catch {
+    throw new HttpsError('internal', 'AI response could not be parsed — try again');
+  }
+  const keys = [...FISHBONE_CATS.map(c => c.id), 'overall'];
+  const feedback = {};
+  keys.forEach(k => { feedback[k] = typeof draft?.[k] === 'string' ? draft[k].trim() : ''; });
+  return { feedback };
+});
+
 // AI assistant for SMART Goals — drafts all 5 SMART components (Specific,
 // Measurable, Achievable, Relevant, Time-Bound) from a rough goal title/idea,
 // so a user can start from a draft instead of a blank field for each one.

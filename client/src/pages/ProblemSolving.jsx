@@ -859,6 +859,71 @@ function PrioritizeCategories({ causes, onComplete, onBack }) {
   );
 }
 
+// ─── AI Feedback (Post-Fishbone) ─────────────────────────────────────────────
+// Once the diagram is saved, offer AI-generated feedback per category — it
+// never changes the user's own entries, it just surfaces other perspectives
+// and potential root causes worth considering for each of the 6 categories.
+function FishboneAiFeedback({ problem, causes, onContinue }) {
+  const [feedback, setFeedback] = useState(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const fn = httpsCallable(getFunctions(), 'fishboneAiFeedback');
+        const res = await fn({ problem, causes });
+        if (!cancelled) setFeedback(res.data?.feedback || null);
+      } catch (e) {
+        if (!cancelled) { setError(true); toast.error(e?.message || 'Could not get AI feedback'); }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [problem, causes]);
+
+  return (
+    <div style={{ maxWidth: 860, margin: '0 auto', padding: '1.5rem' }}>
+      <div style={{ background: '#faf5ff', border: '2px solid #7c3aed', borderRadius: 12, padding: '1.25rem', marginBottom: '1.25rem' }}>
+        <h3 style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 6px', fontSize: '1rem' }}>🤖 AI Perspective Check</h3>
+        <p style={{ color: '#6d28d9', fontSize: '0.83rem', margin: 0, lineHeight: 1.6 }}>
+          These are additional angles to consider — your entries are unchanged. Use whatever's useful, ignore the rest.
+        </p>
+      </div>
+
+      {loading && (
+        <p style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center', margin: '2rem 0' }}>Analyzing your diagram…</p>
+      )}
+
+      {!loading && error && (
+        <p style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center', margin: '2rem 0' }}>Couldn't generate feedback this time — you can still continue.</p>
+      )}
+
+      {!loading && !error && feedback && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: '1.5rem' }}>
+          {feedback.overall && (
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '0.875rem 1rem' }}>
+              <p style={{ fontSize: '0.82rem', color: '#475569', margin: 0, lineHeight: 1.55, fontStyle: 'italic' }}>💡 {feedback.overall}</p>
+            </div>
+          )}
+          {ALL_CATS.filter(cat => feedback[cat.id]).map(cat => (
+            <div key={cat.id} style={{ border: `1.5px solid ${cat.color}`, borderRadius: 10, padding: '0.875rem 1rem' }}>
+              <p style={{ fontWeight: 700, color: cat.color, margin: '0 0 4px', fontSize: '0.82rem' }}>{cat.label}</p>
+              <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.55 }}>{feedback[cat.id]}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <button onClick={onContinue} className="btn-primary" style={{ width: '100%' }}>
+        Continue to 5 Whys →
+      </button>
+    </div>
+  );
+}
+
 function fishbonePrintHTML(entry) {
   const { name, problem, causes, priorities } = entry.data;
   const date = entry.createdAt ? new Date(entry.createdAt.seconds * 1000).toLocaleDateString() : new Date().toLocaleDateString();
@@ -904,6 +969,8 @@ function Fishbone({ onSave, savedEntries, onDelete, onGoTo5Whys }) {
   const [priorities, setPriorities] = useState({});
   const [saving,  setSaving]  = useState(false);
   const [showPrioritization, setShowPrioritization] = useState(false);
+  const [showAiFeedback, setShowAiFeedback] = useState(false);
+  const [completedFishbone, setCompletedFishbone] = useState(null);
   const isMobile = useIsMobile();
 
   const effectReady = problem.trim().length >= 15;
@@ -957,10 +1024,17 @@ function Fishbone({ onSave, savedEntries, onDelete, onGoTo5Whys }) {
     });
     setSaving(false);
     toast.success('✓ Fishbone diagram saved!');
-    // Navigate to 5 Whys to continue analysis
-    if (onGoTo5Whys) {
-      onGoTo5Whys({ name, problem, causes, priorities: newPriorities });
+    // Show AI perspective feedback before handing off to 5 Whys.
+    setCompletedFishbone({ name, problem, causes, priorities: newPriorities });
+    setShowAiFeedback(true);
+  }
+
+  function handleAiFeedbackContinue() {
+    setShowAiFeedback(false);
+    if (onGoTo5Whys && completedFishbone) {
+      onGoTo5Whys(completedFishbone);
     }
+    setCompletedFishbone(null);
   }
 
   // Show prioritization component after fishbone is saved
@@ -970,6 +1044,17 @@ function Fishbone({ onSave, savedEntries, onDelete, onGoTo5Whys }) {
         causes={causes}
         onComplete={handlePrioritiesComplete}
         onBack={() => setShowPrioritization(false)}
+      />
+    );
+  }
+
+  // Show AI feedback once the diagram (and priorities) are finished
+  if (showAiFeedback && completedFishbone) {
+    return (
+      <FishboneAiFeedback
+        problem={completedFishbone.problem}
+        causes={completedFishbone.causes}
+        onContinue={handleAiFeedbackContinue}
       />
     );
   }
