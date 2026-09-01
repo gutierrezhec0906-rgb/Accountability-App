@@ -138,6 +138,7 @@ export default function SqdipBoard() {
 
   const today = new Date();
   const monthLabel = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const todayDay = today.getDate();
   const days = daysInMonth(today.getFullYear(), today.getMonth());
 
   if (loading) {
@@ -244,6 +245,10 @@ export default function SqdipBoard() {
             <h2 style={{ margin: 0, color: 'white', fontSize: '1.35rem', fontWeight: 900, letterSpacing: '-0.02em' }}>{label}</h2>
             <p style={{ margin: 0, color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontWeight: 600 }}>{metricName} · {filled}/{days} logged</p>
           </div>
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <p style={{ margin: 0, color: 'white', fontSize: '0.95rem', fontWeight: 800 }}>{monthLabel}</p>
+            <p style={{ margin: 0, color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem', fontWeight: 700 }}>Today · Day {todayDay}</p>
+          </div>
           <button onClick={goPrev} disabled={letters.length < 2}
             style={{ padding: '7px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', fontWeight: 800, fontSize: '0.8rem', cursor: letters.length < 2 ? 'default' : 'pointer', opacity: letters.length < 2 ? 0.4 : 1 }}>
             ← Prev
@@ -278,12 +283,15 @@ export default function SqdipBoard() {
                   }
                   const status = cellStatus[cell.day];
                   const bg = status ? SQDIP_COLORS[status] : 'rgba(255,255,255,0.92)';
+                  const isToday = cell.day === todayDay;
                   return (
-                    <div key={`${row}-${col}`} title={`Day ${cell.day}${status ? ` — ${SQDIP_STATUS_LABEL[status]}` : ''}`}
+                    <div key={`${row}-${col}`} title={`Day ${cell.day}${status ? ` — ${SQDIP_STATUS_LABEL[status]}` : ''}${isToday ? ' — Today' : ''}`}
                       style={{
                         width: squareSize, height: squareSize, borderRadius: 5, background: bg,
                         display: 'flex', alignItems: 'center', justifyContent: 'center',
                         fontSize: 'clamp(0.45rem, 1.6vh, 0.85rem)', fontWeight: 700, color: status ? 'rgba(255,255,255,0.9)' : meta.color,
+                        boxShadow: isToday ? '0 0 0 3px white, 0 0 10px 2px rgba(255,255,255,0.8)' : 'none',
+                        position: 'relative',
                       }}>
                       {cell.day}
                     </div>
