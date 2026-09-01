@@ -73,7 +73,29 @@ export default function SqdipBoard() {
     try {
       const snap = await getDoc(doc(db, 'users', ownerUid));
       const data = snap.exists() ? snap.data() : {};
-      setBoard(data.sqdipBoard || null);
+      const raw = data.sqdipBoard || null;
+      // Mirror the entry screen's month rollover: once the calendar flips to
+      // a new month, the day grid/logged values reset (folding the finished
+      // month's totals into monthlyHistory for the trend chart) while
+      // ongoing config — action plans, labels, goals, metric names — carries
+      // over untouched so open actions stay visible until closed. This is a
+      // display-only fold (not persisted here) — the entry screen persists
+      // the real rollover the next time its owner logs a day.
+      const currentMonthKey = new Date().toISOString().slice(0, 7);
+      if (raw && raw.month && raw.month !== currentMonthKey) {
+        const [py, pm] = raw.month.split('-').map(Number);
+        const prevDays = daysInMonth(py, pm - 1);
+        const prevHistory = raw.monthlyHistory || {};
+        const nextHistory = { ...prevHistory };
+        SQDIP_ORDER.forEach(k => {
+          if ((prevHistory[k] || []).some(m => m.month === raw.month)) return;
+          const summary = monthSummary(raw.cells?.[k] || {}, raw.values?.[k] || {}, prevDays);
+          nextHistory[k] = [...(prevHistory[k] || []), { month: raw.month, ...summary }].slice(-12);
+        });
+        setBoard({ ...raw, month: currentMonthKey, cells: {}, values: {}, monthlyHistory: nextHistory });
+      } else {
+        setBoard(raw);
+      }
       setOwnerName(data.displayName || data.email || 'Teammate');
       setCountdown(REFRESH_INTERVAL);
     } catch (e) {
