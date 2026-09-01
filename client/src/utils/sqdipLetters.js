@@ -92,3 +92,14 @@ export function letterGridSize(letterKey) {
 export function daysInMonth(year, monthIndex0) {
   return new Date(year, monthIndex0 + 1, 0).getDate();
 }
+
+// "YYYY-MM" key using the LOCAL calendar date, not UTC. `date.toISOString()`
+// is UTC-based, so for any timezone behind UTC the month flips there hours
+// before it flips locally — a board saved during that window gets tagged
+// with next month's key while the on-screen day grid still shows the old
+// month, and once the real new month arrives locally that stale data
+// silently reappears as if it were already logged. Every SQDIP month-key
+// comparison/save must use this, not toISOString().
+export function localMonthKey(date = new Date()) {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+}

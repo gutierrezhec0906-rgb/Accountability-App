@@ -6,7 +6,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { calculateScore } from '../utils/scoring';
 import { compressImage } from '../utils/image';
-import { SQDIP_META, SQDIP_ORDER, letterCells, letterGridSize, daysInMonth, FILLER_CELLS, EMPTY_LABEL_CELLS } from '../utils/sqdipLetters';
+import { SQDIP_META, SQDIP_ORDER, letterCells, letterGridSize, daysInMonth, localMonthKey, FILLER_CELLS, EMPTY_LABEL_CELLS } from '../utils/sqdipLetters';
 import { SQDIP_COLORS, SQDIP_STATUS_LABEL, ACTION_STATUS, weeklyStatusCounts, weekWorstColor, WeeklyBarChart, WeeklyTrendChart, LetterIcon, monthSummary, buildMonthlyTrend } from '../components/SqdipCharts';
 import { useNavigate } from 'react-router-dom';
 
@@ -142,7 +142,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
   const redCount = Object.values(cellStatus).filter(v => v === 'red').length;
   const filled = greenCount + amberCount + redCount;
   const weeks = weeklyStatusCounts(cellStatus, cellValues, days);
-  const currentMonthKey = new Date().toISOString().slice(0, 7);
+  const currentMonthKey = localMonthKey();
   const months = buildMonthlyTrend(monthlyHistory, currentMonthKey, monthSummary(cellStatus, cellValues, days));
 
   function choose(day, status) {
@@ -348,7 +348,7 @@ export default function EQOpEx() {
           if (data.eqOpexActiveTab && data.eqOpexActiveTab !== 'eq') setActiveTab(data.eqOpexActiveTab);
 
           const board = data.sqdipBoard;
-          const currentMonthKey = new Date().toISOString().slice(0, 7);
+          const currentMonthKey = localMonthKey();
           if (board) {
             setSqdipEnabled(board.enabled || { S: true, Q: true, D: true, I: true, P: true });
             setSqdipLabels(board.labels || {});
@@ -358,11 +358,26 @@ export default function EQOpEx() {
             // (they're ongoing config, not a day-by-day log); only the day
             // grid and logged values reset.
             setSqdipActionPlans(a => ({ ...a, ...(board.actionPlans || {}) }));
-            if (board.month === currentMonthKey) {
+            // Sanity check for a past bug: the month key used to be computed
+            // from UTC (toISOString()) while the day grid used the local
+            // calendar, so for timezones behind UTC a board saved during the
+            // last few hours of a month could get tagged with NEXT month's
+            // key while still holding that old month's real day marks. Once
+            // the real new month arrived locally, board.month === currentMonthKey
+            // matched and that stale data loaded as if it were legitimately
+            // logged. Detect it here: no day past today's date-of-month can
+            // possibly have been logged yet this month, so any cell beyond
+            // that is leftover contamination — discard cells/values instead
+            // of trusting them, even though the month key matches.
+            const todayDate = new Date().getDate();
+            const hasImpossibleFutureDays = board.month === currentMonthKey &&
+              SQDIP_ORDER.some(k => Object.keys(board.cells?.[k] || {}).some(d => Number(d) > todayDate));
+
+            if (board.month === currentMonthKey && !hasImpossibleFutureDays) {
               setSqdipCells(board.cells || { S: {}, Q: {}, D: {}, I: {}, P: {} });
               setSqdipValues(board.values || { S: {}, Q: {}, D: {}, I: {}, P: {} });
               setSqdipMonthlyHistory(board.monthlyHistory || {});
-            } else if (board.month) {
+            } else if (board.month && !hasImpossibleFutureDays) {
               // The stored board is from a previous month — fold that
               // month's totals into history (for the "One Minute Manager"
               // monthly trend) before the day grid/values reset for the
@@ -377,11 +392,14 @@ export default function EQOpEx() {
                 nextHistory[k] = [...(prevHistory[k] || []), { month: board.month, ...summary }].slice(-12);
               });
               setSqdipMonthlyHistory(nextHistory);
-              setDoc(doc(db, 'users', currentUser.uid), {
-                sqdipBoard: { ...board, monthlyHistory: nextHistory },
-              }, { merge: true }).catch(() => {});
+              const rolledBoard = { ...board, month: currentMonthKey, cells: {}, values: {}, monthlyHistory: nextHistory };
+              setDoc(doc(db, 'users', currentUser.uid), { sqdipBoard: rolledBoard }, { merge: true }).catch(() => {});
             } else {
+              // Contaminated data with no reliable prior month to attribute
+              // it to — just clear the day grid and persist the fix.
               setSqdipMonthlyHistory(board.monthlyHistory || {});
+              const cleanedBoard = { ...board, month: currentMonthKey, cells: {}, values: {} };
+              setDoc(doc(db, 'users', currentUser.uid), { sqdipBoard: cleanedBoard }, { merge: true }).catch(() => {});
             }
           }
         }
@@ -392,7 +410,7 @@ export default function EQOpEx() {
 
   async function persistSqdip(next) {
     if (!currentUser) return;
-    const monthKey = new Date().toISOString().slice(0, 7);
+    const monthKey = localMonthKey();
     const board = {
       month: monthKey,
       enabled: next.enabled ?? sqdipEnabled,
