@@ -554,7 +554,7 @@ export default function EQOpEx() {
       <PageHeader icon="⚙️" title="OpEx Tools — Accountability in Action" subtitle="Operational Excellence checklist and SQDIP Board" />
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-        {[{ id: 'opex', label: '⚙️ OpEx Checklist' }, { id: 'sqdip', label: '🗓️ SQDIP Board' }].map(t => (
+        {[{ id: 'sqdip', label: '🗓️ SQDIP Board' }, { id: 'opex', label: '⚙️ OpEx Checklist' }].map(t => (
           <button key={t.id} onClick={() => {
             setActiveTab(t.id);
             localStorage.setItem('eqopex-active-tab', t.id);
