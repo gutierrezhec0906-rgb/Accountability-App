@@ -8,6 +8,7 @@ const SCENARIOS = [
   { key: 'career',           icon: '🚀', label: 'Career Growth Conversation', desc: 'Alex is ambitious but unsure how to grow into leadership — enthusiastic, a little insecure.' },
   { key: 'resistance',       icon: '🚧', label: 'Resistance to Change',     desc: 'Casey is skeptical of a new process and worried it will slow things down.' },
   { key: 'disciplinary',     icon: '⚠️', label: 'Disciplinary Conversation', desc: 'Taylor is anxious and a bit defensive about a repeated conduct/attendance issue.' },
+  { key: 'custom',           icon: '✍️', label: 'Other — Describe Your Own Situation', desc: 'Not seeing your situation? Describe it and the AI will play the part.' },
 ];
 
 function getSpeechRecognition() {
@@ -16,6 +17,8 @@ function getSpeechRecognition() {
 
 export default function CoachingPractice({ onClose }) {
   const [scenario, setScenario] = useState(null);
+  const [customDescription, setCustomDescription] = useState('');
+  const [customStarted, setCustomStarted] = useState(false);
   const [history, setHistory] = useState([]); // [{ role: 'coach'|'coachee', text }]
   const [typedMessage, setTypedMessage] = useState('');
   const [listening, setListening] = useState(false);
@@ -103,7 +106,7 @@ export default function CoachingPractice({ onClose }) {
     setThinking(true);
     try {
       const fn = httpsCallable(getFunctions(), 'coachingPracticeReply');
-      const res = await fn({ scenario: scenario.key, history, message: trimmed });
+      const res = await fn({ scenario: scenario.key, history, message: trimmed, customDescription });
       const { replyText, audioBase64 } = res.data || {};
       if (replyText) {
         setHistory(h => [...h, { role: 'coachee', text: replyText }]);
@@ -127,6 +130,8 @@ export default function CoachingPractice({ onClose }) {
     }
     setListening(false);
     setScenario(null);
+    setCustomDescription('');
+    setCustomStarted(false);
     setHistory([]);
   }
 
@@ -153,6 +158,27 @@ export default function CoachingPractice({ onClose }) {
                 </button>
               ))}
             </div>
+          </div>
+        ) : scenario.key === 'custom' && !customStarted ? (
+          <div style={{ padding: '1.5rem', overflowY: 'auto' }}>
+            <button onClick={() => setScenario(null)} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', padding: 0, marginBottom: 14 }}>
+              ← Back to scenarios
+            </button>
+            <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 6px', fontSize: '0.92rem' }}>✍️ Describe your situation</p>
+            <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '0 0 12px', lineHeight: 1.45 }}>
+              Tell the AI who the coachee is and what's going on — it will infer a name and personality and play the role.
+            </p>
+            <textarea
+              className="input"
+              value={customDescription}
+              onChange={e => setCustomDescription(e.target.value)}
+              placeholder="e.g. A new supervisor on my team is struggling to give feedback to people who used to be their peers, and is avoiding tough conversations."
+              rows={5}
+              style={{ width: '100%', resize: 'vertical', marginBottom: 12 }}
+            />
+            <button className="btn-primary" onClick={() => setCustomStarted(true)} disabled={!customDescription.trim()} style={{ width: '100%' }}>
+              Start Practicing →
+            </button>
           </div>
         ) : (
           <>
@@ -182,7 +208,7 @@ export default function CoachingPractice({ onClose }) {
               ))}
               {thinking && (
                 <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                  <div style={{ padding: '0.6rem 0.9rem', borderRadius: 14, background: '#f1f5f9', color: '#94a3b8', fontSize: '0.82rem' }}>{scenario.label.split(' ')[0]} is thinking…</div>
+                  <div style={{ padding: '0.6rem 0.9rem', borderRadius: 14, background: '#f1f5f9', color: '#94a3b8', fontSize: '0.82rem' }}>{scenario.key === 'custom' ? 'The coachee' : scenario.label.split(' ')[0]} is thinking…</div>
                 </div>
               )}
               <div ref={transcriptEndRef} />

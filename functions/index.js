@@ -1285,8 +1285,13 @@ const PRACTICE_SCENARIOS = {
 
 exports.coachingPracticeReply = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
-  const { scenario, history, message } = request.data || {};
-  const persona = PRACTICE_SCENARIOS[scenario];
+  const { scenario, history, message, customDescription } = request.data || {};
+  let persona = PRACTICE_SCENARIOS[scenario];
+  if (scenario === 'custom') {
+    const desc = (customDescription || '').trim();
+    if (!desc) throw new HttpsError('invalid-argument', 'Missing situation description');
+    persona = `You are a coachee in the following coaching situation, described by the coach who will be talking to you: "${desc}". Infer a plausible name, role, and personality consistent with this description, and react the way a real person in that situation would — with realistic emotion, resistance, or openness as appropriate. Stay consistent about your name and details for the rest of the conversation.`;
+  }
   if (!persona) throw new HttpsError('invalid-argument', 'Unknown or missing scenario');
   if (!(message || '').trim()) throw new HttpsError('invalid-argument', 'Missing coach message');
 
