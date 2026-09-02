@@ -179,6 +179,7 @@ export default function Team() {
   const [filter, setFilter] = useState('All');
   const [companyFilter, setCompanyFilter] = useState('All');
   const [scoreFilter, setScoreFilter] = useState('All');
+  const [scoreSort, setScoreSort] = useState('desc'); // 'desc' = higher to lower, 'asc' = lower to higher
   const [search, setSearch] = useState('');
   const [view, setView] = useState('grid');
   const [orgDefaulted, setOrgDefaulted] = useState(false);
@@ -230,6 +231,9 @@ export default function Team() {
     const matchScore = scoreFilter === 'All' || scoreTierOf(m.calculatedScore ?? null) === scoreFilter;
     const matchSearch = !search || m.displayName?.toLowerCase().includes(search.toLowerCase()) || m.email?.toLowerCase().includes(search.toLowerCase());
     return matchRole && matchCompany && matchScore && matchSearch;
+  }).sort((a, b) => {
+    const sa = a.calculatedScore ?? -1, sb = b.calculatedScore ?? -1;
+    return scoreSort === 'asc' ? sa - sb : sb - sa;
   });
 
   const roleCounts = allRoles.slice(1).reduce((acc, r) => ({ ...acc, [r]: members.filter(m => m.role === r).length }), {});
@@ -314,6 +318,13 @@ export default function Team() {
             <option key={t} value={t}>{t === 'All' ? 'All Scores' : t}</option>
           ))}
         </select>
+        {canSeeScores && (
+          <button onClick={() => setScoreSort(s => s === 'desc' ? 'asc' : 'desc')}
+            title="Sort by score"
+            style={{ padding: '0.35rem 0.875rem', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 600, border: '1px solid #e2e8f0', background: '#f1f5f9', color: '#475569', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
+            Score {scoreSort === 'desc' ? '↓ High to Low' : '↑ Low to High'}
+          </button>
+        )}
       </div>
 
       {/* Org Chart View (admin only) — grouped by company, ranked top-down */}
@@ -470,7 +481,13 @@ export default function Team() {
                 <th style={{ textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 500 }}>Role</th>
                 {isAdmin && <th style={{ textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 500 }}>Company</th>}
                 <th style={{ textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 500 }}>Email</th>
-                {canSeeScores && <th style={{ textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 500, minWidth: 200 }}>Score</th>}
+                {canSeeScores && (
+                  <th onClick={() => setScoreSort(s => s === 'desc' ? 'asc' : 'desc')}
+                    style={{ textAlign: 'left', padding: '0.75rem 1rem', color: '#94a3b8', fontWeight: 500, minWidth: 200, cursor: 'pointer', userSelect: 'none' }}
+                    title="Click to sort">
+                    Score {scoreSort === 'desc' ? '↓' : '↑'}
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
