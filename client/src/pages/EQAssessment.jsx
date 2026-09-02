@@ -87,100 +87,100 @@ const EQ_GUIDES = {
     high: 'In a talent conversation, you can say: "My strength is energizing teams through change. My growth area is patience with slow decision-making processes — I\'m working on it."',
   },
 
-  'self-regulation-0': {
+  'self-management-0': {
     what: 'Under stress, conflict, or tight deadlines, you remain composed and solution-focused rather than reactive.',
     example: 'A key team member calls in sick the morning of a major client presentation. Instead of expressing panic or frustration in front of the team, you calmly assess what can be adjusted, reassign tasks, and communicate the revised plan with confidence.',
     low: 'When things go wrong, your stress is visible — raised voice, short responses, or visible frustration that affects the team\'s own anxiety level.',
     high: 'Team members say they feel calmer just having you in the room during a crisis, because your steadiness sets the tone.',
   },
-  'self-regulation-1': {
+  'self-management-1': {
     what: 'When something triggers a strong emotional reaction, you pause and process before you respond.',
     example: 'A peer publicly criticizes your team\'s performance in a leadership meeting. Instead of firing back immediately, you take a breath, let them finish, and respond with: "I appreciate you raising this — can we set time to dig into the data together?"',
     low: 'You send reactive emails you later regret, interrupt people when you disagree, or make decisions in anger that you have to walk back.',
     high: 'You have personal rules: never send an email when you\'re emotionally activated. You draft it, wait an hour, then review before sending.',
   },
-  'self-regulation-2': {
+  'self-management-2': {
     what: 'When priorities shift, processes change, or plans fall apart, you adjust without becoming rigid or destabilized.',
     example: 'Mid-project, leadership changes the success metrics and reduces your budget. Instead of resisting or complaining, you reframe the constraint as a design challenge, update the plan, and re-energize your team around the new direction.',
     low: 'You get stuck on "but that\'s not how we planned it" or visibly disengage when the goalposts move.',
     high: 'When a reorganization announcement comes, you are the first to ask: "What does success look like in the new structure?" and begin adapting your team immediately.',
   },
-  'self-regulation-3': {
+  'self-management-3': {
     what: 'Even in difficult stretches — setbacks, conflict, or boring grind phases — you model optimism and forward momentum.',
     example: 'Your team has missed two consecutive targets. In the Monday standup, instead of dwelling on the misses, you acknowledge the reality briefly and pivot to: "Here\'s what I believe we can control this week." Your attitude shapes what they believe is possible.',
     low: 'When things are hard, your attitude visibly drags — you vent frequently, express cynicism about the company, or bring a low-energy presence that the team absorbs.',
     high: 'People come to you when they are demoralized because your perspective consistently helps them see a path forward without dismissing the difficulty.',
   },
 
-  'motivation-0': {
+  'self-management-4': {
     what: 'When you hit setbacks, rejection, or slow progress, you stay engaged and continue pushing forward.',
     example: 'A proposal you worked on for three weeks gets rejected by the client. You\'re disappointed, but within a day you\'re analyzing what to improve and building a stronger follow-up version — not because someone pushed you, but because you genuinely want to get it right.',
     low: 'Setbacks cause you to disengage, become passive, or wait for someone else to reinvigorate the effort.',
     high: 'People describe you as someone who "doesn\'t stay down long" — your recovery time after failures is noticeably fast.',
   },
-  'motivation-1': {
+  'self-management-5': {
     what: 'You set goals that stretch you beyond your comfort zone and pursue them with visible energy.',
     example: 'Rather than targeting the same safe sales number as last year, you set a goal 30% higher and break it into weekly milestones. You block time proactively to work toward it — not just when you feel like it.',
     low: 'You tend to set conservative targets that are easy to hit, or you set ambitious goals but fade once early momentum stalls.',
     high: 'Your goals make some people around you uncomfortable because of how high you set the bar — and you regularly hit them anyway.',
   },
-  'motivation-2': {
+  'self-management-6': {
     what: 'You proactively look for better ways to do your work — not because you\'re told to, but because you want to.',
     example: 'After completing a project, you run a brief post-mortem not to comply with a process, but because you genuinely want to know what slowed you down and what you can do faster next time. You apply that learning to the next project without being asked.',
     low: 'You do the job well but rarely ask "how could this be even better?" unless it\'s part of a formal review cycle.',
     high: 'You regularly bring unsolicited ideas to your manager: "I was thinking about our onboarding process — here\'s a change that could cut ramp time in half."',
   },
-  'motivation-3': {
+  'self-management-7': {
     what: 'Your personal commitment to the work raises the standard for people around you — they work harder because you do.',
     example: 'When your team is hitting a slow patch, you don\'t give a speech — you put in visible extra effort, solve a hard problem in front of them, and the energy shifts. They match your level because you model what "fully committed" looks like.',
     low: 'Your engagement level is consistent but doesn\'t visibly raise the bar for others. You do your part without creating a pull effect on the team.',
     high: 'Team members say things like "I didn\'t want to be the one who gave up when they were still going" — your commitment creates social proof that raises the group\'s standard.',
   },
 
-  'empathy-0': {
+  'social-awareness-0': {
     what: 'When someone is speaking, you give them your full attention — you are not internally formulating your response while they are still talking.',
     example: 'A team member comes to you frustrated about a workload issue. Instead of jumping to solutions, you ask follow-up questions, make eye contact, and summarize what you heard before offering anything: "It sounds like the real issue is that you feel like your capacity isn\'t being respected — is that right?"',
     low: 'You frequently finish people\'s sentences, jump to solutions before they\'re done explaining, or check your phone or screen while others are talking.',
     high: 'People leave conversations with you feeling genuinely heard — even when you disagree with them or cannot give them what they asked for.',
   },
-  'empathy-1': {
+  'social-awareness-1': {
     what: 'Before making decisions that affect others, you think through how they will feel — not just what is logically optimal.',
     example: 'Before announcing a role change that benefits the organization, you think: "This person has been in this position for 8 years — they\'ll feel displaced even if the new role is technically a promotion. How do I frame this conversation?" You plan accordingly.',
     low: 'You make sound logical decisions but are often surprised by how people react emotionally — "I didn\'t think it would be a big deal."',
     high: 'People describe you as someone who "gets people" — your decisions are both analytically sound and emotionally intelligent in how they\'re structured and communicated.',
   },
-  'empathy-2': {
+  'social-awareness-2': {
     what: 'You recognize that different people need to hear things differently — and you adjust your style to fit the person, not just the message.',
     example: 'With your analytical direct report, you lead with data when giving feedback. With your more relationship-oriented colleague, you lead with connection and context. Same message, different delivery — and both land well.',
     low: 'You communicate in the way that works for you and expect others to adapt. You\'re consistent but not always effective with people who are wired differently.',
     high: 'You can shift between direct/blunt and warm/narrative in the same meeting depending on who you\'re addressing — and it feels natural, not performative.',
   },
-  'empathy-3': {
+  'social-awareness-3': {
     what: 'You pick up on team dynamics, unspoken tension, or drops in engagement — before they become visible problems.',
     example: 'During a team standup, no one is making jokes or cross-talking like usual. You notice the shift and pull aside two people afterward: "The energy felt different today — is everything okay?" You surface a festering conflict between two team members before it blows up.',
     low: 'You\'re often the last to know about interpersonal tension on your team, or you notice it only after it has already affected performance or caused someone to resign.',
     high: 'You treat team energy as a leading indicator, the same way you treat pipeline as a leading indicator for revenue — you monitor it proactively and act early.',
   },
 
-  'social-skills-0': {
+  'relationship-management-0': {
     what: 'People at every level — your reports, peers, and senior leaders — feel confident that you will do what you say, tell the truth, and treat them fairly.',
     example: 'You follow up on every commitment you make, even small ones. When you can\'t deliver, you say so proactively before the deadline. Over time, people stop double-checking your work because they know you won\'t let it slip.',
     low: 'You are well-liked, but people still hedge when relying on you — they confirm twice, add buffer time, or keep a backup plan because they\'re not fully certain you\'ll come through.',
     high: 'Your reputation travels ahead of you. People who haven\'t worked with you directly already trust you based on what others have said.',
   },
-  'social-skills-1': {
+  'relationship-management-1': {
     what: 'When two people or groups are in conflict, you step in and move them toward resolution — without taking sides or escalating.',
     example: 'Two team leads are blaming each other for a missed handoff. Instead of picking a side or ignoring it, you bring them together: "I want to understand both perspectives, and then I want us to agree on a process so this doesn\'t happen again." You leave with a signed-off process, not just a truce.',
     low: 'You avoid conflict when possible, or when you do engage, you tend to side with one party, which increases rather than resolves tension.',
     high: 'When people are locked in conflict, they often ask you to mediate — not because it\'s your job, but because they trust your ability to keep it fair and move it forward.',
   },
-  'social-skills-2': {
+  'relationship-management-2': {
     what: 'When you speak — in meetings, emails, or one-on-ones — people understand your point and feel compelled to act on it.',
     example: 'You can walk into a room of skeptical stakeholders and, in 10 minutes, shift their position — not by overwhelming them with data, but by connecting the data to something they care about. You know what motivates your audience and you lead with that.',
     low: 'Your content is solid but people sometimes walk away unsure of what you were asking for, or your updates take longer than needed because you struggle to frame the core point first.',
     high: 'Your presentations and memos get used as internal templates because of how clearly and persuasively they are structured.',
   },
-  'social-skills-3': {
+  'relationship-management-3': {
     what: 'The teams you lead or participate in consistently outperform — because you create an environment where people collaborate, hold each other accountable, and bring their best.',
     example: 'On a cross-functional team you led, people who previously never worked together began proactively helping each other outside of formal meetings. The team finished ahead of schedule, not because of extra hours, but because the collaboration removed friction and duplication.',
     low: 'Teams you are on function adequately but rarely achieve the level of cohesion where people go beyond their defined responsibilities to help each other.',
@@ -195,25 +195,23 @@ const EQ_SUGGESTED_ACTIONS = {
     'Request specific feedback from two colleagues on one blind spot you suspect you have',
     'Create a personal "trigger list" — document 3 situations that reliably change your behavior and why',
   ],
-  'self-regulation': [
+  'self-management': [
     'Establish a personal rule: draft any reactive email, wait 30 minutes, then review before sending',
     'Practice a 5-second breathing pause before responding in tense conversations',
     'Identify your top stress signal (e.g. raised shoulders, faster speech) and use it as a stop cue',
     'After a moment you regret, write down what you would do differently — make it a learning ritual',
-  ],
-  'motivation': [
     'Set one stretch goal per quarter that makes you slightly uncomfortable — track weekly progress',
     'Run a 15-minute post-project debrief focused only on "what could we improve?" — apply one finding',
     'Block 30 minutes each Friday to review what you accomplished and what still energizes you about the work',
     'Identify one person on your team you can inspire this month through visible commitment on a shared goal',
   ],
-  'empathy': [
+  'social-awareness': [
     'In your next 5 one-on-ones, listen fully before speaking — summarize what you heard before responding',
     'Before a difficult conversation, write down how the other person likely feels about the situation',
     'Identify one team member with a different communication style and practice adapting your approach for 30 days',
     'At the start of each week, do a 2-minute "team pulse check" — ask one person how they are really doing',
   ],
-  'social-skills': [
+  'relationship-management': [
     'Make one specific commitment per week and follow up publicly — build your reliability reputation deliberately',
     'Identify one ongoing conflict or tension in your team and schedule a structured mediation conversation',
     'Before your next presentation, write down the top concern of each key stakeholder and address it explicitly',
@@ -223,12 +221,16 @@ const EQ_SUGGESTED_ACTIONS = {
 
 const EQ_DEFAULT_DUE_DAYS = 90;
 
+// Organized under the four EQ pillars (Self-Awareness, Self-Management,
+// Social Awareness, Relationship Management). Self-Management combines the
+// former Self-Regulation and Motivation dimensions — managing your own
+// emotions/impulses AND your internal drive both live under "managing
+// yourself" — so it carries 8 questions where the others carry 4.
 const eqDimensions = [
-  { id: 'self-awareness', label: 'Self-Awareness',  icon: '🪞', desc: 'Understanding your emotions and their impact',         questions: ['I recognize my emotional states in real-time','I understand my triggers and how they affect my behavior','I seek feedback to understand my blind spots','I know my strengths and development areas clearly'] },
-  { id: 'self-regulation',label: 'Self-Regulation', icon: '🎛️', desc: 'Managing your emotions and impulses effectively',       questions: ['I stay calm under pressure and in conflict','I think before reacting in tense situations','I adapt my approach when things change unexpectedly','I maintain a positive attitude in challenging situations'] },
-  { id: 'motivation',     label: 'Motivation',      icon: '🔥', desc: 'Internal drive toward goals beyond external rewards',   questions: ['I maintain enthusiasm even when facing obstacles','I set challenging goals and pursue them with energy','I continuously look for ways to improve','I inspire others through my own commitment'] },
-  { id: 'empathy',        label: 'Empathy',          icon: '❤️', desc: 'Understanding and sharing the feelings of others',      questions: ['I actively listen without planning my response',"I consider others' emotions before making decisions",'I adapt my communication style to different people',"I can sense the team's morale and address it proactively"] },
-  { id: 'social-skills',  label: 'Social Skills',   icon: '🤝', desc: 'Managing relationships and inspiring others',           questions: ['I build trust with people at all levels','I resolve conflicts constructively and quickly','I communicate clearly and persuasively','I build high-performing collaborative teams'] },
+  { id: 'self-awareness',          label: 'Self-Awareness',          icon: '🪞', desc: 'Understanding your emotions and their impact',            questions: ['I recognize my emotional states in real-time','I understand my triggers and how they affect my behavior','I seek feedback to understand my blind spots','I know my strengths and development areas clearly'] },
+  { id: 'self-management',         label: 'Self-Management',         icon: '🎛️', desc: 'Managing your emotions, impulses, and drive effectively',  questions: ['I stay calm under pressure and in conflict','I think before reacting in tense situations','I adapt my approach when things change unexpectedly','I maintain a positive attitude in challenging situations','I maintain enthusiasm even when facing obstacles','I set challenging goals and pursue them with energy','I continuously look for ways to improve','I inspire others through my own commitment'] },
+  { id: 'social-awareness',        label: 'Social Awareness',        icon: '❤️', desc: 'Understanding and sharing the feelings of others',         questions: ['I actively listen without planning my response',"I consider others' emotions before making decisions",'I adapt my communication style to different people',"I can sense the team's morale and address it proactively"] },
+  { id: 'relationship-management', label: 'Relationship Management', icon: '🤝', desc: 'Managing relationships and inspiring others',               questions: ['I build trust with people at all levels','I resolve conflicts constructively and quickly','I communicate clearly and persuasively','I build high-performing collaborative teams'] },
 ];
 
 function calcDimAvg(scores, dimId, qCount) {
@@ -465,7 +467,7 @@ export default function EQAssessment() {
         .slice(0, 2)
         .map(d => d.id);
     } else {
-      weakAreas = ['self-awareness', 'self-regulation'];
+      weakAreas = ['self-awareness', 'self-management'];
     }
     const defaultDue = new Date(Date.now() + EQ_DEFAULT_DUE_DAYS * 86400000).toISOString().split('T')[0];
     const userName = userProfile?.displayName || currentUser?.displayName || 'Me';

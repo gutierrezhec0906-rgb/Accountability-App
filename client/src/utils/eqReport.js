@@ -41,84 +41,52 @@ const RECS = {
     },
   },
 
-  'self-regulation': {
-    label: 'Self-Regulation',
+  'self-management': {
+    label: 'Self-Management',
     icon: '🎛️',
     low: {
       strength: null,
-      weakness: 'Emotions frequently drive reactive behavior, especially under pressure or conflict.',
+      weakness: 'Emotions frequently drive reactive behavior, especially under pressure or conflict, and internal drive is inconsistent — obstacles and setbacks significantly reduce momentum.',
       actions: [
         'Implement the "6-second rule": pause 6 seconds before responding in any tense moment.',
         'Identify your physical stress signals (chest tightening, faster speech) as your early-warning system.',
         'Practice box breathing (4 counts in, hold, out, hold) before high-stakes conversations.',
         'Reframe: when frustrated, ask "What is this situation asking of me?" instead of reacting.',
         'Create a personal "trigger plan" — document your top triggers and a prepared calm response for each.',
+        'Reconnect with your "why" — write a short personal mission statement tied to your role.',
+        'Break large goals into weekly wins; small visible progress rebuilds intrinsic drive.',
+        'Replace "I have to" language with "I get to" and track how that reframe changes your energy.',
       ],
     },
     mid: {
-      strength: 'Generally manages emotions well in routine situations.',
-      weakness: 'Consistency breaks down in high-pressure or conflicted environments.',
+      strength: 'Generally manages emotions well in routine situations and engages well with work that aligns to personal values.',
+      weakness: 'Consistency breaks down in high-pressure or conflicted environments, and drive can fluctuate when work feels disconnected from purpose or recognition is low.',
       actions: [
         'Build a pre-conversation ritual (breath, intent-setting) before meetings you know will be tense.',
         'Debrief reactive moments within 24 hours: what triggered it, what you could do differently.',
         'Practice non-attachment: notice when you\'re overinvested in being right and consciously release it.',
         'Develop "redirect scripts" for moments when you feel yourself losing control.',
-        'Enlist an accountability partner to give you a signal if your regulation slips in meetings.',
+        'Craft a "purpose bridge" — explicitly link daily tasks to a broader impact you care about.',
+        'Set a bold personal stretch goal beyond your role and track it weekly.',
+        'Build habits that protect your energy: sleep, exercise, and boundaries on reactive work.',
       ],
     },
     high: {
-      strength: 'Reliable emotional composure, even in adversity. Others trust your steadiness.',
-      weakness: 'Potential to over-suppress — ensure feelings are being processed, not just hidden.',
+      strength: 'Reliable emotional composure, even in adversity, paired with consistent drive that inspires those around you.',
+      weakness: 'Potential to over-suppress emotion, or to burn out (or drag a less-motivated team) if that drive is not channeled well.',
       actions: [
         'Share your regulation strategies visibly — it models psychological safety for your team.',
         'Check in with yourself: are you regulating or repressing? Find healthy outlets for intense emotions.',
-        'Coach a colleague who struggles with regulation; teaching deepens your own mastery.',
-        'Explore advanced techniques: mindfulness-based stress reduction, cognitive reframing at speed.',
-        'Regularly review whether your composure is creating distance or confidence in others.',
-      ],
-    },
-  },
-
-  motivation: {
-    label: 'Motivation',
-    icon: '🔥',
-    low: {
-      strength: null,
-      weakness: 'Internal drive is inconsistent; obstacles and setbacks significantly reduce momentum.',
-      actions: [
-        'Reconnect with your "why" — write a short personal mission statement tied to your role.',
-        'Break large goals into weekly wins; small visible progress rebuilds intrinsic drive.',
-        'Identify what energizes you vs. what drains you, and restructure your week accordingly.',
-        'Find a peer or mentor who models sustained drive and have regular conversations with them.',
-        'Replace "I have to" language with "I get to" and track how that reframe changes your energy.',
-      ],
-    },
-    mid: {
-      strength: 'Engages well with work that aligns to personal values.',
-      weakness: 'Drive can fluctuate when work feels disconnected from purpose or recognition is low.',
-      actions: [
-        'Craft a "purpose bridge" — explicitly link daily tasks to a broader impact you care about.',
-        'Set a bold personal stretch goal beyond your role and track it weekly.',
-        'Seek feedback on which of your contributions others value most to reinforce purpose.',
-        'Build habits that protect your energy: sleep, exercise, and boundaries on reactive work.',
-        'Celebrate team wins intentionally — motivation is contagious when leaders model it.',
-      ],
-    },
-    high: {
-      strength: 'Consistently driven, resilient through setbacks, and inspires those around you.',
-      weakness: 'Risk of burnout or dragging a less-motivated team if drive is not channeled well.',
-      actions: [
-        'Actively channel your drive into mentoring: pair with lower-motivation team members intentionally.',
+        'Coach a colleague who struggles with regulation or motivation; teaching deepens your own mastery.',
         'Monitor your pace — ensure your high drive is sustainable and not creating pressure on others.',
-        'Document your personal resilience practices and share them in team forums.',
         'Take on a new challenge or project that stretches you; high performers need new peaks.',
         'Review your team\'s motivation regularly and use your energy to elevate the collective.',
       ],
     },
   },
 
-  empathy: {
-    label: 'Empathy',
+  'social-awareness': {
+    label: 'Social Awareness',
     icon: '❤️',
     low: {
       strength: null,
@@ -155,8 +123,8 @@ const RECS = {
     },
   },
 
-  'social-skills': {
-    label: 'Social Skills',
+  'relationship-management': {
+    label: 'Relationship Management',
     icon: '🤝',
     low: {
       strength: null,
