@@ -128,6 +128,17 @@ const roleIcons = {
 };
 
 const allRoles = ['All', 'Leader', 'Manager', 'Supervisor', 'Individual Contributor'];
+const scoreTiers = ['All', 'Exceptional', 'High Performer', 'Developing', 'Getting Started', 'No score yet'];
+
+// Same thresholds as ScoreBar's label — kept here so the filter and the
+// displayed badge always agree on what counts as which tier.
+function scoreTierOf(score) {
+  if (score === null || score === undefined) return 'No score yet';
+  if (score >= 75) return 'Exceptional';
+  if (score >= 50) return 'High Performer';
+  if (score >= 25) return 'Developing';
+  return 'Getting Started';
+}
 
 // Org-chart hierarchy: lower rank = higher in the chart.
 const ROLE_RANK = { Leader: 0, Manager: 1, Supervisor: 2, 'Individual Contributor': 3 };
@@ -166,6 +177,8 @@ export default function Team() {
   const [members, setMembers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('All');
+  const [companyFilter, setCompanyFilter] = useState('All');
+  const [scoreFilter, setScoreFilter] = useState('All');
   const [search, setSearch] = useState('');
   const [view, setView] = useState('grid');
   const [orgDefaulted, setOrgDefaulted] = useState(false);
@@ -213,11 +226,14 @@ export default function Team() {
 
   const filtered = members.filter(m => {
     const matchRole = filter === 'All' || m.role === filter;
+    const matchCompany = companyFilter === 'All' || (m.companyName || 'No Company') === companyFilter;
+    const matchScore = scoreFilter === 'All' || scoreTierOf(m.calculatedScore ?? null) === scoreFilter;
     const matchSearch = !search || m.displayName?.toLowerCase().includes(search.toLowerCase()) || m.email?.toLowerCase().includes(search.toLowerCase());
-    return matchRole && matchSearch;
+    return matchRole && matchCompany && matchScore && matchSearch;
   });
 
   const roleCounts = allRoles.slice(1).reduce((acc, r) => ({ ...acc, [r]: members.filter(m => m.role === r).length }), {});
+  const companyOptions = ['All', ...Array.from(new Set(members.map(m => m.companyName || 'No Company'))).sort((a, b) => a.localeCompare(b))];
 
   if (loading) {
     return (
@@ -286,6 +302,18 @@ export default function Team() {
             </button>
           ))}
         </div>
+        {companyOptions.length > 2 && (
+          <select className="input" style={{ maxWidth: 180 }} value={companyFilter} onChange={e => setCompanyFilter(e.target.value)}>
+            {companyOptions.map(c => (
+              <option key={c} value={c}>{c === 'All' ? 'All Companies' : c}</option>
+            ))}
+          </select>
+        )}
+        <select className="input" style={{ maxWidth: 180 }} value={scoreFilter} onChange={e => setScoreFilter(e.target.value)}>
+          {scoreTiers.map(t => (
+            <option key={t} value={t}>{t === 'All' ? 'All Scores' : t}</option>
+          ))}
+        </select>
       </div>
 
       {/* Org Chart View (admin only) — grouped by company, ranked top-down */}
