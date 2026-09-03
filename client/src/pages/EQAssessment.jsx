@@ -315,6 +315,38 @@ const EQ_STRATEGIES = {
   ],
 };
 
+// Maps the pre-reorg 5-dimension ids (self-regulation, motivation, empathy,
+// social-skills) to their current 4-pillar equivalents, so a Personal
+// Development Plan saved before the EQ pillar reorg still resolves to a
+// real dimension instead of rendering a blank header.
+const OLD_DIM_ID_MAP = {
+  'self-regulation': 'self-management',
+  motivation: 'self-management',
+  empathy: 'social-awareness',
+  'social-skills': 'relationship-management',
+};
+
+function migrateDimId(id) {
+  return OLD_DIM_ID_MAP[id] || id;
+}
+
+// Migrates a saved eqDevPlan's area ids and action-map keys to current
+// dimension ids. Two old areas can collapse onto the same new id (e.g. a
+// plan targeting both self-regulation and motivation now both point to
+// self-management) — merge their actions in that case instead of dropping one.
+function migratePdpPlan(plan) {
+  if (!plan?.areas) return plan;
+  const migratedAreas = [];
+  const migratedActions = {};
+  plan.areas.forEach(oldId => {
+    const newId = migrateDimId(oldId);
+    if (!migratedAreas.includes(newId)) migratedAreas.push(newId);
+    const rows = plan.actions?.[oldId] || [];
+    migratedActions[newId] = [...(migratedActions[newId] || []), ...rows];
+  });
+  return { ...plan, areas: migratedAreas, actions: migratedActions };
+}
+
 function calcDimAvg(scores, dimId, qCount) {
   const vals = Array.from({ length: qCount }, (_, i) => scores[`${dimId}-${i}`] || 0).filter(Boolean);
   return vals.length ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : 0;
@@ -512,7 +544,7 @@ export default function EQAssessment() {
           const data = userSnap.data();
           const history = (data.eqHistory || []).slice().reverse();
           setEqHistory(history);
-          if (data.eqDevPlan) setSavedPdp(data.eqDevPlan);
+          if (data.eqDevPlan) setSavedPdp(migratePdpPlan(data.eqDevPlan));
         }
       } catch (e) { console.error(e); setLoadError(true); }
     }
