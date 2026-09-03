@@ -218,6 +218,7 @@ export default function Mindfulness() {
     clearInterval(timerRef.current);
     setRunning(false);
     setSelectedEx(ex);
+    setLogTab(ex.name);
     setPhaseIdx(0);
     setTimeLeft(ex.phases[0].duration);
     setCycles(0);
