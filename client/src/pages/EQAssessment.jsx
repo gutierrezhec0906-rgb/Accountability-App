@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import { arrayUnion, doc, getDoc, setDoc } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { generateEQReport } from '../utils/eqReport';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
