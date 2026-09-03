@@ -1141,6 +1141,22 @@ exports.fishboneAiFeedback = onCall(async (request) => {
   return { feedback };
 });
 
+// EQ Assessment — 66-strategy reference board (Bradberry & Greaves). Given a
+// pillar + strategy name, generate a deep-dive explanation with a concrete
+// workplace example and specific action steps, so a user browsing the
+// strategy list gets practical detail beyond the bare title.
+exports.eqStrategyDeepDive = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+  const { dimensionLabel, strategy } = request.data || {};
+  if (!(strategy || '').trim()) throw new HttpsError('invalid-argument', 'Missing strategy');
+
+  const systemPrompt = 'You are an expert in emotional intelligence coaching for workplace leaders. Given an EQ strategy name and the EQ pillar it belongs to, write a practical deep dive covering: (1) a 1-2 sentence explanation of what the strategy means in practice, (2) a realistic workplace example showing it in action, (3) 3-4 specific, concrete action steps a leader could start doing this week. Write it as plain text with short paragraph breaks between the three parts (no markdown headers, bullets, or asterisks) — label each part inline like "What it means:", "Example:", "Try this week:". Keep the whole thing under 180 words.';
+  const userPrompt = `EQ Pillar: ${dimensionLabel || 'Emotional Intelligence'}\nStrategy: ${strategy.trim()}`;
+
+  const explanation = await callClaude(systemPrompt, userPrompt, 400);
+  return { explanation };
+});
+
 // AI assistant for SMART Goals — drafts all 5 SMART components (Specific,
 // Measurable, Achievable, Relevant, Time-Bound) from a rough goal title/idea,
 // so a user can start from a draft instead of a blank field for each one.

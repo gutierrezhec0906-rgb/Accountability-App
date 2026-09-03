@@ -233,6 +233,87 @@ const eqDimensions = [
   { id: 'relationship-management', label: 'Relationship Management', icon: '🤝', desc: 'Managing relationships and inspiring others',               questions: ['I build trust with people at all levels','I resolve conflicts constructively and quickly','I communicate clearly and persuasively','I build high-performing collaborative teams'] },
 ];
 
+// The 66 EQ strategies (Bradberry & Greaves, "Emotional Intelligence 2.0"),
+// organized under the same 4 pillars as eqDimensions — one reference list per
+// category so a user can browse concrete tactics for whichever area they're
+// developing, independent of their assessment scores.
+const EQ_STRATEGIES = {
+  'self-awareness': [
+    'Quit Treating Your Feelings as Good or Bad',
+    'Observe the Ripple Effect from Your Emotions',
+    'Lean into Your Discomfort',
+    'Feel Your Emotions Physically',
+    'Know Who and What Pushes Your Buttons',
+    'Watch Yourself Like a Hawk...',
+    'Keep a Journal about Your Emotions',
+    "Don't Be Fooled by a Bad Mood",
+    "Don't Be Fooled by a Good Mood, Either",
+    'Stop and Ask Yourself Why You Do the Things You Do',
+    'Visit Your Values',
+    'Check Yourself',
+    'Spot Your Emotions in Books, Movies, and Music',
+    'Seek Feedback',
+    'Get to Know Yourself under Stress',
+  ],
+  'self-management': [
+    'Breathe Right',
+    'Create an Emotion vs. Reason List',
+    'Make Your Goals Public',
+    'Count to Ten',
+    'Sleep On It',
+    'Talk to a Skilled Self-Manager',
+    'Smile and Laugh More',
+    'Set Aside Some Time in Your Day for Problem Solving',
+    'Take Control of Your Self-Talk',
+    'Visualize Yourself Succeeding',
+    'Clean Up Your Sleep Hygiene',
+    'Focus Your Attention on Your Freedoms, Rather than Your Limitations',
+    'Stay Synchronized',
+    'Speak to Someone Who is Not Emotionally Invested in Your Problem',
+    'Learn a Valuable Lesson from Everyone You Encounter',
+    'Put a Mental Recharge into Your Schedule',
+    'Accept That Change is Just around the Corner',
+  ],
+  'social-awareness': [
+    'Greet People by Name',
+    'Watch Body Language',
+    'Make Timing Everything',
+    'Develop a Back-pocket Question',
+    "Don't Take Notes at Meetings",
+    'Plan Ahead for Social Gatherings',
+    'Clear Away the Clutter',
+    'Live in the Moment',
+    'Go on a 15-minute Tour',
+    'Watch EQ at the Movies',
+    'Practice the Art of Listening',
+    'Go People Watching',
+    'Understand the Rules of the Culture Game',
+    'Test for Accuracy',
+    'Step into Their Shoes',
+    'Seek the Whole Picture',
+    'Catch the Mood of the Room',
+  ],
+  'relationship-management': [
+    'Be Open and Be Curious',
+    'Enhance Your Natural Communication Style',
+    'Avoid Giving Mixed Signals',
+    'Remember the Little Things That Pack a Punch',
+    'Take Feedback Well',
+    'Build Trust',
+    'Have an "Open-door" Policy',
+    'Only Get Mad on Purpose',
+    "Don't Avoid the Inevitable",
+    "Acknowledge the Other Person's Feelings",
+    "Complement the Person's Emotions or Situation",
+    'When You Care, Show It',
+    "Explain Your Decisions, Don't Just Make Them",
+    'Make Your Feedback Direct and Constructive',
+    'Align Your Intention with Your Impact',
+    'Offer a "Fix-it" Statement during a Broken Conversation',
+    'Tackle a Tough Conversation',
+  ],
+};
+
 function calcDimAvg(scores, dimId, qCount) {
   const vals = Array.from({ length: qCount }, (_, i) => scores[`${dimId}-${i}`] || 0).filter(Boolean);
   return vals.length ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : 0;
@@ -302,6 +383,100 @@ function QuestionGuide({ guideKey }) {
               <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b', lineHeight: 1.5 }}>{guide.high}</p>
             </div>
           </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// 4-column strategy reference board — the 66 EQ strategies (15 + 17 + 17 +
+// 17), one column per pillar, matching the layout of the source spreadsheet.
+// Clicking a strategy selects it and offers an AI-generated deep dive
+// (detailed examples / concrete actions) without touching the user's own
+// assessment answers.
+function StrategyBoard() {
+  const [selected, setSelected] = useState(null); // { dimId, strategy }
+  const [deepDive, setDeepDive] = useState('');
+  const [loadingDive, setLoadingDive] = useState(false);
+  const [diveError, setDiveError] = useState(false);
+
+  function selectStrategy(dimId, strategy) {
+    setSelected({ dimId, strategy });
+    setDeepDive('');
+    setDiveError(false);
+  }
+
+  async function getAiSupport() {
+    if (!selected) return;
+    setLoadingDive(true);
+    setDiveError(false);
+    try {
+      const dim = eqDimensions.find(d => d.id === selected.dimId);
+      const fn = httpsCallable(getFunctions(), 'eqStrategyDeepDive');
+      const res = await fn({ dimensionLabel: dim?.label || '', strategy: selected.strategy });
+      setDeepDive(res.data?.explanation || '');
+    } catch (e) {
+      setDiveError(true);
+      toast.error(e?.message || 'Could not get AI support — try again');
+    }
+    setLoadingDive(false);
+  }
+
+  return (
+    <div className="card" style={{ overflow: 'hidden', marginTop: 8 }}>
+      <div style={{ padding: '1rem 1.25rem', background: 'linear-gradient(135deg, #0f2044 0%, #134e6a 100%)' }}>
+        <p style={{ margin: 0, fontWeight: 900, color: 'white', fontSize: '1rem' }}>🧭 66 EQ Strategies</p>
+        <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'rgba(153,246,228,0.85)' }}>
+          Browse concrete tactics by pillar — click one for an AI deep dive with examples and action steps.
+        </p>
+      </div>
+
+      <div style={{ padding: '1.25rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 14 }}>
+        {eqDimensions.map(dim => (
+          <div key={dim.id} style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ padding: '0.6rem 0.875rem', background: '#f8fafc', borderBottom: '1px solid var(--border)' }}>
+              <p style={{ margin: 0, fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-primary)' }}>{dim.icon} {dim.label}</p>
+              <p style={{ margin: 0, fontSize: '0.68rem', color: 'var(--text-muted)' }}>{EQ_STRATEGIES[dim.id].length} strategies</p>
+            </div>
+            <div style={{ maxHeight: 260, overflowY: 'auto' }}>
+              {EQ_STRATEGIES[dim.id].map((s, i) => {
+                const isSel = selected?.dimId === dim.id && selected?.strategy === s;
+                return (
+                  <button key={i} onClick={() => selectStrategy(dim.id, s)}
+                    style={{
+                      width: '100%', textAlign: 'left', display: 'flex', gap: 8, alignItems: 'flex-start',
+                      padding: '0.45rem 0.875rem', border: 'none', borderBottom: '1px solid var(--border)',
+                      background: isSel ? '#f0fdfa' : 'transparent', cursor: 'pointer',
+                    }}>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 800, color: isSel ? '#0d9488' : '#94a3b8', flexShrink: 0, minWidth: 16 }}>{i + 1}</span>
+                    <span style={{ fontSize: '0.78rem', color: isSel ? '#0d9488' : 'var(--text-secondary)', fontWeight: isSel ? 700 : 500, lineHeight: 1.4 }}>{s}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {selected && (
+        <div style={{ margin: '0 1.25rem 1.25rem', padding: '1rem 1.125rem', borderRadius: 12, background: '#f8fafc', border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: deepDive || loadingDive ? 10 : 0 }}>
+            <div>
+              <p style={{ margin: '0 0 2px', fontSize: '0.68rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Selected Strategy</p>
+              <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>{selected.strategy}</p>
+            </div>
+            <button onClick={getAiSupport} disabled={loadingDive} className="btn-primary" style={{ fontSize: '0.78rem', padding: '0.45rem 0.875rem', flexShrink: 0 }}>
+              {loadingDive ? 'Thinking…' : '🤖 AI Support — Examples & Actions'}
+            </button>
+          </div>
+          {diveError && !loadingDive && (
+            <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: 0 }}>Couldn't generate a deep dive this time — try again.</p>
+          )}
+          {deepDive && (
+            <div style={{ marginTop: 4, padding: '0.875rem 1rem', background: 'white', borderRadius: 10, border: '1px solid #ccfbf1', whiteSpace: 'pre-line', fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+              {deepDive}
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -801,6 +976,8 @@ export default function EQAssessment() {
               }}>Save Assessment</button>
             )}
           </div>
+
+          <StrategyBoard />
 
           {/* ── Personal Development Plan ── */}
           <div className="card" data-pdp-section style={{ overflow: 'hidden', marginTop: 8 }}>
