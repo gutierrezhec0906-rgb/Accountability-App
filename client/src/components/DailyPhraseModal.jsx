@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { DAILY_PHRASES, PHRASE_CATEGORIES, pickTodaysPhrase, localDateKey } from '../utils/dailyPhrases';
 
-const LS_KEY = 'dailyPhraseSeenDate';
+const LS_KEY_PREFIX = 'dailyPhraseSeenDate_';
 
 // Shown once per day, right after the user opens the app — a rotating
 // Accountability Phrase (100 of them, one per day, cycling back to #1 after
 // #100 — see utils/dailyPhrases.js) with a brief "when to use it" tip.
-// Gated by localStorage so it's a lightweight per-device "seen today" flag,
-// not something worth a Firestore write.
+// Gated by localStorage so it's a lightweight "seen today" flag, not worth
+// a Firestore write — but the key is scoped by uid (LS_KEY_PREFIX + uid) so
+// switching between accounts on the same device/browser doesn't have one
+// account's dismissal suppress the modal for every other account too.
 export default function DailyPhraseModal() {
   const { currentUser, userProfile } = useAuth();
   const [show, setShow] = useState(false);
@@ -23,7 +25,7 @@ export default function DailyPhraseModal() {
 
     const todayKey = localDateKey();
     let lastSeen = '';
-    try { lastSeen = localStorage.getItem(LS_KEY) || ''; } catch {}
+    try { lastSeen = localStorage.getItem(LS_KEY_PREFIX + currentUser.uid) || ''; } catch {}
     if (lastSeen === todayKey) return;
 
     setPhrase(pickTodaysPhrase());
@@ -32,7 +34,7 @@ export default function DailyPhraseModal() {
 
   function dismiss() {
     setShow(false);
-    try { localStorage.setItem(LS_KEY, localDateKey()); } catch {}
+    try { localStorage.setItem(LS_KEY_PREFIX + currentUser.uid, localDateKey()); } catch {}
   }
 
   if (!show || !phrase) return null;
