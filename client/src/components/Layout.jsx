@@ -5,6 +5,7 @@ import { collection, getDocs, query, where, doc, getDoc, setDoc } from 'firebase
 import { db } from '../firebase';
 import toast from 'react-hot-toast';
 import WelcomeModal from './WelcomeModal';
+import DailyPhraseModal from './DailyPhraseModal';
 import ToolVideoModal, { seenVideosLocal } from './ToolVideoModal';
 import GlobalPastDueModal from './GlobalPastDueModal';
 import { isLocked, TIER_ICONS, TIER_LABELS } from '../utils/subscription';
@@ -539,6 +540,7 @@ export default function Layout({ children }) {
       </div>
 
       <WelcomeModal />
+      <DailyPhraseModal />
       <GlobalPastDueModal />
       <ToolVideoModal
         toolId={currentToolId}
