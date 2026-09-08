@@ -5,8 +5,15 @@ import { DAILY_PHRASES, PHRASE_CATEGORIES, pickTodaysPhrase, localDateKey } from
 
 const LS_KEY_PREFIX = 'dailyPhraseSeenDate_';
 
+// Landing link included with every shared phrase — currently the regular
+// app (there's no free/public tier yet), so a recipient signs up like any
+// other user. Once a free tier exists, point this at that landing page
+// instead so a shared phrase promotes the app without requiring a paid
+// account to even look around.
+const SHARE_LINK = 'https://www.accountability-app.com/?utm_source=share&utm_medium=daily_phrase';
+
 function shareText(phrase, catLabel) {
-  return `"${phrase.text}"\n\n(${catLabel}) — ${phrase.tip}\n\nToday's Accountability Phrase, from the Accountability App.`;
+  return `"${phrase.text}"\n\n(${catLabel}) — ${phrase.tip}\n\nToday's Accountability Phrase, from the Accountability App.\n${SHARE_LINK}`;
 }
 
 // Share icon + fallback menu for the phrase. Uses the native share sheet
