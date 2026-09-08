@@ -133,22 +133,29 @@ export const DAILY_PHRASES = [
 const PHRASE_EPOCH = new Date(2026, 0, 1); // Jan 1, 2026, local time
 
 // One ordered phrase list per pillar (20 each, in the order they appear
-// above), used so each day can advance through all 5 pillars in lockstep.
+// above) — used so the daily rotation cycles the PILLAR every day
+// (Set the Bar -> Spark the Vision -> Improve the Flow -> Enable the Team ->
+// Winning with Compassion -> Set the Bar again, but the NEXT phrase in that
+// pillar, not a repeat), working through all 100 phrases over 100 days.
 export const PHRASES_BY_CAT = Object.keys(PHRASE_CATEGORIES).reduce((acc, catId) => {
   acc[catId] = DAILY_PHRASES.filter(p => p.cat === catId);
   return acc;
 }, {});
-const PER_CATEGORY_COUNT = PHRASES_BY_CAT[Object.keys(PHRASE_CATEGORIES)[0]].length; // 20
+const CAT_ORDER = Object.keys(PHRASE_CATEGORIES); // 5, in navCategories order
+const PER_CATEGORY_COUNT = PHRASES_BY_CAT[CAT_ORDER[0]].length; // 20
 
-// Today's phrase, one per pillar (5 total) — same day-index into every
-// pillar's list, so all 5 phrases shown together rotate together. Every
-// user/device sees the same 5 on the same calendar day; the cycle restarts
-// at day 1 after PER_CATEGORY_COUNT (20) days.
-export function pickTodaysPhrases(date = new Date()) {
+// Today's single phrase. Day 0 = pillar[0]'s 1st phrase, day 1 = pillar[1]'s
+// 1st phrase, ... day 5 = pillar[0]'s 2nd phrase, and so on — the pillar
+// advances every day and a pillar's own phrase only advances once every 5
+// days, cycling back to phrase 1 of pillar 1 after all 100 (5*20) days.
+export function pickTodaysPhrase(date = new Date()) {
   const d1 = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const daysSinceEpoch = Math.floor((d1 - PHRASE_EPOCH) / 86400000);
-  const idx = ((daysSinceEpoch % PER_CATEGORY_COUNT) + PER_CATEGORY_COUNT) % PER_CATEGORY_COUNT;
-  return Object.keys(PHRASE_CATEGORIES).map(catId => ({ ...PHRASES_BY_CAT[catId][idx], day: idx + 1 }));
+  const totalDays = CAT_ORDER.length * PER_CATEGORY_COUNT; // 100
+  const dayIdx = ((daysSinceEpoch % totalDays) + totalDays) % totalDays;
+  const catId = CAT_ORDER[dayIdx % CAT_ORDER.length];
+  const phraseIdx = Math.floor(dayIdx / CAT_ORDER.length);
+  return { ...PHRASES_BY_CAT[catId][phraseIdx], day: dayIdx + 1 };
 }
 
 // "YYYY-MM-DD" for the seen-today localStorage gate — local calendar date.
