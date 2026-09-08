@@ -129,16 +129,26 @@ export const DAILY_PHRASES = [
 
 // Fixed reference point — NOT when the feature shipped, just an arbitrary
 // anchor so the day math is stable forever. Do not change this once live,
-// or every user's "today's phrase" will jump.
+// or every user's "today's phrases" will jump.
 const PHRASE_EPOCH = new Date(2026, 0, 1); // Jan 1, 2026, local time
 
-// Which of the 100 phrases to show today — same for every user/device on
-// the same calendar day, cycling back to index 0 after 100 days.
-export function pickTodaysPhrase(date = new Date()) {
+// One ordered phrase list per pillar (20 each, in the order they appear
+// above), used so each day can advance through all 5 pillars in lockstep.
+export const PHRASES_BY_CAT = Object.keys(PHRASE_CATEGORIES).reduce((acc, catId) => {
+  acc[catId] = DAILY_PHRASES.filter(p => p.cat === catId);
+  return acc;
+}, {});
+const PER_CATEGORY_COUNT = PHRASES_BY_CAT[Object.keys(PHRASE_CATEGORIES)[0]].length; // 20
+
+// Today's phrase, one per pillar (5 total) — same day-index into every
+// pillar's list, so all 5 phrases shown together rotate together. Every
+// user/device sees the same 5 on the same calendar day; the cycle restarts
+// at day 1 after PER_CATEGORY_COUNT (20) days.
+export function pickTodaysPhrases(date = new Date()) {
   const d1 = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const daysSinceEpoch = Math.floor((d1 - PHRASE_EPOCH) / 86400000);
-  const idx = ((daysSinceEpoch % DAILY_PHRASES.length) + DAILY_PHRASES.length) % DAILY_PHRASES.length;
-  return { ...DAILY_PHRASES[idx], day: idx + 1 };
+  const idx = ((daysSinceEpoch % PER_CATEGORY_COUNT) + PER_CATEGORY_COUNT) % PER_CATEGORY_COUNT;
+  return Object.keys(PHRASE_CATEGORIES).map(catId => ({ ...PHRASES_BY_CAT[catId][idx], day: idx + 1 }));
 }
 
 // "YYYY-MM-DD" for the seen-today localStorage gate — local calendar date.
