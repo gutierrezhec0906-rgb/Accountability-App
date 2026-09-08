@@ -5,7 +5,7 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
-const INVITE_ROLES = ['Supervisor', 'Manager', 'Individual Contributor'];
+const INVITE_ROLES = ['Leader', 'Supervisor', 'Manager', 'Individual Contributor'];
 
 function InvitePanel({ userProfile, uid }) {
   const [email, setEmail] = useState('');

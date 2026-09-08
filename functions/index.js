@@ -862,7 +862,7 @@ exports.sendMyWeeklyReport = onCall(async (request) => {
 // inviter's own company can be assigned — the invite record and the outbound
 // email are both built server-side so a client can't forge a different
 // companyId onto the invite.
-const INVITE_ROLES = ['Supervisor', 'Manager', 'Individual Contributor'];
+const INVITE_ROLES = ['Leader', 'Supervisor', 'Manager', 'Individual Contributor'];
 
 exports.sendInvite = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
@@ -872,7 +872,7 @@ exports.sendInvite = onCall(async (request) => {
     throw new HttpsError('invalid-argument', 'A valid email address is required');
   }
   if (!INVITE_ROLES.includes(role)) {
-    throw new HttpsError('invalid-argument', 'Position must be Supervisor, Manager, or Individual Contributor');
+    throw new HttpsError('invalid-argument', 'Position must be Leader, Supervisor, Manager, or Individual Contributor');
   }
   const requestedTeamId = request.data?.teamId || null;
   const newTeamName = String(request.data?.newTeamName || '').trim();
