@@ -10,6 +10,7 @@ import { logPointEvent, calculateScore } from '../utils/scoring';
 import { RecommitBadge } from '../components/DateStatus';
 import NameField from '../components/NameField';
 import { useSavedNames } from '../utils/savedNames';
+import { exportActionsToExcel } from '../utils/excelExport';
 
 // Grows with its content so a long action title/description is never clipped
 // to a single line — matches the pattern used for Fishbone/5S notes.
@@ -322,7 +323,15 @@ export default function VisualBoard() {
     <div style={{ maxWidth: 960, margin: '0 auto' }}>
       <PageHeader icon="🔴" title="Visual Management — The Accountability Board" subtitle="Escalation tracker — status updates automatically based on due date"
         action={
-          <div style={{ display: 'flex', gap: 8 }}>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+            <button className="btn-secondary" onClick={() => exportActionsToExcel(items, 'accountability-board-all-actions.xlsx', 'All Actions')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              📥 Download All (Excel)
+            </button>
+            <button className="btn-secondary" onClick={() => exportActionsToExcel(closedItems, 'accountability-board-closed-actions.xlsx', 'Closed Actions')}
+              style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              📥 Download Closed (Excel)
+            </button>
             <button className="btn-secondary" onClick={() => navigate('/team-board')}
               style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               📺 Team Board View
