@@ -1317,11 +1317,14 @@ export default function Lean() {
                 }}>
                   <div style={{ padding: '1rem 1.25rem', background: '#e6f7f2' }}>
                     <p style={{ margin: '0 0 8px', fontSize: '0.82rem', color: '#1e293b', lineHeight: 1.5 }}>{guide.desc}</p>
-                    <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                       {guide.bullets.map((b, bi) => (
-                        <li key={bi} style={{ fontSize: '0.8rem', color: '#1e293b', lineHeight: 1.45 }}>{b}</li>
+                        <div key={bi} style={{ display: 'flex', gap: 8, alignItems: 'flex-start' }}>
+                          <span style={{ flexShrink: 0, marginTop: 6, width: 6, height: 6, borderRadius: '50%', background: '#0d9488' }} />
+                          <span style={{ fontSize: '0.8rem', color: '#1e293b', lineHeight: 1.45 }}>{b}</span>
+                        </div>
                       ))}
-                    </ul>
+                    </div>
                   </div>
                   <div style={{ padding: '1rem 1.25rem', background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: 14, borderTop: isMobile ? '1px solid var(--border)' : 'none' }}>
                     <div>
