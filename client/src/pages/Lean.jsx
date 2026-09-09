@@ -32,13 +32,13 @@ const fiveSItems = [
 // `category` strings so the guide renders right above that category's audit
 // checklist. Photos are static files served from client/public/5s-guides/
 // (not Firestore/Storage — appConfig write is restricted to the master
-// admin, and these are fixed reference images, not per-user data); drop the
-// 5 files in as sort.jpg / set-in-order.jpg / shine.jpg / standardize.jpg /
-// sustain.jpg and they render automatically — a placeholder shows until then.
+// admin, and these are fixed reference images, not per-user data); the 5
+// files live at sort.png / set-in-order.png / shine.png / standardize.png /
+// sustain.png — a placeholder shows if one is ever missing.
 const STEP_GUIDES = [
   {
     category: 'Sort (Seiri)',
-    step: 1, title: 'Sort', photo: '/5s-guides/sort.jpg',
+    step: 1, title: 'Sort', photo: '/5s-guides/sort.png',
     desc: 'Remove unnecessary items from the work area and separate what is needed from what is not.',
     bullets: [
       'Remove unused tools, materials, fixtures, documents and supplies.',
@@ -51,7 +51,7 @@ const STEP_GUIDES = [
   },
   {
     category: 'Set in Order (Seiton)',
-    step: 2, title: 'Set in Order', photo: '/5s-guides/set-in-order.jpg',
+    step: 2, title: 'Set in Order', photo: '/5s-guides/set-in-order.png',
     desc: 'Arrange necessary items so they are easy to identify, retrieve, use and return.',
     bullets: [
       'Assign a designated location for tools, material, WIP, supplies and equipment.',
@@ -65,7 +65,7 @@ const STEP_GUIDES = [
   },
   {
     category: 'Shine (Seiso)',
-    step: 3, title: 'Shine', photo: '/5s-guides/shine.jpg',
+    step: 3, title: 'Shine', photo: '/5s-guides/shine.png',
     desc: 'Clean the workplace while inspecting equipment, tooling and the surrounding area for abnormalities.',
     bullets: [
       'Schedule routine cleaning for each work area.',
@@ -79,7 +79,7 @@ const STEP_GUIDES = [
   },
   {
     category: 'Standardize (Seiketsu)',
-    step: 4, title: 'Standardize', photo: '/5s-guides/standardize.jpg',
+    step: 4, title: 'Standardize', photo: '/5s-guides/standardize.png',
     desc: 'Create repeatable visual standards so the best known method is consistently followed.',
     bullets: [
       'Use standardized 5S checklists across departments and shifts.',
@@ -93,7 +93,7 @@ const STEP_GUIDES = [
   },
   {
     category: 'Sustain (Shitsuke)',
-    step: 5, title: 'Sustain', photo: '/5s-guides/sustain.jpg',
+    step: 5, title: 'Sustain', photo: '/5s-guides/sustain.png',
     desc: 'Make 5S part of daily work through ownership, audits, coaching and continuous improvement.',
     bullets: [
       'Conduct routine 5S audits using standardized checklists.',
