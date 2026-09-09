@@ -1310,23 +1310,27 @@ export default function Lean() {
               </div>
 
               {guide && guideOpen && (
-                <div style={{ padding: '1rem 1.25rem', background: '#f0fdfa', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16 }}>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: '0 0 8px', fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{guide.desc}</p>
-                    <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.4fr) minmax(0, 1fr)',
+                  borderBottom: '1px solid var(--border)',
+                }}>
+                  <div style={{ padding: '1rem 1.25rem', background: '#e6f7f2' }}>
+                    <p style={{ margin: '0 0 8px', fontSize: '0.82rem', color: '#1e293b', lineHeight: 1.5 }}>{guide.desc}</p>
+                    <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 6 }}>
                       {guide.bullets.map((b, bi) => (
-                        <li key={bi} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>{b}</li>
+                        <li key={bi} style={{ fontSize: '0.8rem', color: '#1e293b', lineHeight: 1.45 }}>{b}</li>
                       ))}
                     </ul>
                   </div>
-                  <div style={{ flex: '0 0 auto', minWidth: isMobile ? '100%' : 240, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  <div style={{ padding: '1rem 1.25rem', background: '#f8fafc', display: 'flex', flexDirection: 'column', gap: 14, borderTop: isMobile ? '1px solid var(--border)' : 'none' }}>
                     <div>
-                      <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pro Tip</p>
-                      <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{guide.proTip}</p>
+                      <p style={{ margin: '0 0 4px', fontSize: '0.72rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pro Tip</p>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#334155', lineHeight: 1.55 }}>{guide.proTip}</p>
                     </div>
                     <div>
-                      <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Checkpoint</p>
-                      <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{guide.checkpoint}</p>
+                      <p style={{ margin: '0 0 4px', fontSize: '0.72rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Checkpoint</p>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: '#334155', lineHeight: 1.55 }}>{guide.checkpoint}</p>
                     </div>
                   </div>
                 </div>
