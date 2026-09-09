@@ -27,6 +27,111 @@ const fiveSItems = [
   { category: 'Sustain (Shitsuke)',    items: ['Conduct weekly 5S audits','Review audit scores with team','Recognize top performers','Track 5S score trends over time'] },
 ];
 
+// Step-by-step guideline content (bullets + Pro Tip + Checkpoint) and a
+// "what good looks like" reference photo per 5S step. Keyed to fiveSItems'
+// `category` strings so the guide renders right above that category's audit
+// checklist. Photos are static files served from client/public/5s-guides/
+// (not Firestore/Storage — appConfig write is restricted to the master
+// admin, and these are fixed reference images, not per-user data); drop the
+// 5 files in as sort.jpg / set-in-order.jpg / shine.jpg / standardize.jpg /
+// sustain.jpg and they render automatically — a placeholder shows until then.
+const STEP_GUIDES = [
+  {
+    category: 'Sort (Seiri)',
+    step: 1, title: 'Sort', photo: '/5s-guides/sort.jpg',
+    desc: 'Remove unnecessary items from the work area and separate what is needed from what is not.',
+    bullets: [
+      'Remove unused tools, materials, fixtures, documents and supplies.',
+      'Use red tags for questionable, obsolete, damaged or unidentified items.',
+      'Create a clearly marked red-tag zone with a defined review date and owner.',
+      'Disposition items through approved processes; do not allow the red-tag area to become storage.',
+    ],
+    proTip: 'If an item has not been used in the defined review period, challenge whether it belongs at the point of use.',
+    checkpoint: 'Only necessary items remain. Red-tag items have an owner, disposition date and documented decision.',
+  },
+  {
+    category: 'Set in Order (Seiton)',
+    step: 2, title: 'Set in Order', photo: '/5s-guides/set-in-order.jpg',
+    desc: 'Arrange necessary items so they are easy to identify, retrieve, use and return.',
+    bullets: [
+      'Assign a designated location for tools, material, WIP, supplies and equipment.',
+      'Use labels, shadow boards, rack IDs, floor tape and visual boundaries.',
+      'Place frequently used items closest to the point of use.',
+      'Define locations for calibrated tools, nonconforming material and controlled items.',
+      'Keep aisles, exits, electrical access and emergency equipment unobstructed.',
+    ],
+    proTip: 'Use visual controls so a missing, misplaced or abnormal item can be recognized at a glance.',
+    checkpoint: 'Every item has a labeled home and can be retrieved and returned quickly without searching.',
+  },
+  {
+    category: 'Shine (Seiso)',
+    step: 3, title: 'Shine', photo: '/5s-guides/shine.jpg',
+    desc: 'Clean the workplace while inspecting equipment, tooling and the surrounding area for abnormalities.',
+    bullets: [
+      'Schedule routine cleaning for each work area.',
+      'Provide clear cleaning standards and accessible supplies.',
+      'Assign ownership for zones, equipment and common areas.',
+      'Inspect for leaks, wear, damage, contamination, loose hardware and unsafe conditions.',
+      'Correct or report abnormalities immediately through the appropriate process.',
+    ],
+    proTip: 'Shine is preventive inspection in disguise — not simply housekeeping.',
+    checkpoint: 'Work areas are clean, inspection findings are visible, and abnormalities are documented and addressed.',
+  },
+  {
+    category: 'Standardize (Seiketsu)',
+    step: 4, title: 'Standardize', photo: '/5s-guides/standardize.jpg',
+    desc: 'Create repeatable visual standards so the best known method is consistently followed.',
+    bullets: [
+      'Use standardized 5S checklists across departments and shifts.',
+      'Apply consistent labels, color codes, floor markings and storage identification.',
+      'Post visual standards at the point of use.',
+      'Document expected conditions with photos, diagrams or simple SOPs.',
+      'Update standards when improvements are validated and adopted.',
+    ],
+    proTip: 'A standard should make the normal condition obvious and make deviations easy to see.',
+    checkpoint: 'Standards are visible, understood, current and consistently followed by employees across shifts.',
+  },
+  {
+    category: 'Sustain (Shitsuke)',
+    step: 5, title: 'Sustain', photo: '/5s-guides/sustain.jpg',
+    desc: 'Make 5S part of daily work through ownership, audits, coaching and continuous improvement.',
+    bullets: [
+      'Conduct routine 5S audits using standardized checklists.',
+      'Assign area owners and define responsibilities.',
+      'Review results and open actions during regular team meetings.',
+      'Display audit scores, trends and improvement actions on visual boards.',
+      'Recognize improvements and reinforce good practices.',
+      'Correct recurring findings with documented actions and follow-up.',
+    ],
+    proTip: '5S is not a one-time cleanup event. Discipline and leadership follow-through make the system sustainable.',
+    checkpoint: 'Audits are current, responsibilities are clear, corrective actions are tracked, and improvements remain in place.',
+  },
+];
+const STEP_GUIDE_BY_CATEGORY = Object.fromEntries(STEP_GUIDES.map(g => [g.category, g]));
+
+// Full-size "what good looks like" photo viewer for a 5S step.
+function StepPhotoLightbox({ guide, onClose }) {
+  const [failed, setFailed] = useState(false);
+  if (!guide) return null;
+  return (
+    <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+      <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: 16, overflow: 'hidden', maxWidth: 720, width: '100%', maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '0.875rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid #e2e8f0' }}>
+          <p style={{ margin: 0, fontWeight: 800, color: '#0f2044', fontSize: '0.9rem' }}>Step {guide.step}: {guide.title} — what good looks like</p>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.2rem', color: '#94a3b8', cursor: 'pointer' }}>✕</button>
+        </div>
+        <div style={{ overflow: 'auto', background: '#f8fafc' }}>
+          {!failed ? (
+            <img src={guide.photo} alt={`${guide.title} example`} onError={() => setFailed(true)} style={{ width: '100%', display: 'block' }} />
+          ) : (
+            <p style={{ padding: '3rem 1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>📷 Reference photo coming soon for this step.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // 1–5 maturity rating applied to each 5S audit item. The audit SCORE is the
 // average of all rated items (1–5). The percentage shown separately is just
 // completion — how many of the items have been rated.
@@ -728,6 +833,8 @@ export default function Lean() {
   const [findings, setFindings]   = useState({});
   const [opportunities, setOpportunities] = useState(['', '', '']);
   const [expandedItem, setExpandedItem] = useState(null);
+  const [lightboxGuide, setLightboxGuide] = useState(null);
+  const [openGuides, setOpenGuides] = useState({}); // { [category]: bool } — step guideline collapse state
   const [auditHistory, setAuditHistory] = useState([]);
   const [expandedAudit, setExpandedAudit] = useState(null);
   const [auditHistoryOpen, setAuditHistoryOpen] = useState(true);
@@ -1181,11 +1288,50 @@ export default function Lean() {
             </div>
           </div>
 
-          {fiveSItems.map(cat => (
+          {fiveSItems.map(cat => {
+            const guide = STEP_GUIDE_BY_CATEGORY[cat.category];
+            const guideOpen = !!openGuides[cat.category];
+            return (
             <div key={cat.category} className="card" style={{ overflow: 'hidden' }}>
-              <div style={{ padding: '0.75rem 1.25rem', background: '#0f2044' }}>
+              <div style={{ padding: '0.75rem 1.25rem', background: '#0f2044', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
                 <span style={{ color: 'white', fontWeight: 800, fontSize: '0.875rem' }}>{cat.category}</span>
+                {guide && (
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button onClick={() => setOpenGuides(o => ({ ...o, [cat.category]: !o[cat.category] }))}
+                      style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: 9999, border: '1px solid rgba(255,255,255,0.3)', background: guideOpen ? 'white' : 'rgba(255,255,255,0.1)', color: guideOpen ? '#0f2044' : 'white', cursor: 'pointer' }}>
+                      📋 Guideline {guideOpen ? '▲' : '▼'}
+                    </button>
+                    <button onClick={() => setLightboxGuide(guide)}
+                      style={{ fontSize: '0.7rem', fontWeight: 700, padding: '3px 10px', borderRadius: 9999, border: '1px solid rgba(255,255,255,0.3)', background: 'rgba(255,255,255,0.1)', color: 'white', cursor: 'pointer' }}>
+                      📷 See Example
+                    </button>
+                  </div>
+                )}
               </div>
+
+              {guide && guideOpen && (
+                <div style={{ padding: '1rem 1.25rem', background: '#f0fdfa', borderBottom: '1px solid var(--border)', display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 16 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ margin: '0 0 8px', fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{guide.desc}</p>
+                    <ul style={{ margin: 0, paddingLeft: 18, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {guide.bullets.map((b, bi) => (
+                        <li key={bi} style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.45 }}>{b}</li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div style={{ flex: '0 0 auto', minWidth: isMobile ? '100%' : 240, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    <div>
+                      <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Pro Tip</p>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{guide.proTip}</p>
+                    </div>
+                    <div>
+                      <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Checkpoint</p>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{guide.checkpoint}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {cat.items.map((item, i) => {
                 const key = `${cat.category}-${i}`;
                 const isExpanded = expandedItem === key;
@@ -1265,7 +1411,8 @@ export default function Lean() {
                 );
               })}
             </div>
-          ))}
+            );
+          })}
           {/* Areas of Opportunity — required for weekly 5S points */}
           <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #0d9488' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
@@ -1652,6 +1799,8 @@ export default function Lean() {
           ))}
         </div>
       )}
+
+      {lightboxGuide && <StepPhotoLightbox guide={lightboxGuide} onClose={() => setLightboxGuide(null)} />}
     </div>
   );
 }
