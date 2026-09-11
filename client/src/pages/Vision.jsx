@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { logPointEvent, calculateScore } from '../utils/scoring';
@@ -210,6 +211,7 @@ export default function Vision() {
   const [expandedId, setExpandedId] = useState(null);
   const [mode, setMode]             = useState('personal');
   const [reviewPopup, setReviewPopup] = useState(null); // list of entries due/overdue for review
+  const [polishing, setPolishing] = useState(false);
 
   const [modeState, setModeState] = useState({
     personal: { answers: {}, vision: '', step: 0, loadedId: null },
@@ -268,6 +270,22 @@ export default function Vision() {
     }
     setVision(stmt);
     toast.success('Vision statement generated!');
+  }
+
+  async function polishVision() {
+    if (!vision.trim() || polishing) return;
+    setPolishing(true);
+    try {
+      const fn = httpsCallable(getFunctions(), 'visionAiPolish');
+      const res = await fn({ vision, mode });
+      if (res.data?.vision) {
+        setVision(res.data.vision);
+        toast.success('✨ Vision polished!');
+      }
+    } catch (e) {
+      toast.error(e?.message || 'Could not polish vision — try again');
+    }
+    setPolishing(false);
   }
 
   async function handleSave() {
@@ -524,6 +542,11 @@ export default function Vision() {
                       <button onClick={() => { setEditingId('current'); setEditVision(vision); }}
                         style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>
                         ✏️ Edit
+                      </button>
+                      <button onClick={polishVision} disabled={polishing}
+                        title="Fix grammar and elevate the language while keeping your own words and ideas"
+                        style={{ background: polishing ? 'rgba(255,255,255,0.08)' : '#7c3aed', border: 'none', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: polishing ? 'default' : 'pointer', fontWeight: 700, opacity: polishing ? 0.7 : 1 }}>
+                        {polishing ? '✨ Polishing…' : '🤖 AI Polish'}
                       </button>
                       <button onClick={handleSave}
                         style={{ background: '#0d9488', border: 'none', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>

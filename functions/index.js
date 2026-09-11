@@ -1438,6 +1438,23 @@ exports.improveFeedbackSBI = onCall(async (request) => {
   };
 });
 
+// Vision Builder — polishes the auto-drafted vision statement (built by
+// concatenating the user's own raw answers, which reads roughly) into a
+// clean, grammatically correct, motivational statement — keeping the
+// user's actual ideas/words rather than inventing generic new content.
+exports.visionAiPolish = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+  const { vision, mode } = request.data || {};
+  if (!(vision || '').trim()) throw new HttpsError('invalid-argument', 'Nothing to polish yet — generate a vision statement first');
+
+  const who = mode === 'team' ? 'a team' : 'an individual leader';
+  const systemPrompt = `You are an expert leadership coach and editor. You will be given a rough, auto-generated vision statement for ${who}, built by stitching together the person's own raw answers to a few prompts — it often has grammar mistakes, run-on sentences, repeated ideas, or awkward phrasing. Rewrite it into a single polished, grammatically correct, genuinely motivational vision statement. Preserve every specific idea, value, and goal the person actually included — do not invent new commitments or remove substance — but fix grammar, tighten the flow, remove redundancy, and elevate the language so it reads as an inspiring, confident vision rather than a run-on list. Keep it roughly the same length (typically 3-5 sentences). Return ONLY the rewritten statement as plain text — no quotes, no preamble, no markdown.`;
+  const userPrompt = `Rough vision statement:\n${vision.trim()}`;
+
+  const polished = await callClaude(systemPrompt, userPrompt, 500);
+  return { vision: polished.trim().replace(/^["']|["']$/g, '') };
+});
+
 exports.deleteUser = onCall(async (request) => {
   if (request.auth?.token?.email !== 'hectorg@accountability-app.com') {
     throw new HttpsError('permission-denied', 'Only master admin can delete users');
