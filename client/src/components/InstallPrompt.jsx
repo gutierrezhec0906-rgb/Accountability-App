@@ -8,6 +8,18 @@ import { useEffect, useState } from 'react';
 // Hidden entirely once the app is already running as an installed PWA.
 
 const DISMISS_KEY = 'installPromptDismissed';
+const DISMISS_DAYS = 21; // re-offer install after this long instead of hiding forever
+
+function isDismissedRecently() {
+  const raw = localStorage.getItem(DISMISS_KEY);
+  if (!raw) return false;
+  // Older versions stored the literal string '1' with no timestamp — treat
+  // that as "dismissed a long time ago" so it starts re-offering too, rather
+  // than requiring every existing user to dismiss once more to reset it.
+  const dismissedAt = Number(raw);
+  if (!dismissedAt) return false;
+  return Date.now() - dismissedAt < DISMISS_DAYS * 86400000;
+}
 
 function isStandalone() {
   return (
@@ -27,7 +39,7 @@ export default function InstallPrompt() {
 
   useEffect(() => {
     if (isStandalone()) return; // already installed — nothing to do
-    if (localStorage.getItem(DISMISS_KEY)) return;
+    if (isDismissedRecently()) return;
 
     // Android/desktop Chromium path
     const onBeforeInstall = (e) => {
@@ -55,7 +67,7 @@ export default function InstallPrompt() {
 
   function dismiss() {
     setShow(false);
-    localStorage.setItem(DISMISS_KEY, '1');
+    localStorage.setItem(DISMISS_KEY, String(Date.now()));
   }
 
   async function install() {
