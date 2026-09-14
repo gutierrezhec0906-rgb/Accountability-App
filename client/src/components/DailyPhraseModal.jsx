@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import ShareIcon from './ShareIcon';
 import { DAILY_PHRASES, PHRASE_CATEGORIES, pickTodaysPhrase, localDateKey } from '../utils/dailyPhrases';
 
 const LS_KEY_PREFIX = 'dailyPhraseSeenDate_';
@@ -51,10 +52,10 @@ function ShareButton({ phrase, cat }) {
       <button onClick={handleClick} title="Share this phrase"
         style={{
           width: 32, height: 32, borderRadius: '50%', border: 'none', cursor: 'pointer',
-          background: 'rgba(255,255,255,0.15)', color: 'white', fontSize: '0.95rem',
+          background: 'rgba(255,255,255,0.15)', color: 'white',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
         }}>
-        📤
+        <ShareIcon size={16} />
       </button>
 
       {open && (

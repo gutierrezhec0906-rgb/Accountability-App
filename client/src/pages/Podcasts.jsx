@@ -3,6 +3,7 @@ import { doc, getDoc, getDocs, addDoc, deleteDoc, collection, query, where, upda
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
+import ShareIcon from '../components/ShareIcon';
 import toast from 'react-hot-toast';
 
 const REACTION_EMOJIS = ['👍', '❤️', '🎉', '🙏', '😍', '👎'];
@@ -258,8 +259,8 @@ function PodcastCard({ podcast, currentUser, teamId, myName, myEmoji, counts, on
               🎧 Open in Spotify
             </a>
             <button onClick={() => sharePodcast(podcast)} title="Share this episode"
-              style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', padding: 0 }}>
-              ↗ Share
+              style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', padding: 0 }}>
+              <ShareIcon size={14} /> Share
             </button>
           </div>
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
