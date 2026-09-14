@@ -74,7 +74,7 @@ const navCategories = [
       { id: 'feedback', label: 'Feedback Box',     icon: '📬', path: '/feedback', num: 15 },
       { id: 'coaching', label: 'Coaching Log',     icon: '📝', path: '/coaching', num: 16 },
       { id: 'quotes',   label: 'Leadership Quotes',icon: '💬', path: '/quotes', num: 17 },
-      { id: 'eq',       label: 'Emotional Intelligence (EQ)',    icon: '💡', path: '/eq', num: 18 },
+      { id: 'eq',       label: 'Emotional Intelligence (EQ)',    icon: '💡', path: '/eq', num: 18, wrap: true },
     ],
   },
 ];
@@ -361,7 +361,7 @@ export default function Layout({ children }) {
                           title={collapsed ? item.label : ''}
                           style={{ fontSize: '0.8rem', opacity: locked ? 0.65 : 1 }}>
                           <span style={{ fontSize: '0.875rem', flexShrink: 0 }}>{locked ? '🔒' : item.icon}</span>
-                          {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.8rem' }}>{item.num ? `${item.num}. ` : ''}{item.label}</span>}
+                          {!collapsed && <span style={{ flex: 1, fontSize: '0.8rem', lineHeight: 1.25, whiteSpace: item.wrap ? 'normal' : 'nowrap', overflow: item.wrap ? 'visible' : 'hidden', textOverflow: item.wrap ? 'clip' : 'ellipsis' }}>{item.num ? `${item.num}. ` : ''}{item.label}</span>}
                           {!collapsed && locked && (
                             <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#f59e0b', letterSpacing: '0.04em', flexShrink: 0 }}>PRO</span>
                           )}
