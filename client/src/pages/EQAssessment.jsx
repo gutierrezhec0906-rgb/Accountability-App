@@ -740,7 +740,7 @@ export default function EQAssessment() {
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-      <PageHeader icon="💡" title="EQ Assessment — Accountability in Action" subtitle="Emotional Intelligence self-assessment and 90-day development plan" />
+      <PageHeader icon="💡" title="Emotional Intelligence (EQ) Assessment — Accountability in Action" subtitle="Emotional Intelligence self-assessment and 90-day development plan" />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 

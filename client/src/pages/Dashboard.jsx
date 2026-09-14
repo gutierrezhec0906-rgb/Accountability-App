@@ -74,7 +74,7 @@ const categories = [
       { id: 'feedback', label: 'Feedback Box',      icon: '📬', path: '/feedback', iconBg: 'linear-gradient(135deg,#6ee7b7,#34d399)' },
       { id: 'coaching', label: 'Coaching Log',      icon: '📝', path: '/coaching', iconBg: 'linear-gradient(135deg,#fde68a,#fbbf24)' },
       { id: 'quotes',   label: 'Leadership Quotes', icon: '💬', path: '/quotes',   iconBg: 'linear-gradient(135deg,#c084fc,#a855f7)' },
-      { id: 'eq',       label: 'EQ Assessment',     icon: '💡', path: '/eq',       iconBg: 'linear-gradient(135deg,#fef08a,#facc15)' },
+      { id: 'eq',       label: 'Emotional Intelligence (EQ)',     icon: '💡', path: '/eq',       iconBg: 'linear-gradient(135deg,#fef08a,#facc15)' },
     ],
   },
 ];

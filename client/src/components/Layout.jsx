@@ -74,7 +74,7 @@ const navCategories = [
       { id: 'feedback', label: 'Feedback Box',     icon: '📬', path: '/feedback', num: 15 },
       { id: 'coaching', label: 'Coaching Log',     icon: '📝', path: '/coaching', num: 16 },
       { id: 'quotes',   label: 'Leadership Quotes',icon: '💬', path: '/quotes', num: 17 },
-      { id: 'eq',       label: 'EQ Assessment',    icon: '💡', path: '/eq', num: 18 },
+      { id: 'eq',       label: 'Emotional Intelligence (EQ)',    icon: '💡', path: '/eq', num: 18 },
     ],
   },
 ];
