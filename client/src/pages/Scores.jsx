@@ -641,6 +641,31 @@ export default function Scores() {
                 <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>Loading team...</div>
               ) : teamScores.length === 0 ? (
                 <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>No approved team members yet.</div>
+              ) : isMobile ? (
+                // Narrow screens: a fixed-column table with a min-width Score
+                // column would get clipped by this card's overflow:hidden in
+                // portrait (the reported bug — users had to rotate to
+                // landscape to see the score at all). Stack each member as a
+                // card instead so everything fits without needing to scroll
+                // or rotate.
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  {teamScores.map((m, i) => {
+                    const s = m.calculatedScore ?? 0;
+                    const color = s >= 75 ? '#0d9488' : s >= 50 ? '#f59e0b' : s >= 25 ? '#f97316' : '#94a3b8';
+                    return (
+                      <div key={m.uid} style={{ padding: '0.75rem 1.25rem', borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8, marginBottom: 6 }}>
+                          <span style={{ fontWeight: 600, color: '#1e293b', fontSize: '0.875rem' }}>{m.displayName || m.email}</span>
+                          <span style={{ fontWeight: 800, color, fontSize: '0.875rem', flexShrink: 0 }}>{s}</span>
+                        </div>
+                        <p style={{ margin: '0 0 6px', color: '#64748b', fontSize: '0.78rem' }}>{m.role}</p>
+                        <div style={{ background: '#e2e8f0', borderRadius: 9999, height: 6 }}>
+                          <div style={{ height: 6, borderRadius: 9999, background: color, width: `${s}%`, transition: 'width 1s' }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
                   <thead>
