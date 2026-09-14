@@ -136,7 +136,10 @@ export default function SmartGoals() {
           .forEach(g => pending.push({ ...g, ownerUid: d.id, ownerName: u.displayName || u.email || 'Unknown' }));
       });
       setPendingTeamGoals(pending);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not load your team\'s pending approvals: ' + (e?.message || 'permission error'));
+    }
   }
 
   async function persist(updated) {
