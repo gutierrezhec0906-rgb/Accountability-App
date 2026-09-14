@@ -6,7 +6,7 @@ import { collection, getDocs, query, where, doc, getDoc } from 'firebase/firesto
 import { db } from '../firebase';
 import { calculateScore } from '../utils/scoring';
 import { getDateStatus } from '../components/DateStatus';
-import UrgencyTrendChart from '../components/UrgencyTrendChart';
+import UsageStreakTracker from '../components/UsageStreakTracker';
 
 const categories = [
   {
@@ -131,7 +131,7 @@ export default function Dashboard() {
   const [teamMembers, setTeamMembers] = useState([]);
   const [dueSoon, setDueSoon] = useState([]);
   const [dueSoonCollapsed, setDueSoonCollapsed] = useState(false);
-  const [urgencyRecords, setUrgencyRecords] = useState([]);
+  const [toolSessions, setToolSessions] = useState([]);
 
   // Read the latest score straight from Firestore on mount — never trust the
   // possibly-stale userProfile cache (it can lag behind a fresh Calculate on the
@@ -197,7 +197,7 @@ export default function Dashboard() {
         const snap = await getDoc(doc(db, 'users', currentUser.uid));
         if (!snap.exists()) return;
         const d = snap.data();
-        setUrgencyRecords(d.urgencyRecords || []);
+        setToolSessions(d.toolSessions || []);
         const items = [];
         (d.visualBoard || []).forEach(i => {
           const due = i.recommitmentDate || i.dueDate;
@@ -434,19 +434,17 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* ── Sense of Urgency — last 8 assessments trend ── */}
-      {urgencyRecords.length > 0 && (
-        <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #7c3aed' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
-            <span style={{ fontSize: '1.25rem' }}>⚡</span>
-            <div>
-              <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.95rem' }}>Sense of Urgency — Last 8 Assessments</h3>
-              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Your most recent urgency survey scores, individual and team combined.</p>
-            </div>
+      {/* ── App usage streak tracker — last 4 weeks ── */}
+      <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #3b82f6' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+          <span style={{ fontSize: '1.25rem' }}>📆</span>
+          <div>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.95rem' }}>Usage Streak Tracker</h3>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>How much time you've spent in the app each day, last 4 weeks (Monday–Sunday).</p>
           </div>
-          <UrgencyTrendChart records={urgencyRecords} />
         </div>
-      )}
+        <UsageStreakTracker toolSessions={toolSessions} />
+      </div>
 
       {/* ── Stats row ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
