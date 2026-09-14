@@ -507,6 +507,21 @@ export default function Scores() {
                 </button>
                 {lastUpdated && <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem' }}>Last updated: {lastUpdated}</span>}
               </div>
+
+              {/* Score tier legend — compact, small font on purpose to stay out of the way */}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 14 }}>
+                {[
+                  { range: '0–24',  label: 'Getting Started', color: '#ef4444' },
+                  { range: '25–49', label: 'Developing',      color: '#f97316' },
+                  { range: '50–74', label: 'High Performer',  color: '#f59e0b' },
+                  { range: '75–100', label: 'Exceptional',    color: '#0d9488' },
+                ].map(t => (
+                  <span key={t.label} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.66rem', color: 'rgba(255,255,255,0.65)' }}>
+                    <span style={{ width: 7, height: 7, borderRadius: '50%', background: t.color, flexShrink: 0 }} />
+                    {t.range} {t.label}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
