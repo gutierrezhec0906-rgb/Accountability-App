@@ -243,6 +243,13 @@ exports.sendRequestEmails = onDocumentUpdated('users/{uid}', async (event) => {
         .map(d => ({ uid: d.id, ...d.data() }))
         .filter(u => u.uid !== event.params.uid && u.email &&
                      (u.isAdmin || u.role === 'Leader' || u.role === 'Manager'));
+      console.log(`SMART approval request from ${event.params.uid} (companyId=${after.companyId}): found ${leaders.length} leader(s)/admin(s) to notify — ${leaders.map(l => `${l.email} (${l.role || 'admin'})`).join(', ') || 'none'}`);
+      // Safety net: if nobody in the company matched (e.g. a data issue with
+      // roles/companyId), fall back to the master admin so the approval
+      // request is never silently lost with zero recipients.
+      if (leaders.length === 0) {
+        leaders.push({ email: ADMIN_EMAIL, role: 'Master Admin (fallback — no company leader matched)' });
+      }
       const goalTitles = newPending.map(g => `<li style="margin-bottom: 4px;"><strong>${g.title || 'Untitled goal'}</strong></li>`).join('');
       for (const leader of leaders) {
         mails.push({
@@ -293,11 +300,18 @@ exports.sendRequestEmails = onDocumentUpdated('users/{uid}', async (event) => {
   }
 
   if (mails.length === 0) return;
-  await Promise.all(mails.map(m => transporter.sendMail({
+  const results = await Promise.allSettled(mails.map(m => transporter.sendMail({
     from: `"Accountability App" <${ADMIN_EMAIL}>`,
     ...m,
   })));
-  console.log(`Sent ${mails.length} request notification email(s) for user ${event.params.uid}`);
+  let failedCount = 0;
+  results.forEach((r, i) => {
+    if (r.status === 'rejected') {
+      failedCount++;
+      console.error(`Failed to send notification email to ${mails[i]?.to}: ${r.reason?.message || r.reason}`);
+    }
+  });
+  console.log(`Sent ${results.length - failedCount}/${mails.length} request notification email(s) for user ${event.params.uid}`);
 });
 
 // ── Career plan milestone reminder emails (daily scheduled) ─────────────────
