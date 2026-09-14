@@ -38,6 +38,8 @@ export default function Profile() {
   const [savingName, setSavingName] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState(userProfile?.phoneNumber || '');
   const [savingPhone, setSavingPhone] = useState(false);
+  const [savingReminder, setSavingReminder] = useState(false);
+  const reminderLevel = userProfile?.reminderLevel || 'medium';
   const fileRef = useRef();
 
   const photoURL = userProfile?.photoURL || currentUser?.photoURL || null;
@@ -80,6 +82,19 @@ export default function Profile() {
       toast.error('Failed to save phone number.');
     }
     setSavingPhone(false);
+  }
+
+  async function handleSetReminderLevel(level) {
+    if (level === reminderLevel || savingReminder) return;
+    setSavingReminder(true);
+    try {
+      await updateDoc(doc(db, 'users', currentUser.uid), { reminderLevel: level });
+      await fetchProfile(currentUser.uid);
+      toast.success('Reminder setting saved!');
+    } catch {
+      toast.error('Failed to save reminder setting.');
+    }
+    setSavingReminder(false);
   }
 
   async function handleSaveName(e) {
@@ -175,6 +190,50 @@ export default function Profile() {
           </button>
         </form>
         <p style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 8 }}>Use full international format, e.g. +1 for the US.</p>
+      </div>
+
+      {/* Inactivity reminder level */}
+      <div className="card" style={{ padding: '1.75rem' }}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>🔔 Accountability Reminders</h2>
+        <p style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: 16 }}>
+          Choose how the app follows up if you go quiet — a full week or more without opening it.
+        </p>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
+          {[
+            { key: 'none',       label: 'No Reminders' },
+            { key: 'medium',     label: 'Medium Reminders' },
+            { key: 'aggressive', label: 'Aggressive Reminders' },
+          ].map(opt => (
+            <button key={opt.key} type="button" disabled={savingReminder} onClick={() => handleSetReminderLevel(opt.key)}
+              style={{
+                padding: '0.55rem 1.1rem', borderRadius: 9999, fontWeight: 700, fontSize: '0.8rem', cursor: savingReminder ? 'default' : 'pointer',
+                border: reminderLevel === opt.key ? '1.5px solid #0d9488' : '1.5px solid #e2e8f0',
+                background: reminderLevel === opt.key ? '#0d9488' : 'white',
+                color: reminderLevel === opt.key ? 'white' : '#475569',
+              }}>
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        {reminderLevel === 'none' && (
+          <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: 0, lineHeight: 1.6 }}>You won't receive any inactivity reminders.</p>
+        )}
+        {reminderLevel === 'medium' && (
+          <ul style={{ margin: 0, paddingLeft: 18, color: '#64748b', fontSize: '0.78rem', lineHeight: 1.7 }}>
+            <li>Week 1 without using the app — no reminder</li>
+            <li>Week 2 — 1st email reminder</li>
+            <li>Week 3 — 2nd email reminder + text message</li>
+            <li>Week 4+ — escalation email to your leader</li>
+          </ul>
+        )}
+        {reminderLevel === 'aggressive' && (
+          <ul style={{ margin: 0, paddingLeft: 18, color: '#64748b', fontSize: '0.78rem', lineHeight: 1.7 }}>
+            <li>Week 1 without using the app — 1st email reminder</li>
+            <li>Week 2 — 2nd email reminder + text message</li>
+            <li>Week 3+ — escalation email to your leader</li>
+          </ul>
+        )}
+        <p style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 12, marginBottom: 0 }}>Text reminders use the phone number above, if one is on file.</p>
       </div>
 
       {/* Read-only info */}

@@ -852,6 +852,131 @@ exports.weeklyAccountabilityReport = onSchedule(
   async () => { await sendWeeklyReports(); }
 );
 
+// ── Weekly inactivity reminders ──────────────────────────────────────────
+// Profile.jsx's "Accountability Reminders" toggle (reminderLevel: none |
+// medium | aggressive, default medium). Runs weekly and escalates based on
+// how many full weeks a user has gone without a recorded toolSession:
+//
+//   medium:     week 1 — nothing · week 2 — email #1 · week 3 — email #2 + SMS
+//               · week 4+ — escalation email to the user's leaders (repeats
+//               weekly while still inactive)
+//   aggressive: week 1 — email #1 · week 2 — email #2 + SMS · week 3+ —
+//               escalation email to the user's leaders (repeats weekly)
+//
+// State is tracked per-user in `reminderState` ({ lastActiveDateSeen,
+// lastNotifiedWeek }) so a given week's step only fires once, and resets
+// automatically the moment the user is active again.
+function sendSmsViaTwilio(to, body) {
+  const accountSid = process.env.TWILIO_ACCOUNT_SID;
+  const authToken   = process.env.TWILIO_AUTH_TOKEN;
+  const fromNumber  = process.env.TWILIO_FROM_NUMBER;
+  if (!accountSid || !authToken || !fromNumber || !to) return Promise.resolve(false);
+  const authHeader = 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64');
+  const params = new URLSearchParams({ To: to.trim(), From: fromNumber, Body: body });
+  return fetch(`https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded', authorization: authHeader },
+    body: params,
+  }).then(resp => resp.ok).catch(() => false);
+}
+
+async function emailLeadersOfInactivity(user, weeksInactive) {
+  if (!user.companyId) return;
+  try {
+    const snap = await admin.firestore().collection('users').where('companyId', '==', user.companyId).get();
+    const leaders = snap.docs
+      .map(d => ({ uid: d.id, ...d.data() }))
+      .filter(u => u.uid !== user.uid && u.email && (u.isAdmin || u.role === 'Leader' || u.role === 'Manager'));
+    const name = user.displayName || user.email || 'A team member';
+    await Promise.allSettled(leaders.map(leader => transporter.sendMail({
+      from: `"Accountability App" <${ADMIN_EMAIL}>`,
+      to: leader.email,
+      subject: `⚠️ ${name} hasn't used the Accountability App in ${weeksInactive} weeks`,
+      html: brandedEmail(
+        'Team member inactivity alert',
+        `<p style="color: #475569; font-size: 15px; line-height: 1.6;">
+           <strong>${name}</strong> has not opened the Accountability App in <strong>${weeksInactive} week${weeksInactive === 1 ? '' : 's'}</strong>.
+           A check-in might help re-engage them.
+         </p>`,
+        'View Team', '/team'
+      ),
+    })));
+  } catch (e) { console.error('Could not email leaders about inactivity', e); }
+}
+
+async function processInactivityForUser(uid, data) {
+  const level = data.reminderLevel || 'medium';
+  const state = data.reminderState || {};
+  const sessions = data.toolSessions || [];
+  const lastSessionDate = sessions.reduce((max, s) => (s.date && s.date > max ? s.date : max), '');
+  const createdDate = data.createdAt?.seconds ? new Date(data.createdAt.seconds * 1000).toISOString().split('T')[0] : '';
+  const lastActiveDate = lastSessionDate || createdDate;
+  if (!lastActiveDate) return;
+
+  const daysInactive = Math.floor((Date.now() - new Date(lastActiveDate + 'T00:00:00Z').getTime()) / 86400000);
+  const weeksInactive = Math.floor(daysInactive / 7);
+
+  // Reset tracking the moment we see a newer last-active date than last run.
+  let lastNotifiedWeek = state.lastActiveDateSeen === lastActiveDate ? (state.lastNotifiedWeek || 0) : 0;
+
+  if (level === 'none' || weeksInactive <= 0 || weeksInactive <= lastNotifiedWeek) {
+    if (state.lastActiveDateSeen !== lastActiveDate || state.lastNotifiedWeek !== lastNotifiedWeek) {
+      await admin.firestore().collection('users').doc(uid).set(
+        { reminderState: { lastActiveDateSeen: lastActiveDate, lastNotifiedWeek } }, { merge: true }
+      );
+    }
+    return;
+  }
+
+  const name = data.displayName || data.email || 'there';
+  const nudge = (subject, heading, body) => data.email && transporter.sendMail({
+    from: `"Accountability App" <${ADMIN_EMAIL}>`,
+    to: data.email,
+    subject,
+    html: brandedEmail(heading, `<p style="color: #475569; font-size: 15px; line-height: 1.6;">Hi ${name}, ${body}</p>`, 'Open the App', '/dashboard'),
+  });
+  const smsBody = `Accountability App: it's been ${weeksInactive} week${weeksInactive === 1 ? '' : 's'} since your last visit — jump back in: ${APP_URL}`;
+
+  if (level === 'aggressive') {
+    if (weeksInactive === 1) {
+      await nudge('👋 We miss you at the Accountability App', "It's been a week", "it's been about a week since your last visit — your tools and goals are waiting whenever you're ready.");
+    } else if (weeksInactive === 2) {
+      await Promise.allSettled([
+        nudge('⏰ Second reminder — 2 weeks away', 'Two weeks now', "it's been about two weeks since you last opened the app. A few minutes today keeps your score and habits on track."),
+        sendSmsViaTwilio(data.phoneNumber, smsBody),
+      ]);
+    } else {
+      await emailLeadersOfInactivity({ uid, ...data }, weeksInactive);
+    }
+  } else if (level === 'medium') {
+    if (weeksInactive === 2) {
+      await nudge('👋 We miss you at the Accountability App', "It's been two weeks", "it's been about two weeks since your last visit — your tools and goals are waiting whenever you're ready.");
+    } else if (weeksInactive === 3) {
+      await Promise.allSettled([
+        nudge('⏰ Second reminder — 3 weeks away', 'Three weeks now', "it's been about three weeks since you last opened the app. A few minutes today keeps your score and habits on track."),
+        sendSmsViaTwilio(data.phoneNumber, smsBody),
+      ]);
+    } else if (weeksInactive >= 4) {
+      await emailLeadersOfInactivity({ uid, ...data }, weeksInactive);
+    }
+  }
+
+  await admin.firestore().collection('users').doc(uid).set(
+    { reminderState: { lastActiveDateSeen: lastActiveDate, lastNotifiedWeek: weeksInactive } }, { merge: true }
+  );
+}
+
+// Runs weekly, Mondays 8 AM (US Central).
+exports.weeklyInactivityReminders = onSchedule(
+  { schedule: 'every monday 08:00', timeZone: 'America/Chicago' },
+  async () => {
+    const snap = await admin.firestore().collection('users').where('status', '==', 'approved').get();
+    const results = await Promise.allSettled(snap.docs.map(d => processInactivityForUser(d.id, d.data())));
+    const failed = results.filter(r => r.status === 'rejected').length;
+    console.log(`Inactivity reminders processed for ${results.length} users (${failed} failed)`);
+  }
+);
+
 // On-demand: email the signed-in user their own weekly report right now (for testing/preview).
 exports.sendMyWeeklyReport = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
