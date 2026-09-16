@@ -9,7 +9,7 @@ export const LEGAL_META = {
   contactEmail: 'hectorg@accountability-app.com',
   website: 'https://www.accountability-app.com',
   effectiveDate: 'July 27, 2026',
-  governingLaw: '[State/Country — to be confirmed with counsel]',
+  governingLaw: 'the State of California, USA',
 };
 
 export const TERMS_SECTIONS = [
