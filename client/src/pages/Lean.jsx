@@ -1600,6 +1600,15 @@ export default function Lean() {
       {activeTab === 'waste' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
 
+          {/* Waste Walk instructions */}
+          <div className="card" style={{ padding: '1rem 1.25rem', borderLeft: '4px solid #0f2044' }}>
+            <p style={{ fontWeight: 800, margin: '0 0 4px', fontSize: '0.9rem', color: 'var(--text-primary)' }}>🚶 How to do a Waste Walk</p>
+            <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.55 }}>
+              Allocate <strong>15 minutes minimum a day</strong> to walk your production floor, warehouse, or the area where you work, and look for
+              opportunities to identify the eight wastes. Describe them below — doing it yourself is okay, but it's even better if you do it with your team.
+            </p>
+          </div>
+
           {/* Weekly points reminder */}
           <div className="card" style={{ padding: '1rem 1.25rem', borderLeft: '4px solid #0d9488', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
             <div style={{ textAlign: 'center', flexShrink: 0 }}>
