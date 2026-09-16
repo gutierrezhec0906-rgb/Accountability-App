@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, getDocs, doc, updateDoc, addDoc, serverTimestamp, getDoc, setDoc } from 'firebase/firestore';
+import { collection, getDocs, doc, updateDoc, addDoc, serverTimestamp, getDoc, setDoc, deleteDoc, writeBatch } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
@@ -212,6 +212,30 @@ export default function AdminPanel() {
       toast.success(`Company "${newCompany.trim()}" created`);
     } catch (e) {
       toast.error('Failed to create company: ' + (e?.code || e?.message || 'unknown error'));
+    }
+  }
+
+  async function deleteCompany(companyId, name) {
+    const memberCount = users.filter(u => u.companyId === companyId).length;
+    const companyTeams = teams.filter(t => t.companyId === companyId);
+    const warning = memberCount > 0 || companyTeams.length > 0
+      ? `Delete "${name}"? It has ${memberCount} member${memberCount !== 1 ? 's' : ''} and ${companyTeams.length} team${companyTeams.length !== 1 ? 's' : ''} — they will be unassigned (not deleted). This cannot be undone.`
+      : `Delete "${name}"? This cannot be undone.`;
+    if (!window.confirm(warning)) return;
+    try {
+      const batch = writeBatch(db);
+      users.filter(u => u.companyId === companyId).forEach(u => {
+        batch.update(doc(db, 'users', u.uid), { companyId: '', companyName: '', teamId: '', teamName: '' });
+      });
+      companyTeams.forEach(t => batch.delete(doc(db, 'teams', t.id)));
+      batch.delete(doc(db, 'companies', companyId));
+      await batch.commit();
+      setCompanies(c => c.filter(x => x.id !== companyId));
+      setTeams(t => t.filter(x => x.companyId !== companyId));
+      setUsers(u => u.map(x => x.companyId === companyId ? { ...x, companyId: '', companyName: '', teamId: '', teamName: '' } : x));
+      toast.success(`"${name}" deleted`);
+    } catch (e) {
+      toast.error('Failed to delete company: ' + (e?.code || e?.message || 'unknown error'));
     }
   }
 
@@ -592,6 +616,11 @@ export default function AdminPanel() {
                       <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{c.name}</div>
                       <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{memberCount} member{memberCount !== 1 ? 's' : ''} · {teamCount} team{teamCount !== 1 ? 's' : ''}</div>
                     </div>
+                    <button onClick={() => deleteCompany(c.id, c.name)}
+                      style={{ background: 'none', border: '1px solid #f87171', borderRadius: 7, padding: '5px 12px', fontSize: 12, fontWeight: 700, color: '#ef4444', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                      title="Delete company">
+                      🗑 Delete
+                    </button>
                   </div>
                 );
               })
