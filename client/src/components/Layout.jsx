@@ -26,7 +26,7 @@ const navCategories = [
     color: '#60a5fa',
     items: [
       { id: 'visual-board', label: 'Visual Management', icon: '🔴', path: '/visual-board', num: 1 },
-      { id: 'lob',          label: 'Line of Balance',   icon: '📈', path: '/lob', num: 2 },
+      { id: 'lob',          label: 'Line of Balance (LOB)',   icon: '📈', path: '/lob', num: 2, wrap: true },
       { id: 'urgency',      label: 'Sense of Urgency',  icon: '⚡', path: '/urgency', num: 3 },
       { id: 'eq-opex',      label: 'OpEx Tools',        icon: '⚙️', path: '/eq-opex', num: 4 },
     ],

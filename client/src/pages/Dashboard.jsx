@@ -18,7 +18,7 @@ const categories = [
     desc: 'Set the standard. Lead by example.',
     modules: [
       { id: 'visual-board',  label: 'Visual Management', icon: '🔴', path: '/visual-board',   iconBg: 'linear-gradient(135deg,#fca5a5,#f87171)' },
-      { id: 'lob',           label: 'Line of Balance',   icon: '📈', path: '/lob',             iconBg: 'linear-gradient(135deg,#a5b4fc,#818cf8)' },
+      { id: 'lob',           label: 'Line of Balance (LOB)',   icon: '📈', path: '/lob',             iconBg: 'linear-gradient(135deg,#a5b4fc,#818cf8)' },
       { id: 'urgency',       label: 'Sense of Urgency',  icon: '⚡', path: '/urgency',         iconBg: 'linear-gradient(135deg,#fb923c,#ea580c)' },
       { id: 'eq-opex',       label: 'OpEx Tools',        icon: '⚙️', path: '/eq-opex',         iconBg: 'linear-gradient(135deg,#fef08a,#facc15)' },
     ],
