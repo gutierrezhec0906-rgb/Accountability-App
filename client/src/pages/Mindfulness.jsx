@@ -113,7 +113,7 @@ export default function Mindfulness() {
       const data = snap.data();
       setLogs(data.mindfulnessLogs || {});
       const today = localDateStr();
-      const todaysReflection = (data.mindfulnessReflections || []).find(r => r.date === today);
+      const todaysReflection = (data.mindfulnessReflections || []).find(r => r.date === today && r.affirmation === affirmations[affIdx]);
       if (todaysReflection) {
         setReflectRepresents(todaysReflection.represents || '');
         setReflectApply(todaysReflection.apply || '');
@@ -155,7 +155,7 @@ export default function Mindfulness() {
       const snap = await getDoc(ref);
       const data = snap.exists() ? snap.data() : {};
       const today = localDateStr();
-      const entries = (data.mindfulnessReflections || []).filter(r => r.date !== today);
+      const entries = (data.mindfulnessReflections || []).filter(r => !(r.date === today && r.affirmation === affirmations[affIdx]));
       const entry = {
         date: today,
         affirmation: affirmations[affIdx],
