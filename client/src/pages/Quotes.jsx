@@ -222,6 +222,7 @@ const quotes = [
   { text: "Leaders must be close enough to relate to others, but far enough ahead to motivate them.", author: "John C. Maxwell" },
   { text: "Real integrity is doing the right thing, knowing that nobody's going to know whether you did it or not.", author: "Oprah Winfrey" },
   { text: "As we look ahead into the next century, leaders will be those who empower others.", author: "Bill Gates" },
+  { text: "Operational excellence in a company is when every single person on the manufacturing floor and in the offices can see and take action before the flow is broken.", author: "Kevin J. Duggan" },
 ];
 
 function fmtDate(iso) {
