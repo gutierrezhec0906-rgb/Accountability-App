@@ -100,6 +100,7 @@ export default function Mindfulness() {
   const [reflectedToday, setReflectedToday] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState('');
   const [aiLoading, setAiLoading] = useState(false);
+  const [reflectionLog, setReflectionLog] = useState([]);
 
   useEffect(() => {
     if (currentUser) loadLogs();
@@ -118,6 +119,7 @@ export default function Mindfulness() {
         setReflectApply(todaysReflection.apply || '');
       }
       setReflectedToday((data.pointEvents || []).some(e => e.toolLabel === 'Mindfulness Reflection' && e.date === today));
+      setReflectionLog((data.mindfulnessReflections || []).slice(0, 5));
     } catch {}
   }
 
@@ -161,7 +163,9 @@ export default function Mindfulness() {
         apply: reflectApply.trim(),
         savedAt: new Date().toISOString(),
       };
-      await setDoc(ref, { mindfulnessReflections: [entry, ...entries].slice(0, 60) }, { merge: true });
+      const updatedReflections = [entry, ...entries].slice(0, 60);
+      await setDoc(ref, { mindfulnessReflections: updatedReflections }, { merge: true });
+      setReflectionLog(updatedReflections.slice(0, 5));
 
       const alreadyToday = (data.pointEvents || []).some(e => e.toolLabel === 'Mindfulness Reflection' && e.date === today);
       if (!alreadyToday) {
@@ -386,7 +390,12 @@ export default function Mindfulness() {
             <div style={{ background: 'white', borderRadius: 12, padding: '1rem', marginBottom: '0.875rem', boxShadow: '0 1px 4px rgba(15,32,68,0.06)' }}>
               <p style={{ fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.6, fontStyle: 'italic' }}>"{affirmations[affIdx]}"</p>
             </div>
-            <button className="btn-secondary" onClick={() => { setAffIdx(i => (i + 1) % affirmations.length); setAiSuggestion(''); }}>Next Affirmation →</button>
+            <button className="btn-secondary" onClick={() => {
+              setAffIdx(i => (i + 1) % affirmations.length);
+              setAiSuggestion('');
+              setReflectRepresents('');
+              setReflectApply('');
+            }}>Next Affirmation →</button>
 
             {/* Affirmation reflection — +2 pts/day */}
             <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid #bbf7d0' }}>
@@ -435,7 +444,8 @@ export default function Mindfulness() {
         </div>
 
         {/* ── Right: record log ── */}
-        <div className="card" style={{ flex: '0 0 280px', padding: 0, overflow: 'hidden', alignSelf: 'flex-start' }}>
+        <div style={{ flex: '0 0 280px', display: 'flex', flexDirection: 'column', gap: 14, alignSelf: 'flex-start' }}>
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)', background: '#f8fafc' }}>
             <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>📊 Exercise Log</h3>
             <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Records saved when you stop</p>
@@ -514,6 +524,40 @@ export default function Mindfulness() {
           </div>
         </div>
 
+        <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)', background: '#f8fafc' }}>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>🪞 Reflection Log</h3>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Your last 5 saved reflections</p>
+          </div>
+          <div style={{ maxHeight: 340, overflowY: 'auto', padding: '0.5rem 0' }}>
+            {reflectionLog.length > 0 ? reflectionLog.map((r, i) => (
+              <div key={i} style={{ padding: '0.65rem 1.25rem', borderBottom: i < reflectionLog.length - 1 ? '1px solid #f1f5f9' : 'none' }}>
+                <p style={{ fontSize: '0.68rem', fontWeight: 700, color: '#0d9488', margin: '0 0 3px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {formatDate(r.date)}
+                </p>
+                <p style={{ fontSize: '0.7rem', fontStyle: 'italic', color: 'var(--text-muted)', margin: '0 0 5px' }}>
+                  "{r.affirmation}"
+                </p>
+                {r.represents && (
+                  <p style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', margin: '0 0 3px' }}>
+                    <strong>Represents:</strong> {r.represents}
+                  </p>
+                )}
+                {r.apply && (
+                  <p style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', margin: 0 }}>
+                    <strong>Apply:</strong> {r.apply}
+                  </p>
+                )}
+              </div>
+            )) : (
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1.5rem 1rem', fontStyle: 'italic' }}>
+                No reflections saved yet.
+              </p>
+            )}
+          </div>
+        </div>
+
+      </div>
       </div>
     </div>
   );
