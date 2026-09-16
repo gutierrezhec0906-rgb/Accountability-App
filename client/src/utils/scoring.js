@@ -285,10 +285,14 @@ export async function calculateScore(uid) {
 
   // --- pointEvents-based scores (allEvents declared above) ---
 
-  // --- Mindfulness (0-2): today's points from pointEvents ---
-  const mindfulnessPoints = Math.min(2,
+  // --- Mindfulness (0-4): today's points from pointEvents. 2 pts max from
+  // breathing exercises (session + record bonus) + 2 pts for writing a
+  // reflection on the day's Leadership Affirmation.
+  const mindfulnessPoints = Math.min(4,
     allEvents
-      .filter(e => e.date === today && (e.toolLabel === 'Mindfulness' || e.toolLabel === 'Mindfulness Record') && e.points > 0)
+      .filter(e => e.date === today &&
+        (e.toolLabel === 'Mindfulness' || e.toolLabel === 'Mindfulness Record' || e.toolLabel === 'Mindfulness Reflection') &&
+        e.points > 0)
       .reduce((s, e) => s + e.points, 0)
   );
 
@@ -432,7 +436,7 @@ export async function calculateScore(uid) {
   // actionsClosed is capped here (its rolling-window sum can otherwise exceed 25).
   const CAPS = {
     breadth: 10, frequency: 20, quality: 5, smart: 15, coaching: 20, problemSolving: 20,
-    disc: 5, eq: 5, mindfulness: 2, feedbackGiven: 5, actionsClosed: 25, mentoring: 10,
+    disc: 5, eq: 5, mindfulness: 4, feedbackGiven: 5, actionsClosed: 25, mentoring: 10,
     urgency: 20, skills: 3, lean5s: 5, waste: 5, career: 10, lob: 8, vision: 20, quotes: 20, bonus: 20, sqdip: 10, training: 20,
   };
   const parts = {

@@ -92,6 +92,12 @@ export default function Mindfulness() {
   const [logs, setLogs] = useState({});
   const [logTab, setLogTab] = useState(exercises[0].name);
 
+  // Affirmation reflection — represents / apply, +2 pts once per day
+  const [reflectRepresents, setReflectRepresents] = useState('');
+  const [reflectApply, setReflectApply] = useState('');
+  const [savingReflection, setSavingReflection] = useState(false);
+  const [reflectedToday, setReflectedToday] = useState(false);
+
   useEffect(() => {
     if (currentUser) loadLogs();
   }, [currentUser]);
@@ -99,7 +105,16 @@ export default function Mindfulness() {
   async function loadLogs() {
     try {
       const snap = await getDoc(doc(db, 'users', currentUser.uid));
-      if (snap.exists()) setLogs(snap.data().mindfulnessLogs || {});
+      if (!snap.exists()) return;
+      const data = snap.data();
+      setLogs(data.mindfulnessLogs || {});
+      const today = localDateStr();
+      const todaysReflection = (data.mindfulnessReflections || []).find(r => r.date === today);
+      if (todaysReflection) {
+        setReflectRepresents(todaysReflection.represents || '');
+        setReflectApply(todaysReflection.apply || '');
+      }
+      setReflectedToday((data.pointEvents || []).some(e => e.toolLabel === 'Mindfulness Reflection' && e.date === today));
     } catch {}
   }
 
@@ -108,6 +123,53 @@ export default function Mindfulness() {
       await setDoc(doc(db, 'users', currentUser.uid), { mindfulnessLogs: updated }, { merge: true });
       setLogs(updated);
     } catch {}
+  }
+
+  async function saveReflection() {
+    if (!reflectRepresents.trim() && !reflectApply.trim()) {
+      return toast.error('Write at least one of the two reflections first');
+    }
+    if (!currentUser || savingReflection) return;
+    setSavingReflection(true);
+    try {
+      const ref = doc(db, 'users', currentUser.uid);
+      const snap = await getDoc(ref);
+      const data = snap.exists() ? snap.data() : {};
+      const today = localDateStr();
+      const entries = (data.mindfulnessReflections || []).filter(r => r.date !== today);
+      const entry = {
+        date: today,
+        affirmation: affirmations[affIdx],
+        represents: reflectRepresents.trim(),
+        apply: reflectApply.trim(),
+        savedAt: new Date().toISOString(),
+      };
+      await setDoc(ref, { mindfulnessReflections: [entry, ...entries].slice(0, 60) }, { merge: true });
+
+      const alreadyToday = (data.pointEvents || []).some(e => e.toolLabel === 'Mindfulness Reflection' && e.date === today);
+      if (!alreadyToday) {
+        const { awarded, capReached } = await logPointEvent(currentUser.uid, {
+          points: 2,
+          toolLabel: 'Mindfulness Reflection',
+          reason: 'Reflected in writing on the daily Leadership Affirmation',
+        });
+        if (awarded) {
+          calculateScore(currentUser.uid).catch(() => {});
+          setReflectedToday(true);
+          toast.success('⭐ +2 pts — reflection saved!', { duration: 5000 });
+        } else if (capReached) {
+          setReflectedToday(true);
+          toast('Reflection saved! Daily 25-pt cap reached — come back tomorrow.', { duration: 5000, icon: '📅' });
+        } else {
+          toast.success('Reflection saved!');
+        }
+      } else {
+        toast.success('Reflection updated!');
+      }
+    } catch (e) {
+      toast.error('Could not save reflection: ' + (e?.message || 'try again'));
+    }
+    setSavingReflection(false);
   }
 
   // Called when user stops the timer (if cycles > 0, record the session)
@@ -308,6 +370,38 @@ export default function Mindfulness() {
               <p style={{ fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.6, fontStyle: 'italic' }}>"{affirmations[affIdx]}"</p>
             </div>
             <button className="btn-secondary" onClick={() => setAffIdx(i => (i + 1) % affirmations.length)}>Next Affirmation →</button>
+
+            {/* Affirmation reflection — +2 pts/day */}
+            <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid #bbf7d0' }}>
+              <h4 style={{ fontWeight: 800, color: '#166534', margin: '0 0 4px', fontSize: '0.9rem' }}>
+                ✍️ Reflect on this affirmation {reflectedToday && <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#0d9488', marginLeft: 6 }}>✓ +2 pts earned today</span>}
+              </h4>
+              <p style={{ fontSize: '0.76rem', color: '#15803d', margin: '0 0 12px' }}>In your own words — write at least one to save, earn +2 pts for today.</p>
+
+              <label style={{ fontSize: '0.76rem', fontWeight: 700, color: '#166534', display: 'block', marginBottom: 4 }}>1. What does this affirmation represent to you?</label>
+              <textarea
+                className="input"
+                rows={2}
+                style={{ width: '100%', marginBottom: 12, fontSize: '0.85rem' }}
+                placeholder="What this affirmation means to you personally..."
+                value={reflectRepresents}
+                onChange={e => setReflectRepresents(e.target.value)}
+              />
+
+              <label style={{ fontSize: '0.76rem', fontWeight: 700, color: '#166534', display: 'block', marginBottom: 4 }}>2. How can you apply this in your day-to-day? Give an example.</label>
+              <textarea
+                className="input"
+                rows={3}
+                style={{ width: '100%', marginBottom: 12, fontSize: '0.85rem' }}
+                placeholder="A specific, real example of applying it this week..."
+                value={reflectApply}
+                onChange={e => setReflectApply(e.target.value)}
+              />
+
+              <button className="btn-primary" onClick={saveReflection} disabled={savingReflection}>
+                {savingReflection ? 'Saving…' : '💾 Save Reflection'}
+              </button>
+            </div>
           </div>
         </div>
 

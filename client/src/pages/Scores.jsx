@@ -17,7 +17,7 @@ const BREAKDOWN_CONFIG = [
   { key: 'problemSolving', label: 'Problem Solving', max: 20, icon: '🔍', desc: '5 Whys (5pts) + Fishbone (5pts) + A3 (10pts) per week; decays 20%→50%→75% without use' },
   { key: 'disc', label: 'DISC Assessment', max: 5, icon: '🧠', desc: '5 pts for completing a DISC assessment; valid for 90 days — renew before expiry to keep points' },
   { key: 'eq', label: 'Emotional Intelligence (EQ)', max: 5, icon: '💡', desc: '3 pts for completing an EQ assessment + 2 pts for building a 90-day development plan (4+ actions); both reset every 90 days' },
-  { key: 'mindfulness', label: 'Mindfulness', max: 2, icon: '🧘', desc: '1 pt/day for completing any breathing exercise; +1 bonus pt for breaking your personal cycle record' },
+  { key: 'mindfulness', label: 'Mindfulness', max: 4, icon: '🧘', desc: '1 pt/day for completing any breathing exercise; +1 bonus pt for breaking your personal cycle record; +2 pts for reflecting in writing on the day\'s Leadership Affirmation' },
   { key: 'feedbackGiven', label: 'Feedback Given', max: 5, icon: '📬', desc: '+1 pt each time you give feedback to a teammate (max 5/month); points expire after 30 days' },
   { key: 'actionsClosed', label: 'Actions Closed On Time', max: 25, icon: '✅', desc: '+5 pts per action closed on time with zero recommitments; points valid for 7 days. Closing with recommitments = no points. Past due = −5 pts per occurrence.' },
   { key: 'mentoring', label: 'Mentoring Sessions', max: 10, icon: '🤝', desc: '+5 pts per mentoring session logged in its totality — date, progress review, challenge, and action item all filled in. Points last 60 days, then expire — log new sessions to earn them back. Capped at 10.' },
