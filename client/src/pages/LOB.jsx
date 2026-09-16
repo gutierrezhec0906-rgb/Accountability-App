@@ -805,8 +805,10 @@ export default function LOB() {
                     );
 
                     if (isCompleted) {
-                      // Completed (post-100%) cell: muted grayed-green, non-editable —
-                      // but the actual completion date is still loggable/editable.
+                      // Completed (post-100%) cell: muted grayed-green, non-editable.
+                      // The activity is already done as of an earlier column's actual
+                      // date, so later columns need no date of their own — gray it out
+                      // too instead of inviting another "set" action.
                       return (
                         <td key={ci} style={{ padding: '0.4rem 0.25rem', textAlign: 'center' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
@@ -818,7 +820,14 @@ export default function LOB() {
                             }}>
                               ✓ 100%
                             </div>
-                            {actualBox}
+                            <div title="Activity already completed — no actual date needed here" style={{
+                              width: 72, minHeight: 26, borderRadius: 8,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center',
+                              background: '#f1f5f9', color: '#cbd5e1', border: '1px dashed #e2e8f0',
+                              fontWeight: 700, fontSize: '0.68rem', margin: '0 auto', lineHeight: 1.2,
+                            }}>
+                              —
+                            </div>
                           </div>
                         </td>
                       );
