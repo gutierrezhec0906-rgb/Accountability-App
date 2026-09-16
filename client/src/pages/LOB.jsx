@@ -57,7 +57,18 @@ function blankLOB(name) {
 }
 
 function blankTask(numCols) {
-  return { id: Date.now(), name: '', owner: '', cells: Array(numCols).fill('') };
+  return { id: Date.now(), name: '', owner: '', cells: Array(numCols).fill(''), actualDates: Array(numCols).fill('') };
+}
+
+// Actual-completion-date cell color: compares the logged actual date against
+// that column's planned date. On or before plan = green (on time / early);
+// after plan = red (late); no actual date logged yet = neutral gray.
+function actualDateCellStyle(planDateStr, actualDateStr) {
+  if (!actualDateStr) return { bg: '#f1f5f9', text: '#94a3b8' };
+  if (!planDateStr) return { bg: '#e0e7ff', text: '#4338ca' };
+  const plan = new Date(planDateStr + 'T00:00:00');
+  const actual = new Date(actualDateStr + 'T00:00:00');
+  return actual <= plan ? { bg: '#dcfce7', text: '#15803d' } : { bg: '#fee2e2', text: '#dc2626' };
 }
 
 function dateCellStyle(dateStr, cellVal) {
@@ -435,6 +446,17 @@ export default function LOB() {
     patchActive({ tasks });
   }
 
+  function updateActualDate(taskId, col, val) {
+    const tasks = activeLob.tasks.map(t => {
+      if (t.id !== taskId) return t;
+      const actualDates = t.actualDates && t.actualDates.length === t.cells.length
+        ? t.actualDates
+        : Array(t.cells.length).fill('');
+      return { ...t, actualDates: actualDates.map((d, i) => i === col ? val : d) };
+    });
+    patchActive({ tasks });
+  }
+
   function updateNote(taskId, note) {
     const tasks = activeLob.tasks.map(t => t.id !== taskId ? t : { ...t, note });
     patchActive({ tasks });
@@ -498,14 +520,22 @@ export default function LOB() {
 
   function addDateColumn() {
     const dates = [...activeLob.dates, ''];
-    const tasks = activeLob.tasks.map(t => ({ ...t, cells: [...t.cells, ''] }));
+    const tasks = activeLob.tasks.map(t => ({
+      ...t,
+      cells: [...t.cells, ''],
+      actualDates: [...(t.actualDates && t.actualDates.length === t.cells.length ? t.actualDates : Array(t.cells.length).fill('')), ''],
+    }));
     patchActive({ dates, tasks });
   }
 
   function removeDateColumn(col) {
     if (activeLob.dates.length <= 1) return;
     const dates = activeLob.dates.filter((_, i) => i !== col);
-    const tasks = activeLob.tasks.map(t => ({ ...t, cells: t.cells.filter((_, i) => i !== col) }));
+    const tasks = activeLob.tasks.map(t => ({
+      ...t,
+      cells: t.cells.filter((_, i) => i !== col),
+      actualDates: (t.actualDates && t.actualDates.length === t.cells.length ? t.actualDates : Array(t.cells.length).fill('')).filter((_, i) => i !== col),
+    }));
     patchActive({ dates, tasks });
   }
 
@@ -715,6 +745,7 @@ export default function LOB() {
                             📅 {fmt(d)}
                           </button>
                         )}
+                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Plan · Actuals ↓</span>
                         {numCols > 1 && (
                           <button onClick={() => removeDateColumn(i)}
                             title="Remove this column"
@@ -746,45 +777,74 @@ export default function LOB() {
                     // Once an activity reaches 100% in a column, it is complete: every
                     // LATER column for that row is grayed out and shown as done (green ✓).
                     const doneIdx = task.cells.findIndex(c => parseFloat(c) >= 100);
+                    const actualDates = task.actualDates && task.actualDates.length === task.cells.length
+                      ? task.actualDates : Array(task.cells.length).fill('');
                     return task.cells.map((cell, ci) => {
                     const s = dateCellStyle(activeLob.dates[ci], cell);
                     const key = `${task.id}-${ci}`;
+                    const actualKey = `actual-${task.id}-${ci}`;
+                    const actualVal = actualDates[ci] || '';
+                    const as = actualDateCellStyle(activeLob.dates[ci], actualVal);
                     const isCompleted = doneIdx !== -1 && ci > doneIdx;
+
+                    const actualBox = editing === actualKey ? (
+                      <input autoFocus type="date" defaultValue={actualVal}
+                        style={{ width: 72, textAlign: 'center', border: '2px solid #0d9488', borderRadius: 7, padding: '3px 2px', fontSize: '0.68rem', outline: 'none' }}
+                        onBlur={e => { updateActualDate(task.id, ci, e.target.value); setEditing(null); }}
+                        onKeyDown={e => e.key === 'Enter' && e.target.blur()} />
+                    ) : (
+                      <button onClick={() => setEditing(actualKey)} title="Actual completion date"
+                        style={{
+                          width: 72, minHeight: 26, borderRadius: 8, border: 'none', fontWeight: 700,
+                          fontSize: '0.68rem', cursor: 'pointer', transition: 'all 0.15s',
+                          background: as.bg, color: as.text, padding: '3px 4px', lineHeight: 1.2,
+                        }}>
+                        {actualVal ? fmt(actualVal) : '— set'}
+                      </button>
+                    );
+
                     if (isCompleted) {
-                      // Completed (post-100%) cell: muted grayed-green, non-editable.
+                      // Completed (post-100%) cell: muted grayed-green, non-editable —
+                      // but the actual completion date is still loggable/editable.
                       return (
                         <td key={ci} style={{ padding: '0.4rem 0.25rem', textAlign: 'center' }}>
-                          <div title="Activity already completed 100%" style={{
-                            width: 72, minHeight: 30, borderRadius: 8,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
-                            background: '#e8f2ec', color: '#5a9d78', border: '1px dashed #b6d8c4',
-                            fontWeight: 700, fontSize: '0.72rem', margin: '0 auto', lineHeight: 1.2,
-                          }}>
-                            ✓ 100%
+                          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                            <div title="Activity already completed 100%" style={{
+                              width: 72, minHeight: 30, borderRadius: 8,
+                              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
+                              background: '#e8f2ec', color: '#5a9d78', border: '1px dashed #b6d8c4',
+                              fontWeight: 700, fontSize: '0.72rem', margin: '0 auto', lineHeight: 1.2,
+                            }}>
+                              ✓ 100%
+                            </div>
+                            {actualBox}
                           </div>
                         </td>
                       );
                     }
                     return (
                       <td key={ci} style={{ padding: '0.4rem 0.25rem', textAlign: 'center' }}>
-                        {editing === key ? (
-                          <input autoFocus defaultValue={cell}
-                            type="number" min="0" max="100" step="1" inputMode="numeric"
-                            style={{ width: 72, textAlign: 'center', border: '2px solid #0d9488', borderRadius: 7, padding: '4px', fontSize: '0.78rem', outline: 'none' }}
-                            onBlur={e => { updateCell(task.id, ci, e.target.value); setEditing(null); }}
-                            onKeyDown={e => e.key === 'Enter' && e.target.blur()} />
-                        ) : (
-                          <button onClick={() => setEditing(key)}
-                            style={{
-                              width: 72, minHeight: 30, borderRadius: 8, border: 'none', fontWeight: 600,
-                              fontSize: '0.72rem', cursor: 'pointer', transition: 'all 0.15s',
-                              background: cell !== '' ? s.bg : '#f1f5f9',
-                              color: cell !== '' ? s.text : '#94a3b8',
-                              padding: '3px 4px', wordBreak: 'break-word', lineHeight: 1.2,
-                            }}>
-                            {cell !== '' ? `${cell}%` : '—'}
-                          </button>
-                        )}
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
+                          {editing === key ? (
+                            <input autoFocus defaultValue={cell}
+                              type="number" min="0" max="100" step="1" inputMode="numeric"
+                              style={{ width: 72, textAlign: 'center', border: '2px solid #0d9488', borderRadius: 7, padding: '4px', fontSize: '0.78rem', outline: 'none' }}
+                              onBlur={e => { updateCell(task.id, ci, e.target.value); setEditing(null); }}
+                              onKeyDown={e => e.key === 'Enter' && e.target.blur()} />
+                          ) : (
+                            <button onClick={() => setEditing(key)}
+                              style={{
+                                width: 72, minHeight: 30, borderRadius: 8, border: 'none', fontWeight: 600,
+                                fontSize: '0.72rem', cursor: 'pointer', transition: 'all 0.15s',
+                                background: cell !== '' ? s.bg : '#f1f5f9',
+                                color: cell !== '' ? s.text : '#94a3b8',
+                                padding: '3px 4px', wordBreak: 'break-word', lineHeight: 1.2,
+                              }}>
+                              {cell !== '' ? `${cell}%` : '—'}
+                            </button>
+                          )}
+                          {actualBox}
+                        </div>
                       </td>
                     );
                     });
