@@ -730,6 +730,7 @@ export default function LOB() {
                   return (
                     <th key={i} style={{ padding: '0.5rem 0.25rem', textAlign: 'center', minWidth: 90 }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Plan</span>
                         {editing === `date-${i}` ? (
                           <input type="date" autoFocus defaultValue={d}
                             style={{ fontSize: '0.7rem', border: 'none', borderRadius: 6, padding: '3px 4px', outline: 'none', width: 82, background: 'white', color: '#0f172a' }}
@@ -745,7 +746,7 @@ export default function LOB() {
                             📅 {fmt(d)}
                           </button>
                         )}
-                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Plan · Actuals ↓</span>
+                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: 'rgba(153,246,228,0.6)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actuals ↓</span>
                         {numCols > 1 && (
                           <button onClick={() => removeDateColumn(i)}
                             title="Remove this column"
