@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { getFunctions, httpsCallable } from 'firebase/functions';
 import toast from 'react-hot-toast';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -97,6 +98,8 @@ export default function Mindfulness() {
   const [reflectApply, setReflectApply] = useState('');
   const [savingReflection, setSavingReflection] = useState(false);
   const [reflectedToday, setReflectedToday] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState('');
+  const [aiLoading, setAiLoading] = useState(false);
 
   useEffect(() => {
     if (currentUser) loadLogs();
@@ -123,6 +126,20 @@ export default function Mindfulness() {
       await setDoc(doc(db, 'users', currentUser.uid), { mindfulnessLogs: updated }, { merge: true });
       setLogs(updated);
     } catch {}
+  }
+
+  async function getAiSuggestion() {
+    if (aiLoading) return;
+    setAiLoading(true);
+    setAiSuggestion('');
+    try {
+      const fn = httpsCallable(getFunctions(), 'mindfulnessReflectionAssist');
+      const res = await fn({ affirmation: affirmations[affIdx], represents: reflectRepresents, apply: reflectApply });
+      setAiSuggestion(res.data?.suggestion || '');
+    } catch (e) {
+      toast.error(e?.message || 'Could not get AI recommendation — try again');
+    }
+    setAiLoading(false);
   }
 
   async function saveReflection() {
@@ -369,7 +386,7 @@ export default function Mindfulness() {
             <div style={{ background: 'white', borderRadius: 12, padding: '1rem', marginBottom: '0.875rem', boxShadow: '0 1px 4px rgba(15,32,68,0.06)' }}>
               <p style={{ fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.6, fontStyle: 'italic' }}>"{affirmations[affIdx]}"</p>
             </div>
-            <button className="btn-secondary" onClick={() => setAffIdx(i => (i + 1) % affirmations.length)}>Next Affirmation →</button>
+            <button className="btn-secondary" onClick={() => { setAffIdx(i => (i + 1) % affirmations.length); setAiSuggestion(''); }}>Next Affirmation →</button>
 
             {/* Affirmation reflection — +2 pts/day */}
             <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid #bbf7d0' }}>
@@ -398,9 +415,21 @@ export default function Mindfulness() {
                 onChange={e => setReflectApply(e.target.value)}
               />
 
-              <button className="btn-primary" onClick={saveReflection} disabled={savingReflection}>
-                {savingReflection ? 'Saving…' : '💾 Save Reflection'}
-              </button>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                <button className="btn-primary" onClick={saveReflection} disabled={savingReflection}>
+                  {savingReflection ? 'Saving…' : '💾 Save Reflection'}
+                </button>
+                <button className="btn-secondary" onClick={getAiSuggestion} disabled={aiLoading}>
+                  {aiLoading ? '🤖 Thinking…' : '🤖 AI Assistant — Give Me Ideas'}
+                </button>
+              </div>
+
+              {aiSuggestion && (
+                <div style={{ marginTop: 12, padding: '0.875rem 1rem', background: 'white', borderRadius: 10, border: '1px solid #ccfbf1' }}>
+                  <p style={{ margin: '0 0 4px', fontSize: '0.68rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.06em' }}>🤖 A recommendation to consider</p>
+                  <p style={{ margin: 0, fontSize: '0.82rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-line' }}>{aiSuggestion}</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

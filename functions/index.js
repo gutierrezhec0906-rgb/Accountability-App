@@ -1594,6 +1594,23 @@ exports.visionAiPolish = onCall(async (request) => {
   return { vision: polished.trim().replace(/^["']|["']$/g, '') };
 });
 
+// Mindfulness — Leadership Affirmation reflection. Given the day's
+// affirmation and whatever the user has already written, offer a coaching
+// recommendation: a concept/angle worth considering and a concrete
+// day-to-day example — to help someone stuck on what to write, not to
+// write their reflection for them.
+exports.mindfulnessReflectionAssist = onCall(async (request) => {
+  if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
+  const { affirmation, represents, apply } = request.data || {};
+  if (!(affirmation || '').trim()) throw new HttpsError('invalid-argument', 'Missing affirmation');
+
+  const systemPrompt = `You are a leadership coach helping someone reflect on a daily leadership affirmation. Given the affirmation and whatever they've already drafted (which may be empty), offer a short, practical recommendation to help them go deeper — NOT a rewrite of their reflection. Cover: (1) one concept or angle on the affirmation worth considering that they may not have thought of, and (2) one concrete, realistic day-to-day example of applying it (different from anything they already wrote, if they wrote something). Write it as plain text, 2 short paragraphs, no markdown, no headers, under 130 words total. Address the reader as "you".`;
+  const userPrompt = `Affirmation: "${affirmation.trim()}"\n\nWhat it represents to them so far: ${(represents || '').trim() || '(nothing written yet)'}\n\nHow they plan to apply it so far: ${(apply || '').trim() || '(nothing written yet)'}`;
+
+  const suggestion = await callClaude(systemPrompt, userPrompt, 350);
+  return { suggestion: suggestion.trim() };
+});
+
 exports.deleteUser = onCall(async (request) => {
   if (request.auth?.token?.email !== 'hectorg@accountability-app.com') {
     throw new HttpsError('permission-denied', 'Only master admin can delete users');
