@@ -447,6 +447,14 @@ export default function LOB() {
   }
 
   function updateActualDate(taskId, col, val) {
+    if (val) {
+      const today = new Date(); today.setHours(0, 0, 0, 0);
+      const chosen = new Date(val + 'T00:00:00');
+      if (chosen > today) {
+        toast.error('Actual day of completion cannot be in the future');
+        return;
+      }
+    }
     const tasks = activeLob.tasks.map(t => {
       if (t.id !== taskId) return t;
       const actualDates = t.actualDates && t.actualDates.length === t.cells.length
