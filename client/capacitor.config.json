@@ -1,0 +1,8 @@
+{
+  "appId": "com.accountabilityapp.app",
+  "appName": "Accountability App",
+  "webDir": "dist",
+  "android": {
+    "allowMixedContent": false
+  }
+}
