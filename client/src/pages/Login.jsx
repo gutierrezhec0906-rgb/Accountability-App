@@ -32,7 +32,7 @@ export default function Login() {
       await login(email.trim(), password);
       navigate('/dashboard');
     } catch (err) {
-      toast.error('Invalid email or password');
+      toast.error(`${err?.code || 'error'}: ${err?.message || 'Invalid email or password'}`, { duration: 8000 });
     }
     setLoading(false);
   }
