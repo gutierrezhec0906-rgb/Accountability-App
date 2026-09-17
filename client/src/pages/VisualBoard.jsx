@@ -419,7 +419,7 @@ export default function VisualBoard() {
                   <span style={{ fontSize: '1.1rem' }}>✅</span>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)', margin: 0 }}>{item.title}</p>
-                    <div style={{ display: 'flex', gap: 12, fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                    <div style={{ display: 'flex', gap: 8, fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2, flexWrap: 'wrap', alignItems: 'center' }}>
                       <span>👤 {item.owner}</span>
                       {item.closedAt?.seconds && <span>Closed {new Date(item.closedAt.seconds * 1000).toLocaleDateString()}</span>}
                       <RecommitBadge count={item.recommitmentCount} />
