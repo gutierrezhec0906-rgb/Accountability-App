@@ -36,7 +36,7 @@ export default function Signup() {
     if (!agreed) return toast.error('Please accept the Terms & Conditions and Privacy Policy to continue');
     setLoading(true);
     try {
-      await signup(form.email, form.password, form.name, form.role);
+      await signup(form.email.trim(), form.password, form.name, form.role);
       toast.success('Account created! Welcome aboard.');
       navigate('/complete-profile');
     } catch (err) {
@@ -71,7 +71,7 @@ export default function Signup() {
             </div>
             <div>
               <label className="label">Email Address</label>
-              <input className="input" type="email" name="email" value={form.email} onChange={handleChange} required placeholder="you@company.com" readOnly={isInvited} style={isInvited ? { background: '#f1f5f9', color: '#64748b' } : undefined} />
+              <input className="input" type="email" name="email" autoCapitalize="none" autoCorrect="off" autoComplete="email" value={form.email} onChange={handleChange} required placeholder="you@company.com" readOnly={isInvited} style={isInvited ? { background: '#f1f5f9', color: '#64748b' } : undefined} />
             </div>
             <div>
               <label className="label">Role</label>

@@ -17,7 +17,7 @@ export default function Login() {
   async function handleForgotPassword(e) {
     e.preventDefault();
     try {
-      await sendPasswordResetEmail(auth, resetEmail);
+      await sendPasswordResetEmail(auth, resetEmail.trim());
       toast.success('Password reset email sent! Check your inbox.');
       setShowReset(false);
     } catch {
@@ -29,7 +29,7 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     try {
-      await login(email, password);
+      await login(email.trim(), password);
       navigate('/dashboard');
     } catch (err) {
       toast.error('Invalid email or password');
@@ -54,11 +54,11 @@ export default function Login() {
               <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
                   <label className="label">Email Address</label>
-                  <input className="input" type="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@company.com" />
+                  <input className="input" type="email" autoCapitalize="none" autoCorrect="off" autoComplete="email" value={email} onChange={e => setEmail(e.target.value)} required placeholder="you@company.com" />
                 </div>
                 <div>
                   <label className="label">Password</label>
-                  <input className="input" type="password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" />
+                  <input className="input" type="password" autoCapitalize="none" autoCorrect="off" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} required placeholder="••••••••" />
                 </div>
                 <div className="text-right">
                   <button type="button" onClick={() => { setResetEmail(email); setShowReset(true); }} className="text-sm text-teal-600 hover:underline font-medium">
@@ -80,7 +80,7 @@ export default function Login() {
               <form onSubmit={handleForgotPassword} className="space-y-4">
                 <div>
                   <label className="label">Email Address</label>
-                  <input className="input" type="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)} required placeholder="you@company.com" />
+                  <input className="input" type="email" autoCapitalize="none" autoCorrect="off" autoComplete="email" value={resetEmail} onChange={e => setResetEmail(e.target.value)} required placeholder="you@company.com" />
                 </div>
                 <button className="btn-primary w-full justify-center" type="submit">Send Reset Email</button>
                 <button type="button" onClick={() => setShowReset(false)} className="w-full text-center text-sm text-slate-500 hover:underline mt-2">
