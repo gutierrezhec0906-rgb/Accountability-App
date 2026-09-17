@@ -521,20 +521,24 @@ export default function SmartGoals() {
             return (
               <div key={goal.id} className="card" style={{ overflow: 'hidden' }}>
                 {/* Goal header row */}
-                <div style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', cursor: 'pointer' }} onClick={() => setExpanded(isOpen ? null : goal.id)}>
-                  <span style={{ fontSize: '1.25rem' }}>🎯</span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: 700, color: '#1e293b', margin: 0, fontSize: '0.95rem' }}>{goal.title}</p>
-                    {goal.dueDate && (
-                      <div style={{ marginTop: 4, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <DateStatus date={goal.dueDate} />
-                        <RecommitBadge count={goal.recommitmentCount} />
-                      </div>
-                    )}
+                <div style={{ padding: '1rem 1.25rem', cursor: 'pointer' }} onClick={() => setExpanded(isOpen ? null : goal.id)}>
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                    <span style={{ fontSize: '1.25rem' }}>🎯</span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontWeight: 700, color: '#1e293b', margin: 0, fontSize: '0.95rem' }}>{goal.title}</p>
+                      {goal.dueDate && (
+                        <div style={{ marginTop: 4, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                          <DateStatus date={goal.dueDate} />
+                          <RecommitBadge count={goal.recommitmentCount} />
+                        </div>
+                      )}
+                    </div>
+                    <span style={{ color: '#94a3b8', fontSize: '1rem', flexShrink: 0 }}>{isOpen ? '▲' : '▼'}</span>
                   </div>
-                  <QualityBadge pct={qpct} />
-                  <span style={{ background: st.bg, color: st.text, padding: '3px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 700 }}>{st.label}</span>
-                  <span style={{ color: '#94a3b8', fontSize: '1rem' }}>{isOpen ? '▲' : '▼'}</span>
+                  <div style={{ marginTop: 8, marginLeft: 36, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <QualityBadge pct={qpct} />
+                    <span style={{ background: st.bg, color: st.text, padding: '3px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 700 }}>{st.label}</span>
+                  </div>
                 </div>
 
                 {/* Expanded SMART fields */}
