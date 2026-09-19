@@ -3697,5 +3697,27 @@
         }
       }
     }
+  },
+  "login": {
+    "appName": "Accountability App",
+    "tagline": "Plataforma de Liderazgo de Alto Rendimiento",
+    "signIn": "Iniciar Sesión",
+    "emailAddress": "Correo Electrónico",
+    "password": "Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
+    "signingIn": "Iniciando sesión...",
+    "noAccount": "¿No tienes una cuenta?",
+    "signUp": "Regístrate",
+    "resetInstructions": "Ingresa tu correo electrónico y te enviaremos un enlace para restablecer tu contraseña.",
+    "sendResetEmail": "Enviar Correo de Restablecimiento",
+    "backToSignIn": "Volver a Iniciar Sesión",
+    "terms": "Términos",
+    "privacy": "Privacidad",
+    "copyright": "© 2026 Leadership Flow Technologies, LLC. Todos los derechos reservados.",
+    "toast": {
+      "resetSent": "¡Correo de restablecimiento enviado! Revisa tu bandeja de entrada.",
+      "resetFailed": "No se pudo enviar el correo de restablecimiento. Verifica la dirección e intenta de nuevo.",
+      "invalidCredentials": "Correo electrónico o contraseña inválidos"
+    }
   }
 }
