@@ -264,5 +264,128 @@
       "saveFailedShort": "Error al guardar: {{msg}}",
       "pastDueDeducted": "−5 pts deducidos — la acción está vencida"
     }
+  },
+  "smartGoals": {
+    "title": "Metas SMART — Midiendo la Responsabilidad",
+    "subtitle": "Establece metas con propósito que impulsen la responsabilidad. Cada meta contribuye a tu Puntuación de Responsabilidad.",
+    "pdf": "PDF",
+    "newGoal": "Nueva Meta SMART",
+    "status": {
+      "draft": "Borrador",
+      "active": "Activa",
+      "pending_approval": "Pendiente de Aprobación",
+      "completed": "Completada",
+      "paused": "Pausada"
+    },
+    "fields": {
+      "specific": {
+        "label": "Específica",
+        "placeholder": "¿Qué exactamente lograrás? ¿Quién está involucrado? ¿Dónde sucederá? Sé preciso y claro."
+      },
+      "measurable": {
+        "label": "Medible",
+        "placeholder": "¿Cómo medirás el progreso? ¿Qué números, métricas o hitos confirmarán el éxito?"
+      },
+      "achievable": {
+        "label": "Alcanzable",
+        "placeholder": "¿Qué recursos, habilidades o pasos se necesitan? ¿Es realista dada tu situación actual?"
+      },
+      "relevant": {
+        "label": "Relevante",
+        "placeholder": "¿Por qué importa esta meta? ¿Cómo se alinea con las prioridades de tu equipo y tu propósito de liderazgo?"
+      },
+      "timeBound": {
+        "label": "Con Plazo",
+        "placeholder": "¿Cuál es tu fecha límite? ¿Cuáles son los hitos clave en el camino?"
+      }
+    },
+    "quality": {
+      "high": "Alta Calidad",
+      "developing": "En Desarrollo",
+      "incomplete": "Incompleta"
+    },
+    "pendingApprovals": "Aprobaciones de Metas Pendientes",
+    "requested": "Solicitada",
+    "viewAttachment": "Ver adjunto",
+    "approve": "Aprobar (+2 pts)",
+    "return": "Devolver",
+    "returnTitle": "Devolver \"{{title}}\"",
+    "returnSubtitle": "Cuéntale a {{name}} qué necesita cambiar antes de que puedas aprobar la finalización de esta meta.",
+    "returnPlaceholder": "ej. El campo Medible no especifica un número objetivo — agrega uno y vuelve a enviar.",
+    "cancel": "Cancelar",
+    "returnWithComment": "Devolver con Comentario",
+    "requestApprovalTitle": "Solicitar Aprobación — \"{{title}}\"",
+    "requestApprovalSubtitle": "Agrega notas y, si la tienes, adjunta evidencia (una foto, captura de pantalla o documento) para que tu líder pueda revisar y aprobar más rápido.",
+    "notesOptional": "Notas (opcional)",
+    "notesPlaceholder": "ej. Se completó el despliegue de capacitación en los 3 turnos — hoja de asistencia adjunta.",
+    "attachmentOptional": "Adjunto (opcional — imagen, PDF o documento)",
+    "remove": "Eliminar",
+    "clickToAttach": "Clic para adjuntar un archivo",
+    "submitting": "Enviando…",
+    "submitForApproval": "Enviar para Aprobación",
+    "showingOnly": "Mostrando solo",
+    "goalsSuffix": "metas",
+    "clearFilter": "Limpiar filtro",
+    "loading": "Cargando metas...",
+    "emptyTitle": "Aún no hay metas SMART",
+    "emptySubtitle": "Crea tu primera meta para comenzar a construir tu Puntuación de Responsabilidad.",
+    "createFirst": "Crear Primera Meta",
+    "noneForStatus": "No hay metas {{status}}.",
+    "returnedBy": "Devuelta por {{name}}",
+    "yourLeader": "tu líder",
+    "wordCount": "{{count}} palabras",
+    "notFilledIn": "Aún no completado.",
+    "ptEarnedCreated": "+1 pt ganado (creada)",
+    "ptFillFields": "Completa los 5 campos + establece una fecha futura → +1 pt",
+    "ptsEarnedApproved": "+2 pts ganados (aprobada)",
+    "ptsGetApproval": "Obtén la aprobación de tu líder → +2 pts",
+    "edit": "Editar",
+    "setActive": "Activar",
+    "resume": "Reanudar",
+    "pause": "Pausar",
+    "requestApproval": "Solicitar Aprobación de Finalización",
+    "awaitingApproval": "Esperando aprobación del líder…",
+    "completedApproved": "Completada y Aprobada",
+    "delete": "Eliminar",
+    "editGoal": "Editar Meta SMART",
+    "field": {
+      "goalTitle": "Título de la Meta *",
+      "goalTitlePlaceholder": "ej. Mejorar la frecuencia de coaching del equipo para el Q3",
+      "dueDate": "Fecha de Vencimiento",
+      "status": "Estado"
+    },
+    "drafting": "Redactando…",
+    "draftAi": "Redactar los 5 Campos SMART desde el Título (IA)",
+    "entryQuality": "Calidad de la Entrada:",
+    "saving": "Guardando...",
+    "updateGoal": "Actualizar Meta",
+    "createGoal": "Crear Meta",
+    "permissionError": "error de permisos",
+    "tryAgain": "intenta de nuevo",
+    "confirmDelete": "¿Eliminar esta meta?",
+    "toast": {
+      "loadFailed": "No se pudieron cargar las metas",
+      "pendingLoadFailed": "No se pudieron cargar las aprobaciones pendientes de tu equipo: {{msg}}",
+      "enterTitleFirst": "Ingresa primero un título de meta",
+      "aiFailed": "Falló la sugerencia de IA",
+      "titleRequired": "El título de la meta es obligatorio",
+      "dueDateFuture": "La fecha de vencimiento debe ser una fecha futura para calificar para puntos.",
+      "updated": "Meta actualizada",
+      "createdWithPt": "¡Meta creada! +1 pt por completar todos los campos SMART.",
+      "created": "¡Meta creada!",
+      "createdLimitReached": "¡Meta creada! (límite de 5 metas con puntos alcanzado para esta ventana de 6 meses)",
+      "createdNoPt": "Meta creada — completa los 5 campos (5+ palabras cada uno) y establece una fecha futura para ganar +1 pt.",
+      "saveFailed": "Error al guardar",
+      "deleted": "Meta eliminada",
+      "approvalRequested": "Aprobación de finalización solicitada — tu líder la revisará.",
+      "approvalSubmitFailed": "No se pudo enviar para aprobación: {{msg}}",
+      "imageTooLarge": "La imagen es demasiado grande (máx 25 MB)",
+      "fileTooLarge": "El archivo es demasiado grande (máx 10 MB)",
+      "approvedOwner": "+2 pts otorgados al dueño de la meta.",
+      "approvalFailedTryAgain": "La aprobación falló — intenta de nuevo.",
+      "returnReasonRequired": "Agrega una razón para la devolución para que el dueño sepa qué corregir.",
+      "returned": "Meta devuelta a Activa con tu comentario — el dueño verá la razón.",
+      "rejectFailed": "No se pudo rechazar — intenta de nuevo."
+    }
   }
 }

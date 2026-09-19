@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { getFunctions, httpsCallable } from 'firebase/functions';
@@ -18,6 +19,8 @@ const STATUS_STYLES = {
   completed:          { bg: '#f0fdf4', text: '#15803d',  label: 'Completed' },
   paused:             { bg: '#fff7ed', text: '#c2410c',  label: 'Paused' },
 };
+// Status keys are canonical values stored in Firestore — translate only the label.
+function trStatusLabel(t, key) { return t(`smartGoals.status.${key}`, STATUS_STYLES[key]?.label || key); }
 
 const SMART_FIELDS = ['specific', 'measurable', 'achievable', 'relevant', 'timeBound'];
 const SMART_180_DAYS = 180 * 24 * 60 * 60 * 1000;
@@ -59,6 +62,8 @@ const SMART = [
     color: '#b45309',
   },
 ];
+function trSmartLabel(t, key) { const s = SMART.find(x => x.key === key); return t(`smartGoals.fields.${key}.label`, s?.label || key); }
+function trSmartPlaceholder(t, key) { const s = SMART.find(x => x.key === key); return t(`smartGoals.fields.${key}.placeholder`, s?.placeholder || ''); }
 
 function wordCount(text = '') {
   return text.trim().split(/\s+/).filter(Boolean).length;
@@ -79,8 +84,9 @@ function goalQualityPct(goal) {
 }
 
 function QualityBadge({ pct }) {
+  const { t } = useTranslation();
   const color = pct >= 80 ? '#0d9488' : pct >= 50 ? '#f59e0b' : '#ef4444';
-  const label = pct >= 80 ? 'High Quality' : pct >= 50 ? 'Developing' : 'Incomplete';
+  const label = pct >= 80 ? t('smartGoals.quality.high', 'High Quality') : pct >= 50 ? t('smartGoals.quality.developing', 'Developing') : t('smartGoals.quality.incomplete', 'Incomplete');
   return (
     <span style={{ background: color + '18', color, border: `1px solid ${color}40`, padding: '2px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 700 }}>
       {label} {pct}%
@@ -91,6 +97,7 @@ function QualityBadge({ pct }) {
 const emptyForm = { title: '', specific: '', measurable: '', achievable: '', relevant: '', timeBound: '', dueDate: '', status: 'draft' };
 
 export default function SmartGoals() {
+  const { t } = useTranslation();
   const { currentUser, userProfile } = useAuth();
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -117,7 +124,7 @@ export default function SmartGoals() {
       const snap = await getDoc(doc(db, 'users', currentUser.uid));
       const data = snap.exists() ? (snap.data().smartGoals || []) : [];
       setGoals(data);
-    } catch { toast.error('Could not load goals'); }
+    } catch { toast.error(t('smartGoals.toast.loadFailed', 'Could not load goals')); }
     setLoading(false);
   }
 
@@ -138,7 +145,7 @@ export default function SmartGoals() {
       setPendingTeamGoals(pending);
     } catch (e) {
       console.error(e);
-      toast.error('Could not load your team\'s pending approvals: ' + (e?.message || 'permission error'));
+      toast.error(t('smartGoals.toast.pendingLoadFailed', 'Could not load your team\'s pending approvals: {{msg}}', { msg: e?.message || t('smartGoals.permissionError', 'permission error') }));
     }
   }
 
@@ -153,7 +160,7 @@ export default function SmartGoals() {
   function openCreate() { setForm(emptyForm); setEditing(null); setShowForm(true); }
 
   async function draftSmartGoal() {
-    if (!form.title.trim()) return toast.error('Enter a goal title first');
+    if (!form.title.trim()) return toast.error(t('smartGoals.toast.enterTitleFirst', 'Enter a goal title first'));
     setDraftingSmart(true);
     try {
       const fn = httpsCallable(getFunctions(), 'smartGoalAiAssist');
@@ -161,7 +168,7 @@ export default function SmartGoals() {
       const draft = res.data?.draft;
       if (draft) setForm(f => ({ ...f, ...draft }));
     } catch (e) {
-      toast.error(e?.message || 'AI suggestion failed');
+      toast.error(e?.message || t('smartGoals.toast.aiFailed', 'AI suggestion failed'));
     }
     setDraftingSmart(false);
   }
@@ -180,16 +187,16 @@ export default function SmartGoals() {
 
   async function handleSave(e) {
     e.preventDefault();
-    if (!form.title.trim()) return toast.error('Goal title is required');
+    if (!form.title.trim()) return toast.error(t('smartGoals.toast.titleRequired', 'Goal title is required'));
     if (form.dueDate && new Date(form.dueDate) <= new Date()) {
-      return toast.error('Due date must be a future date to qualify for points.');
+      return toast.error(t('smartGoals.toast.dueDateFuture', 'Due date must be a future date to qualify for points.'));
     }
     setSaving(true);
     try {
       if (editing) {
         const updated = goals.map(g => g.id === editing ? { ...g, ...form, updatedAt: new Date().toISOString() } : g);
         await persist(updated);
-        toast.success('Goal updated');
+        toast.success(t('smartGoals.toast.updated', 'Goal updated'));
       } else {
         const newGoal = { ...form, id: Date.now().toString(), createdAt: new Date().toISOString() };
         const updatedGoals = [newGoal, ...goals];
@@ -209,19 +216,19 @@ export default function SmartGoals() {
             });
             if (awarded) {
               await calculateScore(currentUser.uid);
-              toast.success('Goal created! +1 pt for completing all SMART fields.', { duration: 4000 });
+              toast.success(t('smartGoals.toast.createdWithPt', 'Goal created! +1 pt for completing all SMART fields.'), { duration: 4000 });
             } else {
-              toast.success('Goal created!');
+              toast.success(t('smartGoals.toast.created', 'Goal created!'));
             }
           } else {
-            toast.success('Goal created! (5-goal point limit reached for this 6-month window)');
+            toast.success(t('smartGoals.toast.createdLimitReached', 'Goal created! (5-goal point limit reached for this 6-month window)'));
           }
         } else {
-          toast.success('Goal created — fill all 5 fields (5+ words each) and set a future due date to earn +1 pt.');
+          toast.success(t('smartGoals.toast.createdNoPt', 'Goal created — fill all 5 fields (5+ words each) and set a future due date to earn +1 pt.'));
         }
       }
       setShowForm(false);
-    } catch { toast.error('Save failed'); }
+    } catch { toast.error(t('smartGoals.toast.saveFailed', 'Save failed')); }
     setSaving(false);
   }
 
@@ -230,9 +237,9 @@ export default function SmartGoals() {
   }
 
   async function handleDelete(id) {
-    if (!confirm('Delete this goal?')) return;
+    if (!confirm(t('smartGoals.confirmDelete', 'Delete this goal?'))) return;
     await persist(goals.filter(g => g.id !== id));
-    toast.success('Goal deleted');
+    toast.success(t('smartGoals.toast.deleted', 'Goal deleted'));
   }
 
   async function handleRequestApproval(id, note, attachment) {
@@ -264,10 +271,10 @@ export default function SmartGoals() {
       setRequestingGoal(null);
       setApprovalNote('');
       setApprovalFile(null);
-      toast.success('Completion approval requested — your leader will review it.');
+      toast.success(t('smartGoals.toast.approvalRequested', 'Completion approval requested — your leader will review it.'));
     } catch (e) {
       console.error(e);
-      toast.error('Could not submit for approval: ' + (e?.message || 'try again'));
+      toast.error(t('smartGoals.toast.approvalSubmitFailed', 'Could not submit for approval: {{msg}}', { msg: e?.message || t('smartGoals.tryAgain', 'try again') }));
     }
     setSubmittingApproval(false);
   }
@@ -277,8 +284,8 @@ export default function SmartGoals() {
     e.target.value = '';
     if (!file) return;
     const isImage = file.type.startsWith('image/');
-    if (isImage && file.size > 25 * 1024 * 1024) return toast.error('Image is too large (max 25 MB)');
-    if (!isImage && file.size > 10 * 1024 * 1024) return toast.error('File is too large (max 10 MB)');
+    if (isImage && file.size > 25 * 1024 * 1024) return toast.error(t('smartGoals.toast.imageTooLarge', 'Image is too large (max 25 MB)'));
+    if (!isImage && file.size > 10 * 1024 * 1024) return toast.error(t('smartGoals.toast.fileTooLarge', 'File is too large (max 10 MB)'));
     setApprovalFile({ file, isImage });
   }
 
@@ -301,16 +308,16 @@ export default function SmartGoals() {
       if (awarded) await calculateScore(ownerUid);
 
       setPendingTeamGoals(prev => prev.filter(g => !(g.ownerUid === ownerUid && g.id === goalId)));
-      toast.success('+2 pts awarded to the goal owner.');
+      toast.success(t('smartGoals.toast.approvedOwner', '+2 pts awarded to the goal owner.'));
     } catch (e) {
       console.error(e);
-      toast.error('Approval failed — try again.');
+      toast.error(t('smartGoals.toast.approvalFailedTryAgain', 'Approval failed — try again.'));
     }
   }
 
   async function handleRejectGoal(ownerUid, goalId, comment) {
     const trimmed = (comment || '').trim();
-    if (!trimmed) return toast.error('Please add a reason for the return so the owner knows what to fix.');
+    if (!trimmed) return toast.error(t('smartGoals.toast.returnReasonRequired', 'Please add a reason for the return so the owner knows what to fix.'));
     try {
       const ownerSnap = await getDoc(doc(db, 'users', ownerUid));
       if (!ownerSnap.exists()) return;
@@ -320,16 +327,16 @@ export default function SmartGoals() {
           ...g, status: 'active', approvalRequestedAt: null,
           returnComment: trimmed,
           returnedAt: new Date().toISOString(),
-          returnedBy: currentUser?.displayName || currentUser?.email || 'Your leader',
+          returnedBy: currentUser?.displayName || currentUser?.email || t('smartGoals.yourLeader', 'Your leader'),
         } : g
       );
       await setDoc(doc(db, 'users', ownerUid), { smartGoals: updatedGoals }, { merge: true });
       setPendingTeamGoals(prev => prev.filter(g => !(g.ownerUid === ownerUid && g.id === goalId)));
       setReturningGoal(null);
       setReturnComment('');
-      toast.success('Goal returned to Active with your comment — owner will see the reason.');
+      toast.success(t('smartGoals.toast.returned', 'Goal returned to Active with your comment — owner will see the reason.'));
     } catch (e) {
-      toast.error('Could not reject — try again.');
+      toast.error(t('smartGoals.toast.rejectFailed', 'Could not reject — try again.'));
     }
   }
 
@@ -338,11 +345,11 @@ export default function SmartGoals() {
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }} className="space-y-6">
-      <PageHeader icon="🎯" title="SMART Goals — Measuring Accountability" subtitle="Set purposeful goals that drive accountability. Each goal contributes to your Accountability Score."
+      <PageHeader icon="🎯" title={t('smartGoals.title', 'SMART Goals — Measuring Accountability')} subtitle={t('smartGoals.subtitle', 'Set purposeful goals that drive accountability. Each goal contributes to your Accountability Score.')}
         action={
           <div style={{ display: 'flex', gap: 8 }}>
-            <button className="btn-secondary" onClick={() => generateSmartGoalsPDF(goals, { userName: currentUser?.displayName || '' })}>🖨️ PDF</button>
-            <button className="btn-primary" onClick={openCreate}>+ New SMART Goal</button>
+            <button className="btn-secondary" onClick={() => generateSmartGoalsPDF(goals, { userName: currentUser?.displayName || '' })}>🖨️ {t('smartGoals.pdf', 'PDF')}</button>
+            <button className="btn-primary" onClick={openCreate}>+ {t('smartGoals.newGoal', 'New SMART Goal')}</button>
           </div>
         } />
 
@@ -350,7 +357,7 @@ export default function SmartGoals() {
       {isLeader && pendingTeamGoals.length > 0 && (
         <div className="card" style={{ overflow: 'hidden' }}>
           <div style={{ padding: '0.75rem 1.25rem', background: '#b45309', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <span style={{ color: 'white', fontWeight: 800, fontSize: '0.9rem' }}>⏳ Pending Goal Approvals</span>
+            <span style={{ color: 'white', fontWeight: 800, fontSize: '0.9rem' }}>⏳ {t('smartGoals.pendingApprovals', 'Pending Goal Approvals')}</span>
             <span style={{ background: 'rgba(255,255,255,0.2)', color: 'white', borderRadius: 9999, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 700 }}>{pendingTeamGoals.length}</span>
           </div>
           {pendingTeamGoals.map(g => (
@@ -358,7 +365,7 @@ export default function SmartGoals() {
               <div style={{ flex: 1, minWidth: 200 }}>
                 <p style={{ margin: '0 0 2px', fontWeight: 700, color: '#1e293b', fontSize: '0.875rem' }}>{g.title}</p>
                 <p style={{ margin: 0, fontSize: '0.72rem', color: '#64748b' }}>
-                  👤 {g.ownerName} · Requested {g.approvalRequestedAt ? new Date(g.approvalRequestedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+                  👤 {g.ownerName} · {t('smartGoals.requested', 'Requested')} {g.approvalRequestedAt ? new Date(g.approvalRequestedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
                 </p>
                 <div style={{ display: 'flex', gap: 6, marginTop: 6, flexWrap: 'wrap' }}>
                   {SMART_FIELDS.map(k => (
@@ -375,18 +382,18 @@ export default function SmartGoals() {
                 {g.approvalAttachmentUrl && (
                   <a href={g.approvalAttachmentUrl} target="_blank" rel="noopener noreferrer"
                     style={{ display: 'inline-flex', alignItems: 'center', gap: 4, marginTop: 6, fontSize: '0.75rem', fontWeight: 700, color: '#0d9488' }}>
-                    📎 {g.approvalAttachmentName || 'View attachment'} ↗
+                    📎 {g.approvalAttachmentName || t('smartGoals.viewAttachment', 'View attachment')} ↗
                   </a>
                 )}
               </div>
               <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                 <button onClick={() => handleApproveGoal(g.ownerUid, g.id)}
                   style={{ padding: '0.4rem 0.875rem', borderRadius: 8, fontSize: '0.78rem', fontWeight: 700, border: 'none', background: '#0d9488', color: 'white', cursor: 'pointer' }}>
-                  ✅ Approve (+2 pts)
+                  ✅ {t('smartGoals.approve', 'Approve (+2 pts)')}
                 </button>
                 <button onClick={() => { setReturningGoal(g); setReturnComment(''); }}
                   style={{ padding: '0.4rem 0.875rem', borderRadius: 8, fontSize: '0.78rem', fontWeight: 700, border: '1.5px solid #fca5a5', background: 'white', color: '#ef4444', cursor: 'pointer' }}>
-                  ↩ Return
+                  ↩ {t('smartGoals.return', 'Return')}
                 </button>
               </div>
             </div>
@@ -399,15 +406,15 @@ export default function SmartGoals() {
         <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
           onClick={() => setReturningGoal(null)}>
           <div className="card" style={{ maxWidth: 440, width: '100%', padding: '1.25rem' }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 4px', fontWeight: 800, color: '#1e293b', fontSize: '1rem' }}>Return "{returningGoal.title}"</h3>
+            <h3 style={{ margin: '0 0 4px', fontWeight: 800, color: '#1e293b', fontSize: '1rem' }}>{t('smartGoals.returnTitle', 'Return "{{title}}"', { title: returningGoal.title })}</h3>
             <p style={{ margin: '0 0 12px', fontSize: '0.8rem', color: '#64748b' }}>
-              Let {returningGoal.ownerName} know what needs to change before you can approve this goal's completion.
+              {t('smartGoals.returnSubtitle', "Let {{name}} know what needs to change before you can approve this goal's completion.", { name: returningGoal.ownerName })}
             </p>
             <textarea
               className="input"
               rows={4}
               autoFocus
-              placeholder="e.g. The Measurable field doesn't specify a target number — add one and resubmit."
+              placeholder={t('smartGoals.returnPlaceholder', "e.g. The Measurable field doesn't specify a target number — add one and resubmit.")}
               value={returnComment}
               onChange={e => setReturnComment(e.target.value)}
               style={{ fontSize: '0.85rem', resize: 'vertical', width: '100%' }}
@@ -415,12 +422,12 @@ export default function SmartGoals() {
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 14 }}>
               <button onClick={() => setReturningGoal(null)}
                 style={{ padding: '0.45rem 1rem', borderRadius: 8, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer' }}>
-                Cancel
+                {t('smartGoals.cancel', 'Cancel')}
               </button>
               <button onClick={() => handleRejectGoal(returningGoal.ownerUid, returningGoal.id, returnComment)}
                 disabled={!returnComment.trim()}
                 style={{ padding: '0.45rem 1rem', borderRadius: 8, border: 'none', background: returnComment.trim() ? '#ef4444' : '#fca5a5', color: 'white', fontWeight: 800, fontSize: '0.82rem', cursor: returnComment.trim() ? 'pointer' : 'not-allowed' }}>
-                ↩ Return with Comment
+                ↩ {t('smartGoals.returnWithComment', 'Return with Comment')}
               </button>
             </div>
           </div>
@@ -432,44 +439,44 @@ export default function SmartGoals() {
         <div style={{ position: 'fixed', inset: 0, zIndex: 10000, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}
           onClick={() => !submittingApproval && setRequestingGoal(null)}>
           <div className="card" style={{ maxWidth: 440, width: '100%', padding: '1.25rem' }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ margin: '0 0 4px', fontWeight: 800, color: '#1e293b', fontSize: '1rem' }}>Request Approval — "{requestingGoal.title}"</h3>
+            <h3 style={{ margin: '0 0 4px', fontWeight: 800, color: '#1e293b', fontSize: '1rem' }}>{t('smartGoals.requestApprovalTitle', 'Request Approval — "{{title}}"', { title: requestingGoal.title })}</h3>
             <p style={{ margin: '0 0 12px', fontSize: '0.8rem', color: '#64748b' }}>
-              Add notes and, if you have it, attach proof (a photo, screenshot, or document) so your leader can review and approve faster.
+              {t('smartGoals.requestApprovalSubtitle', 'Add notes and, if you have it, attach proof (a photo, screenshot, or document) so your leader can review and approve faster.')}
             </p>
-            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Notes (optional)</label>
+            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{t('smartGoals.notesOptional', 'Notes (optional)')}</label>
             <textarea
               className="input"
               rows={3}
               autoFocus
-              placeholder="e.g. Completed the training rollout across all 3 shifts — attendance sheet attached."
+              placeholder={t('smartGoals.notesPlaceholder', 'e.g. Completed the training rollout across all 3 shifts — attendance sheet attached.')}
               value={approvalNote}
               onChange={e => setApprovalNote(e.target.value)}
               style={{ fontSize: '0.85rem', resize: 'vertical', width: '100%' }}
             />
-            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', margin: '12px 0 4px' }}>Attachment (optional — image, PDF, or document)</label>
+            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', margin: '12px 0 4px' }}>{t('smartGoals.attachmentOptional', 'Attachment (optional — image, PDF, or document)')}</label>
             {approvalFile ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem 0.75rem', borderRadius: 8, background: '#f0fdfa', border: '1px solid #99f6e4' }}>
                 <span style={{ fontSize: '0.8rem', color: '#0f2044', flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {approvalFile.isImage ? '🖼️' : '📎'} {approvalFile.file.name}
                 </span>
-                <button onClick={() => setApprovalFile(null)} title="Remove"
+                <button onClick={() => setApprovalFile(null)} title={t('smartGoals.remove', 'Remove')}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444', fontSize: '0.8rem' }}>✕</button>
               </div>
             ) : (
               <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem 1rem', borderRadius: 8, border: '1.5px dashed #cbd5e1', cursor: 'pointer', background: 'white', fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
-                📎 Click to attach a file
+                📎 {t('smartGoals.clickToAttach', 'Click to attach a file')}
                 <input type="file" accept="image/*,.pdf,.doc,.docx,.xls,.xlsx" style={{ display: 'none' }} onChange={pickApprovalFile} />
               </label>
             )}
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 16 }}>
               <button onClick={() => setRequestingGoal(null)} disabled={submittingApproval}
                 style={{ padding: '0.45rem 1rem', borderRadius: 8, border: '1px solid #e2e8f0', background: 'white', color: '#64748b', fontWeight: 700, fontSize: '0.82rem', cursor: submittingApproval ? 'wait' : 'pointer' }}>
-                Cancel
+                {t('smartGoals.cancel', 'Cancel')}
               </button>
               <button onClick={() => handleRequestApproval(requestingGoal.id, approvalNote, approvalFile)}
                 disabled={submittingApproval}
                 style={{ padding: '0.45rem 1rem', borderRadius: 8, border: 'none', background: '#0f2044', color: 'white', fontWeight: 800, fontSize: '0.82rem', cursor: submittingApproval ? 'wait' : 'pointer', opacity: submittingApproval ? 0.7 : 1 }}>
-                {submittingApproval ? 'Submitting…' : '📤 Submit for Approval'}
+                {submittingApproval ? t('smartGoals.submitting', 'Submitting…') : `📤 ${t('smartGoals.submitForApproval', 'Submit for Approval')}`}
               </button>
             </div>
           </div>
@@ -483,35 +490,35 @@ export default function SmartGoals() {
             onClick={() => setStatusFilter(f => f === key ? null : key)}
             style={{ textAlign: 'center', cursor: 'pointer', outline: statusFilter === key ? `2px solid ${s.text}` : 'none', outlineOffset: -2 }}>
             <div style={{ fontSize: '1.75rem', fontWeight: 900, color: s.text }}>{counts[key] || 0}</div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: 4 }}>{s.label}</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600, marginTop: 4 }}>{trStatusLabel(t, key)}</div>
           </div>
         ))}
       </div>
       {statusFilter && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: -8, fontSize: '0.8rem', color: '#64748b' }}>
-          Showing only <strong style={{ color: STATUS_STYLES[statusFilter].text }}>{STATUS_STYLES[statusFilter].label}</strong> goals
+          {t('smartGoals.showingOnly', 'Showing only')} <strong style={{ color: STATUS_STYLES[statusFilter].text }}>{trStatusLabel(t, statusFilter)}</strong> {t('smartGoals.goalsSuffix', 'goals')}
           <button onClick={() => setStatusFilter(null)}
             style={{ background: 'none', border: 'none', color: '#0d9488', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}>
-            Clear filter
+            {t('smartGoals.clearFilter', 'Clear filter')}
           </button>
         </div>
       )}
 
       {/* Goals list */}
       {loading ? (
-        <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>Loading goals...</div>
+        <div style={{ textAlign: 'center', padding: '3rem', color: '#94a3b8' }}>{t('smartGoals.loading', 'Loading goals...')}</div>
       ) : goals.length === 0 ? (
         <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
           <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🎯</div>
-          <p style={{ color: '#64748b', fontWeight: 600, marginBottom: 8 }}>No SMART goals yet</p>
-          <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: 20 }}>Create your first goal to start building your Accountability Score.</p>
-          <button className="btn-primary" onClick={openCreate}>Create First Goal</button>
+          <p style={{ color: '#64748b', fontWeight: 600, marginBottom: 8 }}>{t('smartGoals.emptyTitle', 'No SMART goals yet')}</p>
+          <p style={{ color: '#94a3b8', fontSize: '0.875rem', marginBottom: 20 }}>{t('smartGoals.emptySubtitle', 'Create your first goal to start building your Accountability Score.')}</p>
+          <button className="btn-primary" onClick={openCreate}>{t('smartGoals.createFirst', 'Create First Goal')}</button>
         </div>
       ) : (
         <div className="space-y-3">
           {goals.filter(goal => !statusFilter || goal.status === statusFilter).length === 0 && (
             <div className="card" style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
-              No {STATUS_STYLES[statusFilter]?.label.toLowerCase()} goals.
+              {t('smartGoals.noneForStatus', 'No {{status}} goals.', { status: trStatusLabel(t, statusFilter).toLowerCase() })}
             </div>
           )}
           {goals.filter(goal => !statusFilter || goal.status === statusFilter).map(goal => {
@@ -537,7 +544,7 @@ export default function SmartGoals() {
                   </div>
                   <div style={{ marginTop: 8, marginLeft: 36, display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                     <QualityBadge pct={qpct} />
-                    <span style={{ background: st.bg, color: st.text, padding: '3px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 700 }}>{st.label}</span>
+                    <span style={{ background: st.bg, color: st.text, padding: '3px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 700 }}>{trStatusLabel(t, goal.status)}</span>
                   </div>
                 </div>
 
@@ -547,7 +554,7 @@ export default function SmartGoals() {
                     {goal.returnComment && goal.status !== 'completed' && goal.status !== 'pending_approval' && (
                       <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: 16 }}>
                         <p style={{ margin: '0 0 4px', fontWeight: 800, color: '#b91c1c', fontSize: '0.8rem' }}>
-                          ↩ Returned by {goal.returnedBy || 'your leader'}{goal.returnedAt ? ` · ${new Date(goal.returnedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                          ↩ {t('smartGoals.returnedBy', 'Returned by {{name}}', { name: goal.returnedBy || t('smartGoals.yourLeader', 'your leader') })}{goal.returnedAt ? ` · ${new Date(goal.returnedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
                         </p>
                         <p style={{ margin: 0, color: '#7f1d1d', fontSize: '0.85rem', lineHeight: 1.5 }}>{goal.returnComment}</p>
                       </div>
@@ -557,11 +564,11 @@ export default function SmartGoals() {
                         <div key={s.key}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
                             <span style={{ width: 24, height: 24, borderRadius: '50%', background: s.color, color: 'white', fontSize: '0.75rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{s.letter}</span>
-                            <span style={{ fontWeight: 700, color: '#334155', fontSize: '0.875rem' }}>{s.label}</span>
-                            <span style={{ marginLeft: 'auto', color: '#94a3b8', fontSize: '0.72rem' }}>{wordCount(goal[s.key])} words</span>
+                            <span style={{ fontWeight: 700, color: '#334155', fontSize: '0.875rem' }}>{trSmartLabel(t, s.key)}</span>
+                            <span style={{ marginLeft: 'auto', color: '#94a3b8', fontSize: '0.72rem' }}>{t('smartGoals.wordCount', '{{count}} words', { count: wordCount(goal[s.key]) })}</span>
                           </div>
                           <p style={{ color: goal[s.key] ? '#475569' : '#cbd5e1', fontSize: '0.875rem', margin: 0, paddingLeft: 32, fontStyle: goal[s.key] ? 'normal' : 'italic' }}>
-                            {goal[s.key] || 'Not filled in yet.'}
+                            {goal[s.key] || t('smartGoals.notFilledIn', 'Not filled in yet.')}
                           </p>
                         </div>
                       ))}
@@ -574,10 +581,10 @@ export default function SmartGoals() {
                       return (
                         <div style={{ marginTop: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                           <span style={{ fontSize: '0.72rem', padding: '3px 10px', borderRadius: 9999, fontWeight: 700, background: filled ? '#f0fdf4' : '#f8fafc', color: filled ? '#0d9488' : '#94a3b8', border: `1px solid ${filled ? '#0d948840' : '#e2e8f0'}` }}>
-                            {filled ? '✓ +1 pt earned (created)' : '○ Fill all 5 fields + set a future due date → +1 pt'}
+                            {filled ? `✓ ${t('smartGoals.ptEarnedCreated', '+1 pt earned (created)')}` : `○ ${t('smartGoals.ptFillFields', 'Fill all 5 fields + set a future due date → +1 pt')}`}
                           </span>
                           <span style={{ fontSize: '0.72rem', padding: '3px 10px', borderRadius: 9999, fontWeight: 700, background: completed ? '#f0fdf4' : '#f8fafc', color: completed ? '#0d9488' : '#94a3b8', border: `1px solid ${completed ? '#0d948840' : '#e2e8f0'}` }}>
-                            {completed ? '✓ +2 pts earned (approved)' : '○ Get leader approval → +2 pts'}
+                            {completed ? `✓ ${t('smartGoals.ptsEarnedApproved', '+2 pts earned (approved)')}` : `○ ${t('smartGoals.ptsGetApproval', 'Get leader approval → +2 pts')}`}
                           </span>
                         </div>
                       );
@@ -586,35 +593,35 @@ export default function SmartGoals() {
                     {/* Actions */}
                     <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid #f1f5f9', display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                       {goal.status !== 'completed' && goal.status !== 'pending_approval' && (
-                        <button className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => openEdit(goal)}>✏️ Edit</button>
+                        <button className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => openEdit(goal)}>✏️ {t('smartGoals.edit', 'Edit')}</button>
                       )}
                       {goal.status === 'draft' && (
-                        <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => changeStatus(goal.id, 'active')}>▶ Set Active</button>
+                        <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => changeStatus(goal.id, 'active')}>▶ {t('smartGoals.setActive', 'Set Active')}</button>
                       )}
                       {goal.status === 'paused' && (
-                        <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => changeStatus(goal.id, 'active')}>▶ Resume</button>
+                        <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => changeStatus(goal.id, 'active')}>▶ {t('smartGoals.resume', 'Resume')}</button>
                       )}
                       {(goal.status === 'active' || goal.status === 'draft') && (
-                        <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => changeStatus(goal.id, 'paused')}>⏸ Pause</button>
+                        <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => changeStatus(goal.id, 'paused')}>⏸ {t('smartGoals.pause', 'Pause')}</button>
                       )}
                       {goal.status === 'active' && (
                         <button
                           onClick={() => { setRequestingGoal(goal); setApprovalNote(''); setApprovalFile(null); }}
                           style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem', borderRadius: 8, fontWeight: 700, border: 'none', background: '#0f2044', color: 'white', cursor: 'pointer' }}>
-                          📤 Request Completion Approval
+                          📤 {t('smartGoals.requestApproval', 'Request Completion Approval')}
                         </button>
                       )}
                       {goal.status === 'pending_approval' && (
                         <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#b45309', padding: '0.4rem 0.875rem', background: '#fefce8', borderRadius: 8, border: '1px solid #fde68a' }}>
-                          ⏳ Awaiting leader approval…
+                          ⏳ {t('smartGoals.awaitingApproval', 'Awaiting leader approval…')}
                         </span>
                       )}
                       {goal.status === 'completed' && (
                         <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#15803d', padding: '0.4rem 0.875rem', background: '#f0fdf4', borderRadius: 8, border: '1px solid #bbf7d0' }}>
-                          🏆 Completed & Approved
+                          🏆 {t('smartGoals.completedApproved', 'Completed & Approved')}
                         </span>
                       )}
-                      <button style={{ marginLeft: 'auto', fontSize: '0.8rem', padding: '0.4rem 0.875rem', background: 'none', border: '1px solid #fca5a5', color: '#ef4444', borderRadius: 8, cursor: 'pointer' }} onClick={() => handleDelete(goal.id)}>🗑 Delete</button>
+                      <button style={{ marginLeft: 'auto', fontSize: '0.8rem', padding: '0.4rem 0.875rem', background: 'none', border: '1px solid #fca5a5', color: '#ef4444', borderRadius: 8, cursor: 'pointer' }} onClick={() => handleDelete(goal.id)}>🗑 {t('smartGoals.delete', 'Delete')}</button>
                     </div>
                   </div>
                 )}
@@ -629,7 +636,7 @@ export default function SmartGoals() {
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 50, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: '2rem 1rem', overflowY: 'auto' }}>
           <div style={{ background: 'white', borderRadius: 16, width: '100%', maxWidth: 680, padding: '2rem', boxShadow: '0 20px 60px rgba(0,0,0,0.2)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>{editing ? 'Edit SMART Goal' : 'New SMART Goal'}</h2>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>{editing ? t('smartGoals.editGoal', 'Edit SMART Goal') : t('smartGoals.newGoal', 'New SMART Goal')}</h2>
               <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', fontSize: '1.25rem', cursor: 'pointer', color: '#94a3b8' }}>✕</button>
             </div>
 
@@ -637,18 +644,18 @@ export default function SmartGoals() {
               {/* Title + Due Date */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 12 }}>
                 <div>
-                  <label className="label">Goal Title *</label>
-                  <input className="input" placeholder="e.g. Improve team coaching frequency by Q3" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
+                  <label className="label">{t('smartGoals.field.goalTitle', 'Goal Title *')}</label>
+                  <input className="input" placeholder={t('smartGoals.field.goalTitlePlaceholder', 'e.g. Improve team coaching frequency by Q3')} value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
                 </div>
                 <div>
-                  <label className="label">Due Date</label>
+                  <label className="label">{t('smartGoals.field.dueDate', 'Due Date')}</label>
                   <input className="input" type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} />
                 </div>
               </div>
 
               <button type="button" onClick={draftSmartGoal} disabled={draftingSmart}
                 style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, color: '#6d28d9', fontWeight: 700, fontSize: '0.78rem', padding: '6px 12px', cursor: 'pointer', alignSelf: 'flex-start' }}>
-                {draftingSmart ? 'Drafting…' : '✨ Draft All 5 SMART Fields from Title (AI)'}
+                {draftingSmart ? t('smartGoals.drafting', 'Drafting…') : `✨ ${t('smartGoals.draftAi', 'Draft All 5 SMART Fields from Title (AI)')}`}
               </button>
 
               {/* SMART fields */}
@@ -656,13 +663,13 @@ export default function SmartGoals() {
                 <div key={s.key}>
                   <label className="label" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span style={{ width: 22, height: 22, borderRadius: '50%', background: s.color, color: 'white', fontSize: '0.7rem', fontWeight: 800, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{s.letter}</span>
-                    {s.label}
-                    <span style={{ marginLeft: 'auto', fontWeight: 400, color: '#94a3b8', fontSize: '0.72rem' }}>{wordCount(form[s.key])} words</span>
+                    {trSmartLabel(t, s.key)}
+                    <span style={{ marginLeft: 'auto', fontWeight: 400, color: '#94a3b8', fontSize: '0.72rem' }}>{t('smartGoals.wordCount', '{{count}} words', { count: wordCount(form[s.key]) })}</span>
                   </label>
                   <textarea
                     className="input"
                     rows={3}
-                    placeholder={s.placeholder}
+                    placeholder={trSmartPlaceholder(t, s.key)}
                     value={form[s.key]}
                     onChange={e => setForm(f => ({ ...f, [s.key]: e.target.value }))}
                     style={{ resize: 'vertical' }}
@@ -676,15 +683,15 @@ export default function SmartGoals() {
 
               {/* Status */}
               <div>
-                <label className="label">Status</label>
+                <label className="label">{t('smartGoals.field.status', 'Status')}</label>
                 <select className="input" value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
-                  {Object.entries(STATUS_STYLES).filter(([k]) => k !== 'pending_approval').map(([k, s]) => <option key={k} value={k}>{s.label}</option>)}
+                  {Object.entries(STATUS_STYLES).filter(([k]) => k !== 'pending_approval').map(([k]) => <option key={k} value={k}>{trStatusLabel(t, k)}</option>)}
                 </select>
               </div>
 
               {/* Overall quality preview */}
               <div style={{ background: '#f8fafc', borderRadius: 10, padding: '0.875rem 1rem', display: 'flex', alignItems: 'center', gap: 12 }}>
-                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>Entry Quality:</span>
+                <span style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>{t('smartGoals.entryQuality', 'Entry Quality:')}</span>
                 <div style={{ flex: 1, background: '#e2e8f0', borderRadius: 9999, height: 8 }}>
                   <div style={{ height: 8, borderRadius: 9999, background: '#0d9488', width: `${goalQualityPct(form)}%`, transition: 'width 0.3s' }} />
                 </div>
@@ -692,8 +699,8 @@ export default function SmartGoals() {
               </div>
 
               <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-                <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>Cancel</button>
-                <button type="submit" className="btn-primary" disabled={saving}>{saving ? 'Saving...' : editing ? 'Update Goal' : 'Create Goal'}</button>
+                <button type="button" className="btn-secondary" onClick={() => setShowForm(false)}>{t('smartGoals.cancel', 'Cancel')}</button>
+                <button type="submit" className="btn-primary" disabled={saving}>{saving ? t('smartGoals.saving', 'Saving...') : editing ? t('smartGoals.updateGoal', 'Update Goal') : t('smartGoals.createGoal', 'Create Goal')}</button>
               </div>
             </form>
           </div>
