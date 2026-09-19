@@ -1302,7 +1302,10 @@ exports.eqStrategyDeepDive = onCall(async (request) => {
   const { dimensionLabel, strategy, language } = request.data || {};
   if (!(strategy || '').trim()) throw new HttpsError('invalid-argument', 'Missing strategy');
 
-  let systemPrompt = 'You are an expert in emotional intelligence coaching for workplace leaders. Given an EQ strategy name and the EQ pillar it belongs to, write a practical deep dive covering: (1) a 1-2 sentence explanation of what the strategy means in practice, (2) a realistic workplace example showing it in action, (3) 3-4 specific, concrete action steps a leader could start doing this week. Write it as plain text with short paragraph breaks between the three parts (no markdown headers, bullets, or asterisks) — label each part inline like "What it means:", "Example:", "Try this week:". Keep the whole thing under 180 words.';
+  const dive = language === 'es'
+    ? { means: 'Qué significa', example: 'Ejemplo', tryWeek: 'Intenta esto esta semana' }
+    : { means: 'What it means', example: 'Example', tryWeek: 'Try this week' };
+  let systemPrompt = `You are an expert in emotional intelligence coaching for workplace leaders. Given an EQ strategy name and the EQ pillar it belongs to, write a practical deep dive covering: (1) a 1-2 sentence explanation of what the strategy means in practice, (2) a realistic workplace example showing it in action, (3) 3-4 specific, concrete action steps a leader could start doing this week. Write it as plain text with short paragraph breaks between the three parts (no markdown headers, bullets, or asterisks) — label each part inline exactly like "${dive.means}:", "${dive.example}:", "${dive.tryWeek}:". Keep the whole thing under 180 words.`;
   systemPrompt = withLanguageInstruction(systemPrompt, language);
   const userPrompt = `EQ Pillar: ${dimensionLabel || 'Emotional Intelligence'}\nStrategy: ${strategy.trim()}`;
 
