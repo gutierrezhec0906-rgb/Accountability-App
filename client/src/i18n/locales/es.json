@@ -2619,5 +2619,164 @@
       "closedOut": "Ciclo de mentoría cerrado",
       "pdfFailed": "No se pudo generar el PDF"
     }
+  },
+  "career": {
+    "pageTitle": "Plan de Desarrollo Profesional",
+    "loading": "Cargando…",
+    "title": "Desarrollo Profesional — Responsabilidad para el Crecimiento",
+    "subtitle": "Propiedad del empleado, alineado con la empresa. Comienza con dónde estás, define hacia dónde quieres ir y construye el plan en la intersección.",
+    "planPts": "Pts del plan",
+    "fullPoints": "10 puntos completos — sigue registrando notas de hitos",
+    "pointsDecaying": "Los puntos están disminuyendo — agrega tus notas de progreso de hitos abajo",
+    "readyToEarn": "Listo para ganar 10 puntos — guarda tu plan",
+    "completeTemplate": "Completa la plantilla para ganar 10 puntos",
+    "bannerHint": "Completa el 100% de la plantilla con 20+ palabras por pregunta → +10 pts. Luego vuelve a los 30 días, 90 días, 6 meses y 12 meses para registrar notas de progreso o los puntos disminuyen (−2 / −3 / −2 / se pierden todos).",
+    "questionsHave20Words": "{{done}}/{{total}} preguntas tienen 20+ palabras.",
+    "pdf": "PDF",
+    "savePlan": "Guardar Plan",
+    "saving": "Guardando…",
+    "wordsCount": "{{n}}/{{min}} palabras",
+    "self": "Propio",
+    "peer": "Compañeros",
+    "goToSkillsMatrix": "Ir a la Matriz de Habilidades →",
+    "updateSkillsMatrix": "Actualizar Matriz de Habilidades →",
+    "noSkillsMatrix": "Aún no has completado tu Matriz de Desarrollo de Habilidades. Esa evaluación es el punto de partida de este plan.",
+    "careerAspiration": "Aspiración Profesional",
+    "aspirationPlaceholder": "Tu próximo puesto, mayor responsabilidad o dominio de habilidades al que aspiras…",
+    "personalMotivation": "Motivación Personal — por qué esto te importa",
+    "motivationPlaceholder": "¿Qué hace que este crecimiento sea significativo para ti personalmente?",
+    "targetTimeline": "Plazo Objetivo",
+    "whoWillCoach": "¿Quién guiará y apoyará este plan de desarrollo?",
+    "bestCoachHint": "El mejor coach a menudo no es tu gerente directo — elige a quien realmente te ayude a crecer.",
+    "coachName": "Nombre del Coach",
+    "fullName": "Nombre completo",
+    "roleRelationship": "Rol / Relación",
+    "select": "Seleccionar…",
+    "coachingFrequency": "Frecuencia de Coaching",
+    "coachingCommitmentConfirmed": "Compromiso de coaching confirmado",
+    "skillsGapsLabel": "Brechas de Habilidades que la Organización Necesita Cubrir",
+    "skillsGapsPlaceholder": "¿Qué capacidades necesita el equipo/la empresa ahora mismo que este crecimiento pueda ayudar a cubrir?",
+    "strategicPrioritiesLabel": "Prioridades Estratégicas que Este Crecimiento Apoya",
+    "strategicPrioritiesPlaceholder": "¿Qué metas o prioridades de la empresa avanza este plan de desarrollo?",
+    "resourcesLabel": "Recursos que la Empresa Proveerá",
+    "resourcesPlaceholder": "Presupuesto de capacitación, mentoría, exposición interdepartamental, tiempo, certificaciones…",
+    "developmentGoal": "Meta de Desarrollo",
+    "developmentGoalPlaceholder": "¿Qué desarrollarás en {{pillar}}?",
+    "actionSteps": "Pasos de Acción",
+    "actionStepsPlaceholder": "Pasos concretos — capacitación, proyectos, mentoría, experiencias en el trabajo…",
+    "resources": "Recursos",
+    "whatsNeeded": "Qué se necesita",
+    "timeline": "Plazo",
+    "progress": "Progreso",
+    "milestoneTextPlaceholder": "¿Cómo se ve el éxito en este punto de control?",
+    "checkinsSection": {
+      "title": "Notas de Progreso de Hitos",
+      "subtitle": "Vuelve en cada punto de control y registra tu progreso real. Estas notas sostienen tus 10 puntos — si te saltas una, los puntos disminuyen."
+    },
+    "completeFirstHint": "Completa y guarda el plan de arriba primero (100% + 20 palabras por pregunta). Una vez que ganes los 10 puntos, tus ventanas de 30 / 90 / 180 días comienzan y estas notas mantienen los puntos vigentes.",
+    "logged": "Registrado",
+    "pastDueTakeAction": "Atrasado — toma acción",
+    "comingSoonInDay": "Próximamente — en {{count}} día",
+    "comingSoonInDays": "Próximamente — en {{count}} días",
+    "dueDay": "Vence el día {{day}}",
+    "locked": "Bloqueado",
+    "lastSaved": "última vez guardado {{date}}",
+    "checkinPlaceholder": "¿Qué progreso has hecho? ¿Qué está funcionando, qué está bloqueado, qué sigue?",
+    "checkinTip": "Consejo: agregar una nota — incluso tarde — restaura los puntos de ese hito. Guarda el plan después de escribir tus notas para actualizar tu puntaje.",
+    "downloadPrintPdf": "Descargar / Imprimir PDF",
+    "saveCareerDevelopmentPlan": "Guardar Plan de Desarrollo Profesional",
+    "previousCareerGoals": "Metas Profesionales Anteriores ({{count}})",
+    "legacyGoalsHint": "Metas guardadas en la versión anterior de este módulo — se conservan aquí como referencia.",
+    "toast": {
+      "loadFailed": "No se pudo cargar tu plan",
+      "pdfFailed": "No se pudo generar el PDF",
+      "planComplete": "¡Plan completo! +10 pts ganados. Vuelve en cada hito para conservarlos.",
+      "planSaved": "Plan de desarrollo profesional guardado",
+      "saveFailed": "Error al guardar"
+    },
+    "section1": {
+      "title": "¿Dónde Estoy Ahora?",
+      "subtitle": "Tomado de tu Matriz de Desarrollo de Habilidades — tu nivel actual de competencia en los tres pilares."
+    },
+    "section2": {
+      "title": "¿A Dónde Quiero Llegar?",
+      "subtitle": "Este plan es tuyo. Comienza con lo que quieres — la alineación con la empresa viene después."
+    },
+    "section3": {
+      "title": "Coach y Alineación con la Empresa",
+      "subtitle": "¿Quién guiará este plan (no tiene que ser tu gerente) y qué necesita la empresa que tu crecimiento pueda apoyar?"
+    },
+    "section4": {
+      "title": "El Plan de Desarrollo",
+      "subtitle": "Construido en la intersección de tu aspiración y las necesidades de la empresa — una meta en cada uno de los tres pilares."
+    },
+    "section5": {
+      "title": "Hitos y Puntos de Control",
+      "subtitle": "Los puntos de control con plazo definido mantienen vivo el plan. El coach apoya; tú eres dueño del progreso."
+    },
+    "pillars": {
+      "leadership": "Liderazgo",
+      "technical": "Técnico",
+      "interpersonal": "Interpersonal"
+    },
+    "pillarHints": {
+      "leadership": "toma de decisiones, delegación, coaching, responsabilidad",
+      "technical": "competencias específicas del puesto, herramientas lean, sistemas de calidad, conocimiento de procesos",
+      "interpersonal": "comunicación, empatía, resolución de conflictos, trabajo en equipo"
+    },
+    "timelineOptions": {
+      "m6": "6 meses",
+      "m12": "12 meses",
+      "m18": "18 meses (máx.)"
+    },
+    "coachRelationships": {
+      "directManager": "Gerente Directo",
+      "seniorLeader": "Líder Senior / Mentor",
+      "crossFunctionalLeader": "Líder Interdepartamental",
+      "internalSme": "Experto Interno en la Materia (SME)",
+      "externalCoach": "Coach / Mentor Externo",
+      "peerCoach": "Coach entre Pares"
+    },
+    "coachFrequencies": {
+      "weekly": "Semanal",
+      "biweekly": "Quincenal",
+      "monthly": "Mensual"
+    },
+    "milestones": {
+      "d30": {
+        "label": "Victoria Rápida a 30 Días",
+        "hint": "Una victoria temprana y visible para generar impulso"
+      },
+      "d90": {
+        "label": "Punto de Control a 90 Días",
+        "hint": "Primera revisión de progreso y corrección de curso"
+      },
+      "m6": {
+        "label": "Revisión Formal a 6 Meses",
+        "hint": "Revisión formal del progreso frente al plan"
+      },
+      "m12": {
+        "label": "Finalización / Renovación a 12 Meses",
+        "hint": "Cerrar el plan o renovarlo con nuevas metas"
+      }
+    },
+    "checkins": {
+      "d30": {
+        "label": "Nota de Progreso a 30 Días",
+        "note": "Faltante después de 30 días: −2 pts"
+      },
+      "d90": {
+        "label": "Nota de Progreso a 90 Días",
+        "note": "Faltante después de 90 días: −3 más"
+      },
+      "m6": {
+        "label": "Nota de Progreso a 6 Meses",
+        "note": "Faltante después de 6 meses: −2 más"
+      },
+      "m12": {
+        "label": "Nota de Finalización / Renovación a 12 Meses",
+        "note": "Faltante después de 12 meses: se pierden todos los puntos restantes"
+      }
+    }
   }
 }

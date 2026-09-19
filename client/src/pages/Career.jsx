@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -13,28 +14,38 @@ function wc(text = '') { return text.trim().split(/\s+/).filter(Boolean).length;
 
 const PILLARS = ['Leadership', 'Technical', 'Interpersonal'];
 const PILLAR_COLORS = { Leadership: '#0f2044', Technical: '#0891b2', Interpersonal: '#8b5cf6' };
+const PILLAR_KEYS = { Leadership: 'leadership', Technical: 'technical', Interpersonal: 'interpersonal' };
+function trPillar(t, p) { return t(`career.pillars.${PILLAR_KEYS[p] || p}`, p); }
 const PILLAR_HINTS = {
   Leadership: 'decision-making, delegation, coaching, accountability',
   Technical: 'role-specific competencies, lean tools, quality systems, process knowledge',
   Interpersonal: 'communication, empathy, conflict resolution, teamwork',
 };
+function trPillarHint(t, p) { return t(`career.pillarHints.${PILLAR_KEYS[p] || p}`, PILLAR_HINTS[p]); }
 
 const TIMELINE_OPTIONS = [
-  { value: '6', label: '6 months' },
-  { value: '12', label: '12 months' },
-  { value: '18', label: '18 months (max)' },
+  { value: '6', key: 'm6', label: '6 months' },
+  { value: '12', key: 'm12', label: '12 months' },
+  { value: '18', key: 'm18', label: '18 months (max)' },
 ];
+function trTimelineOption(t, tl) { return t(`career.timelineOptions.${tl.key}`, tl.label); }
 
 // A coach does NOT have to be the manager — the employee selects the best fit.
 const COACH_RELATIONSHIPS = [
-  'Direct Manager',
-  'Senior Leader / Mentor',
-  'Cross-functional Leader',
-  'Internal Subject Matter Expert (SME)',
-  'External Coach / Mentor',
-  'Peer Coach',
+  { value: 'Direct Manager', key: 'directManager' },
+  { value: 'Senior Leader / Mentor', key: 'seniorLeader' },
+  { value: 'Cross-functional Leader', key: 'crossFunctionalLeader' },
+  { value: 'Internal Subject Matter Expert (SME)', key: 'internalSme' },
+  { value: 'External Coach / Mentor', key: 'externalCoach' },
+  { value: 'Peer Coach', key: 'peerCoach' },
 ];
-const COACH_FREQUENCIES = ['Weekly', 'Bi-weekly', 'Monthly'];
+function trCoachRelationship(t, r) { return t(`career.coachRelationships.${r.key}`, r.value); }
+const COACH_FREQUENCIES = [
+  { value: 'Weekly', key: 'weekly' },
+  { value: 'Bi-weekly', key: 'biweekly' },
+  { value: 'Monthly', key: 'monthly' },
+];
+function trCoachFrequency(t, f) { return t(`career.coachFrequencies.${f.key}`, f.value); }
 
 const PROGRESS_OPTIONS = [0, 25, 50, 75, 100];
 
@@ -44,6 +55,8 @@ const MILESTONES = [
   { key: 'm6',  label: '6-Month Formal Review',   hint: 'Formal review of progress vs. plan' },
   { key: 'm12', label: '12-Month Completion / Renewal', hint: 'Close out the plan or renew with new goals' },
 ];
+function trMilestoneLabel(t, m) { return t(`career.milestones.${m.key}.label`, m.label); }
+function trMilestoneHint(t, m) { return t(`career.milestones.${m.key}.hint`, m.hint); }
 
 function emptyPlan() {
   return {
@@ -155,11 +168,12 @@ const labelStyle = { fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-mu
 
 // 20-word progress hint shown under each narrative question
 function WordHint({ text }) {
+  const { t } = useTranslation();
   const n = wc(text);
   const ok = n >= MIN_WORDS;
   return (
     <span style={{ fontSize: '0.65rem', fontWeight: 600, color: ok ? '#15803d' : '#94a3b8' }}>
-      {n}/{MIN_WORDS} words {ok ? '✓' : ''}
+      {t('career.wordsCount', '{{n}}/{{min}} words', { n, min: MIN_WORDS })} {ok ? '✓' : ''}
     </span>
   );
 }
@@ -171,8 +185,11 @@ const CHECKINS = [
   { key: 'm6',  label: '6-Month Progress Note', days: 180, penalty: 2, penaltyLabel: '−2 pts',        note: 'Missing after 6 months: −2 more' },
   { key: 'm12', label: '12-Month Completion / Renewal Note', days: 365, penalty: 10, penaltyLabel: 'lose all', note: 'Missing after 12 months: lose all remaining points' },
 ];
+function trCheckinLabel(t, ci) { return t(`career.checkins.${ci.key}.label`, ci.label); }
+function trCheckinNote(t, ci) { return t(`career.checkins.${ci.key}.note`, ci.note); }
 
 export default function Career() {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [plan, setPlan] = useState(emptyPlan());
@@ -192,7 +209,7 @@ export default function Career() {
         setSkillsMatrix(data.skillsMatrix || null);
         setLegacyGoals(data.careerGoals || []);
       }
-    } catch { toast.error('Could not load your plan'); }
+    } catch { toast.error(t('career.toast.loadFailed', 'Could not load your plan')); }
     setLoading(false);
   }
 
@@ -257,11 +274,11 @@ export default function Career() {
       }
       try { await calculateScore(currentUser.uid); } catch { /* score refresh is best-effort */ }
       if (firstCompletion) {
-        toast.success('Plan complete! +10 pts earned. Return at each milestone to keep them.', { duration: 5000 });
+        toast.success(t('career.toast.planComplete', 'Plan complete! +10 pts earned. Return at each milestone to keep them.'), { duration: 5000 });
       } else {
-        toast.success('Career development plan saved');
+        toast.success(t('career.toast.planSaved', 'Career development plan saved'));
       }
-    } catch { toast.error('Save failed'); }
+    } catch { toast.error(t('career.toast.saveFailed', 'Save failed')); }
     setSaving(false);
   }
 
@@ -271,15 +288,15 @@ export default function Career() {
         userName: currentUser?.displayName || '',
         skillsSummary: hasSkills ? summary : null,
       });
-    } catch (e) { console.error(e); toast.error('Could not generate PDF'); }
+    } catch (e) { console.error(e); toast.error(t('career.toast.pdfFailed', 'Could not generate PDF')); }
   }
 
-  if (loading) return <div style={{ maxWidth: 860, margin: '0 auto' }}><PageHeader icon="🚀" title="Career Development Plan" subtitle="Loading…" /></div>;
+  if (loading) return <div style={{ maxWidth: 860, margin: '0 auto' }}><PageHeader icon="🚀" title={t('career.pageTitle', 'Career Development Plan')} subtitle={t('career.loading', 'Loading…')} /></div>;
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <PageHeader icon="🚀" title="Career Development — Accountability for Growth"
-        subtitle="Employee-owned, company-aligned. Start with where you are, define where you want to go, and build the plan at the intersection." />
+      <PageHeader icon="🚀" title={t('career.title', 'Career Development — Accountability for Growth')}
+        subtitle={t('career.subtitle', 'Employee-owned, company-aligned. Start with where you are, define where you want to go, and build the plan at the intersection.')} />
 
       {/* Completeness + points banner */}
       <div style={{ borderRadius: 12, padding: '0.875rem 1.125rem', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap',
@@ -288,38 +305,38 @@ export default function Career() {
           <div style={{ fontSize: '1.75rem', fontWeight: 900, lineHeight: 1, color: careerStanding.pts === 10 ? '#15803d' : careerStanding.pts > 0 ? '#b45309' : '#94a3b8' }}>
             {careerStanding.pts}<span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: 600 }}>/10</span>
           </div>
-          <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>Plan pts</div>
+          <div style={{ fontSize: '0.6rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginTop: 2 }}>{t('career.planPts', 'Plan pts')}</div>
         </div>
         <div style={{ flex: 1, minWidth: 200 }}>
           <p style={{ fontWeight: 800, margin: 0, fontSize: '0.85rem', color: planComplete ? '#15803d' : '#1e40af' }}>
             {careerStanding.earned
-              ? (careerStanding.pts === 10 ? 'Full 10 points — keep logging milestone notes' : 'Points decaying — add your milestone progress notes below')
-              : planComplete ? 'Ready to earn 10 points — save your plan' : 'Complete the template to earn 10 points'}
+              ? (careerStanding.pts === 10 ? t('career.fullPoints', 'Full 10 points — keep logging milestone notes') : t('career.pointsDecaying', 'Points decaying — add your milestone progress notes below'))
+              : planComplete ? t('career.readyToEarn', 'Ready to earn 10 points — save your plan') : t('career.completeTemplate', 'Complete the template to earn 10 points')}
           </p>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0', lineHeight: 1.5 }}>
-            Fill 100% of the template with 20+ words per question → +10 pts. Then return at 30 days, 90 days, 6 months, and 12 months to log progress notes or the points decay (−2 / −3 / −2 / lose all).
-            {' '}<strong>{essaysDone}/{essays.length}</strong> questions have 20+ words.
+            {t('career.bannerHint', 'Fill 100% of the template with 20+ words per question → +10 pts. Then return at 30 days, 90 days, 6 months, and 12 months to log progress notes or the points decay (−2 / −3 / −2 / lose all).')}
+            {' '}<strong>{t('career.questionsHave20Words', '{{done}}/{{total}} questions have 20+ words.', { done: essaysDone, total: essays.length })}</strong>
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
           <button className="btn-secondary" onClick={downloadPDF} style={{ flexShrink: 0 }}>
-            🖨️ PDF
+            🖨️ {t('career.pdf', 'PDF')}
           </button>
           <button className="btn-primary" onClick={savePlan} disabled={saving} style={{ flexShrink: 0 }}>
-            {saving ? 'Saving…' : '💾 Save Plan'}
+            {saving ? t('career.saving', 'Saving…') : `💾 ${t('career.savePlan', 'Save Plan')}`}
           </button>
         </div>
       </div>
 
       {/* SECTION 1 — Where am I now? (read from Skills Matrix) */}
-      <SectionCard n="1" title="Where Am I Now?" accent="#0d9488"
-        subtitle="Pulled from your Skills Development Matrix — your current proficiency across the three pillars.">
+      <SectionCard n="1" title={t('career.section1.title', 'Where Am I Now?')} accent="#0d9488"
+        subtitle={t('career.section1.subtitle', 'Pulled from your Skills Development Matrix — your current proficiency across the three pillars.')}>
         {!hasSkills ? (
           <div style={{ background: '#fefce8', border: '1px solid #fde047', borderRadius: 10, padding: '1rem', textAlign: 'center' }}>
             <p style={{ fontSize: '0.85rem', color: '#a16207', margin: '0 0 10px', fontWeight: 600 }}>
-              You haven't completed your Skills Development Matrix yet. That assessment is the starting point for this plan.
+              {t('career.noSkillsMatrix', "You haven't completed your Skills Development Matrix yet. That assessment is the starting point for this plan.")}
             </p>
-            <button className="btn-primary" onClick={() => navigate('/skills')}>Go to Skills Matrix →</button>
+            <button className="btn-primary" onClick={() => navigate('/skills')}>{t('career.goToSkillsMatrix', 'Go to Skills Matrix →')}</button>
           </div>
         ) : (
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
@@ -328,20 +345,20 @@ export default function Career() {
               return (
                 <div key={p} style={{ border: `1px solid ${PILLAR_COLORS[p]}30`, borderRadius: 12, overflow: 'hidden' }}>
                   <div style={{ background: PILLAR_COLORS[p], padding: '0.5rem 0.875rem' }}>
-                    <span style={{ color: 'white', fontWeight: 800, fontSize: '0.82rem' }}>{p}</span>
+                    <span style={{ color: 'white', fontWeight: 800, fontSize: '0.82rem' }}>{trPillar(t, p)}</span>
                   </div>
                   <div style={{ padding: '0.75rem 0.875rem' }}>
                     <div style={{ display: 'flex', gap: 14 }}>
                       <div>
-                        <p style={{ fontSize: '0.62rem', color: 'var(--text-muted)', margin: 0, textTransform: 'uppercase', fontWeight: 700 }}>Self</p>
+                        <p style={{ fontSize: '0.62rem', color: 'var(--text-muted)', margin: 0, textTransform: 'uppercase', fontWeight: 700 }}>{t('career.self', 'Self')}</p>
                         <p style={{ fontSize: '1.35rem', fontWeight: 900, color: PILLAR_COLORS[p], margin: 0 }}>{s.self ?? '—'}<span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 400 }}>/5</span></p>
                       </div>
                       <div>
-                        <p style={{ fontSize: '0.62rem', color: 'var(--text-muted)', margin: 0, textTransform: 'uppercase', fontWeight: 700 }}>Peer</p>
+                        <p style={{ fontSize: '0.62rem', color: 'var(--text-muted)', margin: 0, textTransform: 'uppercase', fontWeight: 700 }}>{t('career.peer', 'Peer')}</p>
                         <p style={{ fontSize: '1.35rem', fontWeight: 900, color: '#475569', margin: 0 }}>{s.peer ?? '—'}<span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 400 }}>/5</span></p>
                       </div>
                     </div>
-                    <p style={{ fontSize: '0.66rem', color: 'var(--text-muted)', margin: '6px 0 0', lineHeight: 1.4 }}>{PILLAR_HINTS[p]}</p>
+                    <p style={{ fontSize: '0.66rem', color: 'var(--text-muted)', margin: '6px 0 0', lineHeight: 1.4 }}>{trPillarHint(t, p)}</p>
                   </div>
                 </div>
               );
@@ -350,39 +367,39 @@ export default function Career() {
         )}
         {hasSkills && (
           <button className="btn-secondary" onClick={() => navigate('/skills')} style={{ fontSize: '0.78rem', padding: '0.35rem 0.875rem', marginTop: 12 }}>
-            Update Skills Matrix →
+            {t('career.updateSkillsMatrix', 'Update Skills Matrix →')}
           </button>
         )}
       </SectionCard>
 
       {/* SECTION 2 — Where do I want to go? */}
-      <SectionCard n="2" title="Where Do I Want To Go?" accent="#0891b2"
-        subtitle="This plan is yours. Start with what you want — the company alignment comes next.">
+      <SectionCard n="2" title={t('career.section2.title', 'Where Do I Want To Go?')} accent="#0891b2"
+        subtitle={t('career.section2.subtitle', 'This plan is yours. Start with what you want — the company alignment comes next.')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label style={labelStyle}>Career Aspiration</label>
+            <label style={labelStyle}>{t('career.careerAspiration', 'Career Aspiration')}</label>
             <textarea className="input" rows={2} value={plan.aspiration}
               onChange={e => setField(['aspiration'], e.target.value)}
-              placeholder="Your next role, expanded responsibility, or skill mastery you're aiming for…" />
+              placeholder={t('career.aspirationPlaceholder', "Your next role, expanded responsibility, or skill mastery you're aiming for…")} />
             <WordHint text={plan.aspiration} />
           </div>
           <div>
-            <label style={labelStyle}>Personal Motivation — why this matters to you</label>
+            <label style={labelStyle}>{t('career.personalMotivation', 'Personal Motivation — why this matters to you')}</label>
             <textarea className="input" rows={2} value={plan.motivation}
               onChange={e => setField(['motivation'], e.target.value)}
-              placeholder="What makes this growth meaningful for you personally?" />
+              placeholder={t('career.motivationPlaceholder', 'What makes this growth meaningful for you personally?')} />
             <WordHint text={plan.motivation} />
           </div>
           <div>
-            <label style={labelStyle}>Target Timeline</label>
+            <label style={labelStyle}>{t('career.targetTimeline', 'Target Timeline')}</label>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {TIMELINE_OPTIONS.map(t => (
-                <button key={t.value} type="button" onClick={() => setField(['timeline'], t.value)}
+              {TIMELINE_OPTIONS.map(tl => (
+                <button key={tl.value} type="button" onClick={() => setField(['timeline'], tl.value)}
                   style={{ padding: '0.4rem 1rem', borderRadius: 9999, fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer', border: '1.5px solid',
-                    background: plan.timeline === t.value ? '#0891b2' : 'white',
-                    color: plan.timeline === t.value ? 'white' : '#475569',
-                    borderColor: plan.timeline === t.value ? '#0891b2' : '#e2e8f0' }}>
-                  {t.label}
+                    background: plan.timeline === tl.value ? '#0891b2' : 'white',
+                    color: plan.timeline === tl.value ? 'white' : '#475569',
+                    borderColor: plan.timeline === tl.value ? '#0891b2' : '#e2e8f0' }}>
+                  {trTimelineOption(t, tl)}
                 </button>
               ))}
             </div>
@@ -391,33 +408,33 @@ export default function Career() {
       </SectionCard>
 
       {/* SECTION 3 — Coach + Company needs */}
-      <SectionCard n="3" title="Coach & Company Alignment" accent="#7c3aed"
-        subtitle="Who will coach this plan (it does not have to be your manager), and what does the company need that your growth can support?">
+      <SectionCard n="3" title={t('career.section3.title', 'Coach & Company Alignment')} accent="#7c3aed"
+        subtitle={t('career.section3.subtitle', 'Who will coach this plan (it does not have to be your manager), and what does the company need that your growth can support?')}>
         {/* Coach */}
         <div style={{ background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: 12, padding: '1rem', marginBottom: 16 }}>
-          <p style={{ fontWeight: 800, color: '#5b21b6', margin: '0 0 4px', fontSize: '0.85rem' }}>Who will coach and support this development plan?</p>
+          <p style={{ fontWeight: 800, color: '#5b21b6', margin: '0 0 4px', fontSize: '0.85rem' }}>{t('career.whoWillCoach', 'Who will coach and support this development plan?')}</p>
           <p style={{ fontSize: '0.73rem', color: '#7c3aed', margin: '0 0 12px', lineHeight: 1.5 }}>
-            The best coach is often not your direct manager — pick whoever will genuinely help you grow.
+            {t('career.bestCoachHint', 'The best coach is often not your direct manager — pick whoever will genuinely help you grow.')}
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
             <div>
-              <label style={labelStyle}>Coach Name</label>
+              <label style={labelStyle}>{t('career.coachName', 'Coach Name')}</label>
               <input className="input" value={plan.coach.name}
-                onChange={e => setField(['coach', 'name'], e.target.value)} placeholder="Full name" />
+                onChange={e => setField(['coach', 'name'], e.target.value)} placeholder={t('career.fullName', 'Full name')} />
             </div>
             <div>
-              <label style={labelStyle}>Role / Relationship</label>
+              <label style={labelStyle}>{t('career.roleRelationship', 'Role / Relationship')}</label>
               <select className="input" value={plan.coach.relationship}
                 onChange={e => setField(['coach', 'relationship'], e.target.value)}>
-                <option value="">Select…</option>
-                {COACH_RELATIONSHIPS.map(r => <option key={r} value={r}>{r}</option>)}
+                <option value="">{t('career.select', 'Select…')}</option>
+                {COACH_RELATIONSHIPS.map(r => <option key={r.value} value={r.value}>{trCoachRelationship(t, r)}</option>)}
               </select>
             </div>
             <div>
-              <label style={labelStyle}>Coaching Frequency</label>
+              <label style={labelStyle}>{t('career.coachingFrequency', 'Coaching Frequency')}</label>
               <select className="input" value={plan.coach.frequency}
                 onChange={e => setField(['coach', 'frequency'], e.target.value)}>
-                {COACH_FREQUENCIES.map(f => <option key={f} value={f}>{f}</option>)}
+                {COACH_FREQUENCIES.map(f => <option key={f.value} value={f.value}>{trCoachFrequency(t, f)}</option>)}
               </select>
             </div>
           </div>
@@ -425,7 +442,7 @@ export default function Career() {
             <input type="checkbox" checked={plan.coach.committed}
               onChange={e => setField(['coach', 'committed'], e.target.checked)} style={{ width: 18, height: 18 }} />
             <span style={{ fontSize: '0.8rem', fontWeight: 700, color: plan.coach.committed ? '#15803d' : 'var(--text-secondary)' }}>
-              {plan.coach.committed ? '✅ Coaching commitment confirmed' : 'Coaching commitment confirmed'}
+              {plan.coach.committed ? `✅ ${t('career.coachingCommitmentConfirmed', 'Coaching commitment confirmed')}` : t('career.coachingCommitmentConfirmed', 'Coaching commitment confirmed')}
             </span>
           </label>
         </div>
@@ -433,69 +450,69 @@ export default function Career() {
         {/* Company needs */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div>
-            <label style={labelStyle}>Skills Gaps the Organization Needs Filled</label>
+            <label style={labelStyle}>{t('career.skillsGapsLabel', 'Skills Gaps the Organization Needs Filled')}</label>
             <textarea className="input" rows={2} value={plan.companyNeeds.skillsGaps}
               onChange={e => setField(['companyNeeds', 'skillsGaps'], e.target.value)}
-              placeholder="What capabilities does the team/company need right now that this growth can help fill?" />
+              placeholder={t('career.skillsGapsPlaceholder', 'What capabilities does the team/company need right now that this growth can help fill?')} />
             <WordHint text={plan.companyNeeds.skillsGaps} />
           </div>
           <div>
-            <label style={labelStyle}>Strategic Priorities This Growth Supports</label>
+            <label style={labelStyle}>{t('career.strategicPrioritiesLabel', 'Strategic Priorities This Growth Supports')}</label>
             <textarea className="input" rows={2} value={plan.companyNeeds.strategicPriorities}
               onChange={e => setField(['companyNeeds', 'strategicPriorities'], e.target.value)}
-              placeholder="Which company goals or priorities does this development plan advance?" />
+              placeholder={t('career.strategicPrioritiesPlaceholder', 'Which company goals or priorities does this development plan advance?')} />
             <WordHint text={plan.companyNeeds.strategicPriorities} />
           </div>
           <div>
-            <label style={labelStyle}>Resources the Company Will Provide</label>
+            <label style={labelStyle}>{t('career.resourcesLabel', 'Resources the Company Will Provide')}</label>
             <textarea className="input" rows={2} value={plan.companyNeeds.resources}
               onChange={e => setField(['companyNeeds', 'resources'], e.target.value)}
-              placeholder="Training budget, mentoring, cross-functional exposure, time, certifications…" />
+              placeholder={t('career.resourcesPlaceholder', 'Training budget, mentoring, cross-functional exposure, time, certifications…')} />
             <WordHint text={plan.companyNeeds.resources} />
           </div>
         </div>
       </SectionCard>
 
       {/* SECTION 4 — Development plan grid */}
-      <SectionCard n="4" title="The Development Plan" accent="#be185d"
-        subtitle="Built at the intersection of your aspiration and the company's needs — one goal in each of the three pillars.">
+      <SectionCard n="4" title={t('career.section4.title', 'The Development Plan')} accent="#be185d"
+        subtitle={t('career.section4.subtitle', "Built at the intersection of your aspiration and the company's needs — one goal in each of the three pillars.")}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
           {PILLARS.map(p => {
             const row = plan.pillars[p];
             return (
               <div key={p} style={{ border: `1px solid ${PILLAR_COLORS[p]}30`, borderRadius: 12, overflow: 'hidden' }}>
                 <div style={{ background: PILLAR_COLORS[p], padding: '0.5rem 0.875rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ color: 'white', fontWeight: 800, fontSize: '0.82rem' }}>{p}</span>
-                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.68rem' }}>{PILLAR_HINTS[p]}</span>
+                  <span style={{ color: 'white', fontWeight: 800, fontSize: '0.82rem' }}>{trPillar(t, p)}</span>
+                  <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.68rem' }}>{trPillarHint(t, p)}</span>
                 </div>
                 <div style={{ padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
                   <div>
-                    <label style={labelStyle}>Development Goal</label>
+                    <label style={labelStyle}>{t('career.developmentGoal', 'Development Goal')}</label>
                     <textarea className="input" rows={2} value={row.goal}
                       onChange={e => setField(['pillars', p, 'goal'], e.target.value)}
-                      placeholder={`What will you develop in ${p.toLowerCase()}?`} />
+                      placeholder={t('career.developmentGoalPlaceholder', 'What will you develop in {{pillar}}?', { pillar: trPillar(t, p).toLowerCase() })} />
                     <WordHint text={row.goal} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Action Steps</label>
+                    <label style={labelStyle}>{t('career.actionSteps', 'Action Steps')}</label>
                     <textarea className="input" rows={2} value={row.actions}
                       onChange={e => setField(['pillars', p, 'actions'], e.target.value)}
-                      placeholder="Concrete steps — training, projects, mentoring, on-the-job experiences…" />
+                      placeholder={t('career.actionStepsPlaceholder', 'Concrete steps — training, projects, mentoring, on-the-job experiences…')} />
                     <WordHint text={row.actions} />
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 150px 130px', gap: 10 }}>
                     <div>
-                      <label style={labelStyle}>Resources</label>
+                      <label style={labelStyle}>{t('career.resources', 'Resources')}</label>
                       <input className="input" value={row.resources}
-                        onChange={e => setField(['pillars', p, 'resources'], e.target.value)} placeholder="What's needed" />
+                        onChange={e => setField(['pillars', p, 'resources'], e.target.value)} placeholder={t('career.whatsNeeded', "What's needed")} />
                     </div>
                     <div>
-                      <label style={labelStyle}>Timeline</label>
+                      <label style={labelStyle}>{t('career.timeline', 'Timeline')}</label>
                       <input className="input" type="date" value={row.timeline}
                         onChange={e => setField(['pillars', p, 'timeline'], e.target.value)} />
                     </div>
                     <div>
-                      <label style={labelStyle}>Progress</label>
+                      <label style={labelStyle}>{t('career.progress', 'Progress')}</label>
                       <select className="input" value={row.progress}
                         onChange={e => setField(['pillars', p, 'progress'], Number(e.target.value))}>
                         {PROGRESS_OPTIONS.map(v => <option key={v} value={v}>{v}%</option>)}
@@ -513,8 +530,8 @@ export default function Career() {
       </SectionCard>
 
       {/* SECTION 5 — Milestones & check-ins */}
-      <SectionCard n="5" title="Milestones & Check-Ins" accent="#b45309"
-        subtitle="Time-bound checkpoints keep the plan alive. The coach supports; you own the progress.">
+      <SectionCard n="5" title={t('career.section5.title', 'Milestones & Check-Ins')} accent="#b45309"
+        subtitle={t('career.section5.subtitle', 'Time-bound checkpoints keep the plan alive. The coach supports; you own the progress.')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {MILESTONES.map(m => {
             const ms = plan.milestones[m.key];
@@ -525,15 +542,15 @@ export default function Career() {
                     onChange={e => setField(['milestones', m.key, 'done'], e.target.checked)}
                     style={{ width: 18, height: 18, flexShrink: 0 }} />
                   <div style={{ flex: 1 }}>
-                    <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-primary)', textDecoration: ms.done ? 'line-through' : 'none' }}>{m.label}</span>
-                    <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0 }}>{m.hint}</p>
+                    <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-primary)', textDecoration: ms.done ? 'line-through' : 'none' }}>{trMilestoneLabel(t, m)}</span>
+                    <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0 }}>{trMilestoneHint(t, m)}</p>
                   </div>
                   <input type="date" className="input" style={{ width: 150, fontSize: '0.8rem', padding: '0.35rem 0.5rem', flexShrink: 0 }}
                     value={ms.date} onChange={e => setField(['milestones', m.key, 'date'], e.target.value)} />
                 </div>
                 <input className="input" style={{ fontSize: '0.82rem' }}
                   value={ms.text} onChange={e => setField(['milestones', m.key, 'text'], e.target.value)}
-                  placeholder="What does success look like at this checkpoint?" />
+                  placeholder={t('career.milestoneTextPlaceholder', 'What does success look like at this checkpoint?')} />
               </div>
             );
           })}
@@ -541,12 +558,12 @@ export default function Career() {
       </SectionCard>
 
       {/* Milestone progress notes — sustain the 10 points */}
-      <SectionCard n="✓" title="Milestone Progress Notes" accent="#15803d"
-        subtitle="Return at each checkpoint and log your real progress. These notes sustain your 10 points — miss one and the points decay.">
+      <SectionCard n="✓" title={t('career.checkinsSection.title', 'Milestone Progress Notes')} accent="#15803d"
+        subtitle={t('career.checkinsSection.subtitle', 'Return at each checkpoint and log your real progress. These notes sustain your 10 points — miss one and the points decay.')}>
         {!plan.completedAt && (
           <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: 12 }}>
             <p style={{ fontSize: '0.78rem', color: '#1e40af', margin: 0, lineHeight: 1.5 }}>
-              Complete and save the plan above first (100% + 20 words per question). Once you earn the 10 points, your 30 / 90 / 180-day windows start and these notes keep the points alive.
+              {t('career.completeFirstHint', 'Complete and save the plan above first (100% + 20 words per question). Once you earn the 10 points, your 30 / 90 / 180-day windows start and these notes keep the points alive.')}
             </p>
           </div>
         )}
@@ -560,39 +577,39 @@ export default function Career() {
             const comingSoon = plan.completedAt && !filled && !overdue && daysUntil !== null && daysUntil > 0 && daysUntil <= 14;
             // Status color/label: green logged · red past-due · yellow coming-soon · gray upcoming/locked
             const statusColor = filled ? '#15803d' : overdue ? '#dc2626' : comingSoon ? '#b45309' : '#94a3b8';
-            const statusLabel = filled ? '✓ Logged'
-              : overdue ? '🚨 Past due — take action'
-              : comingSoon ? `⚠️ Coming soon — in ${daysUntil} day${daysUntil === 1 ? '' : 's'}`
-              : plan.completedAt ? `Due day ${ci.days}` : 'Locked';
+            const statusLabel = filled ? `✓ ${t('career.logged', 'Logged')}`
+              : overdue ? `🚨 ${t('career.pastDueTakeAction', 'Past due — take action')}`
+              : comingSoon ? `⚠️ ${daysUntil === 1 ? t('career.comingSoonInDay', 'Coming soon — in {{count}} day', { count: daysUntil }) : t('career.comingSoonInDays', 'Coming soon — in {{count}} days', { count: daysUntil })}`
+              : plan.completedAt ? t('career.dueDay', 'Due day {{day}}', { day: ci.days }) : t('career.locked', 'Locked');
             const cardBg = filled ? '#f0fdf4' : overdue ? '#fef2f2' : comingSoon ? '#fef9c3' : 'white';
             const cardBorder = filled ? '#86efac' : overdue ? '#fecaca' : comingSoon ? '#fde68a' : 'var(--border)';
             return (
               <div key={ci.key} style={{ border: `1px solid ${cardBorder}`, borderRadius: 10, padding: '0.75rem 0.875rem', background: cardBg }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-                  <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-primary)' }}>{ci.label}</span>
+                  <span style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-primary)' }}>{trCheckinLabel(t, ci)}</span>
                   <span style={{ fontSize: '0.7rem', fontWeight: 700, color: statusColor }}>{statusLabel}</span>
                 </div>
-                <p style={{ fontSize: '0.66rem', color: 'var(--text-muted)', margin: '0 0 6px' }}>{ci.note}{val.savedAt ? ` · last saved ${new Date(val.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}</p>
+                <p style={{ fontSize: '0.66rem', color: 'var(--text-muted)', margin: '0 0 6px' }}>{trCheckinNote(t, ci)}{val.savedAt ? ` · ${t('career.lastSaved', 'last saved {{date}}', { date: new Date(val.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) })}` : ''}</p>
                 <textarea className="input" rows={2} style={{ fontSize: '0.82rem' }}
                   value={val.note}
                   onChange={e => setField(['checkIns', ci.key, 'note'], e.target.value)}
-                  placeholder="What progress have you made? What's working, what's blocked, what's next?" />
+                  placeholder={t('career.checkinPlaceholder', "What progress have you made? What's working, what's blocked, what's next?")} />
               </div>
             );
           })}
         </div>
         <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '10px 0 0', lineHeight: 1.5 }}>
-          Tip: adding a note — even late — restores that milestone's points. Save the plan after writing your notes to update your score.
+          {t('career.checkinTip', "Tip: adding a note — even late — restores that milestone's points. Save the plan after writing your notes to update your score.")}
         </p>
       </SectionCard>
 
       {/* Save + PDF (bottom) */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
         <button className="btn-secondary" onClick={downloadPDF} style={{ padding: '0.6rem 1.25rem' }}>
-          🖨️ Download / Print PDF
+          🖨️ {t('career.downloadPrintPdf', 'Download / Print PDF')}
         </button>
         <button className="btn-primary" onClick={savePlan} disabled={saving} style={{ padding: '0.6rem 1.5rem' }}>
-          {saving ? 'Saving…' : '💾 Save Career Development Plan'}
+          {saving ? t('career.saving', 'Saving…') : `💾 ${t('career.saveCareerDevelopmentPlan', 'Save Career Development Plan')}`}
         </button>
       </div>
 
@@ -601,10 +618,10 @@ export default function Career() {
         <div className="card" style={{ padding: '1rem 1.25rem' }}>
           <details>
             <summary style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.85rem', cursor: 'pointer' }}>
-              📁 Previous Career Goals ({legacyGoals.length})
+              📁 {t('career.previousCareerGoals', 'Previous Career Goals ({{count}})', { count: legacyGoals.length })}
             </summary>
             <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '6px 0 10px' }}>
-              Goals saved in the earlier version of this module — kept here for reference.
+              {t('career.legacyGoalsHint', 'Goals saved in the earlier version of this module — kept here for reference.')}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {legacyGoals.map(g => (
