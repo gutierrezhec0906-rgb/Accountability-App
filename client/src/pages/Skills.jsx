@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { doc, getDoc, setDoc, collection, getDocs, query, where } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -13,9 +14,50 @@ function thirtyDayCutoff() {
   return localDateStr(new Date(Date.now() - THIRTY_DAYS_MS));
 }
 
+// Stable translation-key ids for categories and skills. Category and skill
+// `name`/`category` fields stay literal English — they are used as Firestore
+// data values, object keys (skillKey), and comparison values throughout this
+// file — only the DISPLAYED text is translated, via these id maps.
+const CATEGORY_KEYS = { Leadership: 'leadership', Technical: 'technical', Interpersonal: 'interpersonal' };
+function trCategory(t, cat) { return t(`skills.categories.${CATEGORY_KEYS[cat] || cat}`, cat); }
+
+const SKILL_KEYS = {
+  'Strategic Thinking': 'strategicThinking',
+  'Team Development': 'teamDevelopment',
+  'Decision Making': 'decisionMaking',
+  'Communication': 'communication',
+  'Delegation': 'delegation',
+  'Change Management': 'changeManagement',
+  'Accountability & Follow-Up': 'accountabilityFollowUp',
+  'Vision Setting': 'visionSetting',
+  'Lean Principles': 'leanPrinciples',
+  'Data Analysis': 'dataAnalysis',
+  'Root Cause Analysis': 'rootCauseAnalysis',
+  'Project Management': 'projectManagement',
+  'Process Mapping': 'processMapping',
+  'KPI & Metrics Management': 'kpiMetricsManagement',
+  'Standard Work': 'standardWork',
+  'Continuous Improvement (Kaizen)': 'continuousImprovement',
+  'Conflict Resolution': 'conflictResolution',
+  'Coaching & Mentoring': 'coachingMentoring',
+  'Emotional Intelligence': 'emotionalIntelligence',
+  'Active Listening': 'activeListening',
+  'Giving Feedback': 'givingFeedback',
+  'Influence & Persuasion': 'influencePersuasion',
+  'Cross-Functional Collaboration': 'crossFunctionalCollaboration',
+  'Recognition & Motivation': 'recognitionMotivation',
+};
+function trSkillName(t, name) { return t(`skills.skillNames.${SKILL_KEYS[name] || name}`, name); }
+function trSkillGuideField(t, name, field, fallback) {
+  const key = SKILL_KEYS[name];
+  if (!key) return t(`skills.genericGuide.${field}`, fallback);
+  return t(`skills.skillGuides.${key}.${field}`, fallback);
+}
+
 // Two-line trend chart — self-assessment (purple) vs peer-assessment (blue)
 // average score (1-5) across the last 8 saved records, chronological.
 function SkillsTrendChart({ history }) {
+  const { t } = useTranslation();
   const last8 = [...history]
     .sort((a, b) => new Date(a.savedAt) - new Date(b.savedAt))
     .slice(-8);
@@ -27,7 +69,7 @@ function SkillsTrendChart({ history }) {
   if (last8.length === 0) {
     return (
       <div style={{ height: H, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.78rem', textAlign: 'center', padding: '0 1rem' }}>
-        No assessments saved yet — save a self or peer assessment to start your trend.
+        {t('skills.noAssessmentsYetTrend', 'No assessments saved yet — save a self or peer assessment to start your trend.')}
       </div>
     );
   }
@@ -42,10 +84,10 @@ function SkillsTrendChart({ history }) {
     <div>
       <div style={{ display: 'flex', gap: 16, marginBottom: 8 }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 700, color: '#6d28d9' }}>
-          <span style={{ width: 14, height: 3, background: '#7c3aed', borderRadius: 2, display: 'inline-block' }} /> Self-Assessment
+          <span style={{ width: 14, height: 3, background: '#7c3aed', borderRadius: 2, display: 'inline-block' }} /> {t('skills.selfAssessment', 'Self-Assessment')}
         </span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: '0.75rem', fontWeight: 700, color: '#0f2044' }}>
-          <span style={{ width: 14, height: 3, background: '#1d4ed8', borderRadius: 2, display: 'inline-block' }} /> Peer Assessment
+          <span style={{ width: 14, height: 3, background: '#1d4ed8', borderRadius: 2, display: 'inline-block' }} /> {t('skills.peerAssessment', 'Peer Assessment')}
         </span>
       </div>
       <svg width="100%" viewBox={`0 0 ${W} ${H}`} style={{ overflow: 'visible' }}>
@@ -91,6 +133,8 @@ const defaultCategories = [
 ];
 
 const levelLabels = ['','Novice','Developing','Proficient','Advanced','Expert'];
+const LEVEL_LABEL_KEYS = ['','novice','developing','proficient','advanced','expert'];
+function trLevelLabel(t, self) { return self ? t(`skills.levelLabels.${LEVEL_LABEL_KEYS[self]}`, levelLabels[self]) : ''; }
 const catColors = { Leadership: '#0f2044', Technical: '#0891b2', Interpersonal: '#8b5cf6' };
 
 // Skill library: suggested skills per category, each with a proficiency guide
@@ -140,6 +184,7 @@ const GENERIC_GUIDE = {
 
 // Collapsible "what does 1–5 mean" guide shown under each skill
 function SkillGuide({ name }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const guide = SKILL_GUIDES[name] || GENERIC_GUIDE;
   return (
@@ -147,20 +192,20 @@ function SkillGuide({ name }) {
       <button onClick={() => setOpen(o => !o)}
         style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 5 }}>
         <span style={{ fontSize: '0.55rem', color: open ? '#0d9488' : '#94a3b8', transition: 'transform 0.18s', display: 'inline-block', transform: open ? 'rotate(90deg)' : 'rotate(0deg)' }}>▶</span>
-        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: open ? '#0d9488' : '#94a3b8' }}>What does 1–5 mean?</span>
+        <span style={{ fontSize: '0.7rem', fontWeight: 700, color: open ? '#0d9488' : '#94a3b8' }}>{t('skills.whatDoes15Mean', 'What does 1–5 mean?')}</span>
       </button>
       {open && (
         <div style={{ marginTop: 8, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '0.75rem 0.875rem', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.55 }}>{guide.what}</p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.55 }}>{trSkillGuideField(t, name, 'what', guide.what)}</p>
           <div style={{ borderLeft: '3px solid #ef4444', paddingLeft: 10 }}>
-            <p style={{ fontSize: '0.68rem', fontWeight: 800, color: '#dc2626', margin: '0 0 2px' }}>1 — Novice</p>
-            <p style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>{guide.low}</p>
+            <p style={{ fontSize: '0.68rem', fontWeight: 800, color: '#dc2626', margin: '0 0 2px' }}>{t('skills.oneNovice', '1 — Novice')}</p>
+            <p style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>{trSkillGuideField(t, name, 'low', guide.low)}</p>
           </div>
           <div style={{ borderLeft: '3px solid #22c55e', paddingLeft: 10 }}>
-            <p style={{ fontSize: '0.68rem', fontWeight: 800, color: '#15803d', margin: '0 0 2px' }}>5 — Expert</p>
-            <p style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>{guide.high}</p>
+            <p style={{ fontSize: '0.68rem', fontWeight: 800, color: '#15803d', margin: '0 0 2px' }}>{t('skills.fiveExpert', '5 — Expert')}</p>
+            <p style={{ fontSize: '0.73rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5 }}>{trSkillGuideField(t, name, 'high', guide.high)}</p>
           </div>
-          <p style={{ fontSize: '0.68rem', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>2 = between novice and proficient · 3 = proficient with occasional guidance · 4 = advanced, others ask for help</p>
+          <p style={{ fontSize: '0.68rem', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>{t('skills.scaleLegend', '2 = between novice and proficient · 3 = proficient with occasional guidance · 4 = advanced, others ask for help')}</p>
         </div>
       )}
     </div>
@@ -186,6 +231,7 @@ function RatingDots({ value, onChange, color }) {
 }
 
 export default function Skills() {
+  const { t } = useTranslation();
   const { currentUser, userProfile } = useAuth();
   const [matrix, setMatrix] = useState(defaultCategories);
   const [editMode, setEditMode] = useState(false);
@@ -258,7 +304,7 @@ export default function Skills() {
           const u = d.data();
           members.push({
             uid: d.id,
-            name: u.displayName || u.email || 'Unknown',
+            name: u.displayName || u.email || t('skills.unknown', 'Unknown'),
             matrix: u.skillsMatrix || defaultCategories,
             request: u.skillsPeerRequest || null,
           });
@@ -274,7 +320,7 @@ export default function Skills() {
     ? team
     : team.filter(m => m.request?.status === 'pending' && m.request?.toUid === currentUser?.uid);
 
-  const assessee = team.find(t => t.uid === assessingUid) || null;
+  const assessee = team.find(t2 => t2.uid === assessingUid) || null;
   const assesseeSkillCount = assessee ? assessee.matrix.flatMap(c => c.skills).length : 0;
   const peerRatedCount = Object.values(peerRatings).filter(v => v > 0).length;
   const allPeerRated = assessee && peerRatedCount === assesseeSkillCount && assesseeSkillCount > 0;
@@ -286,7 +332,7 @@ export default function Skills() {
     setSavingPeer(true);
     try {
       const now = new Date().toISOString();
-      const assessorName = userProfile?.displayName || userProfile?.email || 'Leader';
+      const assessorName = userProfile?.displayName || userProfile?.email || t('skills.leader', 'Leader');
 
       // Re-read the teammate's doc fresh so we don't clobber concurrent changes
       const snap = await getDoc(doc(db, 'users', assessee.uid));
@@ -344,14 +390,14 @@ export default function Skills() {
         if (awarded) await calculateScore(assessee.uid);
       }
 
-      toast.success(`Peer assessment saved for ${assessee.name} — they earned +1 pt for receiving it.`);
+      toast.success(t('skills.toast.peerAssessmentSaved', 'Peer assessment saved for {{name}} — they earned +1 pt for receiving it.', { name: assessee.name }));
       setAssessingUid('');
       setPeerRatings({});
       // Refresh team so a re-open shows current state
-      setTeam(t => t.map(m => m.uid === assessee.uid ? { ...m, matrix: updatedMatrix } : m));
+      setTeam(t2 => t2.map(m => m.uid === assessee.uid ? { ...m, matrix: updatedMatrix } : m));
     } catch (e) {
       console.error(e);
-      toast.error('Save failed — check permissions');
+      toast.error(t('skills.toast.saveFailedPermissions', 'Save failed — check permissions'));
     }
     setSavingPeer(false);
   }
@@ -397,23 +443,23 @@ export default function Skills() {
         if (awarded) {
           await calculateScore(currentUser.uid);
           setEarned30(p => ({ ...p, self: true }));
-          toast.success('Assessment saved! +1 pt earned.', { duration: 4000 });
+          toast.success(t('skills.toast.assessmentSavedPoint', 'Assessment saved! +1 pt earned.'), { duration: 4000 });
         } else {
-          toast.success('Assessment saved');
+          toast.success(t('skills.toast.assessmentSaved', 'Assessment saved'));
         }
       } else {
-        toast.success('Assessment saved (self-assessment point already earned this month)');
+        toast.success(t('skills.toast.assessmentSavedAlreadyEarned', 'Assessment saved (self-assessment point already earned this month)'));
       }
     } catch (e) {
       console.error(e);
-      toast.error('Save failed');
+      toast.error(t('skills.toast.saveFailed', 'Save failed'));
     }
     setSaving(false);
   }
 
   async function requestPeerSurvey() {
     if (!currentUser || !requestTarget) return;
-    const target = team.find(t => t.uid === requestTarget);
+    const target = team.find(t2 => t2.uid === requestTarget);
     if (!target) return;
     setRequesting(true);
     try {
@@ -433,16 +479,16 @@ export default function Skills() {
         if (awarded) {
           await calculateScore(currentUser.uid);
           setEarned30(p => ({ ...p, requested: true }));
-          toast.success(`Request sent to ${target.name}! +1 pt earned.`, { duration: 4000 });
+          toast.success(t('skills.toast.requestSentPoint', 'Request sent to {{name}}! +1 pt earned.', { name: target.name }), { duration: 4000 });
         } else {
-          toast.success(`Request sent to ${target.name}`);
+          toast.success(t('skills.toast.requestSent', 'Request sent to {{name}}', { name: target.name }));
         }
       } else {
-        toast.success(`Request sent to ${target.name} (request point already earned this month)`);
+        toast.success(t('skills.toast.requestSentAlreadyEarned', 'Request sent to {{name}} (request point already earned this month)', { name: target.name }));
       }
     } catch (e) {
       console.error(e);
-      toast.error('Request failed');
+      toast.error(t('skills.toast.requestFailed', 'Request failed'));
     }
     setRequesting(false);
   }
@@ -457,10 +503,10 @@ export default function Skills() {
       const updated = { ...myRequest, remindedAt: now };
       await setDoc(doc(db, 'users', currentUser.uid), { skillsPeerRequest: updated }, { merge: true });
       setMyRequest(updated);
-      toast.success(`Reminder email sent to ${myRequest.toName}`);
+      toast.success(t('skills.toast.reminderSent', 'Reminder email sent to {{name}}', { name: myRequest.toName }));
     } catch (e) {
       console.error(e);
-      toast.error('Could not send reminder');
+      toast.error(t('skills.toast.reminderFailed', 'Could not send reminder'));
     }
     setReminding(false);
   }
@@ -473,8 +519,8 @@ export default function Skills() {
     setShowAdd(false);
     try {
       if (currentUser) await setDoc(doc(db, 'users', currentUser.uid), { skillsMatrix: updated }, { merge: true });
-      toast.success('Skill added');
-    } catch (e) { console.error(e); toast.error('Save failed'); }
+      toast.success(t('skills.toast.skillAdded', 'Skill added'));
+    } catch (e) { console.error(e); toast.error(t('skills.toast.saveFailed', 'Save failed')); }
   }
 
   async function addSuggested(category, name) {
@@ -482,15 +528,15 @@ export default function Skills() {
     setMatrix(updated);
     try {
       if (currentUser) await setDoc(doc(db, 'users', currentUser.uid), { skillsMatrix: updated }, { merge: true });
-      toast.success(`"${name}" added to ${category}`);
-    } catch (e) { console.error(e); toast.error('Save failed'); }
+      toast.success(t('skills.toast.skillAddedTo', '"{{name}}" added to {{category}}', { name: trSkillName(t, name), category: trCategory(t, category) }));
+    } catch (e) { console.error(e); toast.error(t('skills.toast.saveFailed', 'Save failed')); }
   }
 
   const existingSkillNames = new Set(allSkills.map(s => s.name));
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      <PageHeader icon="⭐" title="Skills Assessment — Awareness of Accountability" subtitle="Self-assessment and peer ratings across skill domains"
+      <PageHeader icon="⭐" title={t('skills.pageTitle', 'Skills Assessment — Awareness of Accountability')} subtitle={t('skills.pageSubtitle', 'Self-assessment and peer ratings across skill domains')}
         action={
           <div style={{ display: 'flex', gap: 10 }}>
             <button className={editMode ? 'btn-primary' : 'btn-secondary'} disabled={saving}
@@ -498,21 +544,21 @@ export default function Skills() {
                 if (editMode) saveAssessment();
                 setEditMode(e => !e);
               }}>
-              {editMode ? (saving ? 'Saving…' : '✓ Save Assessment') : '✏️ Edit'}
+              {editMode ? (saving ? t('skills.saving', 'Saving…') : `✓ ${t('skills.saveAssessment', 'Save Assessment')}`) : `✏️ ${t('skills.edit', 'Edit')}`}
             </button>
-            <button className="btn-secondary" onClick={() => generateSkillsMatrixPDF(matrix, { userName: currentUser?.displayName || '' })}>🖨️ PDF</button>
-            <button className="btn-primary" onClick={() => setShowAdd(s => !s)}>+ Add Skill</button>
+            <button className="btn-secondary" onClick={() => generateSkillsMatrixPDF(matrix, { userName: currentUser?.displayName || '' })}>🖨️ {t('skills.pdf', 'PDF')}</button>
+            <button className="btn-primary" onClick={() => setShowAdd(s => !s)}>+ {t('skills.addSkill', 'Add Skill')}</button>
           </div>
         }
       />
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: '1.5rem' }}>
         <div className="stat-tile" style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 4px' }}>Avg Self-Assessment</p>
+          <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 4px' }}>{t('skills.avgSelfAssessment', 'Avg Self-Assessment')}</p>
           <p style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0d9488', margin: 0 }}>{avgSelf}<span style={{ fontSize: '1rem', color: '#94a3b8', fontWeight: 400 }}>/5</span></p>
         </div>
         <div className="stat-tile" style={{ textAlign: 'center' }}>
-          <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 4px' }}>Avg Peer Rating</p>
+          <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '0 0 4px' }}>{t('skills.avgPeerRating', 'Avg Peer Rating')}</p>
           <p style={{ fontSize: '2.25rem', fontWeight: 900, color: '#0f2044', margin: 0 }}>{avgPeer ?? '—'}<span style={{ fontSize: '1rem', color: '#94a3b8', fontWeight: 400 }}>/5</span></p>
         </div>
       </div>
@@ -520,13 +566,13 @@ export default function Skills() {
       {/* Monthly skills points */}
       <div className="card" style={{ padding: '0.875rem 1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
         <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-          Skills pts this month: {[earned30.self, earned30.requested, earned30.received].filter(Boolean).length}/3
+          {t('skills.pointsThisMonth', 'Skills pts this month: {{count}}/3', { count: [earned30.self, earned30.requested, earned30.received].filter(Boolean).length })}
         </span>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {[
-            { label: 'Self-assessment', key: 'self' },
-            { label: 'Survey requested', key: 'requested' },
-            { label: 'Survey received', key: 'received' },
+            { label: t('skills.selfAssessmentLabel', 'Self-assessment'), key: 'self' },
+            { label: t('skills.surveyRequestedLabel', 'Survey requested'), key: 'requested' },
+            { label: t('skills.surveyReceivedLabel', 'Survey received'), key: 'received' },
           ].map(({ label, key }) => (
             <span key={key} style={{
               padding: '3px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 700,
@@ -543,36 +589,36 @@ export default function Skills() {
       {/* Request a peer assessment */}
       {team.length > 0 && (
         <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', borderLeft: '4px solid #0d9488' }}>
-          <h3 style={{ fontWeight: 800, color: '#0f766e', margin: '0 0 4px', fontSize: '0.95rem' }}>🙋 Request a Peer Assessment</h3>
+          <h3 style={{ fontWeight: 800, color: '#0f766e', margin: '0 0 4px', fontSize: '0.95rem' }}>🙋 {t('skills.requestPeerAssessment', 'Request a Peer Assessment')}</h3>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 12px', lineHeight: 1.5 }}>
-            Ask a teammate to rate your skills. +1 pt for requesting, and +1 more when they deliver it (each max once per month).
+            {t('skills.requestPeerAssessmentDesc', 'Ask a teammate to rate your skills. +1 pt for requesting, and +1 more when they deliver it (each max once per month).')}
           </p>
           {myRequest?.status === 'pending' ? (
             <div style={{ padding: '0.625rem 1rem', borderRadius: 10, background: '#fefce8', border: '1px solid #fde047', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
               <span style={{ fontSize: '0.8rem', color: '#a16207', fontWeight: 700, flex: 1, minWidth: 180 }}>
-                ⏳ Waiting on {myRequest.toName} — requested {fmtDate(myRequest.requestedAt)}
-                {myRequest.remindedAt && <span style={{ fontWeight: 500 }}> · last reminded {fmtDate(myRequest.remindedAt)}</span>}
+                ⏳ {t('skills.waitingOn', 'Waiting on {{name}} — requested {{date}}', { name: myRequest.toName, date: fmtDate(myRequest.requestedAt) })}
+                {myRequest.remindedAt && <span style={{ fontWeight: 500 }}> · {t('skills.lastReminded', 'last reminded {{date}}', { date: fmtDate(myRequest.remindedAt) })}</span>}
               </span>
               <button onClick={sendReminder} disabled={reminding}
                 style={{ background: '#ca8a04', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.9rem', fontWeight: 700, fontSize: '0.78rem', cursor: reminding ? 'wait' : 'pointer', flexShrink: 0 }}>
-                {reminding ? 'Sending…' : '🔔 Resend Email Reminder'}
+                {reminding ? t('skills.sending', 'Sending…') : `🔔 ${t('skills.resendEmailReminder', 'Resend Email Reminder')}`}
               </button>
             </div>
           ) : (
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
               <select className="input" value={requestTarget} onChange={e => setRequestTarget(e.target.value)} style={{ maxWidth: 280 }}>
-                <option value="">Choose a teammate…</option>
+                <option value="">{t('skills.chooseTeammate', 'Choose a teammate…')}</option>
                 {team.map(m => <option key={m.uid} value={m.uid}>{m.name}</option>)}
               </select>
               <button className="btn-primary" onClick={requestPeerSurvey} disabled={requesting || !requestTarget}
                 style={{ opacity: requestTarget ? 1 : 0.5 }}>
-                {requesting ? 'Sending…' : 'Send Request (+1 pt)'}
+                {requesting ? t('skills.sending', 'Sending…') : t('skills.sendRequest', 'Send Request (+1 pt)')}
               </button>
             </div>
           )}
           {myRequest?.status === 'completed' && (
             <p style={{ fontSize: '0.72rem', color: '#15803d', fontWeight: 700, margin: '10px 0 0' }}>
-              ✓ Last survey delivered by {myRequest.completedBy} on {fmtDate(myRequest.completedAt)}
+              ✓ {t('skills.lastSurveyDelivered', 'Last survey delivered by {{name}} on {{date}}', { name: myRequest.completedBy, date: fmtDate(myRequest.completedAt) })}
             </p>
           )}
         </div>
@@ -583,25 +629,25 @@ export default function Skills() {
         <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', border: '1px solid #c4b5fd', background: '#faf5ff' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
             <span style={{ fontSize: '1.1rem' }}>👥</span>
-            <h3 style={{ fontWeight: 800, color: '#5b21b6', margin: 0, fontSize: '0.95rem' }}>Assess a Teammate</h3>
+            <h3 style={{ fontWeight: 800, color: '#5b21b6', margin: 0, fontSize: '0.95rem' }}>{t('skills.assessTeammate', 'Assess a Teammate')}</h3>
           </div>
           <p style={{ fontSize: '0.75rem', color: '#7c3aed', margin: '0 0 12px', lineHeight: 1.5 }}>
-            Rate each skill from your own observation. Their self-ratings are hidden on purpose — a blind rating is what makes the gap analysis honest.
+            {t('skills.assessTeammateDesc', 'Rate each skill from your own observation. Their self-ratings are hidden on purpose — a blind rating is what makes the gap analysis honest.')}
           </p>
 
           <select className="input" value={assessingUid}
             onChange={e => { setAssessingUid(e.target.value); setPeerRatings({}); }}
             style={{ marginBottom: assessingUid ? 14 : 0, maxWidth: 360 }}>
-            <option value="">Select a teammate…</option>
+            <option value="">{t('skills.selectTeammate', 'Select a teammate…')}</option>
             {assessableTeam.map(m => (
               <option key={m.uid} value={m.uid}>
-                {m.request?.status === 'pending' && m.request?.toUid === currentUser?.uid ? `🙋 ${m.name} (requested you)` : m.name}
+                {m.request?.status === 'pending' && m.request?.toUid === currentUser?.uid ? t('skills.requestedYou', '🙋 {{name}} (requested you)', { name: m.name }) : m.name}
               </option>
             ))}
           </select>
 
           {assessee && assesseeSkillCount === 0 && (
-            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>This teammate has no skills defined yet.</p>
+            <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>{t('skills.noSkillsDefined', 'This teammate has no skills defined yet.')}</p>
           )}
 
           {assessee && assesseeSkillCount > 0 && (
@@ -610,16 +656,16 @@ export default function Skills() {
                 {assessee.matrix.map(cat => (
                   <div key={cat.category} style={{ background: 'white', borderRadius: 12, border: '1px solid #e9d5ff', overflow: 'hidden' }}>
                     <div style={{ padding: '0.5rem 1rem', background: catColors[cat.category] || '#0f2044' }}>
-                      <span style={{ color: 'white', fontWeight: 800, fontSize: '0.8rem' }}>{cat.category}</span>
+                      <span style={{ color: 'white', fontWeight: 800, fontSize: '0.8rem' }}>{trCategory(t, cat.category)}</span>
                     </div>
                     {cat.skills.map((s, si) => {
                       const key = skillKey(cat.category, s.name);
                       return (
                         <div key={s.name} style={{ padding: '0.75rem 1rem', borderBottom: si < cat.skills.length - 1 ? '1px solid #f3e8ff' : 'none' }}>
-                          <p style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-primary)', margin: '0 0 6px' }}>{s.name}</p>
+                          <p style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-primary)', margin: '0 0 6px' }}>{trSkillName(t, s.name)}</p>
                           <SkillGuide name={s.name} />
                           <div style={{ display: 'grid', gridTemplateColumns: '42px auto', columnGap: 12, alignItems: 'center', justifyContent: 'start' }}>
-                            <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Peer</p>
+                            <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('skills.peerLabel', 'Peer')}</p>
                             <RatingDots value={peerRatings[key] || 0}
                               onChange={val => setPeerRatings(r => ({ ...r, [key]: val }))} color="#7c3aed" />
                           </div>
@@ -631,12 +677,12 @@ export default function Skills() {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
                 <span style={{ fontSize: '0.75rem', fontWeight: 700, color: allPeerRated ? '#15803d' : '#7c3aed' }}>
-                  {peerRatedCount}/{assesseeSkillCount} skills rated {allPeerRated ? '✓' : ''}
+                  {t('skills.skillsRatedCount', '{{rated}}/{{total}} skills rated', { rated: peerRatedCount, total: assesseeSkillCount })} {allPeerRated ? '✓' : ''}
                 </span>
                 <button className="btn-primary" onClick={savePeerAssessment}
                   disabled={savingPeer || !allPeerRated}
                   style={{ background: '#7c3aed', borderColor: '#7c3aed', opacity: allPeerRated ? 1 : 0.5 }}>
-                  {savingPeer ? 'Saving…' : `💾 Save Peer Assessment for ${assessee.name}`}
+                  {savingPeer ? t('skills.saving', 'Saving…') : t('skills.savePeerAssessmentFor', '💾 Save Peer Assessment for {{name}}', { name: assessee.name })}
                 </button>
               </div>
             </>
@@ -646,34 +692,34 @@ export default function Skills() {
 
       {showAdd && (
         <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>Add New Skill</h3>
+          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>{t('skills.addNewSkill', 'Add New Skill')}</h3>
           <form onSubmit={addSkill} style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 14 }}>
-            <div><label className="label">Category</label><select className="input" value={newSkill.category} onChange={e => setNewSkill(f => ({ ...f, category: e.target.value }))}>{matrix.map(c => <option key={c.category}>{c.category}</option>)}</select></div>
-            <div><label className="label">Skill Name</label><input className="input" required value={newSkill.name} onChange={e => setNewSkill(f => ({ ...f, name: e.target.value }))} placeholder="e.g. Agile Methodology" /></div>
-            <div><label className="label">Initial Rating</label><input className="input" type="number" min={1} max={5} value={newSkill.self} onChange={e => setNewSkill(f => ({ ...f, self: +e.target.value }))} /></div>
+            <div><label className="label">{t('skills.category', 'Category')}</label><select className="input" value={newSkill.category} onChange={e => setNewSkill(f => ({ ...f, category: e.target.value }))}>{matrix.map(c => <option key={c.category} value={c.category}>{trCategory(t, c.category)}</option>)}</select></div>
+            <div><label className="label">{t('skills.skillName', 'Skill Name')}</label><input className="input" required value={newSkill.name} onChange={e => setNewSkill(f => ({ ...f, name: e.target.value }))} placeholder={t('skills.skillNamePlaceholder', 'e.g. Agile Methodology')} /></div>
+            <div><label className="label">{t('skills.initialRating', 'Initial Rating')}</label><input className="input" type="number" min={1} max={5} value={newSkill.self} onChange={e => setNewSkill(f => ({ ...f, self: +e.target.value }))} /></div>
             <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10 }}>
-              <button className="btn-primary" type="submit">Add Skill</button>
-              <button className="btn-secondary" type="button" onClick={() => setShowAdd(false)}>Cancel</button>
+              <button className="btn-primary" type="submit">{t('skills.addSkill', 'Add Skill')}</button>
+              <button className="btn-secondary" type="button" onClick={() => setShowAdd(false)}>{t('skills.cancel', 'Cancel')}</button>
             </div>
           </form>
 
           {/* Suggested skills — tap to add */}
           <div style={{ marginTop: 18, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-            <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 2px', fontSize: '0.85rem' }}>💡 Suggested Skills</h4>
-            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 12px' }}>Tap any suggestion to add it to your matrix — each comes with a built-in proficiency guide.</p>
+            <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 2px', fontSize: '0.85rem' }}>💡 {t('skills.suggestedSkills', 'Suggested Skills')}</h4>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 12px' }}>{t('skills.suggestedSkillsDesc', 'Tap any suggestion to add it to your matrix — each comes with a built-in proficiency guide.')}</p>
             {Object.entries(SKILL_LIBRARY).map(([category, list]) => {
               const available = list.filter(s => !existingSkillNames.has(s.name));
               if (available.length === 0) return null;
               return (
                 <div key={category} style={{ marginBottom: 10 }}>
-                  <p style={{ fontSize: '0.7rem', fontWeight: 800, color: catColors[category] || '#0f2044', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{category}</p>
+                  <p style={{ fontSize: '0.7rem', fontWeight: 800, color: catColors[category] || '#0f2044', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{trCategory(t, category)}</p>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {available.map(s => (
                       <button key={s.name} onClick={() => addSuggested(category, s.name)}
                         style={{ padding: '4px 12px', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer',
                           background: 'white', color: catColors[category] || '#0f2044',
                           border: `1.5px solid ${catColors[category] || '#0f2044'}40` }}>
-                        + {s.name}
+                        + {trSkillName(t, s.name)}
                       </button>
                     ))}
                   </div>
@@ -688,8 +734,8 @@ export default function Skills() {
         {matrix.map((cat, ci) => (
           <div key={cat.category} className="card" style={{ overflow: 'hidden' }}>
             <div style={{ padding: '0.75rem 1.25rem', background: catColors[cat.category] || '#0f2044', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ color: 'white', fontWeight: 800, fontSize: '0.9rem' }}>{cat.category}</span>
-              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>{cat.skills.length} skills</span>
+              <span style={{ color: 'white', fontWeight: 800, fontSize: '0.9rem' }}>{trCategory(t, cat.category)}</span>
+              <span style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem' }}>{t('skills.skillsCount', '{{count}} skills', { count: cat.skills.length })}</span>
             </div>
             <div>
               {cat.skills.map((skill, si) => (
@@ -697,31 +743,31 @@ export default function Skills() {
                   {/* Line 1: name + level on the left, badges on the right */}
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 10, marginBottom: 10 }}>
                     <div>
-                      <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)', margin: '0 0 2px' }}>{skill.name}</p>
-                      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>{levelLabels[skill.self]}</p>
+                      <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)', margin: '0 0 2px' }}>{trSkillName(t, skill.name)}</p>
+                      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>{trLevelLabel(t, skill.self)}</p>
                     </div>
                     <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
-                      {skill.self > skill.peer && skill.peer > 0 && <span className="badge-yellow">Gap</span>}
-                      {skill.peer > skill.self && <span className="badge-green" style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 700 }}>Hidden Strength</span>}
-                      {skill.self < 3 && <span className="badge-red">Develop</span>}
+                      {skill.self > skill.peer && skill.peer > 0 && <span className="badge-yellow">{t('skills.gap', 'Gap')}</span>}
+                      {skill.peer > skill.self && <span className="badge-green" style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 700 }}>{t('skills.hiddenStrength', 'Hidden Strength')}</span>}
+                      {skill.self < 3 && <span className="badge-red">{t('skills.develop', 'Develop')}</span>}
                     </div>
                   </div>
                   <SkillGuide name={skill.name} />
                   {/* Line 2: ratings in a fixed-width label grid — identical left edge on every row */}
                   <div style={{ display: 'grid', gridTemplateColumns: '42px auto', columnGap: 12, rowGap: 8, alignItems: 'center', justifyContent: 'start' }}>
-                    <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Self</p>
+                    <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('skills.selfLabel', 'Self')}</p>
                     <RatingDots value={skill.self} onChange={editMode ? val => updateSelf(ci, si, val) : null} color="#0d9488" />
-                    <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Peer</p>
+                    <p style={{ fontSize: '0.68rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('skills.peerLabel', 'Peer')}</p>
                     {skill.peer > 0
                       ? <div>
                           <RatingDots value={skill.peer} color="#0f2044" />
                           {skill.peerBy && (
                             <p style={{ fontSize: '0.65rem', color: '#94a3b8', margin: '3px 0 0' }}>
-                              by {skill.peerBy}{skill.peerAt ? ` · ${new Date(skill.peerAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
+                              {t('skills.byPerson', 'by {{name}}', { name: skill.peerBy })}{skill.peerAt ? ` · ${new Date(skill.peerAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
                             </p>
                           )}
                         </div>
-                      : <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic' }}>Awaiting peer assessment</span>}
+                      : <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic' }}>{t('skills.awaitingPeerAssessment', 'Awaiting peer assessment')}</span>}
                   </div>
                 </div>
               ))}
@@ -733,7 +779,7 @@ export default function Skills() {
       {/* Trend chart — last 8 assessments, self vs peer */}
       {history.length > 0 && (
         <div className="card" style={{ padding: '1rem 1.25rem', marginTop: '1.5rem' }}>
-          <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.9rem' }}>Score Trend — Last 8 Assessments</h4>
+          <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.9rem' }}>{t('skills.scoreTrend', 'Score Trend — Last 8 Assessments')}</h4>
           <SkillsTrendChart history={history} />
         </div>
       )}
@@ -741,8 +787,8 @@ export default function Skills() {
       {/* Assessment records */}
       {history.length > 0 && (
         <div className="card" style={{ padding: '1rem 1.25rem', marginTop: '1.5rem' }}>
-          <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '0.9rem' }}>Assessment Records</h4>
-          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 12px' }}>Every saved assessment with its date — tap one to see the full snapshot</p>
+          <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '0.9rem' }}>{t('skills.assessmentRecords', 'Assessment Records')}</h4>
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 12px' }}>{t('skills.assessmentRecordsDesc', 'Every saved assessment with its date — tap one to see the full snapshot')}</p>
           <style>{`
             .skills-rec-scroll::-webkit-scrollbar { width: 8px; -webkit-appearance: none; }
             .skills-rec-scroll::-webkit-scrollbar-track { background: #e2e8f0; border-radius: 8px; }
@@ -763,20 +809,20 @@ export default function Skills() {
                     style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '0.65rem 0.875rem', background: i === 0 ? '#f0fdfa' : '#f8fafc', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                        {i === 0 && <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#0d9488', color: 'white', padding: '1px 7px', borderRadius: 9999 }}>Latest</span>}
+                        {i === 0 && <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#0d9488', color: 'white', padding: '1px 7px', borderRadius: 9999 }}>{t('skills.latest', 'Latest')}</span>}
                         <span style={{ fontSize: '0.65rem', fontWeight: 700, padding: '1px 7px', borderRadius: 9999,
                           background: rec.type === 'peer' ? '#ede9fe' : '#f0fdfa',
                           color: rec.type === 'peer' ? '#7c3aed' : '#0d9488' }}>
-                          {rec.type === 'peer' ? `👥 Peer · ${rec.assessorName || 'Leader'}` : 'Self'}
+                          {rec.type === 'peer' ? t('skills.peerBy', '👥 Peer · {{name}}', { name: rec.assessorName || t('skills.leader', 'Leader') }) : t('skills.selfLabel', 'Self')}
                         </span>
                         <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{fmtDate(rec.savedAt)}</span>
                       </div>
                       <div style={{ display: 'flex', gap: 12, marginTop: 3, flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '0.72rem', color: '#0d9488', fontWeight: 700 }}>Self: {rec.avgSelf}/5</span>
-                        <span style={{ fontSize: '0.72rem', color: '#0f2044', fontWeight: 700 }}>Peer: {rec.avgPeer ?? '—'}/5</span>
+                        <span style={{ fontSize: '0.72rem', color: '#0d9488', fontWeight: 700 }}>{t('skills.selfScore', 'Self: {{score}}/5', { score: rec.avgSelf })}</span>
+                        <span style={{ fontSize: '0.72rem', color: '#0f2044', fontWeight: 700 }}>{t('skills.peerScore', 'Peer: {{score}}/5', { score: rec.avgPeer ?? '—' })}</span>
                         {delta !== null && delta !== 0 && (
                           <span style={{ fontSize: '0.72rem', fontWeight: 700, color: delta > 0 ? '#15803d' : '#dc2626' }}>
-                            {delta > 0 ? `▲ +${delta}` : `▼ ${delta}`} vs previous
+                            {delta > 0 ? t('skills.deltaUp', '▲ +{{delta}}', { delta }) : t('skills.deltaDown', '▼ {{delta}}', { delta })} {t('skills.vsPrevious', 'vs previous')}
                           </span>
                         )}
                       </div>
@@ -787,12 +833,12 @@ export default function Skills() {
                     <div style={{ padding: '0.75rem 0.875rem', background: 'white', display: 'flex', flexDirection: 'column', gap: 10 }}>
                       {(rec.snapshot || []).map(cat => (
                         <div key={cat.category}>
-                          <p style={{ fontSize: '0.7rem', fontWeight: 800, color: catColors[cat.category] || '#0f2044', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{cat.category}</p>
+                          <p style={{ fontSize: '0.7rem', fontWeight: 800, color: catColors[cat.category] || '#0f2044', margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{trCategory(t, cat.category)}</p>
                           {cat.skills.map(s => (
                             <div key={s.name} style={{ display: 'flex', justifyContent: 'space-between', gap: 8, padding: '2px 0', borderBottom: '1px dashed #f1f5f9' }}>
-                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{s.name}</span>
+                              <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{trSkillName(t, s.name)}</span>
                               <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569', flexShrink: 0 }}>
-                                Self {s.self} · Peer {s.peer || '—'}
+                                {t('skills.selfPeerScore', 'Self {{self}} · Peer {{peer}}', { self: s.self, peer: s.peer || '—' })}
                               </span>
                             </div>
                           ))}

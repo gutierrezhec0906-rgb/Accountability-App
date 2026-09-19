@@ -2148,5 +2148,253 @@
       "deleted": "Eliminado",
       "deleteFailed": "Error al eliminar"
     }
+  },
+  "skills": {
+    "pageTitle": "Evaluación de Habilidades — Conciencia de la Rendición de Cuentas",
+    "pageSubtitle": "Autoevaluación y calificaciones de pares en los dominios de habilidades",
+    "edit": "Editar",
+    "saveAssessment": "Guardar Evaluación",
+    "saving": "Guardando…",
+    "pdf": "PDF",
+    "addSkill": "Agregar Habilidad",
+    "avgSelfAssessment": "Promedio de Autoevaluación",
+    "avgPeerRating": "Promedio de Calificación de Pares",
+    "pointsThisMonth": "Pts de habilidades este mes: {{count}}/3",
+    "selfAssessmentLabel": "Autoevaluación",
+    "surveyRequestedLabel": "Encuesta solicitada",
+    "surveyReceivedLabel": "Encuesta recibida",
+    "requestPeerAssessment": "Solicitar una Evaluación de Pares",
+    "requestPeerAssessmentDesc": "Pide a un compañero que califique tus habilidades. +1 pt por solicitar, y +1 más cuando la entregue (cada uno máximo una vez por mes).",
+    "waitingOn": "Esperando a {{name}} — solicitado el {{date}}",
+    "lastReminded": "último recordatorio el {{date}}",
+    "resendEmailReminder": "Reenviar Recordatorio por Correo",
+    "sending": "Enviando…",
+    "chooseTeammate": "Elige un compañero…",
+    "sendRequest": "Enviar Solicitud (+1 pt)",
+    "lastSurveyDelivered": "Última encuesta entregada por {{name}} el {{date}}",
+    "assessTeammate": "Evaluar a un Compañero",
+    "assessTeammateDesc": "Califica cada habilidad según tu propia observación. Sus autocalificaciones están ocultas a propósito — una calificación ciega es lo que hace honesto el análisis de brechas.",
+    "selectTeammate": "Selecciona un compañero…",
+    "requestedYou": "🙋 {{name}} (te lo solicitó)",
+    "noSkillsDefined": "Este compañero aún no tiene habilidades definidas.",
+    "peerLabel": "Par",
+    "skillsRatedCount": "{{rated}}/{{total}} habilidades calificadas",
+    "savePeerAssessmentFor": "💾 Guardar Evaluación de Pares para {{name}}",
+    "addNewSkill": "Agregar Nueva Habilidad",
+    "category": "Categoría",
+    "skillName": "Nombre de la Habilidad",
+    "skillNamePlaceholder": "ej. Metodología Ágil",
+    "initialRating": "Calificación Inicial",
+    "cancel": "Cancelar",
+    "suggestedSkills": "Habilidades Sugeridas",
+    "suggestedSkillsDesc": "Toca cualquier sugerencia para agregarla a tu matriz — cada una incluye una guía de competencia integrada.",
+    "skillsCount": "{{count}} habilidades",
+    "gap": "Brecha",
+    "hiddenStrength": "Fortaleza Oculta",
+    "develop": "Desarrollar",
+    "selfLabel": "Propio",
+    "byPerson": "por {{name}}",
+    "awaitingPeerAssessment": "Esperando evaluación de pares",
+    "scoreTrend": "Tendencia de Puntuación — Últimas 8 Evaluaciones",
+    "assessmentRecords": "Registros de Evaluación",
+    "assessmentRecordsDesc": "Cada evaluación guardada con su fecha — toca una para ver la instantánea completa",
+    "latest": "Más reciente",
+    "peerBy": "👥 Par · {{name}}",
+    "leader": "Líder",
+    "selfScore": "Propio: {{score}}/5",
+    "peerScore": "Par: {{score}}/5",
+    "deltaUp": "▲ +{{delta}}",
+    "deltaDown": "▼ {{delta}}",
+    "vsPrevious": "vs anterior",
+    "selfPeerScore": "Propio {{self}} · Par {{peer}}",
+    "selfAssessment": "Autoevaluación",
+    "peerAssessment": "Evaluación de Pares",
+    "noAssessmentsYetTrend": "Aún no hay evaluaciones guardadas — guarda una autoevaluación o una evaluación de pares para comenzar tu tendencia.",
+    "whatDoes15Mean": "¿Qué significa 1–5?",
+    "oneNovice": "1 — Novato",
+    "fiveExpert": "5 — Experto",
+    "scaleLegend": "2 = entre novato y competente · 3 = competente con orientación ocasional · 4 = avanzado, otros piden su ayuda",
+    "unknown": "Desconocido",
+    "toast": {
+      "peerAssessmentSaved": "Evaluación de pares guardada para {{name}} — ganó +1 pt por recibirla.",
+      "saveFailedPermissions": "Error al guardar — verifica los permisos",
+      "assessmentSavedPoint": "¡Evaluación guardada! +1 pt ganado.",
+      "assessmentSaved": "Evaluación guardada",
+      "assessmentSavedAlreadyEarned": "Evaluación guardada (el punto de autoevaluación ya se ganó este mes)",
+      "saveFailed": "Error al guardar",
+      "requestSentPoint": "¡Solicitud enviada a {{name}}! +1 pt ganado.",
+      "requestSent": "Solicitud enviada a {{name}}",
+      "requestSentAlreadyEarned": "Solicitud enviada a {{name}} (el punto de solicitud ya se ganó este mes)",
+      "requestFailed": "Error al enviar la solicitud",
+      "reminderSent": "Correo recordatorio enviado a {{name}}",
+      "reminderFailed": "No se pudo enviar el recordatorio",
+      "skillAdded": "Habilidad agregada",
+      "skillAddedTo": "\"{{name}}\" agregada a {{category}}"
+    },
+    "categories": {
+      "leadership": "Liderazgo",
+      "technical": "Técnico",
+      "interpersonal": "Interpersonal"
+    },
+    "levelLabels": {
+      "novice": "Novato",
+      "developing": "En Desarrollo",
+      "proficient": "Competente",
+      "advanced": "Avanzado",
+      "expert": "Experto"
+    },
+    "genericGuide": {
+      "what": "Califica qué tan consistente e independientemente se demuestra esta habilidad en el trabajo.",
+      "low": "Novato — apenas comenzando; necesita orientación y supervisión para aplicar esta habilidad, y los resultados son inconsistentes.",
+      "high": "Experto — una referencia a la que otros recurren para aprender; aplica la habilidad instintivamente en situaciones nuevas con resultados consistentemente sólidos."
+    },
+    "skillNames": {
+      "strategicThinking": "Pensamiento Estratégico",
+      "teamDevelopment": "Desarrollo del Equipo",
+      "decisionMaking": "Toma de Decisiones",
+      "communication": "Comunicación",
+      "delegation": "Delegación",
+      "changeManagement": "Gestión del Cambio",
+      "accountabilityFollowUp": "Rendición de Cuentas y Seguimiento",
+      "visionSetting": "Definición de Visión",
+      "leanPrinciples": "Principios Lean",
+      "dataAnalysis": "Análisis de Datos",
+      "rootCauseAnalysis": "Análisis de Causa Raíz",
+      "projectManagement": "Gestión de Proyectos",
+      "processMapping": "Mapeo de Procesos",
+      "kpiMetricsManagement": "Gestión de KPI y Métricas",
+      "standardWork": "Trabajo Estándar",
+      "continuousImprovement": "Mejora Continua (Kaizen)",
+      "conflictResolution": "Resolución de Conflictos",
+      "coachingMentoring": "Coaching y Mentoría",
+      "emotionalIntelligence": "Inteligencia Emocional",
+      "activeListening": "Escucha Activa",
+      "givingFeedback": "Dar Retroalimentación",
+      "influencePersuasion": "Influencia y Persuasión",
+      "crossFunctionalCollaboration": "Colaboración Interfuncional",
+      "recognitionMotivation": "Reconocimiento y Motivación"
+    },
+    "skillGuides": {
+      "strategicThinking": {
+        "what": "Ver más allá de las tareas de hoy — conectar las decisiones diarias con la dirección a largo plazo, anticipar obstáculos y posicionar al equipo para lo que viene.",
+        "low": "Reacciona día a día. Las decisiones se toman de forma aislada sin considerar el impacto posterior; se sorprende ante problemas predecibles.",
+        "high": "Vincula constantemente las prioridades del equipo con la dirección de la empresa, anticipa riesgos con trimestres de anticipación y ajusta los planes antes de que lleguen los problemas."
+      },
+      "teamDevelopment": {
+        "what": "Hacer crecer la capacidad de tu gente — identificar potencial, crear oportunidades desafiantes y formar sucesores.",
+        "low": "Hace el trabajo él mismo en lugar de desarrollar a otros; las habilidades del equipo se estancan año tras año.",
+        "high": "Cada miembro del equipo tiene una ruta de crecimiento visible; promueve gente regularmente y tiene un sucesor listo para su propio puesto."
+      },
+      "decisionMaking": {
+        "what": "Elegir bien bajo incertidumbre — reunir la información justa, sopesar los compromisos, decidir con prontitud y hacerse responsable del resultado.",
+        "low": "Evita o retrasa decisiones, escala todo, o decide impulsivamente sin sopesar las consecuencias.",
+        "high": "Toma decisiones oportunas y bien razonadas incluso con datos incompletos; explica el porqué, se compromete por completo y corrige el rumbo rápidamente cuando se equivoca."
+      },
+      "communication": {
+        "what": "Transmitir mensajes que realmente lleguen — claros, adaptados a la audiencia, oportunos y en ambas direcciones.",
+        "low": "Los mensajes son confusos o tardíos; el equipo frecuentemente se entera de los cambios de segunda mano y malinterpreta las prioridades.",
+        "high": "La gente siempre sabe qué importa, por qué y qué se espera; adapta su estilo del piso de planta a la sala de juntas sin esfuerzo."
+      },
+      "delegation": {
+        "what": "Asignar el trabajo correcto a las personas correctas con expectativas claras — transferir propiedad, no solo tareas.",
+        "low": "Se queda con todo el trabajo significativo; cuando sí delega, las instrucciones son vagas y retoma la tarea al primer tropiezo.",
+        "high": "Ajusta el trabajo al límite de crecimiento de cada persona, establece expectativas y puntos de seguimiento claros, y deja que la gente sea dueña del resultado."
+      },
+      "changeManagement": {
+        "what": "Guiar a las personas a través de transiciones — construir el argumento del cambio, gestionar la resistencia y sostener los nuevos comportamientos.",
+        "low": "Anuncia cambios y espera cumplimiento; lo toma por sorpresa la resistencia y deja que las iniciativas mueran en silencio.",
+        "high": "Genera aceptación genuina desde el inicio, nombra la resistencia abiertamente y la trabaja, y mantiene los cambios vivos hasta que se consolidan."
+      },
+      "accountabilityFollowUp": {
+        "what": "Asegurar que se cumplan los compromisos — los tuyos y los del equipo — mediante un seguimiento constante y conversaciones de desempeño honestas.",
+        "low": "No cumple sus propios compromisos; deja que los plazos del equipo se deslicen en silencio y evita conversaciones incómodas de desempeño.",
+        "high": "Todo compromiso tiene un responsable y una fecha; hace seguimiento de forma predecible, aborda el retraso el mismo día que ocurre, con respeto y de forma directa."
+      },
+      "visionSetting": {
+        "what": "Pintar una imagen convincente de hacia dónde va el equipo y hacerla significativa para cada puesto.",
+        "low": "Los miembros del equipo no pueden decir qué intenta lograr el equipo más allá de las tareas de esta semana.",
+        "high": "Todos en el equipo pueden articular el destino, por qué importa y cómo su propio trabajo lo impulsa."
+      },
+      "leanPrinciples": {
+        "what": "Aplicar la eliminación de desperdicios, el flujo y el pensamiento pull a las operaciones diarias.",
+        "low": "No puede identificar los 8 desperdicios en su propia línea; la mejora es algo que hacen otras personas.",
+        "high": "Ve el desperdicio instintivamente, enseña el pensamiento lean a otros y ha liderado mejoras de flujo medibles."
+      },
+      "dataAnalysis": {
+        "what": "Convertir números en bruto en decisiones — recopilar los datos correctos, detectar tendencias y separar la señal del ruido.",
+        "low": "Las decisiones dependen de la intuición o la anécdota; las gráficas se leen mal o no se leen en absoluto.",
+        "high": "Plantea primero la pregunta, obtiene los datos correctos, detecta la tendencia real y cambia decisiones basándose en lo que dicen."
+      },
+      "rootCauseAnalysis": {
+        "what": "Ir más allá de los síntomas hasta la causa verdadera usando herramientas como los 5 Porqués y diagramas de espina de pescado — para que los problemas queden resueltos.",
+        "low": "Corrige síntomas; los mismos problemas regresan cada mes y apagar incendios es la norma.",
+        "high": "Facilita un RCA riguroso que encuentra causas sistémicas; los problemas recurrentes realmente dejan de repetirse."
+      },
+      "projectManagement": {
+        "what": "Entregar iniciativas a tiempo y dentro del alcance — planificar, secuenciar, dar seguimiento y desbloquear.",
+        "low": "Los proyectos se desvían sin hitos; el estado se desconoce hasta que ya se pasó el plazo.",
+        "high": "Define el alcance de forma realista, da seguimiento visible, identifica riesgos temprano y entrega en la fecha acordada en el arranque."
+      },
+      "processMapping": {
+        "what": "Documentar cómo fluye realmente el trabajo — hacer visible lo invisible para poder mejorarlo.",
+        "low": "No puede describir el proceso de principio a fin que administra; la documentación falta o es ficticia.",
+        "high": "Mapea el estado actual con precisión junto con quienes hacen el trabajo, y usa los mapas para impulsar rediseños que perduran."
+      },
+      "kpiMetricsManagement": {
+        "what": "Elegir y usar las pocas medidas que realmente importan — indicadores adelantados, líneas base honestas y seguimiento visible.",
+        "low": "Da seguimiento a lo que es fácil de medir; las métricas existen pero nadie actúa sobre ellas.",
+        "high": "Un puñado de KPI bien elegidos impulsan las conversaciones diarias; el equipo conoce los números y qué los mueve."
+      },
+      "standardWork": {
+        "what": "Establecer y mantener la mejor forma conocida actualmente de hacer cada tarea — la base para la mejora.",
+        "low": "Cada operador lo hace diferente; la calidad depende de quién se presentó hoy.",
+        "high": "Los estándares están documentados, se siguen, se auditan y se mejoran — la variación entre personas es mínima."
+      },
+      "continuousImprovement": {
+        "what": "Construir el hábito de la mejora pequeña y constante en uno mismo y en el equipo.",
+        "low": "Las cosas se hacen como siempre se han hecho; las sugerencias mueren en un cajón.",
+        "high": "El equipo implementa mejoras semanalmente sin que se lo pidan; las pequeñas victorias se acumulan en grandes ganancias."
+      },
+      "conflictResolution": {
+        "what": "Abordar los desacuerdos de forma directa y productiva — llegar al problema real y preservar las relaciones.",
+        "low": "Evita el conflicto hasta que explota, o gana discusiones perdiendo a las personas.",
+        "high": "Detecta la tensión temprano, escucha genuinamente ambos lados y convierte los conflictos en acuerdos de trabajo más sólidos."
+      },
+      "coachingMentoring": {
+        "what": "Desarrollar a otros mediante preguntas y descubrimiento guiado en lugar de respuestas — construir capacidad, no dependencia.",
+        "low": "Da respuestas e instrucciones; la gente regresa con las mismas preguntas repetidamente.",
+        "high": "Hace preguntas que ayudan a la gente a resolver sus propios problemas; sus colaboradores directos crecen visiblemente en criterio y confianza."
+      },
+      "emotionalIntelligence": {
+        "what": "Leer y gestionar tus propias emociones y leer con precisión a los demás — mantenerse efectivo bajo presión.",
+        "low": "Se ve sorprendido por sus propias reacciones bajo estrés; pasa por alto señales evidentes de que otros están frustrados o desconectados.",
+        "high": "Se mantiene sereno y deliberado bajo presión; lee el ambiente con precisión y ajusta su enfoque en tiempo real."
+      },
+      "activeListening": {
+        "what": "Escuchar para entender, no para responder — atención total, preguntas aclaratorias y confirmación de lo escuchado.",
+        "low": "Interrumpe, hace varias cosas a la vez durante las conversaciones y se va con un mensaje distinto al que se dijo.",
+        "high": "La gente sale de las conversaciones sintiéndose genuinamente escuchada; repite y confirma antes de responder, y recuerda lo que se dijo."
+      },
+      "givingFeedback": {
+        "what": "Dar retroalimentación específica, oportuna y accionable — tanto de reconocimiento como correctiva — que la gente pueda realmente usar.",
+        "low": "Guarda todo para la revisión anual, habla en generalidades vagas o evita por completo la retroalimentación correctiva.",
+        "high": "Da retroalimentación específica y basada en comportamientos en cuestión de días, equilibrada entre reconocimiento y corrección; la gente busca su opinión."
+      },
+      "influencePersuasion": {
+        "what": "Mover a las personas sin autoridad formal — construir el argumento, encontrar interés compartido y ganar acuerdo genuino.",
+        "low": "Depende de la jerarquía o se rinde cuando le dicen que no; los compañeros rara vez cambian de postura por su opinión.",
+        "high": "Gana apoyo regularmente entre departamentos mediante preparación, credibilidad y un enfoque que conecta con los objetivos de los demás."
+      },
+      "crossFunctionalCollaboration": {
+        "what": "Trabajar eficazmente entre líneas de departamento — compartir información, alinear prioridades y resolver en conjunto.",
+        "low": "Protege los intereses de su silo; otros departamentos se enteran de los impactos después de los hechos.",
+        "high": "Construye relaciones de trabajo entre funciones antes de necesitarlas; los problemas conjuntos se resuelven sin escalarlos."
+      },
+      "recognitionMotivation": {
+        "what": "Notar y reforzar el buen trabajo de maneras significativas para cada individuo.",
+        "low": "El buen trabajo pasa desapercibido; el reconocimiento, cuando ocurre, es genérico y se siente vacío.",
+        "high": "Detecta semanalmente a la gente haciendo las cosas bien, adapta el reconocimiento a la persona, y el esfuerzo discrecional del equipo lo demuestra."
+      }
+    }
   }
 }
