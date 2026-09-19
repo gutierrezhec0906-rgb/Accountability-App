@@ -3601,5 +3601,101 @@
       "incomplete": "Por favor completa la evaluación completa — {{answered}} de {{total}} preguntas respondidas.",
       "aiSupportFailed": "No se pudo obtener apoyo de IA — inténtalo de nuevo"
     }
+  },
+  "pricing": {
+    "title": "Planes y Precios",
+    "subtitle": "Elige el plan que se ajuste a tu trayectoria de liderazgo. Actualiza en cualquier momento.",
+    "yourCurrentPlan": "Tu plan actual",
+    "free": "Gratis",
+    "premium": "Premium",
+    "allInclusive": "Todo Incluido",
+    "upgradeFreeNote": "Actualiza para desbloquear las 13 herramientas avanzadas de liderazgo y los videos de capacitación.",
+    "upgradePremiumNote": "Pasa a Todo Incluido para agregar coaching personal con expertos maestros.",
+    "fullAccessNote": "Tienes acceso completo a todas las funciones de la aplicación.",
+    "currentPlan": "Plan Actual",
+    "expertCoachingTitle": "Coaching Experto — Exclusivo de Todo Incluido",
+    "expertCoachingDesc": "Trabaja uno a uno con coaches maestros de liderazgo. Sesiones personalizadas, retroalimentación accionable y rendición de cuentas diseñada en torno a tus metas específicas.",
+    "comingSoon": "Próximamente",
+    "howSubscriptionsWork": "Cómo funcionan las suscripciones",
+    "tags": {
+      "oneOnOneSessions": "Sesiones Uno a Uno",
+      "expertMentors": "Mentores Expertos",
+      "customGrowthPlan": "Plan de Crecimiento Personalizado",
+      "priorityAccess": "Acceso Prioritario"
+    },
+    "faq": {
+      "howUpgrade": {
+        "q": "¿Cómo actualizo?",
+        "a": "Contacta a tu administrador o comunícate con nosotros. Tu cuenta será actualizada dentro de 24 horas."
+      },
+      "changePlans": {
+        "q": "¿Puedo cambiar de plan?",
+        "a": "Sí — actualiza o reduce tu plan en cualquier momento. Los cambios entran en vigor de inmediato."
+      },
+      "downgradeData": {
+        "q": "¿Qué pasa con mis datos si reduzco mi plan?",
+        "a": "Tus datos siempre están seguros. Solo pierdes acceso a las funciones premium hasta que vuelvas a actualizar."
+      }
+    },
+    "plans": {
+      "free": {
+        "name": "Gratis",
+        "price": "$0",
+        "period": "para siempre",
+        "cta": "Plan Actual",
+        "features": {
+          "0": "✅ Panel y Puntuación de Rendición de Cuentas",
+          "1": "✅ Registro de Coaching",
+          "2": "✅ Buzón de Retroalimentación",
+          "3": "✅ Frases de Liderazgo",
+          "4": "✅ Metas SMART",
+          "5": "✅ Rastreador de Puntuación",
+          "6": "—  Herramientas avanzadas de liderazgo",
+          "7": "—  Videos de capacitación",
+          "8": "—  Sesiones de coaching experto"
+        }
+      },
+      "premium": {
+        "name": "Premium",
+        "price": "Contáctanos",
+        "period": "suscripción",
+        "badge": "Más Popular",
+        "cta": "Actualizar a Premium",
+        "features": {
+          "0": "✅ Todo lo del plan Gratis",
+          "1": "✅ El Tablero de Rendición de Cuentas",
+          "2": "✅ Línea de Balance",
+          "3": "✅ Sentido de Urgencia",
+          "4": "✅ Herramientas OpEx",
+          "5": "✅ Evaluación de Inteligencia Emocional",
+          "6": "✅ Constructor de Visión",
+          "7": "✅ Mindfulness",
+          "8": "✅ Kit de Herramientas Lean",
+          "9": "✅ Resolución de Problemas",
+          "10": "✅ Evaluación DISC",
+          "11": "✅ Desarrollo de Habilidades",
+          "12": "✅ Centro de Capacitación y Videos",
+          "13": "✅ Rastreador de Mentoría",
+          "14": "✅ Desarrollo de Carrera",
+          "15": "—  Coaching personal con expertos"
+        }
+      },
+      "all-inclusive": {
+        "name": "Todo Incluido",
+        "price": "Contáctanos",
+        "period": "suscripción",
+        "badge": "Mejor Valor",
+        "cta": "Pasar a Todo Incluido",
+        "features": {
+          "0": "✅ Todo lo del plan Premium",
+          "1": "✅ Coaching Personal con Expertos Maestros",
+          "2": "✅ Herramientas de Liderazgo Definitivas",
+          "3": "✅ Descargas y Recursos Exclusivos",
+          "4": "✅ Reportes de Evaluación Avanzados",
+          "5": "✅ Soporte Prioritario",
+          "6": "✅ Acceso Anticipado a Nuevas Funciones"
+        }
+      }
+    }
   }
 }

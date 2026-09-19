@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { TIER_ICONS } from '../utils/subscription';
 import PageHeader from '../components/PageHeader';
@@ -82,7 +83,11 @@ const plans = [
   },
 ];
 
+function trPlanField(t, plan, field) { return t(`pricing.plans.${plan.id}.${field}`, plan[field]); }
+function trFeature(t, plan, i) { return t(`pricing.plans.${plan.id}.features.${i}`, plan.features[i]); }
+
 export default function Pricing() {
+  const { t } = useTranslation();
   const { userProfile } = useAuth();
   const navigate = useNavigate();
   const currentTier = userProfile?.subscriptionTier || 'free';
@@ -91,8 +96,8 @@ export default function Pricing() {
     <div style={{ maxWidth: 1000, margin: '0 auto' }} className="space-y-6">
       <PageHeader
         icon="💎"
-        title="Plans & Pricing"
-        subtitle="Choose the plan that matches your leadership journey. Upgrade anytime."
+        title={t('pricing.title', 'Plans & Pricing')}
+        subtitle={t('pricing.subtitle', 'Choose the plan that matches your leadership journey. Upgrade anytime.')}
       />
 
       {/* Current tier banner */}
@@ -105,21 +110,21 @@ export default function Pricing() {
         <span style={{ fontSize: '1.25rem' }}>{TIER_ICONS[currentTier]}</span>
         <div>
           <p style={{ fontWeight: 700, color: '#15803d', margin: 0, fontSize: '0.875rem' }}>
-            Your current plan: <strong>{currentTier === 'all-inclusive' ? 'All-Inclusive' : currentTier === 'premium' ? 'Premium' : 'Free'}</strong>
+            {t('pricing.yourCurrentPlan', 'Your current plan')}: <strong>{currentTier === 'all-inclusive' ? t('pricing.allInclusive', 'All-Inclusive') : currentTier === 'premium' ? t('pricing.premium', 'Premium') : t('pricing.free', 'Free')}</strong>
           </p>
           {currentTier === 'free' && (
             <p style={{ color: '#166534', fontSize: '0.72rem', margin: 0 }}>
-              Upgrade to unlock all 13 advanced leadership tools and training videos.
+              {t('pricing.upgradeFreeNote', 'Upgrade to unlock all 13 advanced leadership tools and training videos.')}
             </p>
           )}
           {currentTier === 'premium' && (
             <p style={{ color: '#166534', fontSize: '0.72rem', margin: 0 }}>
-              Go All-Inclusive to add personal coaching with master experts.
+              {t('pricing.upgradePremiumNote', 'Go All-Inclusive to add personal coaching with master experts.')}
             </p>
           )}
           {currentTier === 'all-inclusive' && (
             <p style={{ color: '#166534', fontSize: '0.72rem', margin: 0 }}>
-              You have full access to every feature in the app.
+              {t('pricing.fullAccessNote', 'You have full access to every feature in the app.')}
             </p>
           )}
         </div>
@@ -145,17 +150,17 @@ export default function Pricing() {
                     fontSize: '0.65rem', fontWeight: 800, letterSpacing: '0.06em',
                     textTransform: 'uppercase', borderRadius: 99, padding: '3px 10px',
                   }}>
-                    {plan.badge}
+                    {trPlanField(t, plan, 'badge')}
                   </span>
                 )}
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
                   <span style={{ fontSize: '1.5rem' }}>{plan.icon}</span>
-                  <span style={{ color: 'white', fontWeight: 900, fontSize: '1.125rem' }}>{plan.name}</span>
+                  <span style={{ color: 'white', fontWeight: 900, fontSize: '1.125rem' }}>{trPlanField(t, plan, 'name')}</span>
                 </div>
                 <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: '1.75rem', fontWeight: 900, margin: '0 0 2px', lineHeight: 1 }}>
-                  {plan.price}
+                  {plan.price === '$0' ? plan.price : trPlanField(t, plan, 'price')}
                 </p>
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem', margin: 0 }}>{plan.period}</p>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem', margin: 0 }}>{trPlanField(t, plan, 'period')}</p>
               </div>
 
               {/* Features */}
@@ -165,7 +170,7 @@ export default function Pricing() {
                     fontSize: '0.8rem', margin: 0, lineHeight: 1.5,
                     color: f.startsWith('—') ? 'var(--text-muted)' : 'var(--text-primary)',
                     fontWeight: f.startsWith('✅') ? 500 : 400,
-                  }}>{f}</p>
+                  }}>{trFeature(t, plan, i)}</p>
                 ))}
               </div>
 
@@ -173,11 +178,11 @@ export default function Pricing() {
               <div style={{ padding: '1rem 1.25rem', background: 'var(--card-bg)', borderTop: '1px solid var(--border)' }}>
                 {isCurrentPlan ? (
                   <div style={{ textAlign: 'center', padding: '0.6rem', borderRadius: 10, background: '#f1f5f9', color: '#64748b', fontWeight: 700, fontSize: '0.875rem' }}>
-                    ✓ Current Plan
+                    ✓ {t('pricing.currentPlan', 'Current Plan')}
                   </div>
                 ) : (
                   <a
-                    href="mailto:contact@yourapp.com?subject=Subscription Inquiry - {plan.name}"
+                    href={`mailto:contact@yourapp.com?subject=Subscription Inquiry - ${plan.name}`}
                     style={{
                       display: 'block', textAlign: 'center', padding: '0.6rem 1rem',
                       borderRadius: 10, fontWeight: 700, fontSize: '0.875rem',
@@ -185,7 +190,7 @@ export default function Pricing() {
                       ...plan.ctaStyle,
                     }}
                   >
-                    {plan.cta} →
+                    {trPlanField(t, plan, 'cta')} →
                   </a>
                 )}
               </div>
@@ -205,21 +210,26 @@ export default function Pricing() {
             🎓
           </div>
           <div style={{ flex: 1, minWidth: 200 }}>
-            <p style={{ fontWeight: 900, color: '#4c1d95', fontSize: '1rem', margin: '0 0 4px' }}>Expert Coaching — All-Inclusive Exclusive</p>
+            <p style={{ fontWeight: 900, color: '#4c1d95', fontSize: '1rem', margin: '0 0 4px' }}>{t('pricing.expertCoachingTitle', 'Expert Coaching — All-Inclusive Exclusive')}</p>
             <p style={{ color: '#6d28d9', fontSize: '0.8rem', margin: '0 0 10px', lineHeight: 1.6 }}>
-              Work 1-on-1 with master leadership coaches. Personalized sessions, actionable feedback, and accountability built around your specific goals.
+              {t('pricing.expertCoachingDesc', 'Work 1-on-1 with master leadership coaches. Personalized sessions, actionable feedback, and accountability built around your specific goals.')}
             </p>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              {['1-on-1 Sessions', 'Expert Mentors', 'Custom Growth Plan', 'Priority Access'].map(tag => (
-                <span key={tag} style={{ background: '#ede9fe', color: '#6d28d9', fontSize: '0.7rem', fontWeight: 700, borderRadius: 99, padding: '3px 10px' }}>
-                  {tag}
+              {[
+                { key: 'oneOnOneSessions', label: '1-on-1 Sessions' },
+                { key: 'expertMentors', label: 'Expert Mentors' },
+                { key: 'customGrowthPlan', label: 'Custom Growth Plan' },
+                { key: 'priorityAccess', label: 'Priority Access' },
+              ].map(tag => (
+                <span key={tag.key} style={{ background: '#ede9fe', color: '#6d28d9', fontSize: '0.7rem', fontWeight: 700, borderRadius: 99, padding: '3px 10px' }}>
+                  {t(`pricing.tags.${tag.key}`, tag.label)}
                 </span>
               ))}
             </div>
           </div>
           <div style={{ flexShrink: 0 }}>
             <span style={{ display: 'inline-block', background: '#7c3aed', color: 'white', borderRadius: 10, padding: '0.6rem 1.25rem', fontWeight: 700, fontSize: '0.875rem' }}>
-              Coming Soon
+              {t('pricing.comingSoon', 'Coming Soon')}
             </span>
           </div>
         </div>
@@ -227,16 +237,16 @@ export default function Pricing() {
 
       {/* FAQ / note */}
       <div className="card" style={{ padding: '1.25rem' }}>
-        <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.9rem' }}>How subscriptions work</p>
+        <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.9rem' }}>{t('pricing.howSubscriptionsWork', 'How subscriptions work')}</p>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           {[
-            ['How do I upgrade?', 'Contact your administrator or reach out to us. Your account will be upgraded within 24 hours.'],
-            ['Can I change plans?', 'Yes — upgrade or downgrade at any time. Changes take effect immediately.'],
-            ['What happens to my data if I downgrade?', 'Your data is always safe. You just lose access to premium features until you upgrade again.'],
-          ].map(([q, a]) => (
-            <div key={q} style={{ borderRadius: 10, background: '#f8fafc', padding: '0.75rem 1rem' }}>
-              <p style={{ fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 2px', fontSize: '0.8rem' }}>{q}</p>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0, lineHeight: 1.5 }}>{a}</p>
+            { key: 'howUpgrade', q: 'How do I upgrade?', a: 'Contact your administrator or reach out to us. Your account will be upgraded within 24 hours.' },
+            { key: 'changePlans', q: 'Can I change plans?', a: 'Yes — upgrade or downgrade at any time. Changes take effect immediately.' },
+            { key: 'downgradeData', q: 'What happens to my data if I downgrade?', a: 'Your data is always safe. You just lose access to premium features until you upgrade again.' },
+          ].map(faq => (
+            <div key={faq.key} style={{ borderRadius: 10, background: '#f8fafc', padding: '0.75rem 1rem' }}>
+              <p style={{ fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 2px', fontSize: '0.8rem' }}>{t(`pricing.faq.${faq.key}.q`, faq.q)}</p>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', margin: 0, lineHeight: 1.5 }}>{t(`pricing.faq.${faq.key}.a`, faq.a)}</p>
             </div>
           ))}
         </div>
