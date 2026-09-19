@@ -3719,5 +3719,42 @@
       "resetFailed": "No se pudo enviar el correo de restablecimiento. Verifica la dirección e intenta de nuevo.",
       "invalidCredentials": "Correo electrónico o contraseña inválidos"
     }
+  },
+  "signup": {
+    "appName": "Accountability App",
+    "tagline": "Plataforma de Liderazgo de Alto Rendimiento",
+    "createAccount": "Crear Cuenta",
+    "invitedMessage": "Has sido invitado a unirte a {{company}} como {{role}}. Solo completa tu nombre y contraseña para comenzar.",
+    "yourTeam": "tu equipo",
+    "fullName": "Nombre Completo",
+    "emailAddress": "Correo Electrónico",
+    "role": "Rol",
+    "roles": {
+      "leader": "Líder",
+      "manager": "Gerente",
+      "supervisor": "Supervisor",
+      "individualContributor": "Colaborador Individual"
+    },
+    "password": "Contraseña",
+    "min6Chars": "Mín. 6 caracteres",
+    "confirmPassword": "Confirmar Contraseña",
+    "repeatPassword": "Repetir contraseña",
+    "iAgreeToThe": "Acepto los",
+    "termsConditions": "Términos y Condiciones",
+    "and": "y",
+    "privacyPolicy": "Política de Privacidad",
+    "creatingAccount": "Creando Cuenta...",
+    "alreadyHaveAccount": "¿Ya tienes una cuenta?",
+    "signIn": "Iniciar Sesión",
+    "terms": "Términos",
+    "privacy": "Privacidad",
+    "copyright": "© 2026 Leadership Flow Technologies, LLC. Todos los derechos reservados.",
+    "toast": {
+      "passwordsMismatch": "Las contraseñas no coinciden",
+      "passwordTooShort": "La contraseña debe tener al menos 6 caracteres",
+      "mustAgree": "Por favor acepta los Términos y Condiciones y la Política de Privacidad para continuar",
+      "accountCreated": "¡Cuenta creada! Bienvenido a bordo.",
+      "createFailed": "Error al crear la cuenta"
+    }
   }
 }
