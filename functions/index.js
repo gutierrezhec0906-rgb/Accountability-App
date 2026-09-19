@@ -1510,14 +1510,24 @@ exports.coachingPracticeReply = onCall(async (request) => {
   const languageInstruction = isSpanish
     ? '\n\nIMPORTANT: Respond ONLY in natural, conversational Spanish (español) — as a native Spanish speaker would actually talk, not a literal translation. The coach is speaking to you in Spanish; stay in Spanish for the entire conversation regardless of the language used in your character description above.'
     : '';
-  const systemPrompt = `${persona}\n\nStay fully in character as this person for the entire conversation. Respond naturally and conversationally, as if speaking out loud — 1 to 4 sentences, no stage directions, no asterisks, no narration, just what you would actually say. Never break character to give coaching advice or acknowledge you are an AI.${languageInstruction}`;
+  const systemPrompt = `${persona}\n\nStay fully in character as this person for the entire conversation. Respond naturally and conversationally, as if speaking out loud on a phone call — 1 to 4 sentences. Output ONLY the words this person would actually say out loud. Never include stage directions, action descriptions, or narration of any kind (e.g. "*shifts uncomfortably*", "(pauses)", "[sighs]") — not even in a different language from the dialogue. Never break character to give coaching advice or acknowledge you are an AI.${languageInstruction}`;
 
   const messages = (Array.isArray(history) ? history : [])
     .filter(h => (h?.text || '').trim())
     .map(h => ({ role: h.role === 'coachee' ? 'assistant' : 'user', content: h.text.trim() }));
   messages.push({ role: 'user', content: message.trim() });
 
-  const replyText = await callClaude(systemPrompt, messages, 250);
+  let replyText = await callClaude(systemPrompt, messages, 250);
+  // Safety net: strip any stage-direction/narration text the model still
+  // slips in (e.g. "*shifts uncomfortably*", "(pauses)", "[sighs]") despite
+  // the system prompt forbidding it — these are meant to be spoken and
+  // heard via TTS, not read as a script.
+  replyText = replyText
+    .replace(/\*[^*]*\*/g, '')
+    .replace(/\[[^\]]*\]/g, '')
+    .replace(/[ \t]{2,}/g, ' ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 
   // Text-to-speech via ElevenLabs, so the reply is heard, not just read.
   // Optional: if no key is configured, still return the text so the practice
