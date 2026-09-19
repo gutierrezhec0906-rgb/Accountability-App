@@ -4606,5 +4606,35 @@
       "deleted": "Encuesta eliminada.",
       "deleteFailed": "No se pudo eliminar la encuesta."
     }
+  },
+  "podcasts": {
+    "pageTitle": "Podcast de Liderazgo - Los Cinco Pilares del Accountability",
+    "pageSubtitle": "Un programa por pilar — escucha, luego llévalo a cómo lideras",
+    "podcast": "Podcast",
+    "comingSoon": "Próximamente",
+    "openInSpotify": "Abrir en Spotify",
+    "share": "Compartir",
+    "shareThisEpisode": "Compartir este episodio",
+    "playerTitle": "Reproductor de podcast de {{pillar}}",
+    "react": "Reaccionar",
+    "comments": "Comentarios",
+    "comment": "Comentario",
+    "nComments": "{{count}} comentarios",
+    "loading": "Cargando…",
+    "noCommentsYet": "Aún no hay comentarios — sé el primero en decir algo.",
+    "askAdminAssignTeam": "Pide a tu administrador que te asigne a un equipo para ver y publicar los comentarios de tu equipo.",
+    "writeComment": "Escribe un comentario…",
+    "post": "Publicar",
+    "delete": "Eliminar",
+    "teammate": "Compañero de equipo",
+    "shareTitle": "{{pillar}} — Podcast de Liderazgo",
+    "shareText": "Escucha este episodio de {{pillar}} de la serie de podcasts de Accountability App.",
+    "toast": {
+      "linkCopied": "Enlace copiado al portapapeles",
+      "copyFailed": "No se pudo copiar el enlace",
+      "needTeam": "Necesitas estar asignado a un equipo antes de poder comentar. Pide ayuda a tu administrador.",
+      "postFailed": "No se pudo publicar el comentario. Por favor intenta de nuevo.",
+      "deleteFailed": "No se pudo eliminar el comentario."
+    }
   }
 }

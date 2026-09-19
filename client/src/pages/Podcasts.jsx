@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { doc, getDoc, getDocs, addDoc, deleteDoc, collection, query, where, updateDoc, deleteField, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -19,6 +20,10 @@ const PODCASTS = [
   { id: 'encourage', pillar: 'Winning with Compassion', icon: '❤️', color: '#fb7185', episodeUrl: 'https://open.spotify.com/episode/5AsvXJWvPdxcY2NnOckabI?si=1EAjJtYmScSEqf0aNg_T5A' },
 ];
 
+// Reuses the sidebar's category translations (layout.categories.*) since the
+// pillar names here are identical to Layout.jsx's nav category labels.
+function trPillar(t, podcast) { return t(`layout.categories.${podcast.id}`, podcast.pillar); }
+
 // Spotify's oEmbed iframe wants /embed/episode/{id} (or /embed/show/{id}),
 // not the open.spotify.com share link — strip query params and swap the path.
 function spotifyEmbedSrc(url) {
@@ -36,10 +41,11 @@ function spotifyEmbedSrc(url) {
 // Opens the device's native share sheet (WhatsApp, Messenger, Mail, etc.) on
 // mobile. Desktop browsers mostly don't support navigator.share, so fall
 // back to copying the link to the clipboard.
-async function sharePodcast(podcast) {
+async function sharePodcast(podcast, t) {
+  const pillarLabel = trPillar(t, podcast);
   const shareData = {
-    title: `${podcast.pillar} — Leadership Podcast`,
-    text: `Check out this ${podcast.pillar} episode from the Accountability App podcast series.`,
+    title: t('podcasts.shareTitle', '{{pillar}} — Leadership Podcast', { pillar: pillarLabel }),
+    text: t('podcasts.shareText', 'Check out this {{pillar}} episode from the Accountability App podcast series.', { pillar: pillarLabel }),
     url: podcast.episodeUrl,
   };
   if (navigator.share) {
@@ -48,9 +54,9 @@ async function sharePodcast(podcast) {
   }
   try {
     await navigator.clipboard.writeText(podcast.episodeUrl);
-    toast.success('Link copied to clipboard');
+    toast.success(t('podcasts.toast.linkCopied', 'Link copied to clipboard'));
   } catch {
-    toast.error('Could not copy link');
+    toast.error(t('podcasts.toast.copyFailed', 'Could not copy link'));
   }
 }
 
@@ -75,6 +81,7 @@ function fmtCommentTime(ts) {
 // Team-visible reactions on a podcast episode — same emoji set and visual
 // language as Quotes.jsx's TeamReactionRow, kept in sync intentionally.
 function TeamReactionRow({ counts = {}, myEmoji, onToggle }) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
       {REACTION_EMOJIS.map(emoji => {
@@ -82,7 +89,7 @@ function TeamReactionRow({ counts = {}, myEmoji, onToggle }) {
         const isMine = myEmoji === emoji;
         if (count === 0 && !isMine) {
           return (
-            <button key={emoji} onClick={() => onToggle(emoji)} title="React"
+            <button key={emoji} onClick={() => onToggle(emoji)} title={t('podcasts.react', 'React')}
               style={{ background: 'none', border: '1px solid #e8edf5', borderRadius: 9999, padding: '2px 8px', fontSize: '0.85rem', cursor: 'pointer', opacity: 0.55, transition: 'opacity 0.15s' }}
               onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0.55'}>
               {emoji}
@@ -104,6 +111,7 @@ function TeamReactionRow({ counts = {}, myEmoji, onToggle }) {
 // identical mechanics to Quotes.jsx's QuoteComments, targeting a separate
 // `podcastComments` collection keyed by episodeId instead of quoteIdx.
 function PodcastComments({ episodeId, currentUser, teamId, authorName }) {
+  const { t } = useTranslation();
   const [expanded, setExpanded] = useState(false);
   const [comments, setComments] = useState(null); // null = not yet loaded
   const [text, setText] = useState('');
@@ -137,13 +145,13 @@ function PodcastComments({ episodeId, currentUser, teamId, authorName }) {
     const trimmed = text.trim();
     if (!trimmed) return;
     if (!teamId) {
-      toast.error("You need to be assigned to a team before you can comment. Ask your admin.");
+      toast.error(t('podcasts.toast.needTeam', "You need to be assigned to a team before you can comment. Ask your admin."));
       return;
     }
     setPosting(true);
     try {
       const newComment = {
-        episodeId, teamId, uid: currentUser.uid, authorName: authorName || 'Teammate',
+        episodeId, teamId, uid: currentUser.uid, authorName: authorName || t('podcasts.teammate', 'Teammate'),
         text: trimmed, createdAt: serverTimestamp(),
       };
       const ref = await addDoc(collection(db, 'podcastComments'), newComment);
@@ -151,7 +159,7 @@ function PodcastComments({ episodeId, currentUser, teamId, authorName }) {
       setText('');
     } catch (e) {
       console.error(e);
-      toast.error('Could not post comment. Please try again.');
+      toast.error(t('podcasts.toast.postFailed', 'Could not post comment. Please try again.'));
     }
     setPosting(false);
   }
@@ -160,7 +168,7 @@ function PodcastComments({ episodeId, currentUser, teamId, authorName }) {
     try {
       await deleteDoc(doc(db, 'podcastComments', id));
       setComments(c => c.filter(x => x.id !== id));
-    } catch (e) { console.error(e); toast.error('Could not delete comment.'); }
+    } catch (e) { console.error(e); toast.error(t('podcasts.toast.deleteFailed', 'Could not delete comment.')); }
   }
 
   return (
@@ -172,20 +180,20 @@ function PodcastComments({ episodeId, currentUser, teamId, authorName }) {
       `}</style>
       <button onClick={() => setExpanded(e => !e)}
         style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, fontSize: '0.78rem', fontWeight: 700, color: '#64748b', display: 'flex', alignItems: 'center', gap: 4 }}>
-        💬 {count === null ? 'Comments' : count === 0 ? 'Comment' : `${count} comment${count === 1 ? '' : 's'}`}
+        💬 {count === null ? t('podcasts.comments', 'Comments') : count === 0 ? t('podcasts.comment', 'Comment') : t('podcasts.nComments', '{{count}} comments', { count })}
         <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{expanded ? '▲' : '▼'}</span>
       </button>
       {expanded && (
         <div style={{ marginTop: 8, borderRadius: 10, border: '1px solid #e2e8f0', background: '#f8fafc', padding: '0.65rem' }}>
           {!teamId && (
             <p style={{ fontSize: '0.72rem', color: '#b45309', margin: '0 0 8px' }}>
-              Ask your admin to assign you to a team to see and post your team's comments.
+              {t('podcasts.askAdminAssignTeam', "Ask your admin to assign you to a team to see and post your team's comments.")}
             </p>
           )}
           {comments === null ? (
-            <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: 0 }}>Loading…</p>
+            <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: 0 }}>{t('podcasts.loading', 'Loading…')}</p>
           ) : comments.length === 0 ? (
-            <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: 0 }}>No comments yet — be the first to say something.</p>
+            <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: 0 }}>{t('podcasts.noCommentsYet', 'No comments yet — be the first to say something.')}</p>
           ) : (
             <div className="pc-scroll" style={{ maxHeight: 260, overflowY: 'scroll', scrollbarWidth: 'thin', scrollbarColor: '#64748b #e2e8f0', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
               {comments.map(c => (
@@ -197,7 +205,7 @@ function PodcastComments({ episodeId, currentUser, teamId, authorName }) {
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                         <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>{fmtCommentTime(c.createdAt)}</span>
                         {c.uid === currentUser?.uid && (
-                          <button onClick={() => removeComment(c.id)} title="Delete"
+                          <button onClick={() => removeComment(c.id)} title={t('podcasts.delete', 'Delete')}
                             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.72rem', color: '#94a3b8', padding: 0 }}>🗑</button>
                         )}
                       </div>
@@ -211,7 +219,7 @@ function PodcastComments({ episodeId, currentUser, teamId, authorName }) {
           <div style={{ display: 'flex', gap: 6 }}>
             <input
               className="input"
-              placeholder="Write a comment…"
+              placeholder={t('podcasts.writeComment', 'Write a comment…')}
               value={text}
               onChange={e => setText(e.target.value)}
               onKeyDown={e => { if (e.key === 'Enter' && !posting) postComment(); }}
@@ -219,7 +227,7 @@ function PodcastComments({ episodeId, currentUser, teamId, authorName }) {
             />
             <button onClick={postComment} disabled={posting || !text.trim()}
               style={{ border: 'none', borderRadius: 8, padding: '0.45rem 0.9rem', background: text.trim() ? '#0d9488' : '#cbd5e1', color: 'white', fontWeight: 700, fontSize: '0.78rem', cursor: text.trim() ? 'pointer' : 'not-allowed' }}>
-              Post
+              {t('podcasts.post', 'Post')}
             </button>
           </div>
         </div>
@@ -229,7 +237,9 @@ function PodcastComments({ episodeId, currentUser, teamId, authorName }) {
 }
 
 function PodcastCard({ podcast, currentUser, teamId, myName, myEmoji, counts, onToggleReaction }) {
+  const { t } = useTranslation();
   const embedSrc = spotifyEmbedSrc(podcast.episodeUrl);
+  const pillarLabel = trPillar(t, podcast);
   return (
     <div className="card" style={{ padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: 12, borderLeft: `4px solid ${podcast.color}` }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -237,15 +247,15 @@ function PodcastCard({ podcast, currentUser, teamId, myName, myEmoji, counts, on
           {podcast.icon}
         </div>
         <div>
-          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1rem' }}>{podcast.pillar}</h3>
-          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>Podcast</p>
+          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1rem' }}>{pillarLabel}</h3>
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{t('podcasts.podcast', 'Podcast')}</p>
         </div>
       </div>
 
       {embedSrc ? (
         <>
           <iframe
-            title={`${podcast.pillar} podcast player`}
+            title={t('podcasts.playerTitle', '{{pillar}} podcast player', { pillar: pillarLabel })}
             style={{ borderRadius: 12, border: 'none' }}
             src={embedSrc}
             width="100%"
@@ -256,11 +266,11 @@ function PodcastCard({ podcast, currentUser, teamId, myName, myEmoji, counts, on
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
             <a href={podcast.episodeUrl} target="_blank" rel="noopener noreferrer"
               style={{ fontSize: '0.78rem', fontWeight: 700, color: podcast.color, textAlign: 'center' }}>
-              🎧 Open in Spotify
+              🎧 {t('podcasts.openInSpotify', 'Open in Spotify')}
             </a>
-            <button onClick={() => sharePodcast(podcast)} title="Share this episode"
+            <button onClick={() => sharePodcast(podcast, t)} title={t('podcasts.shareThisEpisode', 'Share this episode')}
               style={{ display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-muted)', padding: 0 }}>
-              <ShareIcon size={14} /> Share
+              <ShareIcon size={14} /> {t('podcasts.share', 'Share')}
             </button>
           </div>
           <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: 10, display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -270,7 +280,7 @@ function PodcastCard({ podcast, currentUser, teamId, myName, myEmoji, counts, on
         </>
       ) : (
         <div style={{ background: '#f8fafc', borderRadius: 12, padding: '1.5rem 1rem', textAlign: 'center', border: '1px dashed #e2e8f0' }}>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600 }}>🎙️ Coming soon</p>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', margin: 0, fontWeight: 600 }}>🎙️ {t('podcasts.comingSoon', 'Coming soon')}</p>
         </div>
       )}
     </div>
@@ -278,6 +288,7 @@ function PodcastCard({ podcast, currentUser, teamId, myName, myEmoji, counts, on
 }
 
 export default function Podcasts() {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [myReactions, setMyReactions] = useState({});  // { episodeId: emoji }
   const [teamCounts, setTeamCounts] = useState({});     // { episodeId: { emoji: count } }
@@ -352,7 +363,7 @@ export default function Podcasts() {
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      <PageHeader icon="🎙️" title="Leadership Podcast - The Five Pillars of Accountability" subtitle="One show per pillar — listen, then bring it into how you lead" />
+      <PageHeader icon="🎙️" title={t('podcasts.pageTitle', 'Leadership Podcast - The Five Pillars of Accountability')} subtitle={t('podcasts.pageSubtitle', 'One show per pillar — listen, then bring it into how you lead')} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
         {PODCASTS.map(p => (
           <PodcastCard key={p.id} podcast={p}
