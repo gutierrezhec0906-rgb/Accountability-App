@@ -1735,5 +1735,418 @@
         "C": "Basadas en datos con agendas y resultados claros"
       }
     }
+  },
+  "problemSolving": {
+    "pageTitle": "Resolución de Problemas — Responsabilidad que Resuelve",
+    "pageSubtitle": "5 Por Qués, Diagrama de Ishikawa y Plantilla A3",
+    "tools": {
+      "fiveWhys": "5 Por Qués",
+      "fishboneDiagram": "Diagrama de Ishikawa",
+      "a3Template": "Plantilla A3"
+    },
+    "categories": {
+      "people": "Personas",
+      "process": "Proceso",
+      "materials": "Materiales",
+      "machine": "Máquina",
+      "environment": "Entorno",
+      "measurement": "Medición"
+    },
+    "eventLabels": {
+      "5whys": "Análisis de 5 Por Qués",
+      "fishbone": "Diagrama de Ishikawa",
+      "a3": "Resolución de Problemas A3"
+    },
+    "ready": "Listo",
+    "saving": "Guardando...",
+    "filled": "Completado",
+    "goal": "Objetivo",
+    "askYourself": "Pregúntate",
+    "watchFor": "Ten cuidado con: ",
+    "hideGuide": "Ocultar guía",
+    "showGuideStep": "Mostrar guía para este paso",
+    "showGuideCategory": "Mostrar guía para esta categoría",
+    "showGuideSection": "Mostrar guía para esta sección",
+    "thinking": "Pensando…",
+    "printSavePdf": "Imprimir / Guardar PDF",
+    "selfCheckTitle": "Antes de guardar — autoevaluación rápida",
+    "confirmDelete": "¿Eliminar esta plantilla?",
+    "humanErrorNudge": "¿Qué permitió que esto sucediera? Considera: brechas de capacitación, instrucciones poco claras, falta de a prueba de errores, o presión de tiempo.",
+    "blameWarning": "Intenta eliminar el lenguaje de culpa. Replantea como un hecho observable: qué pasó, con qué frecuencia, dónde.",
+    "metricTip": "Consejo: agrega un número para hacerlo medible — ej. \"12% de las unidades fallaron\" o \"3 incidentes en 30 días\".",
+    "whyGuide": {
+      "0": {
+        "goal": "Identifica la causa inmediata y visible: lo que verías si presenciaras el problema ocurriendo.",
+        "prompts": [
+          "¿Qué pasó justo antes de que ocurriera este problema?",
+          "¿Qué se rompió, se omitió o fue diferente de lo normal?",
+          "Si hubieras estado presente cuando ocurrió, ¿qué habrías visto?"
+        ],
+        "watchFor": "Evita repetir el problema. \"¿Por qué la pieza falló la inspección?\" → \"Porque no cumplió la especificación\" es circular, no una causa."
+      },
+      "1": {
+        "goal": "Retrocede una capa: del evento a la condición que lo hizo posible.",
+        "prompts": [
+          "¿Por qué existía esa condición en primer lugar?",
+          "¿Fue un desliz de una sola vez, o sucede así regularmente?",
+          "¿Había un paso, control o barrera que debería haberlo detectado?"
+        ],
+        "watchFor": "No te detengas en \"error humano\". Si la respuesta es \"el operador cometió un error\", pregunta qué permitió ese error: capacitación, fatiga, instrucciones poco claras, falta de a prueba de errores."
+      },
+      "2": {
+        "goal": "Empieza a separar a las personas del proceso. Aquí la conversación pasa de lo que alguien hizo a cómo está configurado el sistema.",
+        "prompts": [
+          "¿Esto es causado por un procedimiento faltante, poco claro, o que no se sigue?",
+          "¿Esta condición fue diseñada así, o se fue desviando con el tiempo?",
+          "¿Una persona nueva en este rol cometería el mismo error? Si es así, es sistémico."
+        ],
+        "watchFor": "A menudo las personas sienten que encontraron la causa raíz aquí porque resulta satisfactorio. Insiste una vez más: pregunta \"por qué existe esa condición\" antes de detenerte."
+      },
+      "3": {
+        "goal": "Llega al factor organizacional o de diseño: sistemas de capacitación, asignación de recursos, prioridades, o cómo se gestiona realmente el trabajo.",
+        "prompts": [
+          "¿Fue un problema de recursos (tiempo, personas, herramientas, presupuesto)?",
+          "¿Hubo una decisión tomada más arriba que creó esta condición?",
+          "¿Es una brecha en un estándar, o un estándar que existe pero no se hace cumplir?"
+        ],
+        "watchFor": "Cuidado con el lenguaje de culpa (\"la gerencia no prioriza esto\"). Reformula: ¿qué proceso de toma de decisiones específico llevó a esa prioridad?"
+      },
+      "4": {
+        "goal": "Llega a algo lo suficientemente específico como para que la solución sea obvia, y lo bastante estructural como para que arreglarlo evite que se repita, no solo en este caso.",
+        "prompts": [
+          "Si solo arregláramos esto, ¿dejaría de ocurrir el problema en general, no solo en este caso?",
+          "¿Es algo sobre lo que realmente podemos actuar (un proceso, un estándar, un diseño)?",
+          "¿Hemos llegado a una causa, o a \"así son las cosas aquí\"? (Lo segundo normalmente significa que hace falta un por qué más.)"
+        ],
+        "watchFor": "Detente cuando la respuesta señale un proceso o estándar sobre el que puedas actuar. Continúa si la respuesta sigue siendo un evento (\"se rompió\") en lugar de una condición."
+      }
+    },
+    "fishboneGuide": {
+      "people": {
+        "goal": "Saca a la luz causas relacionadas con habilidad, capacitación, comunicación o carga de trabajo, sin convertirlo en culpa.",
+        "prompts": [
+          "¿La persona estaba capacitada y calificada para esta tarea?",
+          "¿Había suficiente tiempo/personal para hacerlo correctamente?",
+          "¿Hubo una brecha de comunicación entre turnos, equipos o roles?",
+          "¿Es una brecha de habilidad, o un sistema que no respalda a la persona para hacerlo bien?"
+        ],
+        "watchFor": "Evita señalar un nombre. Redirige: \"¿qué de cómo está configurado este rol hizo posible el error?\""
+      },
+      "process": {
+        "goal": "Identifica brechas en cómo se define, documenta o secuencia el trabajo.",
+        "prompts": [
+          "¿Existe un procedimiento documentado para este paso? ¿Se sigue?",
+          "¿El proceso ha cambiado recientemente, o se ha desviado del diseño original?",
+          "¿Hay transferencias poco claras o pasos abiertos a interpretación?",
+          "¿Dos personas diferentes haciendo esta tarea obtendrían el mismo resultado?"
+        ],
+        "watchFor": "Un proceso no documentado casi siempre es una causa, no una categoría para dejar en blanco."
+      },
+      "materials": {
+        "goal": "Identifica contribuciones de insumos o materia prima al problema.",
+        "prompts": [
+          "¿El material cumplía la especificación al llegar?",
+          "¿Hubo un cambio de proveedor, de lote, o de condición de almacenamiento?",
+          "¿Hay variabilidad entre proveedores o lotes?",
+          "¿El material se manejó/almacenó correctamente antes de usarlo?"
+        ],
+        "watchFor": "Verifica si hubo cambios recientes de proveedor o de lote: a menudo se correlacionan con picos repentinos de defectos."
+      },
+      "machine": {
+        "goal": "Identifica contribuciones del equipo, herramental o tecnología.",
+        "prompts": [
+          "¿El equipo estaba calibrado, mantenido y en condición normal?",
+          "¿Ha habido un cambio reciente en equipo, ajustes o herramental?",
+          "¿Existe un programa de mantenimiento, y se siguió?",
+          "¿El equipo podría producir este resultado incluso usado correctamente?"
+        ],
+        "watchFor": "No omitas esto si el equipo \"parece estar bien\": haz las preguntas de todos modos. Los problemas intermitentes a menudo se esconden aquí."
+      },
+      "environment": {
+        "goal": "Identifica condiciones físicas, organizacionales o externas fuera del proceso inmediato.",
+        "prompts": [
+          "¿La temperatura, humedad, ruido o iluminación jugaron un papel?",
+          "¿Esto está ligado a la hora del día, el turno o factores estacionales?",
+          "¿Hay presión organizacional (por ejemplo, apurarse para cumplir un plazo) de por medio?",
+          "¿Esto ocurriría en otra ubicación, o es específico de este entorno?"
+        ],
+        "watchFor": "La presión cultural o de cronograma es una causa real: no la descartes. \"La prisa de fin de trimestre\" es una condición ambiental."
+      },
+      "measurement": {
+        "goal": "Cuestiona si el problema es real, o si es la forma en que se está midiendo.",
+        "prompts": [
+          "¿El método/herramienta de medición es preciso y está calibrado?",
+          "¿Diferentes personas o turnos miden esto de la misma manera?",
+          "¿Podría ser un error de medición en lugar de un problema real del proceso?",
+          "¿Los datos se recopilan en el punto correcto del proceso?"
+        ],
+        "watchFor": "Los equipos a menudo omiten esta categoría, pero puede disolver todo el \"problema\" si la causa raíz resulta ser un mal medidor o un método inconsistente."
+      }
+    },
+    "a3Guide": {
+      "background": {
+        "label": "2. Antecedentes",
+        "goal": "Da suficiente contexto para que alguien fuera del equipo entienda por qué esto importa: impacto en el negocio, no solo detalle técnico.",
+        "prompts": [
+          "¿Por qué le importa este problema al negocio o al cliente?",
+          "¿Cuál es el costo de no resolverlo (costo, entrega, seguridad, calidad)?",
+          "¿Qué desencadenó este A3: una queja, una métrica interna, un hallazgo de auditoría?"
+        ],
+        "watchFor": null,
+        "placeholder": "¿Cuál es el contexto de negocio? ¿Por qué importa esto?"
+      },
+      "currentState": {
+        "label": "3. Condición Actual",
+        "goal": "Muestra los hechos tal como son hoy, con datos, no opinión.",
+        "prompts": [
+          "¿Qué muestran los datos a lo largo del tiempo (tendencia, Pareto, gráfico de corrida)?",
+          "¿Dónde ocurre exactamente esto (qué línea, turno, pieza, cliente)?",
+          "¿Cuál es la brecha entre el desempeño actual y el objetivo?"
+        ],
+        "watchFor": "Escribe hechos, no conclusiones. \"El proceso está roto\" no es una condición actual; \"La tasa de defectos es 9%, subió de 2%, concentrada en el segundo turno\" sí lo es.",
+        "placeholder": "Describe el desempeño actual con datos. Números, ubicación, tendencia."
+      },
+      "targetState": {
+        "label": "4. Meta / Objetivo",
+        "goal": "Un objetivo específico, medible y con plazo definido, no \"mejorar\" o \"reducir\".",
+        "prompts": [
+          "¿Qué número, para qué fecha?",
+          "¿Este objetivo es realista dada la condición actual, o es aspiracional?",
+          "¿Cómo sabrás que lo lograste? ¿Cuál es la medición?"
+        ],
+        "watchFor": "Los objetivos vagos (\"mejorar la calidad\") hacen imposible saber si tuviste éxito. Todo objetivo necesita un número y una fecha.",
+        "placeholder": "Ej. Reducir la tasa de defectos de 9% a 2% para el 30 de septiembre, medido semanalmente."
+      },
+      "rootCause": {
+        "label": "5. Análisis de Causa Raíz",
+        "goal": "Aquí es donde viven los 5 Por Qués y/o el Diagrama de Ishikawa. El A3 solo necesita el resumen de ese trabajo.",
+        "prompts": [
+          "¿Qué herramienta usaste (5 Por Qués, Ishikawa, ambas)?",
+          "¿Cuál es la causa raíz, en una oración?",
+          "¿Esta causa raíz está verificada con datos, o sigue siendo una hipótesis?"
+        ],
+        "watchFor": null,
+        "placeholder": "Resume tu análisis de causa raíz. Haz referencia a tus 5 Por Qués o Ishikawa si se completaron."
+      },
+      "countermeasures": {
+        "label": "6. Contramedidas",
+        "goal": "Acciones que abordan la causa raíz, no el síntoma.",
+        "prompts": [
+          "¿Cada contramedida se relaciona directamente con una causa raíz identificada arriba?",
+          "¿Es una solución permanente o una contención temporal? (Etiquétala de cualquier forma.)",
+          "¿Cuál es la prueba más pequeña de esta contramedida antes de implementarla por completo?"
+        ],
+        "watchFor": "Las contramedidas que no se conectan con la causa raíz son solo soluciones temporales: tendrán que repetirse.",
+        "placeholder": "Enumera cada contramedida. Indica si cada una es permanente (P) o de contención (C)."
+      },
+      "implementationPlan": {
+        "label": "7. Plan de Implementación",
+        "goal": "Quién hace qué, para cuándo: convierte las contramedidas en un plan real.",
+        "prompts": [
+          "¿Quién es dueño de cada acción?",
+          "¿Cuál es la fecha límite de cada una?",
+          "¿Qué podría bloquear este plan, y quién elimina ese bloqueo?"
+        ],
+        "watchFor": null,
+        "placeholder": "Acción | Responsable | Fecha Límite — uno por línea."
+      },
+      "followUp": {
+        "label": "8. Seguimiento / Resultados",
+        "goal": "Cierra el ciclo: ¿funcionó, y cómo lo sabes?",
+        "prompts": [
+          "¿Qué muestran los datos después de la contramedida, comparados con antes?",
+          "¿Alcanzaste el objetivo del paso 4?",
+          "¿Cuál es el plan para sostener esto (trabajo estándar, auditoría, control visual)?"
+        ],
+        "watchFor": null,
+        "placeholder": "¿Qué pasó después de la implementación? ¿Se movieron los datos? ¿Qué sostiene la solución?"
+      }
+    },
+    "saved": {
+      "title": "Plantillas Guardadas",
+      "count": "{{count}} plantilla",
+      "empty": "Aún no hay plantillas guardadas. Completa el formulario y haz clic en Guardar.",
+      "edit": "Editar",
+      "print": "Imprimir"
+    },
+    "nextStep": {
+      "title": "¿Cuál es tu siguiente paso?",
+      "subtitle": "Has identificado una causa raíz. Ahora elige qué tan compleja es la solución — eso determina qué herramienta usar después.",
+      "plusOnePoint": "+1 pt",
+      "quickAction": "Acción Rápida",
+      "quickActionDesc": "La solución es una tarea única y clara — un responsable, un paso, hecho en días o semanas.",
+      "complexProject": "Proyecto Complejo",
+      "complexProjectDesc": "La solución involucra a varias personas, fases o incógnitas — necesita planificación estructurada.",
+      "goToBoard": "Ir al Tablero de Responsabilidad",
+      "boardDesc": "Crea una nueva tarjeta de acción directamente vinculada a tu causa raíz. Define un responsable, una fecha límite y da seguimiento hasta completarla en tu tablero.",
+      "rootCauseToFix": "Causa raíz a resolver: ",
+      "openBoard": "Abrir el Tablero de Responsabilidad →",
+      "goToA3": "Ir a la Plantilla A3 de Resolución de Problemas",
+      "a3Desc": "El A3 está diseñado para soluciones complejas. Tus respuestas de los 5 Por Qués llenarán automáticamente tres secciones — solo tienes que completar el resto.",
+      "rowTitle": "Título",
+      "rowBackground": "1. Antecedentes y Contexto",
+      "rowRootCause": "4. Análisis de Causa Raíz",
+      "openA3": "Abrir la Plantilla A3 con mis datos precargados →"
+    },
+    "fiveWhys": {
+      "analysisTitle": "Título del Análisis *",
+      "analysisTitlePlaceholder": "Ej. Tiempo de inactividad de la Línea 2 — Junio 2026",
+      "problemStatement": "Enunciado del Problema",
+      "problemHint": "Sé específico, factual y observable. Sin culpa, sin suposiciones.",
+      "badExample": "\"A los operadores no les importa la calidad\"",
+      "goodExample": "\"El 12% de la Unidad X falló la inspección final en los últimos 30 días\"",
+      "problemPlaceholder": "¿Qué pasó? ¿Con qué frecuencia? ¿Dónde? Incluye un número si es posible.",
+      "keepGoing": "Sigue así — agrega más detalle para desbloquear la cadena de Por Qués abajo.",
+      "unlockPrompt": "Completa el Enunciado del Problema arriba para desbloquear la cadena de Por Qués",
+      "unlockHint": "Un enunciado del problema específico y medible evita la desviación en cada Por Qué que sigue.",
+      "whyLabel": "Por Qué #{{n}}",
+      "whyThisFirst": "¿Por qué pasó esto?",
+      "whyThisNext": "¿Por qué pasó eso?",
+      "whyPlaceholderFirst": "¿Qué causó esto directamente? ¿Qué habrías visto?",
+      "whyPlaceholderNext": "¿Qué permitió que eso pasara?",
+      "suggestAnswer": "✨ Sugerir una Respuesta (IA)",
+      "rootCauseIdentified": "Causa Raíz Identificada",
+      "rootCauseHint": "Detente aquí cuando la respuesta señale un proceso, estándar o sistema — algo sobre lo que realmente puedas actuar. Si arreglar esto evitaría que se repita (no solo un parche a este caso), la encontraste.",
+      "rootCausePlaceholder": "Indica la causa raíz y la contramedida propuesta...",
+      "suggestRootCause": "✨ Sugerir Causa Raíz (IA)",
+      "qualifyProgress": "{{count}}/{{min}} Por Qués con {{words}}+ palabras — calificas para +5 pts al guardar",
+      "qualifyRemaining": "{{count}}/{{min}} Por Qués con {{words}}+ palabras — escribe {{remaining}} más para ganar +5 pts",
+      "saveAnalysis": "Guardar Análisis",
+      "untitled": "5 Por Qués Sin Título"
+    },
+    "fishbone": {
+      "diagramName": "Nombre del Diagrama *",
+      "diagramNamePlaceholder": "Ej. Análisis de Defectos T3",
+      "effectHead": "Efecto / Problema (Cabeza del Pez)",
+      "effectHint": "Específico, factual, medible — todo se ramifica desde este enunciado.",
+      "badExample": "\"La calidad es mala en la Línea 3\"",
+      "goodExample": "\"La tasa de defectos de la Línea 3 aumentó de 2% a 9% en las últimas dos semanas\"",
+      "effectPlaceholder": "¿Qué pasó? ¿Con qué frecuencia? Incluye un número.",
+      "addMoreDetail": "Agrega más detalle para desbloquear las categorías de causas abajo.",
+      "howToBrainstorm": "Cómo hacer lluvia de ideas:",
+      "brainstormHint": "Ve categoría por categoría — no saltes de una a otra. Captura todo primero, filtra después. Si una causa aparece en más de una categoría, probablemente sea tu pista de mayor prioridad.",
+      "effectProblem": "Efecto / Problema",
+      "selfCheck1": "Al menos {{count}} de las 6 categorías tienen una entrada — ese es el mínimo para ganar los +5 pts (una categoría vacía normalmente significa que el equipo no se esforzó lo suficiente, no que no haya nada ahí)",
+      "selfCheck2": "Ninguna causa es solo una repetición del efecto en otras palabras",
+      "selfCheck3": "Cualquier causa que apareció en más de una categoría está marcada como prioridad para investigar primero",
+      "selfCheck4": "Cada causa marcada tiene un siguiente paso claro: verificar con datos, luego probar una solución",
+      "unlockPrompt": "Completa el Efecto arriba para desbloquear las categorías de causas",
+      "unlockHint": "Un enunciado del efecto específico y medible evita que cada categoría se llene de suposiciones.",
+      "qualifyProgress": "{{count}}/6 categorías tienen una causa — calificas para +5 pts al guardar",
+      "qualifyRemaining": "{{count}}/6 categorías tienen una causa — completa {{remaining}} más para ganar +5 pts",
+      "saveDiagram": "Guardar Diagrama",
+      "nameNudge": "Parece un nombre. Redirige: ¿qué de cómo está configurado este rol permitió que ocurriera el error?",
+      "causePlaceholder": "Causa {{n}}...",
+      "symptomNudge": "Esto parece una repetición del efecto. Pregunta \"por qué\" una vez más — ¿qué causó esto?"
+    },
+    "aiFeedback": {
+      "title": "Verificación de Perspectiva con IA",
+      "subtitle": "Estos son ángulos adicionales a considerar — tus entradas no cambian. Usa lo que te sea útil, ignora el resto.",
+      "analyzing": "Analizando tu diagrama…",
+      "error": "No se pudo generar retroalimentación esta vez — aún puedes continuar.",
+      "continue": "Continuar a los 5 Por Qués →"
+    },
+    "prioritize": {
+      "title": "Siguiente Paso: Priorizar Causas Raíz",
+      "subtitle": "Has identificado {{count}} área de oportunidad. Ahora elige cuáles 1–3 investigar primero mediante el análisis de 5 Por Qués.",
+      "dataHint": "Usa datos si los tienes (Pareto, conteos de frecuencia, impacto); de lo contrario, el consenso del equipo funciona bien.",
+      "assigned": "Prioridades asignadas:",
+      "noneYet": "Ninguna todavía",
+      "backToFishbone": "Volver al Diagrama de Ishikawa",
+      "continueTo5Whys": "✓ Continuar a los 5 Por Qués",
+      "skip": "Omitir Priorización"
+    },
+    "a3": {
+      "newToA3": "¿Nuevo en A3? Mira un ejemplo completado.",
+      "exampleDesc": "Un A3 completado que muestra un proyecto real de reducción de defectos de manufactura — mismo formato, mismas secciones.",
+      "viewExample": "Ver Ejemplo Resuelto →",
+      "section1Title": "Título, Responsable, Equipo y Fecha",
+      "section1Hint1": "Enmarca la responsabilidad antes que nada — quién es dueño de esto, quién está involucrado, y cuándo comenzó.",
+      "section1Hint2": "Usa el título más corto posible que describa el",
+      "problem": "problema",
+      "notSolution": ", no la solución.",
+      "titleLabel": "Título *",
+      "titlePlaceholder": "Ej. Aumento de la Tasa de Defectos en la Línea 3 — Julio 2026",
+      "ownerLabel": "Responsable (una sola persona responsable)",
+      "namePlaceholder": "Nombre",
+      "teamLabel": "Equipo / Otros involucrados",
+      "teamPlaceholder": "Nombres o roles",
+      "dateStartedLabel": "Fecha de inicio",
+      "scheduleFollowUp": "Programar una Verificación de Seguimiento",
+      "followUpHint": "Establece un recordatorio para verificar que la solución se mantenga. Elige un preset o una fecha personalizada.",
+      "daysCount": "{{n}} Días",
+      "orPickDate": "o elige una fecha:",
+      "clearDate": "Borrar fecha",
+      "verificationAction": "Acción de Verificación",
+      "verificationPlaceholder": "Ej. Revisar la tasa de defectos semanal durante 3 semanas consecutivas por debajo de 2.5%",
+      "followUpScheduledFor": "Seguimiento programado para {{date}}",
+      "actionPlaceholder": "¿Qué hay que hacer?",
+      "removeRow": "Eliminar fila",
+      "addActionRow": "Agregar Fila de Acción",
+      "selfCheck1": "La condición actual tiene datos, no solo opinión",
+      "selfCheck2": "El objetivo tiene un número y una fecha — no solo \"mejorar\"",
+      "selfCheck3": "Cada contramedida se relaciona con una causa raíz (no un síntoma)",
+      "selfCheck4": "El plan de implementación asigna un responsable por acción con fecha límite",
+      "selfCheck5": "La sección de seguimiento se completará después de la implementación — no se dejará en blanco para siempre",
+      "saveA3": "Guardar A3",
+      "printExportPdf": "Imprimir / Exportar PDF"
+    },
+    "print": {
+      "fiveWhysTitle": "Análisis de 5 Por Qués",
+      "title": "Título:",
+      "date": "Fecha:",
+      "problemStatement": "Enunciado del Problema",
+      "notStated": "No indicado",
+      "fiveWhys": "5 Por Qués",
+      "notAnswered": "No respondido",
+      "rootCauseIdentified": "Causa Raíz Identificada",
+      "notIdentified": "No identificada",
+      "fishboneTitle": "Diagrama de Ishikawa (Espina de Pescado)",
+      "name": "Nombre:",
+      "effect": "Efecto:",
+      "effectLabel": "Efecto",
+      "noActions": "No se ingresaron acciones",
+      "action": "Acción",
+      "owner": "Responsable",
+      "dueDate": "Fecha Límite",
+      "notFilledIn": "No completado",
+      "background": "Antecedentes",
+      "currentCondition": "Condición Actual",
+      "goalTarget": "Meta / Objetivo",
+      "rootCauseAnalysis": "Análisis de Causa Raíz",
+      "followUpScheduled": "Seguimiento programado:",
+      "verification": "Verificación:",
+      "countermeasures": "Contramedidas",
+      "implementationPlan": "Plan de Implementación",
+      "followUpResults": "Seguimiento / Resultados",
+      "untitled": "Sin título",
+      "untitledA3": "A3 Sin Título",
+      "a3Report": "Reporte A3",
+      "owner2": "Responsable",
+      "dateStarted": "Fecha de Inicio",
+      "printed": "Impreso",
+      "team": "Equipo:",
+      "a3FooterTitle": "Reporte de Resolución de Problemas A3"
+    },
+    "toast": {
+      "fillProblemFirst": "Completa primero el Enunciado del Problema",
+      "fillPreviousWhy": "Completa primero el Por Qué anterior",
+      "aiSuggestionFailed": "Falló la sugerencia de IA",
+      "fillTwoWhys": "Completa al menos 2 Por Qués primero",
+      "enterDiagramName": "Por favor ingresa un nombre de diagrama antes de guardar",
+      "fishboneSaved": "✓ ¡Diagrama de Ishikawa guardado!",
+      "aiFeedbackFailed": "No se pudo obtener retroalimentación de IA",
+      "a3Prefilled": "A3 precargado con tu análisis de 5 Por Qués",
+      "notSignedIn": "No has iniciado sesión",
+      "templateUpdated": "¡Plantilla actualizada!",
+      "fishboneSavedNeedsMore": "Plantilla guardada. Completa al menos {{min}} de las 6 categorías (actualmente {{filled}}) para ganar +5 pts.",
+      "fiveWhysSavedNeedsMore": "Análisis guardado. Escribe al menos {{min}} Por Qués con {{words}}+ palabras cada uno (actualmente {{qualifying}}) para ganar +5 pts.",
+      "savedEarned": "⭐ Plantilla guardada — ¡+{{points}} pts por {{label}} esta semana!",
+      "dailyCapReached": "Plantilla guardada. Has alcanzado tu límite diario de 25 pts — ¡buen trabajo hoy! Vuelve mañana para seguir sumando puntos. 🗓",
+      "templateSaved": "¡Plantilla guardada!",
+      "saveFailed": "Error al guardar: {{error}}",
+      "deleted": "Eliminado",
+      "deleteFailed": "Error al eliminar"
+    }
   }
 }

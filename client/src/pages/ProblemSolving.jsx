@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../firebase';
@@ -29,20 +30,23 @@ const PS_EVENT_LABELS = {
 };
 
 const TOOLS = ['5 Whys', 'Fishbone Diagram', 'A3 Template'];
+const TOOL_KEYS = { '5 Whys': 'fiveWhys', 'Fishbone Diagram': 'fishboneDiagram', 'A3 Template': 'a3Template' };
+function trTool(t, tool) { return t(`problemSolving.tools.${TOOL_KEYS[tool]}`, tool); }
 
 // ─── Shared: Saved panel ──────────────────────────────────────────────────────
 function SavedPanel({ entries, onDelete, onLoad, printEntry }) {
+  const { t } = useTranslation();
   const isMobile = useIsMobile();
   return (
     <div style={{ width: isMobile ? '100%' : 260, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
       <div style={{ background: '#0f2044', borderRadius: '12px 12px 0 0', padding: '0.75rem 1rem' }}>
-        <p style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem', margin: 0 }}>📋 Saved Templates</p>
-        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', margin: '2px 0 0' }}>{entries.length} template{entries.length !== 1 ? 's' : ''}</p>
+        <p style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem', margin: 0 }}>📋 {t('problemSolving.saved.title', 'Saved Templates')}</p>
+        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.7rem', margin: '2px 0 0' }}>{t('problemSolving.saved.count', '{{count}} template', { count: entries.length })}</p>
       </div>
       <div style={{ flex: 1, border: '1px solid #e8edf5', borderTop: 'none', borderRadius: '0 0 12px 12px', overflow: 'hidden', background: '#fafbfc' }}>
         {entries.length === 0 ? (
           <div style={{ padding: '1.5rem 1rem', textAlign: 'center' }}>
-            <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: 0, fontStyle: 'italic' }}>No saved templates yet. Fill out the form and click Save.</p>
+            <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: 0, fontStyle: 'italic' }}>{t('problemSolving.saved.empty', 'No saved templates yet. Fill out the form and click Save.')}</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column' }}>
@@ -54,11 +58,11 @@ function SavedPanel({ entries, onDelete, onLoad, printEntry }) {
                 <div style={{ display: 'flex', gap: 6 }}>
                   <button onClick={() => onLoad(e)}
                     style={{ flex: 1, fontSize: '0.72rem', fontWeight: 700, color: '#0d9488', background: 'none', border: '1px solid #0d9488', borderRadius: 6, padding: '3px 0', cursor: 'pointer' }}>
-                    ✏️ Edit
+                    ✏️ {t('problemSolving.saved.edit', 'Edit')}
                   </button>
                   <button onClick={() => printEntry(e)}
                     style={{ flex: 1, fontSize: '0.72rem', fontWeight: 700, color: '#0f2044', background: 'none', border: '1px solid #0f2044', borderRadius: 6, padding: '3px 0', cursor: 'pointer' }}>
-                    🖨️ Print
+                    🖨️ {t('problemSolving.saved.print', 'Print')}
                   </button>
                   <button onClick={() => onDelete(e.id)}
                     style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ef4444', background: 'none', border: '1px solid #fca5a5', borderRadius: 6, padding: '3px 7px', cursor: 'pointer' }}>
@@ -126,40 +130,44 @@ const WHY_GUIDE = [
 
 const BLAME_WORDS = /\b(human error|operator error|employee error|worker error|staff error|person|mistake by|negligence)\b/i;
 
-function humanErrorNudge(text) {
+function humanErrorNudge(text, t) {
   if (!text) return null;
-  if (BLAME_WORDS.test(text)) return 'What allowed this to happen? Consider: training gaps, unclear instructions, no error-proofing, or time pressure.';
+  if (BLAME_WORDS.test(text)) return t('problemSolving.humanErrorNudge', 'What allowed this to happen? Consider: training gaps, unclear instructions, no error-proofing, or time pressure.');
   return null;
 }
 
-function problemStatementWarning(text) {
+function problemStatementWarning(text, t) {
   if (!text || text.trim().length < 10) return null;
   const hasMetric = /\d/.test(text);
   const hasBlame = /\b(don't care|doesn't care|won't|refuse|lazy|bad attitude)\b/i.test(text);
-  if (hasBlame) return 'Try removing blame language. Restate as an observable fact: what happened, how often, where.';
-  if (!hasMetric) return 'Tip: add a number to make this measurable — e.g. "12% of units failed" or "3 incidents in 30 days."';
+  if (hasBlame) return t('problemSolving.blameWarning', 'Try removing blame language. Restate as an observable fact: what happened, how often, where.');
+  if (!hasMetric) return t('problemSolving.metricTip', 'Tip: add a number to make this measurable — e.g. "12% of units failed" or "3 incidents in 30 days."');
   return null;
 }
 
 function GuidePanel({ whyIndex }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const g = WHY_GUIDE[whyIndex];
+  const goal = t(`problemSolving.whyGuide.${whyIndex}.goal`, g.goal);
+  const prompts = t(`problemSolving.whyGuide.${whyIndex}.prompts`, { returnObjects: true, defaultValue: g.prompts });
+  const watchFor = t(`problemSolving.whyGuide.${whyIndex}.watchFor`, g.watchFor);
   return (
     <div style={{ marginTop: 6 }}>
       <button onClick={() => setOpen(o => !o)}
         style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.72rem', color: '#64748b', fontWeight: 600, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-        {open ? '▾' : '▸'} {open ? 'Hide guide' : 'Show guide for this step'}
+        {open ? '▾' : '▸'} {open ? t('problemSolving.hideGuide', 'Hide guide') : t('problemSolving.showGuideStep', 'Show guide for this step')}
       </button>
       {open && (
         <div style={{ marginTop: 8, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px', fontSize: '0.76rem', color: '#475569', lineHeight: 1.6 }}>
-          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 6px' }}>Goal</p>
-          <p style={{ margin: '0 0 10px' }}>{g.goal}</p>
-          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 6px' }}>Ask yourself</p>
+          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 6px' }}>{t('problemSolving.goal', 'Goal')}</p>
+          <p style={{ margin: '0 0 10px' }}>{goal}</p>
+          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 6px' }}>{t('problemSolving.askYourself', 'Ask yourself')}</p>
           <ul style={{ margin: '0 0 10px', paddingLeft: 18 }}>
-            {g.prompts.map((p, i) => <li key={i} style={{ marginBottom: 3 }}>{p}</li>)}
+            {prompts.map((p, i) => <li key={i} style={{ marginBottom: 3 }}>{p}</li>)}
           </ul>
           <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 7, padding: '6px 10px', color: '#713f12' }}>
-            <span style={{ fontWeight: 700 }}>Watch for: </span>{g.watchFor}
+            <span style={{ fontWeight: 700 }}>{t('problemSolving.watchFor', 'Watch for: ')}</span>{watchFor}
           </div>
         </div>
       )}
@@ -167,27 +175,27 @@ function GuidePanel({ whyIndex }) {
   );
 }
 
-function fiveWhysPrintHTML(entry) {
+function fiveWhysPrintHTML(entry, t) {
   const { problem, whys, rootCause } = entry.data;
   const date = entry.createdAt ? new Date(entry.createdAt.seconds * 1000).toLocaleDateString() : new Date().toLocaleDateString();
   const stepColors = ['#0d9488', '#0d9488', '#f59e0b', '#f59e0b', '#ef4444'];
   const whyRows = (whys || []).map((w, i) => `
     <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:10px">
       <div style="width:28px;height:28px;border-radius:50%;background:${stepColors[i]};color:white;font-weight:900;font-size:0.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0">${i + 1}</div>
-      <div style="flex:1;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:0.82rem;color:${w ? '#1e293b' : '#cbd5e1'};font-style:${w ? 'normal' : 'italic'};min-height:36px">${w || 'Not answered'}</div>
+      <div style="flex:1;border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:0.82rem;color:${w ? '#1e293b' : '#cbd5e1'};font-style:${w ? 'normal' : 'italic'};min-height:36px">${w || t('problemSolving.print.notAnswered', 'Not answered')}</div>
     </div>`).join('');
   return `<div style="font-family:sans-serif;padding:24px;background:white">
     <div style="margin-bottom:14px;border-bottom:2px solid #0f2044;padding-bottom:10px">
-      <h2 style="margin:0 0 4px;color:#0f2044;font-size:1.1rem;font-weight:900">5 Whys Analysis</h2>
-      <p style="margin:0;font-size:0.8rem;color:#64748b"><strong>Title:</strong> ${entry.title || '—'} &nbsp;|&nbsp; <strong>Date:</strong> ${date}</p>
+      <h2 style="margin:0 0 4px;color:#0f2044;font-size:1.1rem;font-weight:900">${t('problemSolving.print.fiveWhysTitle', '5 Whys Analysis')}</h2>
+      <p style="margin:0;font-size:0.8rem;color:#64748b"><strong>${t('problemSolving.print.title', 'Title:')}</strong> ${entry.title || '—'} &nbsp;|&nbsp; <strong>${t('problemSolving.print.date', 'Date:')}</strong> ${date}</p>
     </div>
-    <p style="font-weight:700;color:#0f2044;margin:0 0 6px;font-size:0.85rem">Problem Statement</p>
-    <div style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:0.82rem;color:${problem ? '#1e293b' : '#cbd5e1'};margin-bottom:16px;min-height:40px">${problem || 'Not stated'}</div>
-    <p style="font-weight:700;color:#0f2044;margin:0 0 10px;font-size:0.85rem">5 Whys</p>
+    <p style="font-weight:700;color:#0f2044;margin:0 0 6px;font-size:0.85rem">${t('problemSolving.print.problemStatement', 'Problem Statement')}</p>
+    <div style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;font-size:0.82rem;color:${problem ? '#1e293b' : '#cbd5e1'};margin-bottom:16px;min-height:40px">${problem || t('problemSolving.print.notStated', 'Not stated')}</div>
+    <p style="font-weight:700;color:#0f2044;margin:0 0 10px;font-size:0.85rem">${t('problemSolving.print.fiveWhys', '5 Whys')}</p>
     ${whyRows}
     <div style="background:#f0fdfa;border:1.5px solid #0d9488;border-radius:10px;padding:12px;margin-top:8px">
-      <p style="font-weight:700;color:#0f766e;margin:0 0 6px;font-size:0.85rem">Root Cause Identified</p>
-      <p style="margin:0;font-size:0.82rem;color:${rootCause ? '#1e293b' : '#cbd5e1'};font-style:${rootCause ? 'normal' : 'italic'}">${rootCause || 'Not identified'}</p>
+      <p style="font-weight:700;color:#0f766e;margin:0 0 6px;font-size:0.85rem">${t('problemSolving.print.rootCauseIdentified', 'Root Cause Identified')}</p>
+      <p style="margin:0;font-size:0.82rem;color:${rootCause ? '#1e293b' : '#cbd5e1'};font-style:${rootCause ? 'normal' : 'italic'}">${rootCause || t('problemSolving.print.notIdentified', 'Not identified')}</p>
     </div>
   </div>`;
 }
@@ -197,6 +205,7 @@ const WHY_LABELS = ['Why #1', 'Why #2', 'Why #3', 'Why #4', 'Why #5'];
 
 // ─── Next Step Recommendation ────────────────────────────────────────────────
 function NextStepRecommendation({ title, problem, rootCause, onGoToA3 }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [choice, setChoice] = useState(null); // 'action' | 'project'
 
@@ -204,10 +213,10 @@ function NextStepRecommendation({ title, problem, rootCause, onGoToA3 }) {
     <div style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1e3a6e 100%)', borderRadius: 14, padding: '1.25rem', color: 'white' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
         <span style={{ fontSize: '1.1rem' }}>🧭</span>
-        <p style={{ fontWeight: 800, fontSize: '0.95rem', margin: 0 }}>What's your next step?</p>
+        <p style={{ fontWeight: 800, fontSize: '0.95rem', margin: 0 }}>{t('problemSolving.nextStep.title', "What's your next step?")}</p>
       </div>
       <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', margin: '0 0 14px', lineHeight: 1.6 }}>
-        You've identified a root cause. Now choose how complex the fix is — that determines which tool to use next.
+        {t('problemSolving.nextStep.subtitle', "You've identified a root cause. Now choose how complex the fix is — that determines which tool to use next.")}
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: choice ? 14 : 0 }}>
@@ -215,12 +224,12 @@ function NextStepRecommendation({ title, problem, rootCause, onGoToA3 }) {
         <button onClick={() => { setChoice('action'); localStorage.setItem('ps_quick_action_ts', Date.now().toString()); }}
           style={{ position: 'relative', background: choice === 'action' ? '#0d9488' : 'rgba(255,255,255,0.08)', border: `2px solid ${choice === 'action' ? '#0d9488' : 'rgba(255,255,255,0.18)'}`, borderRadius: 12, padding: '14px 12px', cursor: 'pointer', textAlign: 'left', color: 'white', transition: 'all 0.15s' }}>
           {choice === 'action' && (
-            <span style={{ position: 'absolute', top: 8, right: 10, background: '#fbbf24', color: '#1e3a6e', fontWeight: 900, fontSize: '0.7rem', borderRadius: 9999, padding: '2px 7px', letterSpacing: 0.5 }}>+1 pt</span>
+            <span style={{ position: 'absolute', top: 8, right: 10, background: '#fbbf24', color: '#1e3a6e', fontWeight: 900, fontSize: '0.7rem', borderRadius: 9999, padding: '2px 7px', letterSpacing: 0.5 }}>{t('problemSolving.nextStep.plusOnePoint', '+1 pt')}</span>
           )}
           <p style={{ fontSize: '1.3rem', margin: '0 0 6px' }}>⚡</p>
-          <p style={{ fontWeight: 800, fontSize: '0.85rem', margin: '0 0 4px' }}>Quick Action</p>
+          <p style={{ fontWeight: 800, fontSize: '0.85rem', margin: '0 0 4px' }}>{t('problemSolving.nextStep.quickAction', 'Quick Action')}</p>
           <p style={{ fontSize: '0.73rem', color: 'rgba(255,255,255,0.75)', margin: 0, lineHeight: 1.5 }}>
-            The fix is a single, clear task — one owner, one step, done in days or weeks.
+            {t('problemSolving.nextStep.quickActionDesc', 'The fix is a single, clear task — one owner, one step, done in days or weeks.')}
           </p>
         </button>
 
@@ -228,9 +237,9 @@ function NextStepRecommendation({ title, problem, rootCause, onGoToA3 }) {
         <button onClick={() => setChoice('project')}
           style={{ background: choice === 'project' ? '#7c3aed' : 'rgba(255,255,255,0.08)', border: `2px solid ${choice === 'project' ? '#7c3aed' : 'rgba(255,255,255,0.18)'}`, borderRadius: 12, padding: '14px 12px', cursor: 'pointer', textAlign: 'left', color: 'white', transition: 'all 0.15s' }}>
           <p style={{ fontSize: '1.3rem', margin: '0 0 6px' }}>🗂️</p>
-          <p style={{ fontWeight: 800, fontSize: '0.85rem', margin: '0 0 4px' }}>Complex Project</p>
+          <p style={{ fontWeight: 800, fontSize: '0.85rem', margin: '0 0 4px' }}>{t('problemSolving.nextStep.complexProject', 'Complex Project')}</p>
           <p style={{ fontSize: '0.73rem', color: 'rgba(255,255,255,0.75)', margin: 0, lineHeight: 1.5 }}>
-            The fix involves multiple people, phases, or unknowns — needs structured planning.
+            {t('problemSolving.nextStep.complexProjectDesc', 'The fix involves multiple people, phases, or unknowns — needs structured planning.')}
           </p>
         </button>
       </div>
@@ -238,16 +247,16 @@ function NextStepRecommendation({ title, problem, rootCause, onGoToA3 }) {
       {/* Action path */}
       {choice === 'action' && (
         <div style={{ background: 'rgba(13,148,136,0.15)', border: '1.5px solid #0d9488', borderRadius: 12, padding: '1rem' }}>
-          <p style={{ fontWeight: 700, color: '#5eead4', fontSize: '0.85rem', margin: '0 0 6px' }}>Go to The Accountability Board</p>
+          <p style={{ fontWeight: 700, color: '#5eead4', fontSize: '0.85rem', margin: '0 0 6px' }}>{t('problemSolving.nextStep.goToBoard', 'Go to The Accountability Board')}</p>
           <p style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.8)', margin: '0 0 12px', lineHeight: 1.6 }}>
-            Create a new action card directly tied to your root cause. Set an owner, due date, and track it to completion on your board.
+            {t('problemSolving.nextStep.boardDesc', 'Create a new action card directly tied to your root cause. Set an owner, due date, and track it to completion on your board.')}
           </p>
           <div style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 8, padding: '8px 12px', fontSize: '0.74rem', color: 'rgba(255,255,255,0.65)', marginBottom: 12, lineHeight: 1.6 }}>
-            <span style={{ fontWeight: 700, color: '#5eead4' }}>Root cause to fix: </span>{rootCause}
+            <span style={{ fontWeight: 700, color: '#5eead4' }}>{t('problemSolving.nextStep.rootCauseToFix', 'Root cause to fix: ')}</span>{rootCause}
           </div>
           <button onClick={() => navigate('/visual-board')}
             style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 9, padding: '0.55rem 1.25rem', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', width: '100%' }}>
-            Open The Accountability Board →
+            {t('problemSolving.nextStep.openBoard', 'Open The Accountability Board →')}
           </button>
         </div>
       )}
@@ -255,15 +264,15 @@ function NextStepRecommendation({ title, problem, rootCause, onGoToA3 }) {
       {/* Project path */}
       {choice === 'project' && (
         <div style={{ background: 'rgba(124,58,237,0.15)', border: '1.5px solid #7c3aed', borderRadius: 12, padding: '1rem' }}>
-          <p style={{ fontWeight: 700, color: '#c4b5fd', fontSize: '0.85rem', margin: '0 0 6px' }}>Go to A3 Problem-Solving Template</p>
+          <p style={{ fontWeight: 700, color: '#c4b5fd', fontSize: '0.85rem', margin: '0 0 6px' }}>{t('problemSolving.nextStep.goToA3', 'Go to A3 Problem-Solving Template')}</p>
           <p style={{ fontSize: '0.76rem', color: 'rgba(255,255,255,0.8)', margin: '0 0 10px', lineHeight: 1.6 }}>
-            The A3 is built for complex fixes. Your 5 Whys answers will pre-fill three sections automatically — you just complete the rest.
+            {t('problemSolving.nextStep.a3Desc', 'The A3 is built for complex fixes. Your 5 Whys answers will pre-fill three sections automatically — you just complete the rest.')}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 12 }}>
             {[
-              { label: 'Title', value: title },
-              { label: '1. Background & Context', value: problem },
-              { label: '4. Root Cause Analysis', value: rootCause },
+              { label: t('problemSolving.nextStep.rowTitle', 'Title'), value: title },
+              { label: t('problemSolving.nextStep.rowBackground', '1. Background & Context'), value: problem },
+              { label: t('problemSolving.nextStep.rowRootCause', '4. Root Cause Analysis'), value: rootCause },
             ].map(row => (
               <div key={row.label} style={{ background: 'rgba(0,0,0,0.2)', borderRadius: 7, padding: '6px 10px', fontSize: '0.73rem', lineHeight: 1.5 }}>
                 <span style={{ fontWeight: 700, color: '#c4b5fd' }}>{row.label}: </span>
@@ -273,7 +282,7 @@ function NextStepRecommendation({ title, problem, rootCause, onGoToA3 }) {
           </div>
           <button onClick={() => onGoToA3({ title, background: problem, rootCause })}
             style={{ background: '#7c3aed', color: 'white', border: 'none', borderRadius: 9, padding: '0.55rem 1.25rem', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', width: '100%' }}>
-            Open A3 Template with my data pre-filled →
+            {t('problemSolving.nextStep.openA3', 'Open A3 Template with my data pre-filled →')}
           </button>
         </div>
       )}
@@ -282,6 +291,7 @@ function NextStepRecommendation({ title, problem, rootCause, onGoToA3 }) {
 }
 
 function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
+  const { t } = useTranslation();
   const [title,     setTitle]     = useState('');
   const [problem,   setProblem]   = useState('');
   const [whys,      setWhys]      = useState(['', '', '', '', '']);
@@ -291,35 +301,35 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
   const isMobile = useIsMobile();
 
   async function suggestWhy(i) {
-    if (!problemReady) return toast.error('Fill in the Problem Statement first');
-    if (i > 0 && !whys[i - 1].trim()) return toast.error('Fill in the previous Why first');
+    if (!problemReady) return toast.error(t('problemSolving.toast.fillProblemFirst', 'Fill in the Problem Statement first'));
+    if (i > 0 && !whys[i - 1].trim()) return toast.error(t('problemSolving.toast.fillPreviousWhy', 'Fill in the previous Why first'));
     setSuggestingWhy(i);
     try {
       const fn = httpsCallable(getFunctions(), 'fiveWhysAiAssist');
       const res = await fn({ mode: 'suggestWhy', problem, whys, index: i });
       if (res.data?.suggestion) setWhys(ws => ws.map((w, j) => j === i ? res.data.suggestion : w));
     } catch (e) {
-      toast.error(e?.message || 'AI suggestion failed');
+      toast.error(e?.message || t('problemSolving.toast.aiSuggestionFailed', 'AI suggestion failed'));
     }
     setSuggestingWhy(null);
   }
 
   async function suggestRootCause() {
     const filled = whys.filter(w => w.trim()).length;
-    if (filled < 2) return toast.error('Fill in at least 2 Whys first');
+    if (filled < 2) return toast.error(t('problemSolving.toast.fillTwoWhys', 'Fill in at least 2 Whys first'));
     setSuggestingRootCause(true);
     try {
       const fn = httpsCallable(getFunctions(), 'fiveWhysAiAssist');
       const res = await fn({ mode: 'suggestRootCause', problem, whys });
       if (res.data?.suggestion) setRootCause(res.data.suggestion);
     } catch (e) {
-      toast.error(e?.message || 'AI suggestion failed');
+      toast.error(e?.message || t('problemSolving.toast.aiSuggestionFailed', 'AI suggestion failed'));
     }
     setSuggestingRootCause(false);
   }
 
   const problemReady = problem.trim().length >= 15;
-  const problemWarn  = problemStatementWarning(problem);
+  const problemWarn  = problemStatementWarning(problem, t);
 
   function loadEntry(e) {
     setTitle(e.title || '');
@@ -331,7 +341,7 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
 
   function printEntry(e) {
     const win = window.open('', '_blank', 'width=900,height=700');
-    win.document.write(`<html><head><title>${e.title}</title><style>body{margin:0}@media print{@page{margin:15mm}}</style></head><body>${fiveWhysPrintHTML(e)}</body></html>`);
+    win.document.write(`<html><head><title>${e.title}</title><style>body{margin:0}@media print{@page{margin:15mm}}</style></head><body>${fiveWhysPrintHTML(e, t)}</body></html>`);
     win.document.close(); win.focus();
     setTimeout(() => { win.print(); win.close(); }, 400);
   }
@@ -353,32 +363,32 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
 
         {/* Title */}
         <div>
-          <label className="label">Analysis Title *</label>
-          <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Line 2 Downtime — June 2026" />
+          <label className="label">{t('problemSolving.fiveWhys.analysisTitle', 'Analysis Title *')}</label>
+          <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder={t('problemSolving.fiveWhys.analysisTitlePlaceholder', 'e.g. Line 2 Downtime — June 2026')} />
         </div>
 
         {/* Problem Statement Gate */}
         <div style={{ background: '#f8fafc', border: `2px solid ${problemReady ? '#0d9488' : '#e2e8f0'}`, borderRadius: 12, padding: '1rem', transition: 'border-color 0.2s' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <span style={{ fontSize: '1rem' }}>🎯</span>
-            <label className="label" style={{ margin: 0, color: '#0f2044' }}>Problem Statement</label>
-            {problemReady && <span style={{ fontSize: '0.7rem', background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>Ready</span>}
+            <label className="label" style={{ margin: 0, color: '#0f2044' }}>{t('problemSolving.fiveWhys.problemStatement', 'Problem Statement')}</label>
+            {problemReady && <span style={{ fontSize: '0.7rem', background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>{t('problemSolving.ready', 'Ready')}</span>}
           </div>
           <p style={{ fontSize: '0.74rem', color: '#64748b', margin: '0 0 8px', lineHeight: 1.5 }}>
-            Be specific, factual, and observable. No blame, no assumptions.<br />
-            <span style={{ color: '#ef4444' }}>✗</span> "Operators don't care about quality" &nbsp;→&nbsp;
-            <span style={{ color: '#0d9488' }}>✓</span> "12% of Unit X failed final inspection in the last 30 days"
+            {t('problemSolving.fiveWhys.problemHint', 'Be specific, factual, and observable. No blame, no assumptions.')}<br />
+            <span style={{ color: '#ef4444' }}>✗</span> {t('problemSolving.fiveWhys.badExample', '"Operators don\'t care about quality"')} &nbsp;→&nbsp;
+            <span style={{ color: '#0d9488' }}>✓</span> {t('problemSolving.fiveWhys.goodExample', '"12% of Unit X failed final inspection in the last 30 days"')}
           </p>
           <textarea className="input" rows={2} value={problem}
             onChange={e => setProblem(e.target.value)}
-            placeholder="What happened? How often? Where? Include a number if possible." />
+            placeholder={t('problemSolving.fiveWhys.problemPlaceholder', 'What happened? How often? Where? Include a number if possible.')} />
           {problemWarn && (
             <div style={{ marginTop: 6, fontSize: '0.73rem', color: '#92400e', background: '#fef9c3', border: '1px solid #fde047', borderRadius: 7, padding: '5px 10px' }}>
               💡 {problemWarn}
             </div>
           )}
           {!problemReady && problem.trim().length > 0 && (
-            <p style={{ marginTop: 6, fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic' }}>Keep going — add more detail to unlock the Why chain below.</p>
+            <p style={{ marginTop: 6, fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic' }}>{t('problemSolving.fiveWhys.keepGoing', 'Keep going — add more detail to unlock the Why chain below.')}</p>
           )}
         </div>
 
@@ -387,7 +397,7 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
             {whys.map((w, i) => {
               const ctx = chainContext(i);
-              const nudge = humanErrorNudge(w);
+              const nudge = humanErrorNudge(w, t);
               const color = WHY_COLORS[i];
               return (
                 <div key={i} style={{ display: 'flex', gap: 0, alignItems: 'stretch' }}>
@@ -401,13 +411,13 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
                   {/* Card */}
                   <div style={{ flex: 1, marginLeft: 10, marginBottom: i < 4 ? 0 : 0, paddingBottom: i < 4 ? 12 : 0 }}>
                     <div style={{ background: 'white', border: `1.5px solid ${color}22`, borderLeft: `3px solid ${color}`, borderRadius: '0 10px 10px 0', padding: '10px 14px', marginTop: i === 0 ? 0 : 0 }}>
-                      <p style={{ fontWeight: 700, color, fontSize: '0.8rem', margin: '0 0 4px' }}>{WHY_LABELS[i]}</p>
+                      <p style={{ fontWeight: 700, color, fontSize: '0.8rem', margin: '0 0 4px' }}>{t('problemSolving.fiveWhys.whyLabel', 'Why #{{n}}', { n: i + 1 })}</p>
 
                       {/* Chain context — shows what this Why is answering */}
                       {ctx && (
                         <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 7, padding: '5px 10px', fontSize: '0.73rem', color: '#64748b', marginBottom: 8, lineHeight: 1.4 }}>
                           <span style={{ fontWeight: 700, color: '#94a3b8', fontSize: '0.68rem', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                            {i === 0 ? 'Why did this happen?' : 'Why did that happen?'}
+                            {i === 0 ? t('problemSolving.fiveWhys.whyThisFirst', 'Why did this happen?') : t('problemSolving.fiveWhys.whyThisNext', 'Why did that happen?')}
                           </span><br />
                           <span style={{ color: '#1e293b', fontStyle: 'italic' }}>"{ctx}"</span>
                         </div>
@@ -415,12 +425,12 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
 
                       <textarea className="input" rows={2} value={w}
                         onChange={e => setWhys(ws => ws.map((x, j) => j === i ? e.target.value : x))}
-                        placeholder={i === 0 ? 'What directly caused this? What would you have seen?' : 'What allowed that to happen?'}
+                        placeholder={i === 0 ? t('problemSolving.fiveWhys.whyPlaceholderFirst', 'What directly caused this? What would you have seen?') : t('problemSolving.fiveWhys.whyPlaceholderNext', 'What allowed that to happen?')}
                         style={{ marginBottom: 6 }} />
 
                       <button type="button" onClick={() => suggestWhy(i)} disabled={suggestingWhy !== null}
                         style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, color: '#6d28d9', fontWeight: 700, fontSize: '0.72rem', padding: '3px 9px', cursor: 'pointer', marginBottom: nudge ? 6 : 0 }}>
-                        {suggestingWhy === i ? 'Thinking…' : '✨ Suggest an Answer (AI)'}
+                        {suggestingWhy === i ? t('problemSolving.thinking', 'Thinking…') : t('problemSolving.fiveWhys.suggestAnswer', '✨ Suggest an Answer (AI)')}
                       </button>
 
                       {/* Human error nudge */}
@@ -440,8 +450,8 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
         ) : (
           <div style={{ border: '2px dashed #e2e8f0', borderRadius: 12, padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem' }}>
             <p style={{ margin: 0, fontSize: '1.5rem', marginBottom: 8 }}>🔒</p>
-            <p style={{ margin: 0, fontWeight: 600 }}>Fill in the Problem Statement above to unlock the Why chain</p>
-            <p style={{ margin: '4px 0 0', fontSize: '0.74rem' }}>A specific, measurable problem statement prevents drift in every Why that follows.</p>
+            <p style={{ margin: 0, fontWeight: 600 }}>{t('problemSolving.fiveWhys.unlockPrompt', 'Fill in the Problem Statement above to unlock the Why chain')}</p>
+            <p style={{ margin: '4px 0 0', fontSize: '0.74rem' }}>{t('problemSolving.fiveWhys.unlockHint', 'A specific, measurable problem statement prevents drift in every Why that follows.')}</p>
           </div>
         )}
 
@@ -449,15 +459,15 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
         <div style={{ background: '#f0fdfa', border: '1.5px solid #0d9488', borderRadius: 12, padding: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
             <span>🎯</span>
-            <label className="label" style={{ color: '#0f766e', margin: 0 }}>Root Cause Identified</label>
+            <label className="label" style={{ color: '#0f766e', margin: 0 }}>{t('problemSolving.fiveWhys.rootCauseIdentified', 'Root Cause Identified')}</label>
           </div>
           <p style={{ fontSize: '0.73rem', color: '#0f766e', margin: '0 0 8px', lineHeight: 1.5 }}>
-            Stop here when the answer points to a process, standard, or system — something you can actually act on. If fixing this would prevent recurrence (not just patch this instance), you've found it.
+            {t('problemSolving.fiveWhys.rootCauseHint', "Stop here when the answer points to a process, standard, or system — something you can actually act on. If fixing this would prevent recurrence (not just patch this instance), you've found it.")}
           </p>
-          <textarea className="input" rows={2} value={rootCause} onChange={e => setRootCause(e.target.value)} placeholder="State the root cause and proposed countermeasure..." style={{ marginBottom: 6 }} />
+          <textarea className="input" rows={2} value={rootCause} onChange={e => setRootCause(e.target.value)} placeholder={t('problemSolving.fiveWhys.rootCausePlaceholder', 'State the root cause and proposed countermeasure...')} style={{ marginBottom: 6 }} />
           <button type="button" onClick={suggestRootCause} disabled={suggestingRootCause}
             style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, color: '#6d28d9', fontWeight: 700, fontSize: '0.72rem', padding: '3px 9px', cursor: 'pointer' }}>
-            {suggestingRootCause ? 'Thinking…' : '✨ Suggest Root Cause (AI)'}
+            {suggestingRootCause ? t('problemSolving.thinking', 'Thinking…') : t('problemSolving.fiveWhys.suggestRootCause', '✨ Suggest Root Cause (AI)')}
           </button>
         </div>
 
@@ -472,9 +482,9 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
             }}>
               <span style={{ fontSize: '0.95rem' }}>{qualifies ? '✅' : '🎯'}</span>
               <span style={{ fontSize: '0.78rem', fontWeight: 700, color: qualifies ? '#15803d' : '#475569' }}>
-                {qualifying}/{FIVE_WHYS_MIN_FILLED} Whys with {FIVE_WHYS_MIN_WORDS}+ words — {qualifies
-                  ? 'you qualify for +5 pts on save'
-                  : `write ${FIVE_WHYS_MIN_FILLED - qualifying} more to earn +5 pts`}
+                {qualifies
+                  ? t('problemSolving.fiveWhys.qualifyProgress', '{{count}}/{{min}} Whys with {{words}}+ words — you qualify for +5 pts on save', { count: qualifying, min: FIVE_WHYS_MIN_FILLED, words: FIVE_WHYS_MIN_WORDS })
+                  : t('problemSolving.fiveWhys.qualifyRemaining', '{{count}}/{{min}} Whys with {{words}}+ words — write {{remaining}} more to earn +5 pts', { count: qualifying, min: FIVE_WHYS_MIN_FILLED, words: FIVE_WHYS_MIN_WORDS, remaining: FIVE_WHYS_MIN_FILLED - qualifying })}
               </span>
             </div>
           );
@@ -482,19 +492,19 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
 
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn-primary" style={{ flex: 1 }}
-            onClick={() => onSave({ type: '5whys', title: title || problem || 'Untitled 5 Whys', data: { problem, whys, rootCause }, onSaved: () => { setTitle(''); setProblem(''); setWhys(['','','','','']); setRootCause(''); } })}>
-            💾 Save Analysis
+            onClick={() => onSave({ type: '5whys', title: title || problem || t('problemSolving.fiveWhys.untitled', 'Untitled 5 Whys'), data: { problem, whys, rootCause }, onSaved: () => { setTitle(''); setProblem(''); setWhys(['','','','','']); setRootCause(''); } })}>
+            💾 {t('problemSolving.fiveWhys.saveAnalysis', 'Save Analysis')}
           </button>
           <button onClick={handlePrintCurrent}
             style={{ flex: 1, background: '#0f2044', color: 'white', border: 'none', borderRadius: 10, padding: '0.6rem 1.25rem', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer' }}>
-            🖨️ Print / Save PDF
+            🖨️ {t('problemSolving.printSavePdf', 'Print / Save PDF')}
           </button>
         </div>
 
         {/* Next Step Recommendation */}
         {rootCause.trim().length > 0 && (
           <NextStepRecommendation
-            title={title || problem || 'Untitled 5 Whys'}
+            title={title || problem || t('problemSolving.fiveWhys.untitled', 'Untitled 5 Whys')}
             problem={problem}
             rootCause={rootCause}
             onGoToA3={onGoToA3}
@@ -598,34 +608,38 @@ function looksLikePersonName(value) {
   return /^[A-Z][a-z]+$/.test(words[1]); // first name + capitalized second word looks like a surname
 }
 
-function fishboneCauseNudge(catId, value) {
+function fishboneCauseNudge(catId, value, t) {
   if (!value) return null;
   if (catId === 'people' && looksLikePersonName(value)) {
-    return 'Looks like a name. Redirect: what about how this role is set up allowed the error to happen?';
+    return t('problemSolving.fishbone.nameNudge', 'Looks like a name. Redirect: what about how this role is set up allowed the error to happen?');
   }
   return null;
 }
 
 function FishboneGuidePanel({ catId }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const g = FISHBONE_GUIDE[catId];
   if (!g) return null;
+  const goal = t(`problemSolving.fishboneGuide.${catId}.goal`, g.goal);
+  const prompts = t(`problemSolving.fishboneGuide.${catId}.prompts`, { returnObjects: true, defaultValue: g.prompts });
+  const watchFor = t(`problemSolving.fishboneGuide.${catId}.watchFor`, g.watchFor);
   return (
     <div style={{ marginTop: 6 }}>
       <button onClick={() => setOpen(o => !o)}
         style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.7rem', color: '#64748b', fontWeight: 600, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-        {open ? '▾' : '▸'} {open ? 'Hide guide' : 'Show guide for this category'}
+        {open ? '▾' : '▸'} {open ? t('problemSolving.hideGuide', 'Hide guide') : t('problemSolving.showGuideCategory', 'Show guide for this category')}
       </button>
       {open && (
         <div style={{ marginTop: 6, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 8, padding: '8px 12px', fontSize: '0.73rem', color: '#475569', lineHeight: 1.6 }}>
-          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 4px' }}>Goal</p>
-          <p style={{ margin: '0 0 8px' }}>{g.goal}</p>
-          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 4px' }}>Ask yourself</p>
+          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 4px' }}>{t('problemSolving.goal', 'Goal')}</p>
+          <p style={{ margin: '0 0 8px' }}>{goal}</p>
+          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 4px' }}>{t('problemSolving.askYourself', 'Ask yourself')}</p>
           <ul style={{ margin: '0 0 8px', paddingLeft: 16 }}>
-            {g.prompts.map((p, i) => <li key={i} style={{ marginBottom: 2 }}>{p}</li>)}
+            {prompts.map((p, i) => <li key={i} style={{ marginBottom: 2 }}>{p}</li>)}
           </ul>
           <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 6, padding: '5px 8px', color: '#713f12', fontSize: '0.71rem' }}>
-            <span style={{ fontWeight: 700 }}>Watch for: </span>{g.watchFor}
+            <span style={{ fontWeight: 700 }}>{t('problemSolving.watchFor', 'Watch for: ')}</span>{watchFor}
           </div>
         </div>
       )}
@@ -646,14 +660,17 @@ function AutoGrowTextarea({ value, style, ...props }) {
   return <textarea ref={ref} rows={1} value={value} style={{ ...style, overflow: 'hidden' }} {...props} />;
 }
 
+function trCategory(t, cat) { return t(`problemSolving.categories.${cat.id}`, cat.label); }
+
 function CatCard({ cat, position, causes, onUpdate, effectText, priority }) {
+  const { t } = useTranslation();
   const clip = position === 'top'
     ? 'polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%)'
     : 'polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 50%)';
   return (
     <div style={{ background: 'white', borderRadius: 10, overflow: 'hidden', boxShadow: '0 1px 6px rgba(15,32,68,0.08)', border: '1px solid #e8edf5' }}>
       <div style={{ padding: '5px 14px', background: cat.color, color: 'white', fontWeight: 700, fontSize: '0.78rem', clipPath: clip, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span>{cat.label}</span>
+        <span>{trCategory(t, cat)}</span>
         {priority && (
           <span style={{ fontSize: '0.9rem', fontWeight: 900, backgroundColor: 'rgba(255,255,255,0.25)', padding: '2px 6px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
             {PRIORITY_EMOJIS[priority]} {priority}
@@ -662,7 +679,7 @@ function CatCard({ cat, position, causes, onUpdate, effectText, priority }) {
       </div>
       <div style={{ padding: '7px 8px', display: 'flex', flexDirection: 'column', gap: 4 }}>
         {causes[cat.id].map((v, i) => {
-          const nudge = fishboneCauseNudge(cat.id, v);
+          const nudge = fishboneCauseNudge(cat.id, v, t);
           // Warn if cause text repeats the effect statement
           const isSymptom = effectText && v.trim().length > 5 && effectText.trim().toLowerCase().includes(v.trim().toLowerCase().slice(0, 12));
           return (
@@ -673,14 +690,14 @@ function CatCard({ cat, position, causes, onUpdate, effectText, priority }) {
                   style={{ flex: 1, border: `1px solid ${nudge || isSymptom ? '#fde047' : '#e2e8f0'}`, borderRadius: 6, padding: '3px 7px', fontSize: '0.75rem', outline: 'none', color: '#475569', background: 'white', resize: 'none', minHeight: 24, fontFamily: 'inherit', lineHeight: 1.35 }}
                   value={v}
                   onChange={e => onUpdate(cat.id, i, e.target.value)}
-                  placeholder={`Cause ${i + 1}...`}
+                  placeholder={t('problemSolving.fishbone.causePlaceholder', 'Cause {{n}}...', { n: i + 1 })}
                 />
               </div>
               {nudge && (
                 <p style={{ margin: '3px 0 0 14px', fontSize: '0.68rem', color: '#92400e', background: '#fef9c3', borderRadius: 5, padding: '2px 7px', lineHeight: 1.4 }}>⚠️ {nudge}</p>
               )}
               {!nudge && isSymptom && (
-                <p style={{ margin: '3px 0 0 14px', fontSize: '0.68rem', color: '#92400e', background: '#fef9c3', borderRadius: 5, padding: '2px 7px', lineHeight: 1.4 }}>⚠️ This looks like a restatement of the effect. Ask "why" one more time — what caused this?</p>
+                <p style={{ margin: '3px 0 0 14px', fontSize: '0.68rem', color: '#92400e', background: '#fef9c3', borderRadius: 5, padding: '2px 7px', lineHeight: 1.4 }}>⚠️ {t('problemSolving.fishbone.symptomNudge', 'This looks like a restatement of the effect. Ask "why" one more time — what caused this?')}</p>
               )}
             </div>
           );
@@ -734,6 +751,7 @@ function getFilledCategories(causes = {}) {
 const PRIORITY_EMOJIS = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
 function PrioritizeCategories({ causes, onComplete, onBack }) {
+  const { t } = useTranslation();
   const filledCats = getFilledCategories(causes);
   const [priorities, setPriorities] = useState(Object.fromEntries(filledCats.map(c => [c.id, null])));
 
@@ -750,12 +768,12 @@ function PrioritizeCategories({ causes, onComplete, onBack }) {
   return (
     <div style={{ maxWidth: 860, margin: '0 auto', padding: '1.5rem' }}>
       <div style={{ background: '#f0f9ff', border: '2px solid #0369a1', borderRadius: 12, padding: '1.25rem', marginBottom: '1.5rem' }}>
-        <h3 style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 8px', fontSize: '1rem' }}>🎯 Next Step: Prioritize Root Causes</h3>
+        <h3 style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 8px', fontSize: '1rem' }}>🎯 {t('problemSolving.prioritize.title', 'Next Step: Prioritize Root Causes')}</h3>
         <p style={{ color: '#0369a1', fontSize: '0.85rem', margin: '0 0 8px', lineHeight: 1.6 }}>
-          You've identified {filledCats.length} area{filledCats.length !== 1 ? 's' : ''} of opportunity. Now choose which 1–3 to investigate first via 5 Whys analysis.
+          {t('problemSolving.prioritize.subtitle', "You've identified {{count}} area of opportunity. Now choose which 1–3 to investigate first via 5 Whys analysis.", { count: filledCats.length })}
         </p>
         <p style={{ color: '#064e3b', fontSize: '0.8rem', margin: 0, fontStyle: 'italic' }}>
-          💡 Use data if you have it (Pareto, frequency counts, impact); otherwise, team consensus works fine.
+          💡 {t('problemSolving.prioritize.dataHint', 'Use data if you have it (Pareto, frequency counts, impact); otherwise, team consensus works fine.')}
         </p>
       </div>
 
@@ -775,7 +793,7 @@ function PrioritizeCategories({ causes, onComplete, onBack }) {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
               <span style={{ fontSize: '1.3rem' }}>{cat.emoji}</span>
-              <span style={{ fontWeight: 700, color: '#0f2044', fontSize: '0.9rem' }}>{cat.label}</span>
+              <span style={{ fontWeight: 700, color: '#0f2044', fontSize: '0.9rem' }}>{trCategory(t, cat)}</span>
             </div>
 
             {/* Show first cause as preview */}
@@ -820,13 +838,13 @@ function PrioritizeCategories({ causes, onComplete, onBack }) {
       {/* Summary */}
       <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '0.875rem 1rem', marginBottom: '1.5rem' }}>
         <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0 }}>
-          <strong>Priorities assigned:</strong>{' '}
+          <strong>{t('problemSolving.prioritize.assigned', 'Priorities assigned:')}</strong>{' '}
           {hasPriorities
             ? [1, 2, 3]
                 .filter(p => Object.values(priorities).includes(p))
                 .map(p => `${PRIORITY_EMOJIS[p]} ×${Object.values(priorities).filter(pr => pr === p).length}`)
                 .join(' ')
-            : 'None yet'}
+            : t('problemSolving.prioritize.noneYet', 'None yet')}
         </p>
       </div>
 
@@ -845,14 +863,14 @@ function PrioritizeCategories({ causes, onComplete, onBack }) {
             cursor: 'pointer',
           }}
         >
-          ← Back to Fishbone
+          ← {t('problemSolving.prioritize.backToFishbone', 'Back to Fishbone')}
         </button>
         <button
           onClick={handleContinue}
           className="btn-primary"
           style={{ flex: 1 }}
         >
-          {hasPriorities ? '✓ Continue to 5 Whys' : 'Skip Prioritization'}
+          {hasPriorities ? t('problemSolving.prioritize.continueTo5Whys', '✓ Continue to 5 Whys') : t('problemSolving.prioritize.skip', 'Skip Prioritization')}
         </button>
       </div>
     </div>
@@ -864,6 +882,7 @@ function PrioritizeCategories({ causes, onComplete, onBack }) {
 // never changes the user's own entries, it just surfaces other perspectives
 // and potential root causes worth considering for each of the 6 categories.
 function FishboneAiFeedback({ problem, causes, onContinue }) {
+  const { t } = useTranslation();
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(false);
@@ -876,7 +895,7 @@ function FishboneAiFeedback({ problem, causes, onContinue }) {
         const res = await fn({ problem, causes });
         if (!cancelled) setFeedback(res.data?.feedback || null);
       } catch (e) {
-        if (!cancelled) { setError(true); toast.error(e?.message || 'Could not get AI feedback'); }
+        if (!cancelled) { setError(true); toast.error(e?.message || t('problemSolving.toast.aiFeedbackFailed', 'Could not get AI feedback')); }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -887,18 +906,18 @@ function FishboneAiFeedback({ problem, causes, onContinue }) {
   return (
     <div style={{ maxWidth: 860, margin: '0 auto', padding: '1.5rem' }}>
       <div style={{ background: '#faf5ff', border: '2px solid #7c3aed', borderRadius: 12, padding: '1.25rem', marginBottom: '1.25rem' }}>
-        <h3 style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 6px', fontSize: '1rem' }}>🤖 AI Perspective Check</h3>
+        <h3 style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 6px', fontSize: '1rem' }}>🤖 {t('problemSolving.aiFeedback.title', 'AI Perspective Check')}</h3>
         <p style={{ color: '#6d28d9', fontSize: '0.83rem', margin: 0, lineHeight: 1.6 }}>
-          These are additional angles to consider — your entries are unchanged. Use whatever's useful, ignore the rest.
+          {t('problemSolving.aiFeedback.subtitle', "These are additional angles to consider — your entries are unchanged. Use whatever's useful, ignore the rest.")}
         </p>
       </div>
 
       {loading && (
-        <p style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center', margin: '2rem 0' }}>Analyzing your diagram…</p>
+        <p style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center', margin: '2rem 0' }}>{t('problemSolving.aiFeedback.analyzing', 'Analyzing your diagram…')}</p>
       )}
 
       {!loading && error && (
-        <p style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center', margin: '2rem 0' }}>Couldn't generate feedback this time — you can still continue.</p>
+        <p style={{ fontSize: '0.85rem', color: '#94a3b8', textAlign: 'center', margin: '2rem 0' }}>{t('problemSolving.aiFeedback.error', "Couldn't generate feedback this time — you can still continue.")}</p>
       )}
 
       {!loading && !error && feedback && (
@@ -910,7 +929,7 @@ function FishboneAiFeedback({ problem, causes, onContinue }) {
           )}
           {ALL_CATS.filter(cat => feedback[cat.id]).map(cat => (
             <div key={cat.id} style={{ border: `1.5px solid ${cat.color}`, borderRadius: 10, padding: '0.875rem 1rem' }}>
-              <p style={{ fontWeight: 700, color: cat.color, margin: '0 0 4px', fontSize: '0.82rem' }}>{cat.label}</p>
+              <p style={{ fontWeight: 700, color: cat.color, margin: '0 0 4px', fontSize: '0.82rem' }}>{trCategory(t, cat)}</p>
               <p style={{ fontSize: '0.8rem', color: '#475569', margin: 0, lineHeight: 1.55 }}>{feedback[cat.id]}</p>
             </div>
           ))}
@@ -918,13 +937,13 @@ function FishboneAiFeedback({ problem, causes, onContinue }) {
       )}
 
       <button onClick={onContinue} className="btn-primary" style={{ width: '100%' }}>
-        Continue to 5 Whys →
+        {t('problemSolving.aiFeedback.continue', 'Continue to 5 Whys →')}
       </button>
     </div>
   );
 }
 
-function fishbonePrintHTML(entry) {
+function fishbonePrintHTML(entry, t) {
   const { name, problem, causes, priorities } = entry.data;
   const date = entry.createdAt ? new Date(entry.createdAt.seconds * 1000).toLocaleDateString() : new Date().toLocaleDateString();
   function catHTML(cat) {
@@ -935,14 +954,14 @@ function fishbonePrintHTML(entry) {
     const priorityEmojis = { 1: '🥇', 2: '🥈', 3: '🥉' };
     const priorityBadge = priority ? `<span style="background:rgba(255,255,255,0.25);padding:2px 6px;border-radius:4px;font-size:0.75rem;margin-left:6px">${priorityEmojis[priority]} ${priority}</span>` : '';
     return `<div style="border:2px solid ${cat.color};border-radius:8px;overflow:hidden">
-      <div style="background:${cat.color};color:white;font-weight:700;font-size:0.8rem;padding:4px 10px;display:flex;justify-content:space-between;align-items:center"><span>${cat.label}</span>${priorityBadge}</div>
+      <div style="background:${cat.color};color:white;font-weight:700;font-size:0.8rem;padding:4px 10px;display:flex;justify-content:space-between;align-items:center"><span>${trCategory(t, cat)}</span>${priorityBadge}</div>
       <div style="padding:6px 10px">${items}</div>
     </div>`;
   }
   return `<div style="font-family:sans-serif;padding:24px;background:white">
     <div style="margin-bottom:14px;border-bottom:2px solid #0f2044;padding-bottom:10px">
-      <h2 style="margin:0 0 4px;color:#0f2044;font-size:1.1rem;font-weight:900">Fishbone (Ishikawa) Diagram</h2>
-      <p style="margin:0;font-size:0.8rem;color:#64748b"><strong>Name:</strong> ${name || entry.title || '—'} &nbsp;|&nbsp; <strong>Effect:</strong> ${problem || '—'} &nbsp;|&nbsp; <strong>Date:</strong> ${date}</p>
+      <h2 style="margin:0 0 4px;color:#0f2044;font-size:1.1rem;font-weight:900">${t('problemSolving.print.fishboneTitle', 'Fishbone (Ishikawa) Diagram')}</h2>
+      <p style="margin:0;font-size:0.8rem;color:#64748b"><strong>${t('problemSolving.print.name', 'Name:')}</strong> ${name || entry.title || '—'} &nbsp;|&nbsp; <strong>${t('problemSolving.print.effect', 'Effect:')}</strong> ${problem || '—'} &nbsp;|&nbsp; <strong>${t('problemSolving.print.date', 'Date:')}</strong> ${date}</p>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px">${TOP_CATS.map(catHTML).join('')}</div>
     <div style="position:relative;height:48px;margin:2px 0">
@@ -956,13 +975,14 @@ function fishbonePrintHTML(entry) {
         <line x1="50%" y1="24" x2="49.5%" y2="48" stroke="#94a3b8" stroke-width="1.5"/>
         <line x1="73%" y1="24" x2="82.5%" y2="48" stroke="#94a3b8" stroke-width="1.5"/>
       </svg>
-      <div style="position:absolute;right:0;top:50%;transform:translateY(-50%);background:#ef4444;color:white;padding:4px 8px;border-radius:0 6px 6px 0;font-weight:700;font-size:0.68rem;max-width:11%;text-align:center;word-break:break-word;line-height:1.3">${problem || 'Effect'}</div>
+      <div style="position:absolute;right:0;top:50%;transform:translateY(-50%);background:#ef4444;color:white;padding:4px 8px;border-radius:0 6px 6px 0;font-weight:700;font-size:0.68rem;max-width:11%;text-align:center;word-break:break-word;line-height:1.3">${problem || t('problemSolving.print.effectLabel', 'Effect')}</div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px">${BOTTOM_CATS.map(catHTML).join('')}</div>
   </div>`;
 }
 
 function Fishbone({ onSave, savedEntries, onDelete, onGoTo5Whys }) {
+  const { t } = useTranslation();
   const [name,    setName]    = useState('');
   const [problem, setProblem] = useState('');
   const [causes,  setCauses]  = useState(emptyCauses);
@@ -974,7 +994,7 @@ function Fishbone({ onSave, savedEntries, onDelete, onGoTo5Whys }) {
   const isMobile = useIsMobile();
 
   const effectReady = problem.trim().length >= 15;
-  const effectWarn  = problemStatementWarning(problem);
+  const effectWarn  = problemStatementWarning(problem, t);
 
   function updateCause(catId, idx, val) {
     setCauses(c => ({ ...c, [catId]: c[catId].map((v, i) => i === idx ? val : v) }));
@@ -990,7 +1010,7 @@ function Fishbone({ onSave, savedEntries, onDelete, onGoTo5Whys }) {
 
   function printEntry(e) {
     const win = window.open('', '_blank', 'width=1000,height=750');
-    win.document.write(`<html><head><title>${e.title}</title><style>body{margin:0}@media print{@page{size:landscape;margin:12mm}}</style></head><body>${fishbonePrintHTML(e)}</body></html>`);
+    win.document.write(`<html><head><title>${e.title}</title><style>body{margin:0}@media print{@page{size:landscape;margin:12mm}}</style></head><body>${fishbonePrintHTML(e, t)}</body></html>`);
     win.document.close(); win.focus();
     setTimeout(() => { win.print(); win.close(); }, 400);
   }
@@ -1000,7 +1020,7 @@ function Fishbone({ onSave, savedEntries, onDelete, onGoTo5Whys }) {
   }
 
   async function handleSave() {
-    if (!name.trim()) return toast.error('Please enter a diagram name before saving');
+    if (!name.trim()) return toast.error(t('problemSolving.toast.enterDiagramName', 'Please enter a diagram name before saving'));
     setSaving(true);
     await onSave({
       type: 'fishbone',
@@ -1023,7 +1043,7 @@ function Fishbone({ onSave, savedEntries, onDelete, onGoTo5Whys }) {
       onSaved: () => { setName(''); setProblem(''); setCauses(emptyCauses()); setPriorities({}); setShowPrioritization(false); }
     });
     setSaving(false);
-    toast.success('✓ Fishbone diagram saved!');
+    toast.success(t('problemSolving.toast.fishboneSaved', '✓ Fishbone diagram saved!'));
     // Show AI perspective feedback before handing off to 5 Whys.
     setCompletedFishbone({ name, problem, causes, priorities: newPriorities });
     setShowAiFeedback(true);
@@ -1065,31 +1085,31 @@ function Fishbone({ onSave, savedEntries, onDelete, onGoTo5Whys }) {
 
         {/* Name */}
         <div>
-          <label className="label">Diagram Name *</label>
-          <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Q3 Defect Analysis" />
+          <label className="label">{t('problemSolving.fishbone.diagramName', 'Diagram Name *')}</label>
+          <input className="input" value={name} onChange={e => setName(e.target.value)} placeholder={t('problemSolving.fishbone.diagramNamePlaceholder', 'e.g. Q3 Defect Analysis')} />
         </div>
 
         {/* Effect Gate */}
         <div style={{ background: '#f8fafc', border: `2px solid ${effectReady ? '#0d9488' : '#e2e8f0'}`, borderRadius: 12, padding: '1rem', transition: 'border-color 0.2s' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
             <span style={{ fontSize: '1rem' }}>🐟</span>
-            <label className="label" style={{ margin: 0, color: '#0f2044' }}>Effect / Problem (Fish Head)</label>
-            {effectReady && <span style={{ fontSize: '0.7rem', background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>Ready</span>}
+            <label className="label" style={{ margin: 0, color: '#0f2044' }}>{t('problemSolving.fishbone.effectHead', 'Effect / Problem (Fish Head)')}</label>
+            {effectReady && <span style={{ fontSize: '0.7rem', background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>{t('problemSolving.ready', 'Ready')}</span>}
           </div>
           <p style={{ fontSize: '0.74rem', color: '#64748b', margin: '0 0 8px', lineHeight: 1.5 }}>
-            Specific, factual, measurable — everything branches off this statement.<br />
-            <span style={{ color: '#ef4444' }}>✗</span> "Quality is bad on Line 3" &nbsp;→&nbsp;
-            <span style={{ color: '#0d9488' }}>✓</span> "Line 3 defect rate increased from 2% to 9% over the last two weeks"
+            {t('problemSolving.fishbone.effectHint', 'Specific, factual, measurable — everything branches off this statement.')}<br />
+            <span style={{ color: '#ef4444' }}>✗</span> {t('problemSolving.fishbone.badExample', '"Quality is bad on Line 3"')} &nbsp;→&nbsp;
+            <span style={{ color: '#0d9488' }}>✓</span> {t('problemSolving.fishbone.goodExample', '"Line 3 defect rate increased from 2% to 9% over the last two weeks"')}
           </p>
           <input className="input" value={problem} onChange={e => setProblem(e.target.value)}
-            placeholder="What happened? How often? Include a number." />
+            placeholder={t('problemSolving.fishbone.effectPlaceholder', 'What happened? How often? Include a number.')} />
           {effectWarn && (
             <div style={{ marginTop: 6, fontSize: '0.73rem', color: '#92400e', background: '#fef9c3', border: '1px solid #fde047', borderRadius: 7, padding: '5px 10px' }}>
               💡 {effectWarn}
             </div>
           )}
           {!effectReady && problem.trim().length > 0 && (
-            <p style={{ marginTop: 6, fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic' }}>Add more detail to unlock the cause categories below.</p>
+            <p style={{ marginTop: 6, fontSize: '0.72rem', color: '#94a3b8', fontStyle: 'italic' }}>{t('problemSolving.fishbone.addMoreDetail', 'Add more detail to unlock the cause categories below.')}</p>
           )}
         </div>
 
@@ -1098,7 +1118,7 @@ function Fishbone({ onSave, savedEntries, onDelete, onGoTo5Whys }) {
           <>
             <div style={{ background: '#f8fafc', borderRadius: 16, padding: '12px', border: '1px solid #e8edf5' }}>
               <p style={{ fontSize: '0.72rem', color: '#64748b', margin: '0 0 10px', lineHeight: 1.5 }}>
-                <strong style={{ color: '#0f2044' }}>How to brainstorm:</strong> Go category by category — don't jump around. Capture everything first, filter later. If a cause appears in more than one category, it's likely your highest-priority lead.
+                <strong style={{ color: '#0f2044' }}>{t('problemSolving.fishbone.howToBrainstorm', 'How to brainstorm:')}</strong> {t('problemSolving.fishbone.brainstormHint', "Go category by category — don't jump around. Capture everything first, filter later. If a cause appears in more than one category, it's likely your highest-priority lead.")}
               </p>
               <div style={{ background: 'white', borderRadius: 12, padding: 10 }}>
                 {isMobile ? (
@@ -1108,7 +1128,7 @@ function Fishbone({ onSave, savedEntries, onDelete, onGoTo5Whys }) {
                     <div style={{ background: '#ef4444', color: 'white', padding: '10px 14px', borderRadius: 10, display: 'flex', gap: 10, alignItems: 'flex-start', lineHeight: 1.4 }}>
                       <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>🎯</span>
                       <span>
-                        <span style={{ display: 'block', fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.85 }}>Effect / Problem</span>
+                        <span style={{ display: 'block', fontSize: '0.62rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', opacity: 0.85 }}>{t('problemSolving.fishbone.effectProblem', 'Effect / Problem')}</span>
                         <span style={{ fontWeight: 700, fontSize: '0.85rem' }}>{problem}</span>
                       </span>
                     </div>
@@ -1148,20 +1168,20 @@ function Fishbone({ onSave, savedEntries, onDelete, onGoTo5Whys }) {
 
             {/* Self-check */}
             <div style={{ background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: 12, padding: '0.9rem' }}>
-              <p style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.8rem', margin: '0 0 6px' }}>✅ Before you save — quick self-check</p>
+              <p style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.8rem', margin: '0 0 6px' }}>✅ {t('problemSolving.selfCheckTitle', 'Before you save — quick self-check')}</p>
               <ul style={{ margin: 0, paddingLeft: 18, fontSize: '0.74rem', color: '#0c4a6e', lineHeight: 1.8 }}>
-                <li>At least {FISHBONE_MIN_CATEGORIES} of the 6 categories have an entry — that's the minimum to earn the +5 pts (a category left empty usually means the team didn't push hard enough, not that nothing is there)</li>
-                <li>No cause is just a restatement of the effect in different words</li>
-                <li>Any cause that appeared in more than one category is starred as a priority to investigate first</li>
-                <li>Each starred cause has a clear next step: verify with data, then test a fix</li>
+                <li>{t('problemSolving.fishbone.selfCheck1', "At least {{count}} of the 6 categories have an entry — that's the minimum to earn the +5 pts (a category left empty usually means the team didn't push hard enough, not that nothing is there)", { count: FISHBONE_MIN_CATEGORIES })}</li>
+                <li>{t('problemSolving.fishbone.selfCheck2', 'No cause is just a restatement of the effect in different words')}</li>
+                <li>{t('problemSolving.fishbone.selfCheck3', 'Any cause that appeared in more than one category is starred as a priority to investigate first')}</li>
+                <li>{t('problemSolving.fishbone.selfCheck4', 'Each starred cause has a clear next step: verify with data, then test a fix')}</li>
               </ul>
             </div>
           </>
         ) : (
           <div style={{ border: '2px dashed #e2e8f0', borderRadius: 12, padding: '1.5rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.82rem' }}>
             <p style={{ margin: 0, fontSize: '1.5rem', marginBottom: 8 }}>🔒</p>
-            <p style={{ margin: 0, fontWeight: 600 }}>Fill in the Effect above to unlock the cause categories</p>
-            <p style={{ margin: '4px 0 0', fontSize: '0.74rem' }}>A specific, measurable effect statement prevents every category from filling up with guesses.</p>
+            <p style={{ margin: 0, fontWeight: 600 }}>{t('problemSolving.fishbone.unlockPrompt', 'Fill in the Effect above to unlock the cause categories')}</p>
+            <p style={{ margin: '4px 0 0', fontSize: '0.74rem' }}>{t('problemSolving.fishbone.unlockHint', 'A specific, measurable effect statement prevents every category from filling up with guesses.')}</p>
           </div>
         )}
 
@@ -1176,9 +1196,9 @@ function Fishbone({ onSave, savedEntries, onDelete, onGoTo5Whys }) {
             }}>
               <span style={{ fontSize: '0.95rem' }}>{qualifies ? '✅' : '🎯'}</span>
               <span style={{ fontSize: '0.78rem', fontWeight: 700, color: qualifies ? '#15803d' : '#475569' }}>
-                {filledCats}/6 categories have a cause — {qualifies
-                  ? 'you qualify for +5 pts on save'
-                  : `fill in ${FISHBONE_MIN_CATEGORIES - filledCats} more to earn +5 pts`}
+                {qualifies
+                  ? t('problemSolving.fishbone.qualifyProgress', '{{count}}/6 categories have a cause — you qualify for +5 pts on save', { count: filledCats })
+                  : t('problemSolving.fishbone.qualifyRemaining', '{{count}}/6 categories have a cause — fill in {{remaining}} more to earn +5 pts', { count: filledCats, remaining: FISHBONE_MIN_CATEGORIES - filledCats })}
               </span>
             </div>
           );
@@ -1186,11 +1206,11 @@ function Fishbone({ onSave, savedEntries, onDelete, onGoTo5Whys }) {
 
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ flex: 1 }}>
-            {saving ? 'Saving...' : '💾 Save Diagram'}
+            {saving ? t('problemSolving.saving', 'Saving...') : `💾 ${t('problemSolving.fishbone.saveDiagram', 'Save Diagram')}`}
           </button>
           <button onClick={handlePrintCurrent}
             style={{ flex: 1, background: '#0f2044', color: 'white', border: 'none', borderRadius: 10, padding: '0.6rem 1.25rem', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer' }}>
-            🖨️ Print / Save PDF
+            🖨️ {t('problemSolving.printSavePdf', 'Print / Save PDF')}
           </button>
         </div>
       </div>
@@ -1281,27 +1301,33 @@ const A3_GUIDE = {
   },
 };
 
+function trA3Label(t, key) { return t(`problemSolving.a3Guide.${key}.label`, A3_GUIDE[key].label); }
+
 function A3GuidePanel({ fieldKey }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const g = A3_GUIDE[fieldKey];
   if (!g) return null;
+  const goal = t(`problemSolving.a3Guide.${fieldKey}.goal`, g.goal);
+  const prompts = t(`problemSolving.a3Guide.${fieldKey}.prompts`, { returnObjects: true, defaultValue: g.prompts });
+  const watchFor = g.watchFor ? t(`problemSolving.a3Guide.${fieldKey}.watchFor`, g.watchFor) : null;
   return (
     <div style={{ marginTop: 6 }}>
       <button onClick={() => setOpen(o => !o)}
         style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.72rem', color: '#64748b', fontWeight: 600, padding: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
-        {open ? '▾' : '▸'} {open ? 'Hide guide' : 'Show guide for this section'}
+        {open ? '▾' : '▸'} {open ? t('problemSolving.hideGuide', 'Hide guide') : t('problemSolving.showGuideSection', 'Show guide for this section')}
       </button>
       {open && (
         <div style={{ marginTop: 8, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10, padding: '10px 14px', fontSize: '0.76rem', color: '#475569', lineHeight: 1.6 }}>
-          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 4px' }}>Goal</p>
-          <p style={{ margin: '0 0 10px' }}>{g.goal}</p>
-          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 4px' }}>Ask yourself</p>
+          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 4px' }}>{t('problemSolving.goal', 'Goal')}</p>
+          <p style={{ margin: '0 0 10px' }}>{goal}</p>
+          <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 4px' }}>{t('problemSolving.askYourself', 'Ask yourself')}</p>
           <ul style={{ margin: '0 0 10px', paddingLeft: 18 }}>
-            {g.prompts.map((p, i) => <li key={i} style={{ marginBottom: 3 }}>{p}</li>)}
+            {prompts.map((p, i) => <li key={i} style={{ marginBottom: 3 }}>{p}</li>)}
           </ul>
-          {g.watchFor && (
+          {watchFor && (
             <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 7, padding: '6px 10px', color: '#713f12' }}>
-              <span style={{ fontWeight: 700 }}>Watch for: </span>{g.watchFor}
+              <span style={{ fontWeight: 700 }}>{t('problemSolving.watchFor', 'Watch for: ')}</span>{watchFor}
             </div>
           )}
         </div>
@@ -1332,7 +1358,7 @@ function fmtPrintDate(d) {
   try { return new Date(d + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }); } catch { return d; }
 }
 
-function a3SectionHTML(num, label, content) {
+function a3SectionHTML(num, label, content, t) {
   // Implementation plan — array of rows
   if (Array.isArray(content)) {
     const hasRows = content.some(r => r.action || r.owner || r.dueDate);
@@ -1343,7 +1369,7 @@ function a3SectionHTML(num, label, content) {
             <td style="padding:6px 10px;border-bottom:1px solid #e8edf5;font-size:12px;color:#475569;">${nl2br(r.owner) || '—'}</td>
             <td style="padding:6px 10px;border-bottom:1px solid #e8edf5;font-size:12px;color:#475569;white-space:nowrap;">${fmtPrintDate(r.dueDate)}</td>
           </tr>`).join('')
-      : `<tr><td colspan="3" style="padding:10px;font-size:12px;color:#94a3b8;font-style:italic;">No actions entered</td></tr>`;
+      : `<tr><td colspan="3" style="padding:10px;font-size:12px;color:#94a3b8;font-style:italic;">${t('problemSolving.print.noActions', 'No actions entered')}</td></tr>`;
     return `
       <div style="border-bottom:1px solid #dde3ec;">
         <div style="background:#0f2044;padding:5px 14px;display:flex;align-items:center;gap:8px;">
@@ -1354,9 +1380,9 @@ function a3SectionHTML(num, label, content) {
           <table style="width:100%;border-collapse:collapse;border:1px solid #e8edf5;border-radius:6px;overflow:hidden;">
             <thead>
               <tr style="background:#f1f5f9;">
-                <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#64748b;border-bottom:1px solid #dde3ec;">Action</th>
-                <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#64748b;border-bottom:1px solid #dde3ec;width:120px;">Owner</th>
-                <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#64748b;border-bottom:1px solid #dde3ec;width:100px;">Due Date</th>
+                <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#64748b;border-bottom:1px solid #dde3ec;">${t('problemSolving.print.action', 'Action')}</th>
+                <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#64748b;border-bottom:1px solid #dde3ec;width:120px;">${t('problemSolving.print.owner', 'Owner')}</th>
+                <th style="padding:6px 10px;text-align:left;font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:#64748b;border-bottom:1px solid #dde3ec;width:100px;">${t('problemSolving.print.dueDate', 'Due Date')}</th>
               </tr>
             </thead>
             <tbody>${rowsHTML}</tbody>
@@ -1372,37 +1398,37 @@ function a3SectionHTML(num, label, content) {
         <span style="font-family:Georgia,serif;font-size:10px;color:#0d9488;font-weight:700;min-width:16px;">${num}</span>
         <span style="font-size:10.5px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:white;">${label}</span>
       </div>
-      <div style="padding:12px 14px;font-size:12.5px;line-height:1.65;color:${filled ? '#1e293b' : '#94a3b8'};font-style:${filled ? 'normal' : 'italic'};min-height:52px;white-space:pre-wrap;">${filled ? nl2br(content) : 'Not filled in'}</div>
+      <div style="padding:12px 14px;font-size:12.5px;line-height:1.65;color:${filled ? '#1e293b' : '#94a3b8'};font-style:${filled ? 'normal' : 'italic'};min-height:52px;white-space:pre-wrap;">${filled ? nl2br(content) : t('problemSolving.print.notFilledIn', 'Not filled in')}</div>
     </div>`;
 }
 
-function a3PrintHTML(entry) {
+function a3PrintHTML(entry, t) {
   const d = entry.data;
   const dateStr = entry.createdAt
     ? new Date(entry.createdAt.seconds * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
     : new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
 
   const leftSections = [
-    { num: '01', label: 'Background',         key: 'background'   },
-    { num: '02', label: 'Current Condition',  key: 'currentState' },
-    { num: '03', label: 'Goal / Target',      key: 'targetState'  },
-    { num: '04', label: 'Root Cause Analysis',key: 'rootCause'    },
+    { num: '01', label: t('problemSolving.print.background', 'Background'),          key: 'background'   },
+    { num: '02', label: t('problemSolving.print.currentCondition', 'Current Condition'),  key: 'currentState' },
+    { num: '03', label: t('problemSolving.print.goalTarget', 'Goal / Target'),        key: 'targetState'  },
+    { num: '04', label: t('problemSolving.print.rootCauseAnalysis', 'Root Cause Analysis'),key: 'rootCause'    },
   ];
   const followUpContent = d.followUp || '';
   const followUpExtra = (d.followUpDate || d.followUpVerification)
-    ? `\n\n📅 Follow-up scheduled: ${d.followUpDate ? new Date(d.followUpDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' }) : '—'}` +
-      (d.followUpVerification ? `\nVerification: ${d.followUpVerification}` : '')
+    ? `\n\n📅 ${t('problemSolving.print.followUpScheduled', 'Follow-up scheduled:')} ${d.followUpDate ? new Date(d.followUpDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' }) : '—'}` +
+      (d.followUpVerification ? `\n${t('problemSolving.print.verification', 'Verification:')} ${d.followUpVerification}` : '')
     : '';
 
   const rightSections = [
-    { num: '05', label: 'Countermeasures',    key: 'countermeasures'    },
-    { num: '06', label: 'Implementation Plan',key: 'implementationPlan' },
-    { num: '07', label: 'Follow-up / Results',key: '_followUp'          },
+    { num: '05', label: t('problemSolving.print.countermeasures', 'Countermeasures'),    key: 'countermeasures'    },
+    { num: '06', label: t('problemSolving.print.implementationPlan', 'Implementation Plan'),key: 'implementationPlan' },
+    { num: '07', label: t('problemSolving.print.followUpResults', 'Follow-up / Results'),key: '_followUp'          },
   ];
   d._followUp = followUpContent + followUpExtra;
 
   return `<!doctype html><html><head><meta charset="utf-8">
-  <title>A3 — ${entry.title || 'Untitled'}</title>
+  <title>A3 — ${entry.title || t('problemSolving.print.untitled', 'Untitled')}</title>
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{font-family:system-ui,-apple-system,'Segoe UI',sans-serif;font-size:13px;background:#f8f9fb;padding:2rem;}
@@ -1428,25 +1454,25 @@ function a3PrintHTML(entry) {
   <div class="doc">
     <div class="hdr">
       <div class="hdr-top">
-        <div class="a3-badge">A3 Report</div>
+        <div class="a3-badge">${t('problemSolving.print.a3Report', 'A3 Report')}</div>
         <div class="hdr-body">
-          <div class="doc-title">${nl2br(entry.title || 'Untitled A3')}</div>
+          <div class="doc-title">${nl2br(entry.title || t('problemSolving.print.untitledA3', 'Untitled A3'))}</div>
           <div class="teal-bar"></div>
           <div class="meta-row">
-            <div class="meta-item"><span class="meta-label">Owner</span><span class="meta-value">${d.owner || '—'}</span></div>
-            <div class="meta-item"><span class="meta-label">Date Started</span><span class="meta-value">${d.date ? new Date(d.date + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : dateStr}</span></div>
-            <div class="meta-item"><span class="meta-label">Printed</span><span class="meta-value">${dateStr}</span></div>
+            <div class="meta-item"><span class="meta-label">${t('problemSolving.print.owner', 'Owner')}</span><span class="meta-value">${d.owner || '—'}</span></div>
+            <div class="meta-item"><span class="meta-label">${t('problemSolving.print.dateStarted', 'Date Started')}</span><span class="meta-value">${d.date ? new Date(d.date + 'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : dateStr}</span></div>
+            <div class="meta-item"><span class="meta-label">${t('problemSolving.print.printed', 'Printed')}</span><span class="meta-value">${dateStr}</span></div>
           </div>
         </div>
       </div>
-      ${d.team ? `<div class="hdr-team"><strong>Team:</strong> ${nl2br(d.team)}</div>` : ''}
+      ${d.team ? `<div class="hdr-team"><strong>${t('problemSolving.print.team', 'Team:')}</strong> ${nl2br(d.team)}</div>` : ''}
     </div>
     <div class="body">
-      <div class="col-l">${leftSections.map(s => a3SectionHTML(s.num, s.label, d[s.key])).join('')}</div>
-      <div>${rightSections.map(s => a3SectionHTML(s.num, s.label, d[s.key])).join('')}</div>
+      <div class="col-l">${leftSections.map(s => a3SectionHTML(s.num, s.label, d[s.key], t)).join('')}</div>
+      <div>${rightSections.map(s => a3SectionHTML(s.num, s.label, d[s.key], t)).join('')}</div>
     </div>
     <div class="footer">
-      <span>Accountability App · A3 Problem-Solving Report</span>
+      <span>Accountability App · ${t('problemSolving.print.a3FooterTitle', 'A3 Problem-Solving Report')}</span>
       <span>accountability-app.com</span>
     </div>
   </div>
@@ -1455,6 +1481,7 @@ function a3PrintHTML(entry) {
 }
 
 function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed }) {
+  const { t } = useTranslation();
   const [title, setTitle] = useState('');
   const [owner, setOwner] = useState('');
   const [team,  setTeam]  = useState('');
@@ -1468,7 +1495,7 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
     setTitle(prefill.title || '');
     setForm(f => ({ ...f, background: prefill.background || '', rootCause: prefill.rootCause || '' }));
     onPrefillConsumed?.();
-    toast.success('A3 pre-filled from your 5 Whys analysis');
+    toast.success(t('problemSolving.toast.a3Prefilled', 'A3 pre-filled from your 5 Whys analysis'));
   }, [prefill]);
 
   function loadEntry(e) {
@@ -1487,13 +1514,13 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
 
   function printEntry(e) {
     const win = window.open('', '_blank', 'width=1060,height=860');
-    win.document.write(a3PrintHTML(e));
+    win.document.write(a3PrintHTML(e, t));
     win.document.close();
     win.focus();
   }
 
   function handlePrintCurrent() {
-    printEntry({ id: 'cur', title: title || 'Untitled A3', data: { ...form, owner, team, date }, createdAt: null });
+    printEntry({ id: 'cur', title: title || t('problemSolving.print.untitledA3', 'Untitled A3'), data: { ...form, owner, team, date }, createdAt: null });
   }
 
   function openExample() {
@@ -1507,12 +1534,12 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
         {/* Example guide banner */}
         <div style={{ background: 'linear-gradient(90deg,#0f2044,#1e3a6e)', borderRadius: 12, padding: '0.85rem 1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
           <div>
-            <p style={{ color: 'white', fontWeight: 700, fontSize: '0.85rem', margin: '0 0 2px' }}>📋 New to A3? See a completed example.</p>
-            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.75rem', margin: 0 }}>A filled-in A3 showing a real manufacturing defect reduction project — same format, same sections.</p>
+            <p style={{ color: 'white', fontWeight: 700, fontSize: '0.85rem', margin: '0 0 2px' }}>📋 {t('problemSolving.a3.newToA3', 'New to A3? See a completed example.')}</p>
+            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.75rem', margin: 0 }}>{t('problemSolving.a3.exampleDesc', 'A filled-in A3 showing a real manufacturing defect reduction project — same format, same sections.')}</p>
           </div>
           <button onClick={openExample}
             style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 9, padding: '0.5rem 1.1rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
-            View Worked Example →
+            {t('problemSolving.a3.viewExample', 'View Worked Example →')}
           </button>
         </div>
 
@@ -1520,28 +1547,28 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
         <div style={{ background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '1rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 10 }}>
             <span style={{ background: '#0f2044', color: 'white', fontWeight: 800, fontSize: '0.72rem', borderRadius: 6, padding: '2px 8px' }}>1</span>
-            <p style={{ fontWeight: 700, color: '#0f2044', fontSize: '0.85rem', margin: 0 }}>Title, Owner, Team & Date</p>
+            <p style={{ fontWeight: 700, color: '#0f2044', fontSize: '0.85rem', margin: 0 }}>{t('problemSolving.a3.section1Title', 'Title, Owner, Team & Date')}</p>
           </div>
           <p style={{ fontSize: '0.73rem', color: '#64748b', margin: '0 0 10px', lineHeight: 1.5 }}>
-            Frame accountability before anything else — who owns this, who's involved, and when it started.<br />
-            Use the shortest possible title that describes the <em>problem</em>, not the solution.
+            {t('problemSolving.a3.section1Hint1', "Frame accountability before anything else — who owns this, who's involved, and when it started.")}<br />
+            {t('problemSolving.a3.section1Hint2', 'Use the shortest possible title that describes the')} <em>{t('problemSolving.a3.problem', 'problem')}</em>{t('problemSolving.a3.notSolution', ', not the solution.')}
           </p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             <div>
-              <label className="label">Title *</label>
-              <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder="e.g. Line 3 Defect Rate Increase — July 2026" />
+              <label className="label">{t('problemSolving.a3.titleLabel', 'Title *')}</label>
+              <input className="input" value={title} onChange={e => setTitle(e.target.value)} placeholder={t('problemSolving.a3.titlePlaceholder', 'e.g. Line 3 Defect Rate Increase — July 2026')} />
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
               <div>
-                <label className="label">Owner (single accountable person)</label>
-                <NameField value={owner} names={savedNames} onChange={e => setOwner(e.target.value)} placeholder="Name" />
+                <label className="label">{t('problemSolving.a3.ownerLabel', 'Owner (single accountable person)')}</label>
+                <NameField value={owner} names={savedNames} onChange={e => setOwner(e.target.value)} placeholder={t('problemSolving.a3.namePlaceholder', 'Name')} />
               </div>
               <div>
-                <label className="label">Team / Others involved</label>
-                <input className="input" value={team} onChange={e => setTeam(e.target.value)} placeholder="Names or roles" />
+                <label className="label">{t('problemSolving.a3.teamLabel', 'Team / Others involved')}</label>
+                <input className="input" value={team} onChange={e => setTeam(e.target.value)} placeholder={t('problemSolving.a3.teamPlaceholder', 'Names or roles')} />
               </div>
               <div>
-                <label className="label">Date started</label>
+                <label className="label">{t('problemSolving.a3.dateStartedLabel', 'Date started')}</label>
                 <input className="input" type="date" value={date} onChange={e => setDate(e.target.value)} />
               </div>
             </div>
@@ -1554,13 +1581,15 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
           const implRows = form.implementationPlan || [EMPTY_IMPL_ROW()];
           const implFilled = implRows.some(r => r.action || r.owner || r.dueDate);
           const textFilled = !isImpl && typeof form[key] === 'string' && form[key].trim().length > 0;
+          const sectionLabel = trA3Label(t, key).replace(/^\d+\.\s/, '');
+          const placeholder = t(`problemSolving.a3Guide.${key}.placeholder`, g.placeholder);
           return (
             <div key={key} style={{ background: 'white', border: '1.5px solid #e2e8f0', borderRadius: 12, padding: '1rem', boxShadow: '0 1px 4px rgba(15,32,68,0.05)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
                 <span style={{ background: '#0f2044', color: 'white', fontWeight: 800, fontSize: '0.72rem', borderRadius: 6, padding: '2px 8px', flexShrink: 0 }}>{idx + 2}</span>
-                <label className="label" style={{ margin: 0, color: '#0f2044', fontSize: '0.85rem' }}>{g.label.replace(/^\d+\.\s/, '')}</label>
+                <label className="label" style={{ margin: 0, color: '#0f2044', fontSize: '0.85rem' }}>{sectionLabel}</label>
                 {(isImpl ? implFilled : textFilled) && (
-                  <span style={{ marginLeft: 'auto', fontSize: '0.68rem', background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '2px 7px', borderRadius: 99 }}>✓ Filled</span>
+                  <span style={{ marginLeft: 'auto', fontSize: '0.68rem', background: '#dcfce7', color: '#15803d', fontWeight: 700, padding: '2px 7px', borderRadius: 99 }}>✓ {t('problemSolving.filled', 'Filled')}</span>
                 )}
               </div>
 
@@ -1572,16 +1601,16 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
                     rows={3}
                     value={form.followUp}
                     onChange={e => setForm(f => ({ ...f, followUp: e.target.value }))}
-                    placeholder={g.placeholder}
+                    placeholder={placeholder}
                   />
 
                   {/* Follow-up notification scheduler */}
                   <div style={{ background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: 10, padding: '0.85rem 1rem' }}>
                     <p style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.8rem', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 6 }}>
-                      🔔 Schedule a Follow-up Verification
+                      🔔 {t('problemSolving.a3.scheduleFollowUp', 'Schedule a Follow-up Verification')}
                     </p>
                     <p style={{ fontSize: '0.72rem', color: '#0c4a6e', margin: '0 0 10px', lineHeight: 1.5 }}>
-                      Set a reminder to verify the fix is holding. Choose a preset or pick a custom date.
+                      {t('problemSolving.a3.followUpHint', 'Set a reminder to verify the fix is holding. Choose a preset or pick a custom date.')}
                     </p>
 
                     {/* Quick-select buttons */}
@@ -1594,11 +1623,11 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
                           <button key={days}
                             onClick={() => setForm(f => ({ ...f, followUpDate: iso }))}
                             style={{ padding: '0.4rem 1rem', borderRadius: 8, border: `1.5px solid ${active ? '#0369a1' : '#bae6fd'}`, background: active ? '#0369a1' : 'white', color: active ? 'white' : '#0369a1', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.15s' }}>
-                            {days} Days
+                            {t('problemSolving.a3.daysCount', '{{n}} Days', { n: days })}
                           </button>
                         );
                       })}
-                      <span style={{ display: 'flex', alignItems: 'center', fontSize: '0.75rem', color: '#64748b', margin: '0 4px' }}>or pick a date:</span>
+                      <span style={{ display: 'flex', alignItems: 'center', fontSize: '0.75rem', color: '#64748b', margin: '0 4px' }}>{t('problemSolving.a3.orPickDate', 'or pick a date:')}</span>
                       <input
                         type="date"
                         className="input"
@@ -1608,24 +1637,24 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
                       />
                       {form.followUpDate && (
                         <button onClick={() => setForm(f => ({ ...f, followUpDate: '' }))}
-                          style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.8rem', padding: '0 4px' }} title="Clear date">✕</button>
+                          style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.8rem', padding: '0 4px' }} title={t('problemSolving.a3.clearDate', 'Clear date')}>✕</button>
                       )}
                     </div>
 
                     {/* Verification action */}
-                    <label className="label" style={{ marginBottom: 4 }}>Verification Action</label>
+                    <label className="label" style={{ marginBottom: 4 }}>{t('problemSolving.a3.verificationAction', 'Verification Action')}</label>
                     <input
                       className="input"
                       value={form.followUpVerification}
                       onChange={e => setForm(f => ({ ...f, followUpVerification: e.target.value }))}
-                      placeholder="e.g. Review weekly defect rate for 3 consecutive weeks below 2.5%"
+                      placeholder={t('problemSolving.a3.verificationPlaceholder', 'e.g. Review weekly defect rate for 3 consecutive weeks below 2.5%')}
                       style={{ margin: 0 }}
                     />
 
                     {/* Confirmation chip if date is set */}
                     {form.followUpDate && (
                       <div style={{ marginTop: 10, background: '#e0f2fe', border: '1px solid #7dd3fc', borderRadius: 7, padding: '6px 10px', fontSize: '0.75rem', color: '#0369a1', fontWeight: 600 }}>
-                        📅 Follow-up scheduled for {new Date(form.followUpDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' })}
+                        📅 {t('problemSolving.a3.followUpScheduledFor', 'Follow-up scheduled for {{date}}', { date: new Date(form.followUpDate + 'T00:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'long', day: 'numeric', year: 'numeric' }) })}
                         {form.followUpVerification && <> — <em style={{ fontWeight: 400 }}>{form.followUpVerification}</em></>}
                       </div>
                     )}
@@ -1636,7 +1665,7 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
                 <div>
                   {/* Column headers */}
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 150px 36px', gap: 6, marginBottom: 4 }}>
-                    {['Action', 'Owner', 'Due Date', ''].map(h => (
+                    {[t('problemSolving.print.action', 'Action'), t('problemSolving.print.owner', 'Owner'), t('problemSolving.print.dueDate', 'Due Date'), ''].map(h => (
                       <span key={h} style={{ fontSize: '0.7rem', fontWeight: 700, color: '#64748b', letterSpacing: '0.05em', textTransform: 'uppercase', padding: '0 4px' }}>{h}</span>
                     ))}
                   </div>
@@ -1649,14 +1678,14 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
                           className="input"
                           value={row.action}
                           onChange={e => setForm(f => ({ ...f, implementationPlan: f.implementationPlan.map((r, i) => i === ri ? { ...r, action: e.target.value } : r) }))}
-                          placeholder="What needs to be done?"
+                          placeholder={t('problemSolving.a3.actionPlaceholder', 'What needs to be done?')}
                           style={{ margin: 0 }}
                         />
                         <input
                           className="input"
                           value={row.owner}
                           onChange={e => setForm(f => ({ ...f, implementationPlan: f.implementationPlan.map((r, i) => i === ri ? { ...r, owner: e.target.value } : r) }))}
-                          placeholder="Name"
+                          placeholder={t('problemSolving.a3.namePlaceholder', 'Name')}
                           style={{ margin: 0 }}
                         />
                         <input
@@ -1669,7 +1698,7 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
                         <button
                           onClick={() => setForm(f => ({ ...f, implementationPlan: f.implementationPlan.filter((_, i) => i !== ri) }))}
                           disabled={implRows.length === 1}
-                          title="Remove row"
+                          title={t('problemSolving.a3.removeRow', 'Remove row')}
                           style={{ width: 32, height: 32, border: 'none', borderRadius: 7, background: implRows.length === 1 ? '#f1f5f9' : '#fee2e2', color: implRows.length === 1 ? '#cbd5e1' : '#ef4444', cursor: implRows.length === 1 ? 'default' : 'pointer', fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           ✕
                         </button>
@@ -1681,7 +1710,7 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
                   <button
                     onClick={() => setForm(f => ({ ...f, implementationPlan: [...f.implementationPlan, EMPTY_IMPL_ROW()] }))}
                     style={{ marginTop: 10, background: 'none', border: '1.5px dashed #0d9488', color: '#0d9488', borderRadius: 8, padding: '0.4rem 1rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', width: '100%' }}>
-                    + Add Action Row
+                    + {t('problemSolving.a3.addActionRow', 'Add Action Row')}
                   </button>
                 </div>
               ) : (
@@ -1690,7 +1719,7 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
                   rows={3}
                   value={form[key]}
                   onChange={e => setForm(f => ({ ...f, [key]: e.target.value }))}
-                  placeholder={g.placeholder}
+                  placeholder={placeholder}
                 />
               )}
 
@@ -1701,24 +1730,24 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
 
         {/* Self-check */}
         <div style={{ background: '#f0f9ff', border: '1.5px solid #bae6fd', borderRadius: 12, padding: '0.9rem' }}>
-          <p style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.8rem', margin: '0 0 6px' }}>✅ Before you save — quick self-check</p>
+          <p style={{ fontWeight: 700, color: '#0369a1', fontSize: '0.8rem', margin: '0 0 6px' }}>✅ {t('problemSolving.selfCheckTitle', 'Before you save — quick self-check')}</p>
           <ul style={{ margin: 0, paddingLeft: 18, fontSize: '0.74rem', color: '#0c4a6e', lineHeight: 1.8 }}>
-            <li>Current condition has data, not just opinion</li>
-            <li>Target has a number and a date — not just "improve"</li>
-            <li>Each countermeasure maps to a root cause (not a symptom)</li>
-            <li>Implementation plan names one owner per action with a due date</li>
-            <li>Follow-up section will be completed after implementation — not left blank forever</li>
+            <li>{t('problemSolving.a3.selfCheck1', 'Current condition has data, not just opinion')}</li>
+            <li>{t('problemSolving.a3.selfCheck2', 'Target has a number and a date — not just "improve"')}</li>
+            <li>{t('problemSolving.a3.selfCheck3', 'Each countermeasure maps to a root cause (not a symptom)')}</li>
+            <li>{t('problemSolving.a3.selfCheck4', 'Implementation plan names one owner per action with a due date')}</li>
+            <li>{t('problemSolving.a3.selfCheck5', 'Follow-up section will be completed after implementation — not left blank forever')}</li>
           </ul>
         </div>
 
         <div style={{ display: 'flex', gap: 10 }}>
           <button className="btn-primary" style={{ flex: 1 }}
-            onClick={() => { rememberName(owner); onSave({ type: 'a3', title: title || 'Untitled A3', data: { ...form, owner, team, date }, onSaved: () => { setTitle(''); setOwner(''); setTeam(''); setDate(''); setForm(EMPTY_A3); } }); }}>
-            💾 Save A3
+            onClick={() => { rememberName(owner); onSave({ type: 'a3', title: title || t('problemSolving.print.untitledA3', 'Untitled A3'), data: { ...form, owner, team, date }, onSaved: () => { setTitle(''); setOwner(''); setTeam(''); setDate(''); setForm(EMPTY_A3); } }); }}>
+            💾 {t('problemSolving.a3.saveA3', 'Save A3')}
           </button>
           <button onClick={handlePrintCurrent}
             style={{ flex: 1, background: '#0f2044', color: 'white', border: 'none', borderRadius: 10, padding: '0.6rem 1.25rem', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer' }}>
-            🖨️ Print / Export PDF
+            🖨️ {t('problemSolving.a3.printExportPdf', 'Print / Export PDF')}
           </button>
         </div>
       </div>
@@ -1729,6 +1758,7 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function ProblemSolving() {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [activeTool, setActiveTool] = useState('5 Whys');
   const [saved, setSaved]           = useState({ '5whys': [], fishbone: [], a3: [] });
@@ -1782,14 +1812,14 @@ export default function ProblemSolving() {
   }
 
   async function handleSave({ type, title, data, onSaved }) {
-    if (!currentUser) return toast.error('Not signed in');
+    if (!currentUser) return toast.error(t('problemSolving.toast.notSignedIn', 'Not signed in'));
     try {
       const all = [...saved['5whys'], ...saved.fishbone, ...saved.a3];
       const existing = saved[type]?.find(e => e.title.trim().toLowerCase() === title.trim().toLowerCase());
       let updated;
       if (existing) {
         updated = all.map(e => e.id === existing.id ? { ...e, title, data, updatedAt: { seconds: Math.floor(Date.now() / 1000) } } : e);
-        toast.success('Template updated!');
+        toast.success(t('problemSolving.toast.templateUpdated', 'Template updated!'));
         await persist(updated);
         return; // keep the form (and any manual textarea resizing) as-is — don't wipe an in-progress edit
       } else {
@@ -1808,7 +1838,7 @@ export default function ProblemSolving() {
         if (type === 'fishbone') {
           const filledCats = fishboneCategoriesFilled(data.causes);
           if (filledCats < FISHBONE_MIN_CATEGORIES) {
-            toast.success(`Template saved. Fill in at least ${FISHBONE_MIN_CATEGORIES} of the 6 categories (currently ${filledCats}) to earn +5 pts.`, { duration: 6000 });
+            toast.success(t('problemSolving.toast.fishboneSavedNeedsMore', 'Template saved. Fill in at least {{min}} of the 6 categories (currently {{filled}}) to earn +5 pts.', { min: FISHBONE_MIN_CATEGORIES, filled: filledCats }), { duration: 6000 });
             await persist(updated);
             return; // keep the form filled — don't wipe the diagram (or any manual box resizing) after its first save
           }
@@ -1819,7 +1849,7 @@ export default function ProblemSolving() {
         if (type === '5whys') {
           const qualifying = fiveWhysQualifyingCount(data.whys);
           if (qualifying < FIVE_WHYS_MIN_FILLED) {
-            toast.success(`Analysis saved. Write at least ${FIVE_WHYS_MIN_FILLED} Whys with ${FIVE_WHYS_MIN_WORDS}+ words each (currently ${qualifying}) to earn +5 pts.`, { duration: 6000 });
+            toast.success(t('problemSolving.toast.fiveWhysSavedNeedsMore', 'Analysis saved. Write at least {{min}} Whys with {{words}}+ words each (currently {{qualifying}}) to earn +5 pts.', { min: FIVE_WHYS_MIN_FILLED, words: FIVE_WHYS_MIN_WORDS, qualifying }), { duration: 6000 });
             await persist(updated);
             onSaved?.();
             return;
@@ -1830,26 +1860,27 @@ export default function ProblemSolving() {
         calculateScore(currentUser.uid).catch(() => {});
         if (earned === 'earned') {
           const cfg = PS_EVENT_LABELS[type];
-          toast.success(`⭐ Template saved — +${cfg.points} pts for ${cfg.label} this week!`, { duration: 6000, icon: '🌟' });
+          const toolLabel = t(`problemSolving.eventLabels.${type}`, cfg.label);
+          toast.success(t('problemSolving.toast.savedEarned', '⭐ Template saved — +{{points}} pts for {{label}} this week!', { points: cfg.points, label: toolLabel }), { duration: 6000, icon: '🌟' });
         } else if (earned === 'capped') {
-          toast('Template saved. You\'ve reached your 25-pt daily limit — great work today! Come back tomorrow to keep scoring. 🗓', { duration: 6000, icon: '📅' });
+          toast(t('problemSolving.toast.dailyCapReached', "Template saved. You've reached your 25-pt daily limit — great work today! Come back tomorrow to keep scoring. 🗓"), { duration: 6000, icon: '📅' });
         } else {
-          toast.success('Template saved!');
+          toast.success(t('problemSolving.toast.templateSaved', 'Template saved!'));
         }
         await persist(updated);
         if (type !== 'fishbone') onSaved?.();
         return;
       }
-    } catch (e) { toast.error('Save failed: ' + (e?.message || e)); }
+    } catch (e) { toast.error(t('problemSolving.toast.saveFailed', 'Save failed: {{error}}', { error: e?.message || e })); }
   }
 
   async function handleDelete(id) {
-    if (!confirm('Delete this template?')) return;
+    if (!confirm(t('problemSolving.confirmDelete', 'Delete this template?'))) return;
     try {
       const all = [...saved['5whys'], ...saved.fishbone, ...saved.a3];
       await persist(all.filter(e => e.id !== id));
-      toast.success('Deleted');
-    } catch { toast.error('Delete failed'); }
+      toast.success(t('problemSolving.toast.deleted', 'Deleted'));
+    } catch { toast.error(t('problemSolving.toast.deleteFailed', 'Delete failed')); }
   }
 
   function handleFishboneComplete(fishboneData) {
@@ -1860,19 +1891,19 @@ export default function ProblemSolving() {
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-      <PageHeader icon="🔍" title="Problem-Solving — Accountability that Solves" subtitle="5 Whys, Fishbone Diagram, and A3 Template" />
+      <PageHeader icon="🔍" title={t('problemSolving.pageTitle', 'Problem-Solving — Accountability that Solves')} subtitle={t('problemSolving.pageSubtitle', '5 Whys, Fishbone Diagram, and A3 Template')} />
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-        {TOOLS.map(t => (
-          <button key={t} onClick={() => setActiveTool(t)}
-            style={{ padding: '0.5rem 1.25rem', borderRadius: 10, fontWeight: 700, fontSize: '0.875rem', border: 'none', cursor: 'pointer', transition: 'all 0.15s', background: activeTool === t ? '#0f2044' : '#f1f5f9', color: activeTool === t ? 'white' : '#475569' }}>
-            {t}
+        {TOOLS.map(tool => (
+          <button key={tool} onClick={() => setActiveTool(tool)}
+            style={{ padding: '0.5rem 1.25rem', borderRadius: 10, fontWeight: 700, fontSize: '0.875rem', border: 'none', cursor: 'pointer', transition: 'all 0.15s', background: activeTool === tool ? '#0f2044' : '#f1f5f9', color: activeTool === tool ? 'white' : '#475569' }}>
+            {trTool(t, tool)}
           </button>
         ))}
       </div>
 
       <div className="card" style={{ padding: '1.75rem' }}>
-        <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '1.05rem', margin: '0 0 1.25rem' }}>{activeTool}</h3>
+        <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '1.05rem', margin: '0 0 1.25rem' }}>{trTool(t, activeTool)}</h3>
         {activeTool === '5 Whys' && (
           <FiveWhys
             onSave={handleSave}
