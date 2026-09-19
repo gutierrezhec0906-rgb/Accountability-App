@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase';
 import toast from 'react-hot-toast';
+import LanguagePicker from '../components/LanguagePicker';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -41,6 +42,9 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #0f2044 0%, #1e3a6e 50%, #0d9488 100%)' }}>
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 12 }}>
+            <LanguagePicker dark style={{ background: 'rgba(255,255,255,0.1)', borderColor: 'rgba(255,255,255,0.25)' }} />
+          </div>
           <div style={{ width: 120, height: 120, margin: '0 auto 1rem' }}>
             <img src="/LFT_logo_square_300x300.png" alt="Leadership Flow" style={{ width: '100%', height: '100%', objectFit: 'contain', display: 'block' }} />
           </div>

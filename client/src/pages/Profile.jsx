@@ -6,6 +6,8 @@ import { storage, db, auth } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { compressImage, withTimeout } from '../utils/image';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
+import LanguagePicker from '../components/LanguagePicker';
 
 function Avatar({ name, photoURL, size = 80 }) {
   const initials = name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
@@ -32,6 +34,7 @@ function Avatar({ name, photoURL, size = 80 }) {
 }
 
 export default function Profile() {
+  const { t } = useTranslation();
   const { currentUser, userProfile, fetchProfile } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [displayName, setDisplayName] = useState(currentUser?.displayName || '');
@@ -117,6 +120,15 @@ export default function Profile() {
       <div>
         <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>Profile Settings</h1>
         <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: 4 }}>Manage your personal information and photo.</p>
+      </div>
+
+      {/* Language card */}
+      <div className="card" style={{ padding: '1.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', margin: '0 0 4px' }}>{t('common.language')}</h2>
+          <p style={{ color: '#64748b', fontSize: '0.85rem', margin: 0 }}>{t('common.english')} / {t('common.spanish')}</p>
+        </div>
+        <LanguagePicker />
       </div>
 
       {/* Photo card */}

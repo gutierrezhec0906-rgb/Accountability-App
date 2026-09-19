@@ -10,6 +10,7 @@ import { doc, setDoc, getDoc, getDocs, collection, serverTimestamp, increment } 
 import { auth, db } from '../firebase';
 import { isUntouchedSampleTrainings } from '../utils/sampleTrainings';
 import { logPointEvent, calculateScore } from '../utils/scoring';
+import i18n, { setStoredLanguage, SUPPORTED_LANGUAGES } from '../i18n';
 
 const AuthContext = createContext();
 
@@ -101,6 +102,12 @@ export function AuthProvider({ children }) {
         } catch { /* ignore */ }
       }
       setUserProfile(profile);
+      // Apply the account's saved language preference (set via LanguagePicker)
+      // so it follows the user across devices, not just localStorage.
+      if (profile.language && SUPPORTED_LANGUAGES.includes(profile.language) && profile.language !== i18n.language) {
+        i18n.changeLanguage(profile.language);
+        setStoredLanguage(profile.language);
+      }
     } catch (e) {
       console.warn('Could not fetch profile', e);
     }
