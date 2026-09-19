@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
@@ -11,6 +12,11 @@ import { RecommitBadge } from '../components/DateStatus';
 import NameField from '../components/NameField';
 import { useSavedNames } from '../utils/savedNames';
 import { exportActionsToExcel } from '../utils/excelExport';
+
+// 'Green'/'Yellow'/'Red' are canonical status values used for filtering and
+// comparison — never translate the value, only the displayed label.
+const STATUS_KEYS = { Green: 'green', Yellow: 'yellow', Red: 'red' };
+function trStatus(t, label) { return t(`visualBoard.status.${STATUS_KEYS[label] || 'green'}`, label); }
 
 // Grows with its content so a long action title/description is never clipped
 // to a single line — matches the pattern used for Fishbone/5S notes.
@@ -38,6 +44,7 @@ function computeStatus(dueDate, recommitmentDate) {
 }
 
 function RecommitModal({ entry, onSubmit, onDismiss }) {
+  const { t } = useTranslation();
   const [newDate, setNewDate] = useState('');
   const st = computeStatus(entry.dueDate, entry.recommitmentDate);
   const overdueDays = Math.abs(st.daysLeft);
@@ -48,9 +55,9 @@ function RecommitModal({ entry, onSubmit, onDismiss }) {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '1rem' }}>
           <div style={{ width: 40, height: 40, borderRadius: 12, background: '#fef2f2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', flexShrink: 0 }}>🔴</div>
           <div>
-            <p style={{ fontWeight: 900, color: '#ef4444', margin: 0, fontSize: '1rem' }}>Action Past Due — Recommitment Required</p>
+            <p style={{ fontWeight: 900, color: '#ef4444', margin: 0, fontSize: '1rem' }}>{t('visualBoard.modal.title', 'Action Past Due — Recommitment Required')}</p>
             <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
-              {overdueDays}d overdue · Originally due {new Date((entry.recommitmentDate || entry.dueDate) + 'T00:00:00').toLocaleDateString()}
+              {t('visualBoard.modal.overdueInfo', '{{days}}d overdue · Originally due {{date}}', { days: overdueDays, date: new Date((entry.recommitmentDate || entry.dueDate) + 'T00:00:00').toLocaleDateString() })}
             </p>
           </div>
         </div>
@@ -63,12 +70,12 @@ function RecommitModal({ entry, onSubmit, onDismiss }) {
         <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 10, padding: '0.75rem', marginBottom: '1.25rem', display: 'flex', gap: 8 }}>
           <span style={{ fontSize: '1rem', flexShrink: 0 }}>⚠️</span>
           <p style={{ fontSize: '0.78rem', color: '#92400e', margin: 0, lineHeight: 1.5 }}>
-            <strong>−5 points have been deducted</strong> from your accountability score for going past due. Set a new date to keep this action active.
+            <strong>{t('visualBoard.modal.deductedBold', '−5 points have been deducted')}</strong> {t('visualBoard.modal.deductedRest', 'from your accountability score for going past due. Set a new date to keep this action active.')}
           </p>
         </div>
 
         <label style={{ display: 'block', fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-primary)', marginBottom: 6 }}>
-          📅 New Commitment Date
+          📅 {t('visualBoard.modal.newDateLabel', 'New Commitment Date')}
         </label>
         <input type="date" value={newDate} onChange={e => setNewDate(e.target.value)}
           min={new Date().toISOString().split('T')[0]}
@@ -77,11 +84,11 @@ function RecommitModal({ entry, onSubmit, onDismiss }) {
         <div style={{ display: 'flex', gap: 10 }}>
           <button onClick={() => onSubmit(entry.id, newDate)} disabled={!newDate}
             style={{ flex: 1, padding: '0.65rem', borderRadius: 10, background: newDate ? '#0f2044' : '#e2e8f0', color: newDate ? 'white' : '#94a3b8', fontWeight: 800, fontSize: '0.875rem', border: 'none', cursor: newDate ? 'pointer' : 'not-allowed' }}>
-            ✓ Commit to New Date
+            ✓ {t('visualBoard.modal.commit', 'Commit to New Date')}
           </button>
           <button onClick={onDismiss}
             style={{ padding: '0.65rem 1rem', borderRadius: 10, background: '#f1f5f9', color: '#64748b', fontWeight: 700, fontSize: '0.875rem', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
-            Dismiss
+            {t('visualBoard.modal.dismiss', 'Dismiss')}
           </button>
         </div>
       </div>
@@ -92,6 +99,7 @@ function RecommitModal({ entry, onSubmit, onDismiss }) {
 const EMPTY_FORM = { title: '', owner: '', dueDate: '', notes: '' };
 
 export default function VisualBoard() {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const { names: savedNames, remember: rememberName } = useSavedNames();
@@ -125,7 +133,7 @@ export default function VisualBoard() {
       });
       if (overdue) setModalEntry(overdue);
     } catch (e) {
-      toast.error('Load failed: ' + e?.message);
+      toast.error(t('visualBoard.toast.loadFailed', 'Load failed: {{msg}}', { msg: e?.message }));
     }
   }
 
@@ -138,7 +146,7 @@ export default function VisualBoard() {
 
   async function handleAdd(e) {
     e.preventDefault();
-    if (!currentUser) return toast.error('Not logged in');
+    if (!currentUser) return toast.error(t('visualBoard.toast.notLoggedIn', 'Not logged in'));
     try {
       const newItem = {
         id: Date.now().toString(),
@@ -178,21 +186,21 @@ export default function VisualBoard() {
         if (awarded) {
           await updateDoc(doc(db, 'users', currentUser.uid), { bonusPoints: increment(1) });
           calculateScore(currentUser.uid).catch(() => {});
-          toast.success('+1 pt — action logged within 5 minutes!', { duration: 6000 });
+          toast.success(t('visualBoard.toast.quickActionAwarded', '+1 pt — action logged within 5 minutes!'), { duration: 6000 });
         } else if (capReached) {
-          toast('Action added to board. Daily 25-pt limit reached — keep going tomorrow!', { duration: 6000, icon: '📅' });
+          toast(t('visualBoard.toast.addedCapReached', 'Action added to board. Daily 25-pt limit reached — keep going tomorrow!'), { duration: 6000, icon: '📅' });
         } else {
-          toast.success('Action added to board');
+          toast.success(t('visualBoard.toast.added', 'Action added to board'));
         }
       } else {
         if (qaTs) localStorage.removeItem('ps_quick_action_ts');
-        toast.success('Action added to board');
+        toast.success(t('visualBoard.toast.added', 'Action added to board'));
       }
 
       setForm(EMPTY_FORM);
       setShowForm(false);
     } catch (e) {
-      toast.error('Save failed: ' + e?.message);
+      toast.error(t('visualBoard.toast.saveFailed', 'Save failed: {{msg}}', { msg: e?.message }));
     }
   }
 
@@ -206,9 +214,9 @@ export default function VisualBoard() {
       await persist(items.map(i => i.id === id ? { ...i, ...editForm, updatedAt: { seconds: Math.floor(Date.now() / 1000) } } : i));
       rememberName(editForm.owner);
       setEditingId(null);
-      toast.success('Action updated');
+      toast.success(t('visualBoard.toast.updated', 'Action updated'));
     } catch (e) {
-      toast.error('Update failed: ' + e?.message);
+      toast.error(t('visualBoard.toast.updateFailed', 'Update failed: {{msg}}', { msg: e?.message }));
     }
   }
 
@@ -216,7 +224,7 @@ export default function VisualBoard() {
     try {
       await persist(items.filter(i => i.id !== id));
     } catch (e) {
-      toast.error('Delete failed: ' + e?.message);
+      toast.error(t('visualBoard.toast.deleteFailed', 'Delete failed: {{msg}}', { msg: e?.message }));
     }
   }
 
@@ -242,26 +250,26 @@ export default function VisualBoard() {
         });
         if (awarded) {
           calculateScore(currentUser.uid).catch(() => {});
-          toast.success('+5 pts! Action closed on time with no recommitments.', { duration: 6000 });
+          toast.success(t('visualBoard.toast.closedOnTime', '+5 pts! Action closed on time with no recommitments.'), { duration: 6000 });
         } else if (capReached) {
-          toast('Action closed! Daily 25-pt cap reached — great work today.', { duration: 5000, icon: '📅' });
+          toast(t('visualBoard.toast.closedCapReached', 'Action closed! Daily 25-pt cap reached — great work today.'), { duration: 5000, icon: '📅' });
         } else {
-          toast.success('Action closed!');
+          toast.success(t('visualBoard.toast.closed', 'Action closed!'));
         }
       } else if (recommitCount > 0) {
-        toast('Action closed. No points awarded — action had recommitments.', { icon: '📋', duration: 5000 });
+        toast(t('visualBoard.toast.closedNoRecommit', 'Action closed. No points awarded — action had recommitments.'), { icon: '📋', duration: 5000 });
       } else {
         // closed past due
-        toast('Action closed.', { icon: '📋' });
+        toast(t('visualBoard.toast.closedPlain', 'Action closed.'), { icon: '📋' });
       }
     } catch (e) {
-      toast.error('Close failed: ' + e?.message);
+      toast.error(t('visualBoard.toast.closeFailed', 'Close failed: {{msg}}', { msg: e?.message }));
     }
   }
 
   async function handleRecommit(id, newDate, item) {
     const st = computeStatus(newDate, null);
-    if (st.overdue) return toast.error('Recommitment date must be today or in the future');
+    if (st.overdue) return toast.error(t('visualBoard.toast.recommitDateInvalid', 'Recommitment date must be today or in the future'));
     try {
       const updatedItem = {
         ...item,
@@ -273,10 +281,10 @@ export default function VisualBoard() {
         pointsRestored: item?.pointsRestored || false,
       };
       await persist(items.map(i => i.id === id ? updatedItem : i));
-      toast.success('New commitment date set!');
+      toast.success(t('visualBoard.toast.recommitted', 'New commitment date set!'));
       setModalEntry(null);
     } catch (e) {
-      toast.error('Failed to save: ' + e?.message);
+      toast.error(t('visualBoard.toast.saveFailedShort', 'Failed to save: {{msg}}', { msg: e?.message }));
     }
   }
 
@@ -291,7 +299,7 @@ export default function VisualBoard() {
         reason: `Action went past due: "${modalEntry.title}"`,
       });
       calculateScore(currentUser.uid).catch(() => {});
-      toast.error('−5 pts deducted — action is past due');
+      toast.error(t('visualBoard.toast.pastDueDeducted', '−5 pts deducted — action is past due'));
       setModalEntry(null);
     } catch (e) {
       console.error(e);
@@ -321,22 +329,22 @@ export default function VisualBoard() {
 
   return (
     <div style={{ maxWidth: 960, margin: '0 auto' }}>
-      <PageHeader icon="🔴" title="Visual Management — The Accountability Board" subtitle="Escalation tracker — status updates automatically based on due date"
+      <PageHeader icon="🔴" title={t('visualBoard.title', 'Visual Management — The Accountability Board')} subtitle={t('visualBoard.subtitle', 'Escalation tracker — status updates automatically based on due date')}
         action={
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="btn-secondary" onClick={() => exportActionsToExcel(items, 'accountability-board-all-actions.xlsx', 'All Actions')}
               style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              📥 Download All (Excel)
+              📥 {t('visualBoard.downloadAll', 'Download All (Excel)')}
             </button>
             <button className="btn-secondary" onClick={() => exportActionsToExcel(closedItems, 'accountability-board-closed-actions.xlsx', 'Closed Actions')}
               style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              📥 Download Closed (Excel)
+              📥 {t('visualBoard.downloadClosed', 'Download Closed (Excel)')}
             </button>
             <button className="btn-secondary" onClick={() => navigate('/team-board')}
               style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-              📺 Team Board View
+              📺 {t('visualBoard.teamBoardView', 'Team Board View')}
             </button>
-            <button className="btn-primary" onClick={() => setShowForm(s => !s)}>+ Add Action</button>
+            <button className="btn-primary" onClick={() => setShowForm(s => !s)}>+ {t('visualBoard.addAction', 'Add Action')}</button>
           </div>
         } />
 
@@ -346,16 +354,16 @@ export default function VisualBoard() {
 
       {/* Status legend */}
       <div style={{ display: 'flex', gap: 8, marginBottom: '1rem', flexWrap: 'wrap' }}>
-        {[['🔴', '#ef4444', 'Red — Past due'], ['🟡', '#d97706', 'Yellow — Due ≤ 5 days'], ['🟢', '#15803d', 'Green — Due 6+ days']].map(([icon, color, label]) => (
+        {[['🔴', '#ef4444', t('visualBoard.legend.red', 'Red — Past due')], ['🟡', '#d97706', t('visualBoard.legend.yellow', 'Yellow — Due ≤ 5 days')], ['🟢', '#15803d', t('visualBoard.legend.green', 'Green — Due 6+ days')]].map(([icon, color, label]) => (
           <span key={label} style={{ fontSize: '0.72rem', fontWeight: 700, color, background: color + '12', padding: '2px 10px', borderRadius: 9999 }}>
             {icon} {label}
           </span>
         ))}
         <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0d9488', background: '#f0fdfa', padding: '2px 10px', borderRadius: 9999 }}>
-          ✅ Closed on time = +5 pts (this week)
+          ✅ {t('visualBoard.legend.closedOnTime', 'Closed on time = +5 pts (this week)')}
         </span>
         <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#ef4444', background: '#fef2f2', padding: '2px 10px', borderRadius: 9999 }}>
-          ⚠️ Past due = −5 pts each occurrence
+          ⚠️ {t('visualBoard.legend.pastDue', 'Past due = −5 pts each occurrence')}
         </span>
       </div>
 
@@ -369,7 +377,7 @@ export default function VisualBoard() {
               style={{ background: active ? st.bg : '#fff', border: `1.5px solid ${active ? st.color : 'var(--border)'}`, borderRadius: 14, padding: '1rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.18s', boxShadow: '0 2px 8px rgba(15,32,68,0.05)' }}>
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: st.color, margin: '0 auto 8px' }} />
               <p style={{ fontSize: '2rem', fontWeight: 900, color: st.color, margin: 0, lineHeight: 1 }}>{counts[s]}</p>
-              <p style={{ fontSize: '0.78rem', fontWeight: 700, color: st.text, margin: '4px 0 0' }}>{s}</p>
+              <p style={{ fontSize: '0.78rem', fontWeight: 700, color: st.text, margin: '4px 0 0' }}>{trStatus(t, s)}</p>
             </div>
           );
         })}
@@ -378,27 +386,27 @@ export default function VisualBoard() {
           style={{ background: showClosed ? '#f0fdfa' : '#fff', border: `1.5px solid ${showClosed ? '#0d9488' : 'var(--border)'}`, borderRadius: 14, padding: '1rem', textAlign: 'center', cursor: 'pointer', transition: 'all 0.18s', boxShadow: '0 2px 8px rgba(15,32,68,0.05)' }}>
           <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#0d9488', margin: '0 auto 8px' }} />
           <p style={{ fontSize: '2rem', fontWeight: 900, color: '#0d9488', margin: 0, lineHeight: 1 }}>{closedItems.length}</p>
-          <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0d9488', margin: '4px 0 0' }}>Closed ✓</p>
+          <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#0d9488', margin: '4px 0 0' }}>{t('visualBoard.closed', 'Closed')} ✓</p>
         </div>
       </div>
 
       {/* Add form */}
       {showForm && (
         <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>New Action Item</h3>
+          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>{t('visualBoard.newActionItem', 'New Action Item')}</h3>
           <form onSubmit={handleAdd} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <div><label className="label">Title / Action</label><AutoGrowTextarea className="input" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Describe the action..." style={{ minHeight: 38 }} /></div>
-            <div><label className="label">Owner</label><NameField required value={form.owner} onChange={e => setForm(f => ({ ...f, owner: e.target.value }))} placeholder="Responsible person" names={savedNames} /></div>
-            <div><label className="label">Due Date <span style={{ color: '#ef4444' }}>*</span></label><input className="input" type="date" required value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
+            <div><label className="label">{t('visualBoard.field.title', 'Title / Action')}</label><AutoGrowTextarea className="input" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder={t('visualBoard.field.titlePlaceholder', 'Describe the action...')} style={{ minHeight: 38 }} /></div>
+            <div><label className="label">{t('visualBoard.field.owner', 'Owner')}</label><NameField required value={form.owner} onChange={e => setForm(f => ({ ...f, owner: e.target.value }))} placeholder={t('visualBoard.field.ownerPlaceholder', 'Responsible person')} names={savedNames} /></div>
+            <div><label className="label">{t('visualBoard.field.dueDate', 'Due Date')} <span style={{ color: '#ef4444' }}>*</span></label><input className="input" type="date" required value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
             <div style={{ display: 'flex', alignItems: 'flex-end' }}>
               <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
-                🟢 6+ days · 🟡 ≤5 days · 🔴 Past due<br />Status is set <strong>automatically</strong> from due date.
+                🟢 {t('visualBoard.field.hint6days', '6+ days')} · 🟡 {t('visualBoard.field.hint5days', '≤5 days')} · 🔴 {t('visualBoard.field.hintPastDue', 'Past due')}<br />{t('visualBoard.field.hintAuto', 'Status is set')} <strong>{t('visualBoard.field.hintAutoBold', 'automatically')}</strong> {t('visualBoard.field.hintAutoRest', 'from due date.')}
               </p>
             </div>
-            <div style={{ gridColumn: '1/-1' }}><label className="label">Notes</label><textarea className="input" rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Additional details..." /></div>
+            <div style={{ gridColumn: '1/-1' }}><label className="label">{t('visualBoard.field.notes', 'Notes')}</label><textarea className="input" rows={2} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder={t('visualBoard.field.notesPlaceholder', 'Additional details...')} /></div>
             <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10 }}>
-              <button className="btn-primary" type="submit">Add to Board</button>
-              <button className="btn-secondary" type="button" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); }}>Cancel</button>
+              <button className="btn-primary" type="submit">{t('visualBoard.addToBoard', 'Add to Board')}</button>
+              <button className="btn-secondary" type="button" onClick={() => { setShowForm(false); setForm(EMPTY_FORM); }}>{t('visualBoard.cancel', 'Cancel')}</button>
             </div>
           </form>
         </div>
@@ -408,10 +416,10 @@ export default function VisualBoard() {
       {showClosed && (
         <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', borderLeft: '4px solid #0d9488' }}>
           <h3 style={{ fontWeight: 800, color: '#0d9488', marginBottom: '1rem', fontSize: '0.95rem', margin: '0 0 1rem' }}>
-            ✅ Closed Actions ({closedItems.length})
+            ✅ {t('visualBoard.closedActions', 'Closed Actions')} ({closedItems.length})
           </h3>
           {closedItems.length === 0 ? (
-            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>No closed actions yet.</p>
+            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>{t('visualBoard.noClosedYet', 'No closed actions yet.')}</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {closedItems.map(item => (
@@ -421,7 +429,7 @@ export default function VisualBoard() {
                     <p style={{ fontWeight: 700, fontSize: '0.875rem', color: 'var(--text-primary)', margin: 0 }}>{item.title}</p>
                     <div style={{ display: 'flex', gap: 8, fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2, flexWrap: 'wrap', alignItems: 'center' }}>
                       <span>👤 {item.owner}</span>
-                      {item.closedAt?.seconds && <span>Closed {new Date(item.closedAt.seconds * 1000).toLocaleDateString()}</span>}
+                      {item.closedAt?.seconds && <span>{t('visualBoard.closedOn', 'Closed {{date}}', { date: new Date(item.closedAt.seconds * 1000).toLocaleDateString() })}</span>}
                       <RecommitBadge count={item.recommitmentCount} />
                     </div>
                     {item.closingNotes && (
@@ -431,9 +439,9 @@ export default function VisualBoard() {
                   <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 800,
                     background: item.closedOnTime ? '#dcfce7' : '#f1f5f9',
                     color: item.closedOnTime ? '#15803d' : '#64748b' }}>
-                    {item.closedOnTime ? '+5 pts' : 'No pts'}
+                    {item.closedOnTime ? '+5 pts' : t('visualBoard.noPts', 'No pts')}
                   </span>
-                  <button onClick={() => handleDelete(item.id)} title="Remove"
+                  <button onClick={() => handleDelete(item.id)} title={t('visualBoard.remove', 'Remove')}
                     style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', fontSize: '1.1rem', padding: '0 2px' }}>×</button>
                 </div>
               ))}
@@ -451,7 +459,7 @@ export default function VisualBoard() {
               style={{ padding: '0.375rem 1rem', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
                 background: filter === s ? stColor : '#f1f5f9',
                 color: filter === s ? '#fff' : '#475569' }}>
-              {s} ({s === 'All' ? enriched.length : counts[s]})
+              {s === 'All' ? t('team.all', 'All') : trStatus(t, s)} ({s === 'All' ? enriched.length : counts[s]})
             </button>
           );
         })}
@@ -459,10 +467,10 @@ export default function VisualBoard() {
         <div style={{ width: 1, background: '#e2e8f0', alignSelf: 'stretch' }} />
 
         {[
-          { key: 'date-asc',  label: '📅 Date ↑' },
-          { key: 'date-desc', label: '📅 Date ↓' },
-          { key: 'alpha',     label: '🔤 A → Z' },
-          { key: 'owner',     label: '👤 Owner' },
+          { key: 'date-asc',  label: `📅 ${t('visualBoard.sort.dateAsc', 'Date ↑')}` },
+          { key: 'date-desc', label: `📅 ${t('visualBoard.sort.dateDesc', 'Date ↓')}` },
+          { key: 'alpha',     label: `🔤 ${t('visualBoard.sort.alpha', 'A → Z')}` },
+          { key: 'owner',     label: `👤 ${t('visualBoard.sort.owner', 'Owner')}` },
         ].map(({ key, label }) => (
           <button key={key} onClick={() => setSortBy(key)}
             style={{ padding: '0.375rem 0.875rem', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 700, border: `1.5px solid ${sortBy === key ? '#0f2044' : '#e2e8f0'}`, cursor: 'pointer', transition: 'all 0.15s',
@@ -476,13 +484,13 @@ export default function VisualBoard() {
 
         <select value={ownerFilter} onChange={e => setOwnerFilter(e.target.value)}
           style={{ padding: '0.35rem 0.75rem', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 700, border: '1.5px solid #e2e8f0', background: ownerFilter !== 'All' ? '#eff6ff' : 'white', color: ownerFilter !== 'All' ? '#1d4ed8' : '#64748b', cursor: 'pointer', outline: 'none' }}>
-          {owners.map(o => <option key={o}>{o === 'All' ? '👤 All Owners' : o}</option>)}
+          {owners.map(o => <option key={o} value={o}>{o === 'All' ? `👤 ${t('visualBoard.allOwners', 'All Owners')}` : o}</option>)}
         </select>
 
         {(filter !== 'All' || ownerFilter !== 'All') && (
           <button onClick={() => { setFilter('All'); setOwnerFilter('All'); }}
             style={{ padding: '0.35rem 0.875rem', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 700, border: '1.5px solid #fca5a5', background: '#fef2f2', color: '#ef4444', cursor: 'pointer' }}>
-            ✕ Clear filters · {filtered.length} shown
+            ✕ {t('visualBoard.clearFilters', 'Clear filters')} · {t('visualBoard.shown', '{{count}} shown', { count: filtered.length })}
           </button>
         )}
       </div>}
@@ -516,30 +524,30 @@ export default function VisualBoard() {
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
                     <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>{item.title}</h4>
                     <span style={{ padding: '2px 10px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 800, background: st.bg, color: st.text, border: `1px solid ${st.border}` }}>
-                      {st.label === 'Red' ? '🔴' : st.label === 'Yellow' ? '🟡' : '🟢'} {st.label}
-                      {st.daysLeft !== null && st.daysLeft < 0 && ` · ${Math.abs(st.daysLeft)}d overdue`}
-                      {st.daysLeft !== null && st.daysLeft >= 0 && ` · ${st.daysLeft}d left`}
+                      {st.label === 'Red' ? '🔴' : st.label === 'Yellow' ? '🟡' : '🟢'} {trStatus(t, st.label)}
+                      {st.daysLeft !== null && st.daysLeft < 0 && ` · ${t('visualBoard.daysOverdue', '{{days}}d overdue', { days: Math.abs(st.daysLeft) })}`}
+                      {st.daysLeft !== null && st.daysLeft >= 0 && ` · ${t('visualBoard.daysLeft', '{{days}}d left', { days: st.daysLeft })}`}
                     </span>
                     <RecommitBadge count={recommitCount} />
                   </div>
                   {item.notes && <p style={{ color: 'var(--text-secondary)', fontSize: '0.8375rem', margin: '0 0 6px', lineHeight: 1.5 }}>{item.notes}</p>}
                   <div style={{ display: 'flex', gap: 16, fontSize: '0.75rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
                     <span>👤 {item.owner}</span>
-                    {activeDue && <span>📅 Due: {new Date(activeDue + 'T00:00:00').toLocaleDateString()}</span>}
+                    {activeDue && <span>📅 {t('visualBoard.due', 'Due')}: {new Date(activeDue + 'T00:00:00').toLocaleDateString()}</span>}
                   </div>
                 </div>
 
                 {/* Action buttons */}
                 <div style={{ display: 'flex', gap: 4, flexShrink: 0, alignItems: 'center' }}>
                   {!isConfirmingClose && (
-                    <button onClick={() => { setClosingId(item.id); setClosingNotes(''); setEditingId(null); }} title="Mark as closed"
+                    <button onClick={() => { setClosingId(item.id); setClosingNotes(''); setEditingId(null); }} title={t('visualBoard.markClosed', 'Mark as closed')}
                       style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 7, color: '#0d9488', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700, padding: '4px 10px', lineHeight: 1, display: 'flex', alignItems: 'center', gap: 4 }}>
-                      ✅ Close
+                      ✅ {t('visualBoard.close', 'Close')}
                     </button>
                   )}
-                  <button onClick={() => { startEdit(item); setClosingId(null); }} title="Edit"
+                  <button onClick={() => { startEdit(item); setClosingId(null); }} title={t('visualBoard.edit', 'Edit')}
                     style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: 7, color: '#64748b', cursor: 'pointer', fontSize: '0.8rem', padding: '3px 8px', lineHeight: 1 }}>✏️</button>
-                  <button onClick={() => handleDelete(item.id)} title="Delete"
+                  <button onClick={() => handleDelete(item.id)} title={t('visualBoard.delete', 'Delete')}
                     style={{ background: 'none', border: 'none', color: '#cbd5e1', cursor: 'pointer', fontSize: '1.25rem', lineHeight: 1, padding: '0 4px' }}>×</button>
                 </div>
               </div>
@@ -551,29 +559,29 @@ export default function VisualBoard() {
                     <span style={{ fontSize: '1rem' }}>✅</span>
                     <div style={{ flex: 1 }}>
                       <p style={{ fontWeight: 700, fontSize: '0.85rem', color: '#0d9488', margin: 0 }}>
-                        Mark this action as closed?
+                        {t('visualBoard.confirmCloseQ', 'Mark this action as closed?')}
                       </p>
                       <p style={{ fontSize: '0.72rem', color: '#0d9488', margin: '2px 0 0' }}>
                         {recommitCount === 0 && !computeStatus(item.dueDate, item.recommitmentDate).overdue
-                          ? '+5 pts will be added (on time, no recommitments)'
+                          ? t('visualBoard.confirmClosePtsOnTime', '+5 pts will be added (on time, no recommitments)')
                           : recommitCount > 0
-                            ? 'No points — action had recommitments'
-                            : 'No points — action is past due'}
+                            ? t('visualBoard.confirmClosePtsRecommit', 'No points — action had recommitments')
+                            : t('visualBoard.confirmClosePtsOverdue', 'No points — action is past due')}
                       </p>
                     </div>
                     <button onClick={() => handleClose(item)}
                       style={{ padding: '0.4rem 1.1rem', borderRadius: 8, background: '#0d9488', color: 'white', fontWeight: 800, fontSize: '0.8rem', border: 'none', cursor: 'pointer' }}>
-                      Yes, Close
+                      {t('visualBoard.yesClose', 'Yes, Close')}
                     </button>
                     <button onClick={() => { setClosingId(null); setClosingNotes(''); }}
                       style={{ padding: '0.4rem 0.875rem', borderRadius: 8, background: 'white', color: '#64748b', fontWeight: 700, fontSize: '0.8rem', border: '1px solid #e2e8f0', cursor: 'pointer' }}>
-                      Cancel
+                      {t('visualBoard.cancel', 'Cancel')}
                     </button>
                   </div>
                   <textarea
                     value={closingNotes}
                     onChange={e => setClosingNotes(e.target.value)}
-                    placeholder="Optional notes for the record (not required)..."
+                    placeholder={t('visualBoard.closingNotesPlaceholder', 'Optional notes for the record (not required)...')}
                     rows={2}
                     style={{ width: '100%', marginTop: 10, padding: '0.5rem 0.65rem', borderRadius: 8, border: '1px solid #99f6e4', fontSize: '0.8rem', fontFamily: 'inherit', resize: 'vertical', background: 'white' }}
                   />
@@ -585,14 +593,14 @@ export default function VisualBoard() {
               {editingId === item.id && (
                 <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid #e2e8f0' }}>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 10 }}>
-                    <div><label className="label">Title / Action</label><AutoGrowTextarea className="input" value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} style={{ minHeight: 38 }} /></div>
-                    <div><label className="label">Owner</label><NameField value={editForm.owner} onChange={e => setEditForm(f => ({ ...f, owner: e.target.value }))} names={savedNames} /></div>
-                    <div><label className="label">Due Date</label><input className="input" type="date" value={editForm.dueDate} onChange={e => setEditForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
-                    <div style={{ gridColumn: '1/-1' }}><label className="label">Notes</label><textarea className="input" rows={2} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} /></div>
+                    <div><label className="label">{t('visualBoard.field.title', 'Title / Action')}</label><AutoGrowTextarea className="input" value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} style={{ minHeight: 38 }} /></div>
+                    <div><label className="label">{t('visualBoard.field.owner', 'Owner')}</label><NameField value={editForm.owner} onChange={e => setEditForm(f => ({ ...f, owner: e.target.value }))} names={savedNames} /></div>
+                    <div><label className="label">{t('visualBoard.field.dueDate', 'Due Date')}</label><input className="input" type="date" value={editForm.dueDate} onChange={e => setEditForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
+                    <div style={{ gridColumn: '1/-1' }}><label className="label">{t('visualBoard.field.notes', 'Notes')}</label><textarea className="input" rows={2} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} /></div>
                   </div>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 1rem' }} onClick={() => handleEditSave(item.id)}>Save Changes</button>
-                    <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 1rem' }} onClick={() => setEditingId(null)}>Cancel</button>
+                    <button className="btn-primary" style={{ fontSize: '0.8rem', padding: '0.4rem 1rem' }} onClick={() => handleEditSave(item.id)}>{t('visualBoard.saveChanges', 'Save Changes')}</button>
+                    <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 1rem' }} onClick={() => setEditingId(null)}>{t('visualBoard.cancel', 'Cancel')}</button>
                   </div>
                 </div>
               )}
@@ -600,7 +608,7 @@ export default function VisualBoard() {
               {/* Inline recommitment row — only for red items */}
               {st.overdue && !isConfirmingClose && (
                 <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px dashed #fca5a5', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#dc2626' }}>📅 Recommit to:</span>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#dc2626' }}>📅 {t('visualBoard.recommitTo', 'Recommit to:')}</span>
                   <input
                     type="date"
                     value={inlineDate}
@@ -610,7 +618,7 @@ export default function VisualBoard() {
                   />
                   {inlineDate && inlineSt && (
                     <span style={{ fontSize: '0.68rem', fontWeight: 700, color: inlineSt.text }}>
-                      {inlineSt.label === 'Green' ? '🟢' : inlineSt.label === 'Yellow' ? '🟡' : '🔴'} {inlineSt.label}
+                      {inlineSt.label === 'Green' ? '🟢' : inlineSt.label === 'Yellow' ? '🟡' : '🔴'} {trStatus(t, inlineSt.label)}
                     </span>
                   )}
                   <button
@@ -624,9 +632,9 @@ export default function VisualBoard() {
                       background: (!inlineDate || (inlineSt && inlineSt.overdue)) ? '#e2e8f0' : '#0f2044',
                       color: (!inlineDate || (inlineSt && inlineSt.overdue)) ? '#94a3b8' : 'white',
                     }}>
-                    ✓ Commit
+                    ✓ {t('visualBoard.commit', 'Commit')}
                   </button>
-                  {inlineSt?.overdue && <span style={{ fontSize: '0.68rem', color: '#ef4444' }}>Date must be today or later</span>}
+                  {inlineSt?.overdue && <span style={{ fontSize: '0.68rem', color: '#ef4444' }}>{t('visualBoard.dateMustBeFuture', 'Date must be today or later')}</span>}
                 </div>
               )}
             </div>
@@ -634,7 +642,7 @@ export default function VisualBoard() {
         })}
         {filtered.length === 0 && (
           <div className="card" style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-            {activeItems.length === 0 ? 'No open actions — click "+ Add Action" to get started' : 'No items for this filter'}
+            {activeItems.length === 0 ? t('visualBoard.emptyBoard', 'No open actions — click "+ Add Action" to get started') : t('visualBoard.emptyFilter', 'No items for this filter')}
           </div>
         )}
       </div>}
