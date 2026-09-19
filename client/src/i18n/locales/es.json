@@ -923,5 +923,102 @@
         }
       }
     }
+  },
+  "mindfulness": {
+    "title": "Respiración y Mindfulness — La Rendición de Cuentas Comienza en Calma",
+    "subtitle": "Ejercicios de respiración guiada y herramientas de mindfulness para líderes",
+    "exercises": {
+      "boxBreathing": {
+        "name": "Respiración en Caja",
+        "description": "Inhala 4s → Retén 4s → Exhala 4s → Retén 4s"
+      },
+      "breathing478": {
+        "name": "Respiración 4-7-8",
+        "description": "Inhala 4s → Retén 7s → Exhala 8s"
+      },
+      "deepBelly": {
+        "name": "Respiración Abdominal Profunda",
+        "description": "Inhala lento 5s → Exhala 5s"
+      }
+    },
+    "phases": {
+      "inhale": "Inhala",
+      "hold": "Retén",
+      "exhale": "Exhala"
+    },
+    "ready": "Listo",
+    "stop": "Detener",
+    "startBreathing": "Iniciar Respiración",
+    "cyclesCompleted": "{{count}} ciclo(s) completado(s)",
+    "seconds": "{{count}} segundos",
+    "leadershipAffirmation": "Afirmación de Liderazgo",
+    "startEndWithIntention": "Comienza o termina tu sesión con intención",
+    "nextAffirmation": "Siguiente Afirmación",
+    "reflectOnAffirmation": "Reflexiona sobre esta afirmación",
+    "ptsEarnedToday": "+2 pts ganados hoy",
+    "ownWordsHint": "En tus propias palabras — escribe al menos una para guardar, gana +2 pts por hoy.",
+    "q1Represent": "1. ¿Qué representa esta afirmación para ti?",
+    "q1Placeholder": "Lo que esta afirmación significa para ti personalmente...",
+    "q2Apply": "2. ¿Cómo puedes aplicar esto en tu día a día? Da un ejemplo.",
+    "q2Placeholder": "Un ejemplo específico y real de aplicarlo esta semana...",
+    "saving": "Guardando…",
+    "saveReflection": "Guardar Reflexión",
+    "thinking": "Pensando…",
+    "aiAssistant": "Asistente de IA — Dame Ideas",
+    "recommendation": "Una recomendación a considerar",
+    "exerciseLog": "Registro de Ejercicios",
+    "recordsSavedOnStop": "Los registros se guardan al detener",
+    "personalBest": "Mejor Marca Personal",
+    "cyclesCount": "{{count}} ciclos",
+    "bestCycles": "MEJOR CICLOS",
+    "sessions": "SESIONES",
+    "lastPerformed": "Última Vez Realizado",
+    "noSessionsYet": "Aún no hay sesiones",
+    "completeSessionToSeeLog": "Completa una sesión para ver tu registro.",
+    "reflectionLog": "Registro de Reflexiones",
+    "last5Reflections": "Tus últimas 5 reflexiones guardadas",
+    "represents": "Representa",
+    "apply": "Aplica",
+    "noReflectionsSaved": "Aún no hay reflexiones guardadas.",
+    "toast": {
+      "aiFailed": "No se pudo obtener la recomendación de IA — intenta de nuevo",
+      "writeOneFirst": "Escribe al menos una de las dos reflexiones primero",
+      "reflectionSavedPts": "⭐ +2 pts — ¡reflexión guardada!",
+      "reflectionCapReached": "¡Reflexión guardada! Límite diario de 25 pts alcanzado — vuelve mañana.",
+      "reflectionSaved": "¡Reflexión guardada!",
+      "reflectionUpdated": "¡Reflexión actualizada!",
+      "reflectionSaveFailed": "No se pudo guardar la reflexión: {{msg}}",
+      "newRecordPts": "⭐ ¡Nuevo récord! +2 pts — {{cycles}} ciclos en {{ex}}",
+      "ptForSession": "⭐ +1 pt por tu sesión de mindfulness de hoy",
+      "ptForCompleting": "⭐ +1 pt por completar una sesión de mindfulness hoy",
+      "sessionCapReached": "¡Sesión guardada! Has alcanzado tu límite diario de 25 pts — vuelve mañana para seguir sumando. 🗓",
+      "sessionSaved": "¡Sesión guardada! ({{cycles}} ciclos)",
+      "newRecordBonus": "⭐ ¡Nuevo récord personal! +1 pt de bono — {{cycles}} ciclos en {{ex}}",
+      "newRecordCapReached": "🏆 ¡Nuevo récord en {{ex}}! Límite diario alcanzado — récord registrado, sin pts extra hoy.",
+      "newRecordSaved": "🏆 ¡Nuevo récord! {{cycles}} ciclos en {{ex}} — sesión guardada."
+    },
+    "affirmations": {
+      "0": "Lidero con claridad, confianza y compasión.",
+      "1": "Abrazo los desafíos como oportunidades para crecer.",
+      "2": "Mi equipo prospera porque invierto en ellos todos los días.",
+      "3": "Tomo decisiones con urgencia y sabiduría.",
+      "4": "Soy responsable ante mi equipo, mis metas y yo mismo.",
+      "5": "Aporto energía calmada a las situaciones de alta presión.",
+      "6": "Establezco el estándar a través de mis acciones, no solo de mis palabras.",
+      "7": "Mantengo la línea en lo que importa, incluso cuando es incómodo.",
+      "8": "La urgencia y la integridad guían cómo cumplo cada compromiso.",
+      "9": "Pinto una imagen del futuro que mi equipo quiere construir.",
+      "10": "Mi visión da a otros una razón para dar lo mejor de sí cada día.",
+      "11": "Convierto un propósito claro en metas que la gente se enorgullece de perseguir.",
+      "12": "Busco una mejor manera, incluso cuando la forma de hoy está funcionando.",
+      "13": "Trato cada problema como datos, no como una razón para culpar.",
+      "14": "Las mejoras pequeñas y constantes se acumulan en un cambio duradero bajo mi vigilancia.",
+      "15": "Formo líderes, no solo seguidores.",
+      "16": "Doy a mi equipo las herramientas, la confianza y el espacio para tener éxito.",
+      "17": "Desarrollar a otros no está separado de mi trabajo — es mi trabajo.",
+      "18": "Veo a la persona detrás del desempeño.",
+      "19": "Reconozco el esfuerzo tan generosamente como espero resultados.",
+      "20": "La compasión y la rendición de cuentas se fortalecen cuando lideran juntas."
+    }
   }
 }

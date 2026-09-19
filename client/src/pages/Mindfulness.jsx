@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import toast from 'react-hot-toast';
@@ -10,35 +11,43 @@ import { logPointEvent, calculateScore, localDateStr } from '../utils/scoring';
 const exercises = [
   {
     name: 'Box Breathing',
+    key: 'boxBreathing',
     icon: '🟦',
     description: 'Inhale 4s → Hold 4s → Exhale 4s → Hold 4s',
     phases: [
-      { label: 'Inhale', duration: 4, color: '#0d9488' },
-      { label: 'Hold',   duration: 4, color: '#1e3a6e' },
-      { label: 'Exhale', duration: 4, color: '#0d9488' },
-      { label: 'Hold',   duration: 4, color: '#1e3a6e' },
+      { label: 'Inhale', labelKey: 'inhale', duration: 4, color: '#0d9488' },
+      { label: 'Hold',   labelKey: 'hold',   duration: 4, color: '#1e3a6e' },
+      { label: 'Exhale', labelKey: 'exhale', duration: 4, color: '#0d9488' },
+      { label: 'Hold',   labelKey: 'hold',   duration: 4, color: '#1e3a6e' },
     ],
   },
   {
     name: '4-7-8 Breathing',
+    key: 'breathing478',
     icon: '🌊',
     description: 'Inhale 4s → Hold 7s → Exhale 8s',
     phases: [
-      { label: 'Inhale', duration: 4, color: '#0d9488' },
-      { label: 'Hold',   duration: 7, color: '#1e3a6e' },
-      { label: 'Exhale', duration: 8, color: '#14b8a6' },
+      { label: 'Inhale', labelKey: 'inhale', duration: 4, color: '#0d9488' },
+      { label: 'Hold',   labelKey: 'hold',   duration: 7, color: '#1e3a6e' },
+      { label: 'Exhale', labelKey: 'exhale', duration: 8, color: '#14b8a6' },
     ],
   },
   {
     name: 'Deep Belly',
+    key: 'deepBelly',
     icon: '🌿',
     description: 'Slow 5s inhale → 5s exhale',
     phases: [
-      { label: 'Inhale', duration: 5, color: '#0d9488' },
-      { label: 'Exhale', duration: 5, color: '#14b8a6' },
+      { label: 'Inhale', labelKey: 'inhale', duration: 5, color: '#0d9488' },
+      { label: 'Exhale', labelKey: 'exhale', duration: 5, color: '#14b8a6' },
     ],
   },
 ];
+
+function trExName(t, ex) { return t(`mindfulness.exercises.${ex.key}.name`, ex.name); }
+function trExDesc(t, ex) { return t(`mindfulness.exercises.${ex.key}.description`, ex.description); }
+function trPhaseLabel(t, phase) { return t(`mindfulness.phases.${phase.labelKey}`, phase.label); }
+function trAffirmation(t, idx) { return t(`mindfulness.affirmations.${idx}`, affirmations[idx]); }
 
 const affirmations = [
   "I lead with clarity, confidence, and compassion.",
@@ -80,6 +89,7 @@ function formatDate(iso) {
 }
 
 export default function Mindfulness() {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [selectedEx, setSelectedEx] = useState(exercises[0]);
   const [running, setRunning] = useState(false);
@@ -139,14 +149,14 @@ export default function Mindfulness() {
       const res = await fn({ affirmation: affirmations[affIdx], represents: reflectRepresents, apply: reflectApply });
       setAiSuggestion(res.data?.suggestion || '');
     } catch (e) {
-      toast.error(e?.message || 'Could not get AI recommendation — try again');
+      toast.error(e?.message || t('mindfulness.toast.aiFailed', 'Could not get AI recommendation — try again'));
     }
     setAiLoading(false);
   }
 
   async function saveReflection() {
     if (!reflectRepresents.trim() && !reflectApply.trim()) {
-      return toast.error('Write at least one of the two reflections first');
+      return toast.error(t('mindfulness.toast.writeOneFirst', 'Write at least one of the two reflections first'));
     }
     if (!currentUser || savingReflection) return;
     setSavingReflection(true);
@@ -177,18 +187,18 @@ export default function Mindfulness() {
         if (awarded) {
           calculateScore(currentUser.uid).catch(() => {});
           setReflectedToday(true);
-          toast.success('⭐ +2 pts — reflection saved!', { duration: 5000 });
+          toast.success(t('mindfulness.toast.reflectionSavedPts', '⭐ +2 pts — reflection saved!'), { duration: 5000 });
         } else if (capReached) {
           setReflectedToday(true);
-          toast('Reflection saved! Daily 25-pt cap reached — come back tomorrow.', { duration: 5000, icon: '📅' });
+          toast(t('mindfulness.toast.reflectionCapReached', 'Reflection saved! Daily 25-pt cap reached — come back tomorrow.'), { duration: 5000, icon: '📅' });
         } else {
-          toast.success('Reflection saved!');
+          toast.success(t('mindfulness.toast.reflectionSaved', 'Reflection saved!'));
         }
       } else {
-        toast.success('Reflection updated!');
+        toast.success(t('mindfulness.toast.reflectionUpdated', 'Reflection updated!'));
       }
     } catch (e) {
-      toast.error('Could not save reflection: ' + (e?.message || 'try again'));
+      toast.error(t('mindfulness.toast.reflectionSaveFailed', 'Could not save reflection: {{msg}}', { msg: e?.message || 'try again' }));
     }
     setSavingReflection(false);
   }
@@ -196,6 +206,8 @@ export default function Mindfulness() {
   // Called when user stops the timer (if cycles > 0, record the session)
   async function recordSession(exName, completedCycles) {
     if (completedCycles === 0) return;
+    const exObj = exercises.find(e => e.name === exName);
+    const exNameDisplay = exObj ? trExName(t, exObj) : exName;
     const existing = logs[exName] || { sessions: [], best: 0 };
     const isRecord = completedCycles > (existing.best || 0);
     const newSession = { date: new Date().toISOString(), cycles: completedCycles };
@@ -229,18 +241,18 @@ export default function Mindfulness() {
             reason: `New personal record on ${exName}: ${completedCycles} cycles 🏆`,
           });
           if (r2) {
-            toast.success(`⭐ New record! +2 pts — ${completedCycles} cycles on ${exName}`, { duration: 6000, icon: '🌟' });
+            toast.success(t('mindfulness.toast.newRecordPts', '⭐ New record! +2 pts — {{cycles}} cycles on {{ex}}', { cycles: completedCycles, ex: exNameDisplay }), { duration: 6000, icon: '🌟' });
           } else {
-            toast.success(`⭐ +1 pt for today's mindfulness session`, { duration: 6000, icon: '🌟' });
+            toast.success(t('mindfulness.toast.ptForSession', "⭐ +1 pt for today's mindfulness session"), { duration: 6000, icon: '🌟' });
           }
         } else {
-          toast.success(`⭐ +1 pt for completing a mindfulness session today`, { duration: 6000, icon: '🌟' });
+          toast.success(t('mindfulness.toast.ptForCompleting', '⭐ +1 pt for completing a mindfulness session today'), { duration: 6000, icon: '🌟' });
         }
         calculateScore(currentUser.uid).catch(() => {});
       } else if (capReached) {
-        toast(`Session saved! You've reached your 25-pt daily limit — come back tomorrow to keep scoring. 🗓`, { duration: 5000, icon: '📅' });
+        toast(t('mindfulness.toast.sessionCapReached', "Session saved! You've reached your 25-pt daily limit — come back tomorrow to keep scoring. 🗓"), { duration: 5000, icon: '📅' });
       } else {
-        toast.success(`Session saved! (${completedCycles} cycles)`);
+        toast.success(t('mindfulness.toast.sessionSaved', 'Session saved! ({{cycles}} cycles)', { cycles: completedCycles }));
       }
     } else if (isRecord) {
       // Already got daily pt — try for record bonus pt only
@@ -251,14 +263,14 @@ export default function Mindfulness() {
       });
       if (r2) {
         calculateScore(currentUser.uid).catch(() => {});
-        toast.success(`⭐ New personal record! +1 bonus pt — ${completedCycles} cycles on ${exName}`, { duration: 6000, icon: '🏆' });
+        toast.success(t('mindfulness.toast.newRecordBonus', '⭐ New personal record! +1 bonus pt — {{cycles}} cycles on {{ex}}', { cycles: completedCycles, ex: exNameDisplay }), { duration: 6000, icon: '🏆' });
       } else if (capReached) {
-        toast(`🏆 New record on ${exName}! Daily limit reached — record logged, no extra pts today.`, { duration: 5000, icon: '📅' });
+        toast(t('mindfulness.toast.newRecordCapReached', '🏆 New record on {{ex}}! Daily limit reached — record logged, no extra pts today.', { ex: exNameDisplay }), { duration: 5000, icon: '📅' });
       } else {
-        toast.success(`🏆 New record! ${completedCycles} cycles on ${exName} — session saved.`);
+        toast.success(t('mindfulness.toast.newRecordSaved', '🏆 New record! {{cycles}} cycles on {{ex}} — session saved.', { cycles: completedCycles, ex: exNameDisplay }));
       }
     } else {
-      toast(`Session saved! (${completedCycles} cycles)`, { icon: '✅' });
+      toast(t('mindfulness.toast.sessionSaved', 'Session saved! ({{cycles}} cycles)', { cycles: completedCycles }), { icon: '✅' });
     }
   }
 
@@ -318,7 +330,7 @@ export default function Mindfulness() {
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-      <PageHeader icon="🧘" title="Breathing & Mindfulness — Accountability Starts Calm" subtitle="Guided breathing exercises and mindfulness tools for leaders" />
+      <PageHeader icon="🧘" title={t('mindfulness.title', 'Breathing & Mindfulness — Accountability Starts Calm')} subtitle={t('mindfulness.subtitle', 'Guided breathing exercises and mindfulness tools for leaders')} />
 
       <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start', flexWrap: 'wrap' }}>
 
@@ -329,14 +341,14 @@ export default function Mindfulness() {
             {exercises.map(ex => (
               <button key={ex.name} onClick={() => selectExercise(ex)}
                 style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem 1.125rem', borderRadius: 10, fontWeight: 700, fontSize: '0.875rem', border: 'none', cursor: 'pointer', transition: 'all 0.15s', background: selectedEx.name === ex.name ? '#0f2044' : '#f1f5f9', color: selectedEx.name === ex.name ? 'white' : '#475569' }}>
-                <span>{ex.icon}</span>{ex.name}
+                <span>{ex.icon}</span>{trExName(t, ex)}
               </button>
             ))}
           </div>
 
           {/* Breathing circle */}
           <div className="card" style={{ padding: '2rem', textAlign: 'center', marginBottom: '1.25rem' }}>
-            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>{selectedEx.description}</p>
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1.5rem' }}>{trExDesc(t, selectedEx)}</p>
             <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
               <div style={{ position: 'relative' }}>
                 <svg width="200" height="200" viewBox="0 0 200 200">
@@ -348,7 +360,7 @@ export default function Mindfulness() {
                 </svg>
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
                   <p style={{ fontSize: '2rem', fontWeight: 900, color: phase.color, margin: 0 }}>{timeLeft}</p>
-                  <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', margin: 0 }}>{running ? phase.label : 'Ready'}</p>
+                  <p style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)', margin: 0 }}>{running ? trPhaseLabel(t, phase) : t('mindfulness.ready', 'Ready')}</p>
                 </div>
               </div>
             </div>
@@ -357,7 +369,7 @@ export default function Mindfulness() {
               <div style={{ display: 'flex', justifyContent: 'center', gap: 8, marginBottom: '1rem', flexWrap: 'wrap' }}>
                 {selectedEx.phases.map((p, i) => (
                   <span key={i} style={{ padding: '2px 12px', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 700, background: i === phaseIdx ? p.color : '#f1f5f9', color: i === phaseIdx ? 'white' : '#94a3b8', transition: 'all 0.3s' }}>
-                    {p.label} ({p.duration}s)
+                    {trPhaseLabel(t, p)} ({p.duration}s)
                   </span>
                 ))}
               </div>
@@ -366,10 +378,10 @@ export default function Mindfulness() {
             <div style={{ display: 'flex', justifyContent: 'center', gap: 12 }}>
               <button onClick={startStop}
                 style={{ padding: '0.625rem 2rem', borderRadius: 10, fontWeight: 700, fontSize: '0.9rem', border: 'none', cursor: 'pointer', color: 'white', background: running ? '#ef4444' : '#0d9488', transition: 'all 0.15s' }}>
-                {running ? '⏹ Stop' : '▶ Start Breathing'}
+                {running ? `⏹ ${t('mindfulness.stop', 'Stop')}` : `▶ ${t('mindfulness.startBreathing', 'Start Breathing')}`}
               </button>
             </div>
-            {cycles > 0 && <p style={{ fontSize: '0.8rem', color: '#0d9488', marginTop: '1rem', fontWeight: 600 }}>✅ {cycles} cycle{cycles > 1 ? 's' : ''} completed</p>}
+            {cycles > 0 && <p style={{ fontSize: '0.8rem', color: '#0d9488', marginTop: '1rem', fontWeight: 600 }}>✅ {t('mindfulness.cyclesCompleted', '{{count}} cycle(s) completed', { count: cycles })}</p>}
           </div>
 
           {/* Phase guide */}
@@ -377,65 +389,65 @@ export default function Mindfulness() {
             {selectedEx.phases.map((p, i) => (
               <div key={i} className="card" style={{ padding: '0.875rem', textAlign: 'center' }}>
                 <div style={{ width: 32, height: 32, borderRadius: '50%', background: p.color, color: 'white', fontWeight: 900, fontSize: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 8px' }}>{i + 1}</div>
-                <p style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.82rem', margin: '0 0 2px' }}>{p.label}</p>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{p.duration} seconds</p>
+                <p style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.82rem', margin: '0 0 2px' }}>{trPhaseLabel(t, p)}</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{t('mindfulness.seconds', '{{count}} seconds', { count: p.duration })}</p>
               </div>
             ))}
           </div>
 
           {/* Affirmation */}
           <div style={{ borderRadius: 16, padding: '1.5rem', background: 'linear-gradient(135deg,#f0fdfa,#ccfbf1)', border: '1px solid #bbf7d0' }}>
-            <h3 style={{ fontWeight: 800, color: '#166534', margin: '0 0 4px', fontSize: '1rem' }}>Leadership Affirmation</h3>
-            <p style={{ fontSize: '0.78rem', color: '#15803d', margin: '0 0 14px' }}>Start or end your session with intention</p>
+            <h3 style={{ fontWeight: 800, color: '#166534', margin: '0 0 4px', fontSize: '1rem' }}>{t('mindfulness.leadershipAffirmation', 'Leadership Affirmation')}</h3>
+            <p style={{ fontSize: '0.78rem', color: '#15803d', margin: '0 0 14px' }}>{t('mindfulness.startEndWithIntention', 'Start or end your session with intention')}</p>
             <div style={{ background: 'white', borderRadius: 12, padding: '1rem', marginBottom: '0.875rem', boxShadow: '0 1px 4px rgba(15,32,68,0.06)' }}>
-              <p style={{ fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.6, fontStyle: 'italic' }}>"{affirmations[affIdx]}"</p>
+              <p style={{ fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.6, fontStyle: 'italic' }}>"{trAffirmation(t, affIdx)}"</p>
             </div>
             <button className="btn-secondary" onClick={() => {
               setAffIdx(i => (i + 1) % affirmations.length);
               setAiSuggestion('');
               setReflectRepresents('');
               setReflectApply('');
-            }}>Next Affirmation →</button>
+            }}>{t('mindfulness.nextAffirmation', 'Next Affirmation')} →</button>
 
             {/* Affirmation reflection — +2 pts/day */}
             <div style={{ marginTop: '1.25rem', paddingTop: '1.25rem', borderTop: '1px solid #bbf7d0' }}>
               <h4 style={{ fontWeight: 800, color: '#166534', margin: '0 0 4px', fontSize: '0.9rem' }}>
-                ✍️ Reflect on this affirmation {reflectedToday && <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#0d9488', marginLeft: 6 }}>✓ +2 pts earned today</span>}
+                ✍️ {t('mindfulness.reflectOnAffirmation', 'Reflect on this affirmation')} {reflectedToday && <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#0d9488', marginLeft: 6 }}>✓ {t('mindfulness.ptsEarnedToday', '+2 pts earned today')}</span>}
               </h4>
-              <p style={{ fontSize: '0.76rem', color: '#15803d', margin: '0 0 12px' }}>In your own words — write at least one to save, earn +2 pts for today.</p>
+              <p style={{ fontSize: '0.76rem', color: '#15803d', margin: '0 0 12px' }}>{t('mindfulness.ownWordsHint', 'In your own words — write at least one to save, earn +2 pts for today.')}</p>
 
-              <label style={{ fontSize: '0.76rem', fontWeight: 700, color: '#166534', display: 'block', marginBottom: 4 }}>1. What does this affirmation represent to you?</label>
+              <label style={{ fontSize: '0.76rem', fontWeight: 700, color: '#166534', display: 'block', marginBottom: 4 }}>{t('mindfulness.q1Represent', '1. What does this affirmation represent to you?')}</label>
               <textarea
                 className="input"
                 rows={2}
                 style={{ width: '100%', marginBottom: 12, fontSize: '0.85rem' }}
-                placeholder="What this affirmation means to you personally..."
+                placeholder={t('mindfulness.q1Placeholder', 'What this affirmation means to you personally...')}
                 value={reflectRepresents}
                 onChange={e => setReflectRepresents(e.target.value)}
               />
 
-              <label style={{ fontSize: '0.76rem', fontWeight: 700, color: '#166534', display: 'block', marginBottom: 4 }}>2. How can you apply this in your day-to-day? Give an example.</label>
+              <label style={{ fontSize: '0.76rem', fontWeight: 700, color: '#166534', display: 'block', marginBottom: 4 }}>{t('mindfulness.q2Apply', '2. How can you apply this in your day-to-day? Give an example.')}</label>
               <textarea
                 className="input"
                 rows={3}
                 style={{ width: '100%', marginBottom: 12, fontSize: '0.85rem' }}
-                placeholder="A specific, real example of applying it this week..."
+                placeholder={t('mindfulness.q2Placeholder', 'A specific, real example of applying it this week...')}
                 value={reflectApply}
                 onChange={e => setReflectApply(e.target.value)}
               />
 
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 <button className="btn-primary" onClick={saveReflection} disabled={savingReflection}>
-                  {savingReflection ? 'Saving…' : '💾 Save Reflection'}
+                  {savingReflection ? t('mindfulness.saving', 'Saving…') : `💾 ${t('mindfulness.saveReflection', 'Save Reflection')}`}
                 </button>
                 <button className="btn-secondary" onClick={getAiSuggestion} disabled={aiLoading}>
-                  {aiLoading ? '🤖 Thinking…' : '🤖 AI Assistant — Give Me Ideas'}
+                  {aiLoading ? `🤖 ${t('mindfulness.thinking', 'Thinking…')}` : `🤖 ${t('mindfulness.aiAssistant', 'AI Assistant — Give Me Ideas')}`}
                 </button>
               </div>
 
               {aiSuggestion && (
                 <div style={{ marginTop: 12, padding: '0.875rem 1rem', background: 'white', borderRadius: 10, border: '1px solid #ccfbf1' }}>
-                  <p style={{ margin: '0 0 4px', fontSize: '0.68rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.06em' }}>🤖 A recommendation to consider</p>
+                  <p style={{ margin: '0 0 4px', fontSize: '0.68rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.06em' }}>🤖 {t('mindfulness.recommendation', 'A recommendation to consider')}</p>
                   <p style={{ margin: 0, fontSize: '0.82rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-line' }}>{aiSuggestion}</p>
                 </div>
               )}
@@ -447,8 +459,8 @@ export default function Mindfulness() {
         <div style={{ flex: '0 0 280px', display: 'flex', flexDirection: 'column', gap: 14, alignSelf: 'flex-start' }}>
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)', background: '#f8fafc' }}>
-            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>📊 Exercise Log</h3>
-            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Records saved when you stop</p>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>📊 {t('mindfulness.exerciseLog', 'Exercise Log')}</h3>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>{t('mindfulness.recordsSavedOnStop', 'Records saved when you stop')}</p>
           </div>
 
           {/* Tabs */}
@@ -464,7 +476,7 @@ export default function Mindfulness() {
           {/* Tab label */}
           <div style={{ padding: '0.6rem 1.25rem 0', background: 'white' }}>
             <p style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-              {exercises.find(e => e.name === logTab)?.name}
+              {(() => { const ex = exercises.find(e => e.name === logTab); return ex ? trExName(t, ex) : logTab; })()}
             </p>
           </div>
 
@@ -473,8 +485,8 @@ export default function Mindfulness() {
             <div style={{ margin: '0.75rem 1.25rem 0', background: 'linear-gradient(135deg, #fef9c3, #fef3c7)', border: '1.5px solid #f59e0b', borderRadius: 12, padding: '0.6rem 0.875rem', display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: '1.5rem', lineHeight: 1 }}>🏆</span>
               <div>
-                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Personal Best</div>
-                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#78350f', lineHeight: 1.1 }}>{activeLog.best} cycles</div>
+                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: '#92400e', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('mindfulness.personalBest', 'Personal Best')}</div>
+                <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#78350f', lineHeight: 1.1 }}>{t('mindfulness.cyclesCount', '{{count}} cycles', { count: activeLog.best })}</div>
               </div>
             </div>
           )}
@@ -483,21 +495,21 @@ export default function Mindfulness() {
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, padding: '0.75rem 1.25rem', borderBottom: '1px solid var(--border)' }}>
             <div style={{ background: '#f0fdfa', borderRadius: 10, padding: '0.6rem 0.75rem', textAlign: 'center', border: '1.5px solid #99f6e4' }}>
               <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0d9488', lineHeight: 1 }}>{activeLog.best || 0}</div>
-              <div style={{ fontSize: '0.65rem', color: '#0f766e', fontWeight: 700, marginTop: 3 }}>BEST CYCLES</div>
+              <div style={{ fontSize: '0.65rem', color: '#0f766e', fontWeight: 700, marginTop: 3 }}>{t('mindfulness.bestCycles', 'BEST CYCLES')}</div>
             </div>
             <div style={{ background: '#f8fafc', borderRadius: 10, padding: '0.6rem 0.75rem', textAlign: 'center' }}>
               <div style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f2044', lineHeight: 1 }}>{activeLog.sessions?.length || 0}</div>
-              <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, marginTop: 3 }}>SESSIONS</div>
+              <div style={{ fontSize: '0.65rem', color: '#64748b', fontWeight: 700, marginTop: 3 }}>{t('mindfulness.sessions', 'SESSIONS')}</div>
             </div>
           </div>
 
           {/* Last performed */}
           <div style={{ padding: '0.6rem 1.25rem', borderBottom: '1px solid var(--border)', background: lastSession ? '#fefce8' : '#f8fafc' }}>
-            <p style={{ fontSize: '0.68rem', fontWeight: 700, color: '#92400e', margin: '0 0 1px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Last Performed</p>
+            <p style={{ fontSize: '0.68rem', fontWeight: 700, color: '#92400e', margin: '0 0 1px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('mindfulness.lastPerformed', 'Last Performed')}</p>
             <p style={{ fontSize: '0.8rem', fontWeight: 800, color: lastSession ? '#0f2044' : '#94a3b8', margin: 0 }}>
-              {lastSession ? formatDate(lastSession.date) : 'No sessions yet'}
+              {lastSession ? formatDate(lastSession.date) : t('mindfulness.noSessionsYet', 'No sessions yet')}
             </p>
-            {lastSession && <p style={{ fontSize: '0.68rem', color: '#64748b', margin: '1px 0 0' }}>{lastSession.cycles} cycle{lastSession.cycles !== 1 ? 's' : ''}</p>}
+            {lastSession && <p style={{ fontSize: '0.68rem', color: '#64748b', margin: '1px 0 0' }}>{t('mindfulness.cyclesCount', '{{count}} cycles', { count: lastSession.cycles })}</p>}
           </div>
 
           {/* Session history list */}
@@ -513,12 +525,12 @@ export default function Mindfulness() {
                   background: s.cycles === activeLog.best && activeLog.best > 0 ? '#fef3c7' : s.cycles >= (activeLog.best || 0) ? '#f0fdfa' : '#f8fafc',
                   border: s.cycles === activeLog.best && activeLog.best > 0 ? '1px solid #f59e0b' : 'none',
                   padding: '1px 8px', borderRadius: 9999 }}>
-                  {s.cycles} cycles
+                  {t('mindfulness.cyclesCount', '{{count}} cycles', { count: s.cycles })}
                 </span>
               </div>
             )) : (
               <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1.5rem 1rem', fontStyle: 'italic' }}>
-                Complete a session to see your log.
+                {t('mindfulness.completeSessionToSeeLog', 'Complete a session to see your log.')}
               </p>
             )}
           </div>
@@ -526,8 +538,8 @@ export default function Mindfulness() {
 
         <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border)', background: '#f8fafc' }}>
-            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>🪞 Reflection Log</h3>
-            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Your last 5 saved reflections</p>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>🪞 {t('mindfulness.reflectionLog', 'Reflection Log')}</h3>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>{t('mindfulness.last5Reflections', 'Your last 5 saved reflections')}</p>
           </div>
           <div style={{ maxHeight: 340, overflowY: 'auto', padding: '0.5rem 0' }}>
             {reflectionLog.length > 0 ? reflectionLog.map((r, i) => (
@@ -536,22 +548,22 @@ export default function Mindfulness() {
                   {formatDate(r.date)}
                 </p>
                 <p style={{ fontSize: '0.7rem', fontStyle: 'italic', color: 'var(--text-muted)', margin: '0 0 5px' }}>
-                  "{r.affirmation}"
+                  "{(() => { const idx = affirmations.indexOf(r.affirmation); return idx >= 0 ? trAffirmation(t, idx) : r.affirmation; })()}"
                 </p>
                 {r.represents && (
                   <p style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', margin: '0 0 3px' }}>
-                    <strong>Represents:</strong> {r.represents}
+                    <strong>{t('mindfulness.represents', 'Represents')}:</strong> {r.represents}
                   </p>
                 )}
                 {r.apply && (
                   <p style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', margin: 0 }}>
-                    <strong>Apply:</strong> {r.apply}
+                    <strong>{t('mindfulness.apply', 'Apply')}:</strong> {r.apply}
                   </p>
                 )}
               </div>
             )) : (
               <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1.5rem 1rem', fontStyle: 'italic' }}>
-                No reflections saved yet.
+                {t('mindfulness.noReflectionsSaved', 'No reflections saved yet.')}
               </p>
             )}
           </div>
