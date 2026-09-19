@@ -1020,5 +1020,465 @@
       "19": "Reconozco el esfuerzo tan generosamente como espero resultados.",
       "20": "La compasión y la rendición de cuentas se fortalecen cuando lideran juntas."
     }
+  },
+  "lean": {
+    "pageTitle": "Kit Lean — Responsabilidad sin desperdicio",
+    "pageSubtitle": "Checklist 5S, identificación de desperdicios y bitácora de eventos Kaizen",
+    "tabs": {
+      "5s": "Auditoría 5S",
+      "waste": "Recorrido de Desperdicios",
+      "kaizen": "Bitácora Kaizen"
+    },
+    "fiveS": {
+      "sort": {
+        "category": "Clasificar (Seiri)",
+        "items": [
+          "Retirar todos los artículos innecesarios del área de trabajo",
+          "Etiquetar con tarjeta roja los artículos que no se necesiten en los próximos 30 días",
+          "Desechar o reubicar los artículos con tarjeta roja",
+          "Documentar qué se retiró y por qué"
+        ]
+      },
+      "setInOrder": {
+        "category": "Ordenar (Seiton)",
+        "items": [
+          "Asignar un lugar específico para cada artículo",
+          "Etiquetar claramente todas las ubicaciones",
+          "Acomodar los artículos para facilitar el uso ergonómico",
+          "Implementar controles visuales (tableros de siluetas, cinta en el piso)"
+        ]
+      },
+      "shine": {
+        "category": "Limpiar (Seiso)",
+        "items": [
+          "Limpiar todo el equipo y las superficies de trabajo",
+          "Identificar y corregir fuentes de contaminación",
+          "Asignar responsabilidades de limpieza",
+          "Crear un cronograma de limpieza diario"
+        ]
+      },
+      "standardize": {
+        "category": "Estandarizar (Seiketsu)",
+        "items": [
+          "Crear procedimientos operativos estándar para las primeras 3S",
+          "Publicar estándares visuales en el área",
+          "Implementar un sistema de código de colores",
+          "Capacitar a todo el equipo en los estándares"
+        ]
+      },
+      "sustain": {
+        "category": "Sostener (Shitsuke)",
+        "items": [
+          "Realizar auditorías 5S semanales",
+          "Revisar los resultados de la auditoría con el equipo",
+          "Reconocer a los de mejor desempeño",
+          "Dar seguimiento a las tendencias del puntaje 5S en el tiempo"
+        ]
+      }
+    },
+    "stepGuides": {
+      "sort": {
+        "title": "Clasificar",
+        "desc": "Retira los artículos innecesarios del área de trabajo y separa lo que se necesita de lo que no.",
+        "bullets": [
+          "Retira herramientas, materiales, accesorios, documentos y suministros sin uso.",
+          "Usa tarjetas rojas para artículos cuestionables, obsoletos, dañados o no identificados.",
+          "Crea una zona de tarjetas rojas claramente marcada, con fecha de revisión y responsable definidos.",
+          "Da disposición a los artículos mediante procesos aprobados; no permitas que la zona de tarjetas rojas se convierta en almacén."
+        ],
+        "proTip": "Si un artículo no se ha usado durante el periodo de revisión definido, cuestiona si debería estar en el punto de uso.",
+        "checkpoint": "Solo quedan los artículos necesarios. Los artículos con tarjeta roja tienen responsable, fecha de disposición y decisión documentada."
+      },
+      "setInOrder": {
+        "title": "Ordenar",
+        "desc": "Acomoda los artículos necesarios para que sean fáciles de identificar, tomar, usar y devolver.",
+        "bullets": [
+          "Asigna una ubicación designada para herramientas, materiales, trabajo en proceso, suministros y equipo.",
+          "Usa etiquetas, tableros de siluetas, identificadores de estantes, cinta en el piso y límites visuales.",
+          "Coloca los artículos de uso frecuente lo más cerca posible del punto de uso.",
+          "Define ubicaciones para herramientas calibradas, material no conforme y artículos controlados.",
+          "Mantén despejados los pasillos, salidas, accesos eléctricos y equipo de emergencia."
+        ],
+        "proTip": "Usa controles visuales para que un artículo faltante, mal ubicado o anormal se reconozca de un vistazo.",
+        "checkpoint": "Cada artículo tiene un lugar etiquetado y puede tomarse y devolverse rápidamente sin buscarlo."
+      },
+      "shine": {
+        "title": "Limpiar",
+        "desc": "Limpia el lugar de trabajo mientras inspeccionas el equipo, las herramientas y el área en busca de anomalías.",
+        "bullets": [
+          "Programa limpieza rutinaria para cada área de trabajo.",
+          "Proporciona estándares de limpieza claros y suministros accesibles.",
+          "Asigna responsables de zonas, equipo y áreas comunes.",
+          "Inspecciona fugas, desgaste, daños, contaminación, tornillería suelta y condiciones inseguras.",
+          "Corrige o reporta las anomalías de inmediato mediante el proceso adecuado."
+        ],
+        "proTip": "Limpiar es en realidad inspección preventiva disfrazada, no solo aseo.",
+        "checkpoint": "Las áreas de trabajo están limpias, los hallazgos de inspección son visibles y las anomalías están documentadas y atendidas."
+      },
+      "standardize": {
+        "title": "Estandarizar",
+        "desc": "Crea estándares visuales repetibles para que se siga consistentemente el mejor método conocido.",
+        "bullets": [
+          "Usa listas de verificación 5S estandarizadas entre departamentos y turnos.",
+          "Aplica etiquetas, códigos de color, marcas en el piso e identificación de almacenamiento consistentes.",
+          "Publica los estándares visuales en el punto de uso.",
+          "Documenta las condiciones esperadas con fotos, diagramas o procedimientos simples.",
+          "Actualiza los estándares cuando las mejoras se validen y adopten."
+        ],
+        "proTip": "Un estándar debe hacer obvia la condición normal y fácil de detectar cualquier desviación.",
+        "checkpoint": "Los estándares son visibles, se entienden, están vigentes y se siguen consistentemente entre turnos."
+      },
+      "sustain": {
+        "title": "Sostener",
+        "desc": "Haz de las 5S parte del trabajo diario mediante responsabilidad, auditorías, coaching y mejora continua.",
+        "bullets": [
+          "Realiza auditorías 5S rutinarias usando listas de verificación estandarizadas.",
+          "Asigna responsables de área y define responsabilidades.",
+          "Revisa resultados y abre acciones durante las reuniones regulares de equipo.",
+          "Muestra en tableros visuales los puntajes de auditoría, tendencias y acciones de mejora.",
+          "Reconoce las mejoras y refuerza las buenas prácticas.",
+          "Corrige hallazgos recurrentes con acciones documentadas y seguimiento."
+        ],
+        "proTip": "Las 5S no son un evento de limpieza único. La disciplina y el liderazgo constante hacen sostenible el sistema.",
+        "checkpoint": "Las auditorías están vigentes, las responsabilidades son claras, las acciones correctivas tienen seguimiento y las mejoras se mantienen."
+      }
+    },
+    "ratingScale": {
+      "notPracticed": {
+        "label": "No se practica",
+        "desc": "No hay evidencia de que la práctica esté implementada o se esté siguiendo."
+      },
+      "emerging": {
+        "label": "Emergente",
+        "desc": "Se intenta ocasionalmente y de forma inconsistente; persisten brechas importantes."
+      },
+      "developing": {
+        "label": "En desarrollo",
+        "desc": "Se practica regularmente pero aún no está estandarizado ni sostenido."
+      },
+      "proficient": {
+        "label": "Competente",
+        "desc": "Se practica y estandariza de forma consistente; solo quedan brechas menores."
+      },
+      "excellence": {
+        "label": "Excelencia",
+        "desc": "Totalmente integrado, sostenido y en mejora continua — un ejemplo modelo."
+      }
+    },
+    "wasteTypes": {
+      "defects": {
+        "name": "Defectos",
+        "desc": "Trabajo que requiere retrabajo o se desecha",
+        "example": "Piezas que no pasan inspección, devoluciones de clientes"
+      },
+      "overproduction": {
+        "name": "Sobreproducción",
+        "desc": "Producir más de lo que demanda el cliente",
+        "example": "Fabricar piezas antes de que se necesiten"
+      },
+      "waiting": {
+        "name": "Espera",
+        "desc": "Tiempo ocioso cuando no se está agregando valor",
+        "example": "Tiempo de máquina parada, esperar aprobaciones"
+      },
+      "nonUtilizedTalent": {
+        "name": "Talento no utilizado",
+        "desc": "No aprovechar el conocimiento y la creatividad de las personas",
+        "example": "No involucrar a los operadores en la mejora"
+      },
+      "transportation": {
+        "name": "Transporte",
+        "desc": "Movimiento innecesario de materiales o productos",
+        "example": "Mover piezas entre estaciones de trabajo distantes"
+      },
+      "inventory": {
+        "name": "Inventario",
+        "desc": "Exceso de materiales, trabajo en proceso o producto terminado",
+        "example": "Lotes grandes que permanecen inactivos"
+      },
+      "motion": {
+        "name": "Movimiento",
+        "desc": "Movimiento innecesario de las personas",
+        "example": "Buscar herramientas o caminar por suministros"
+      },
+      "extraProcessing": {
+        "name": "Sobreprocesamiento",
+        "desc": "Más trabajo o calidad de la requerida",
+        "example": "Pasos adicionales que no agregan valor al cliente"
+      }
+    },
+    "status": {
+      "preparing": "Preparando",
+      "inProgress": "En Progreso",
+      "reportOut": "Presentación de Resultados",
+      "sustaining": "Sosteniendo",
+      "complete": "Completo"
+    },
+    "phases": {
+      "prepare": "Fase 1: Preparar",
+      "event": "Fase 2: Evento",
+      "sustain": "Fase 3: Sostener"
+    },
+    "periods": {
+      "weekly": "Semanal",
+      "monthly": "Mensual",
+      "quarterly": "Trimestral"
+    },
+    "guideline": "📋 Guía",
+    "seeExample": "📷 Ver Ejemplo",
+    "proTip": "Consejo",
+    "checkpoint": "Punto de verificación",
+    "photoTag": "📎 Foto",
+    "noteTag": "📝 Nota",
+    "collapse": "Colapsar",
+    "addFindingPhoto": "Agregar hallazgo / foto",
+    "findingDetails": "Detalles del Hallazgo",
+    "descriptionFinding": "Descripción / Hallazgo",
+    "describeFindingPlaceholder": "Describe lo que se encontró, la condición o la no conformidad…",
+    "photoEvidence": "Evidencia Fotográfica (PNG, JPG, GIF — máx 5 MB)",
+    "findingAlt": "Hallazgo",
+    "clickAttachPhoto": "📷 Toca para adjuntar una foto",
+    "remove": "Quitar",
+    "stepExampleAlt": "Ejemplo de {{title}}",
+    "stepLightboxTitle": "Paso {{step}}: {{title}} — cómo se ve bien hecho",
+    "stepPhotoComingSoon": "📷 Foto de referencia próximamente para este paso.",
+    "ratingScaleTitle": "Escala de Calificación — califica cada artículo de 1 a 5",
+    "step1": {
+      "title": "Paso 1 — Áreas a Auditar",
+      "desc": "Define las áreas/ubicaciones de tu empresa que quieres auditar. Elegirás una abajo cada vez que realices una auditoría.",
+      "placeholder": "p. ej. Línea de Ensamble 3, Zona B de Almacén…",
+      "addArea": "+ Agregar Área",
+      "removeArea": "Quitar área"
+    },
+    "step2": {
+      "title": "Paso 2 — Área / Ubicación Auditada",
+      "addAreaFirst": "Primero agrega un área arriba y luego regresa aquí para iniciar una auditoría.",
+      "selectArea": "Selecciona un área…",
+      "scoreLabel": "Puntaje de Auditoría 5S",
+      "scoreDesc": "Promedio de todos los artículos calificados (1–5)",
+      "pctComplete": "{{pct}}% completado",
+      "itemsRated": "{{rated}} de {{total}} artículos calificados",
+      "rateAllToSave": "califica los {{total}} para guardar",
+      "reset": "↺ Reiniciar",
+      "saveAudit": "💾 Guardar Auditoría",
+      "newAudit": "＋ Nueva Auditoría"
+    },
+    "opportunities": {
+      "title": "Áreas de Oportunidad",
+      "ptsEarned": "✓ +5 pts ganados esta semana",
+      "describedProgress": "{{count}}/{{min}} descritas → +5 pts",
+      "instructions": "Describe al menos {{min}} áreas de oportunidad encontradas durante esta auditoría (mín. {{minWords}} palabras cada una). Una auditoría semanal con {{min}}+ áreas descritas gana +5 pts — los puntos se reinician cada semana, así que realiza una auditoría nueva semanalmente para conservarlos.",
+      "placeholder": "Área de oportunidad {{n}} — ¿qué necesita mejorar y dónde?",
+      "wordCount": "{{count}}/{{min}} palabras",
+      "addAnother": "＋ Agregar otra área"
+    },
+    "progress": {
+      "title": "📈 Progreso — Tendencia de Puntaje por Área",
+      "desc": "Da seguimiento a cómo evoluciona el puntaje 5S de un área en el tiempo, agrupado por el periodo que elijas.",
+      "area": "Área",
+      "noAreasYet": "Aún no hay áreas — agrega una arriba.",
+      "period": "Periodo",
+      "addAreaToTrack": "Agrega un área arriba para empezar a dar seguimiento a su tendencia de auditoría."
+    },
+    "last8": {
+      "title": "📊 Últimas 8 Auditorías — Puntaje por Fecha",
+      "selectedArea": "Área seleccionada",
+      "desc": "cada barra es un registro de auditoría, del más antiguo al más reciente."
+    },
+    "history": {
+      "title": "📋 Historial de Auditorías",
+      "empty": "Aún no hay auditorías guardadas. Completa la lista y haz clic en Guardar Auditoría.",
+      "load": "📂 Cargar",
+      "details": "Detalles",
+      "scoreOf5": "Puntaje {{score}}/5",
+      "itemsRated": "{{checked}} / {{total}} artículos calificados",
+      "notesRecorded": "📝 {{count}} nota(s) registrada(s)",
+      "opportunitiesCount": "Áreas de Oportunidad ({{count}})"
+    },
+    "waste": {
+      "howTo": {
+        "title": "🚶 Cómo hacer un Recorrido de Desperdicios",
+        "desc": "Dedica al menos 15 minutos al día a recorrer tu piso de producción, almacén o el área donde trabajas, y busca oportunidades para identificar los ocho desperdicios. Descríbelos abajo — hacerlo tú solo está bien, pero es aún mejor si lo haces con tu equipo."
+      },
+      "ptsThisWeek": "pts esta semana",
+      "allEarned": "🏆 ¡Los 5 puntos del recorrido de desperdicios ganados esta semana!",
+      "logToEarn": "Registra 5 desperdicios distintos esta semana para ganar 5 puntos",
+      "ptPerCategory": "Gana +1 pt por cada categoría de desperdicio distinta que registres. Los puntos se reinician cada semana — vuelve a registrar desperdicios frescos para conservarlos.",
+      "stillToLog": "Aún por registrar:",
+      "pareto": {
+        "title": "📊 Gráfica de Pareto de Desperdicios",
+        "desc": "Generada automáticamente a partir de tus registros — las barras más altas a la izquierda son de donde viene la mayor parte de tu desperdicio.",
+        "ruleTitle": "💡 La Regla 80/20 (Principio de Pareto)",
+        "ruleDesc": "Vilfredo Pareto observó que aproximadamente el 80% de los resultados provienen del 20% de las causas. En Lean, eso significa que un pequeño número de tipos de desperdicio suele generar la mayor parte de tus pérdidas. La línea verde azulado muestra el % acumulado; las herramientas/desperdicios a la izquierda de donde cruza la línea roja del 80% son tus \"pocos vitales\" — corrígelos primero para el mayor impacto, en lugar de repartir el esfuerzo por igual entre todos los problemas."
+      },
+      "plusOneThisWeek": "✓ +1 esta semana",
+      "loggedAllTime": "{{count}} registrados en total",
+      "exampleLabel": "Ejemplo:",
+      "logThisWaste": "+ Registrar este desperdicio",
+      "logTitle": "Bitácora del Recorrido de Desperdicios ({{count}})",
+      "whatWasSeen": "Qué se observó:",
+      "impactLabel": "Impacto:",
+      "countermeasureLabel": "Contramedida:",
+      "observationAlt": "Observación",
+      "openPhoto": "📎 Abrir foto ↗",
+      "delete": "🗑 Eliminar",
+      "modalTitle": "Registrar Desperdicio de {{type}}",
+      "locationLabel": "Área / Ubicación *",
+      "locationPlaceholder": "p. ej. Línea de Ensamble 3, muelle de embarque…",
+      "observedLabel": "¿Qué observaste? *",
+      "observedPlaceholder": "Describe el desperdicio que viste…",
+      "impactOptLabel": "Impacto estimado (opcional)",
+      "impactPlaceholder": "p. ej. ~30 min/día, 5% de merma, retrasa embarques",
+      "countermeasureOptLabel": "Idea de contramedida (opcional)",
+      "countermeasurePlaceholder": "¿Qué podría reducirlo o eliminarlo?",
+      "photoOptLabel": "Foto de la observación (opcional)",
+      "clickAttachPhoto": "📷 Toca para adjuntar una foto (JPG/PNG, máx 5 MB)",
+      "saving": "Guardando…",
+      "saveWasteLog": "💾 Guardar Registro de Desperdicio"
+    },
+    "kaizen": {
+      "statusLabel": "Estado:",
+      "eventTitle": "Título del Evento Kaizen",
+      "eventTitlePlaceholder": "p. ej. Reducir el tiempo de cambio en la Línea 3",
+      "phase1": {
+        "header": "Fase 1 — Antes del Evento",
+        "desc": "Define el alcance, la meta, el equipo y recopila datos base antes de que comience el evento."
+      },
+      "scopeLabel": "1. Alcance — Proceso o área específica",
+      "scopePlaceholder": "p. ej. Reducir el tiempo de cambio en la Línea 3 (no \"arreglar toda la manufactura\")",
+      "goalLabel": "2. Meta — Objetivo medible",
+      "goalPlaceholder": "p. ej. Reducir el tiempo de ciclo un 30%, reducir defectos un 50%",
+      "teamLabel": "3. Equipo — Miembros multifuncionales, facilitador, patrocinador",
+      "teamPlaceholder": "Enumera a los integrantes del equipo, sus roles y al patrocinador con autoridad para aprobar cambios...",
+      "baselineLabel": "4. Datos Base — Métricas del estado actual",
+      "baselinePlaceholder": "Métricas actuales, mapas de proceso, estudios de tiempos, tasas de defectos...",
+      "phase2": {
+        "header": "Fase 2 — El Evento Kaizen",
+        "desc": "Comprende el estado actual, analiza las causas raíz, diseña e implementa el estado futuro."
+      },
+      "currentState": {
+        "header": "A. Comprender el Estado Actual"
+      },
+      "gembaLabel": "Hallazgos del Recorrido Gemba y Mapa de Proceso",
+      "gembaPlaceholder": "¿Qué observaste al recorrer el proceso? Hallazgos del flujo de valor...",
+      "wastesLabel": "Desperdicios Identificados (DOWNTIME)",
+      "rootCause": {
+        "header": "B. Análisis de Causa Raíz"
+      },
+      "rootCauseLabel": "Hallazgos — 5 Porqués, Espina de Pescado, Pareto",
+      "rootCausePlaceholder": "Causas raíz identificadas (no solo síntomas). Referencia resultados de 5 Porqués o espina de pescado...",
+      "futureState": {
+        "header": "C. Diseño del Estado Futuro"
+      },
+      "futureStateLabel": "Soluciones, Mapa del Estado Futuro y Prioridades",
+      "futureStatePlaceholder": "Soluciones propuestas en lluvia de ideas, mapa del estado futuro, priorizadas por impacto vs. esfuerzo...",
+      "implement": {
+        "header": "D. Implementar y Probar"
+      },
+      "implementLabel": "Cambios Realizados, Resultados de Pruebas y Ajustes",
+      "implementPlaceholder": "Cambios físicos/de proceso realizados en el momento, pruebas a pequeña escala, ajustes...",
+      "standardize": {
+        "header": "E. Estandarizar y Presentar Resultados"
+      },
+      "standardizeLabel": "Documentación de Trabajo Estándar y Notas para la Presentación a Liderazgo",
+      "standardizePlaceholder": "Nuevo trabajo estándar, capacitación completada, resultados presentados al liderazgo...",
+      "phase3": {
+        "header": "Fase 3 — Después del Evento",
+        "desc": "Monitorea resultados, asigna responsables de seguimiento, audita y celebra los logros."
+      },
+      "resultsLabel": "1. Seguimiento de Resultados — Métricas diarias/semanales vs. meta",
+      "resultsPlaceholder": "¿Cómo se están dando seguimiento a los resultados? Métricas actuales vs. meta base...",
+      "followUpLabel": "2. Responsables de Seguimiento — Acciones abiertas con responsables y fechas límite",
+      "grid": {
+        "action": "Acción",
+        "owner": "Responsable",
+        "deadline": "Fecha Límite",
+        "actionPlaceholder": "Describe la acción…",
+        "ownerPlaceholder": "Nombre del responsable",
+        "removeRow": "Quitar fila",
+        "addRow": "+ Agregar Fila",
+        "scope": "Alcance"
+      },
+      "auditScheduleLabel": "3. Cronograma de Auditoría — Revisiones a 30 / 60 / 90 días",
+      "audit30": "Auditoría a 30 Días",
+      "audit60": "Auditoría a 60 Días",
+      "audit90": "Auditoría a 90 Días",
+      "winsLabel": "4. Logros — Resultados y motivación para compartir con el equipo",
+      "winsPlaceholder": "Mejoras cuantificadas, reconocimiento al equipo, plan de comunicación...",
+      "prevPhase": "← Fase Anterior",
+      "nextPhase": "Siguiente Fase →",
+      "cancel": "Cancelar",
+      "saveKaizen": "💾 Guardar Kaizen",
+      "goalWord": "Meta",
+      "teamWord": "Equipo",
+      "baselineWord": "Base",
+      "baselineDataWord": "Datos Base",
+      "gembaWord": "Hallazgos Gemba",
+      "rootCausesWord": "Causas Raíz",
+      "futureStateWord": "Estado Futuro",
+      "implementationWord": "Implementación",
+      "standardWorkWord": "Trabajo Estándar",
+      "resultsWord": "Seguimiento de Resultados",
+      "followUpWord": "Responsables de Seguimiento",
+      "winsWord": "Logros",
+      "wastesIdentifiedCount": "{{count}} desperdicio identificado",
+      "pctComplete": "{{pct}}% completo",
+      "edit": "✏️ Editar",
+      "pdf": "🖨️ PDF",
+      "collapse": "▲ Colapsar",
+      "details": "▼ Detalles",
+      "phase1Short": "📋 Fase 1: Preparar",
+      "phase2Short": "⚡ Fase 2: Evento",
+      "phase3Short": "📈 Fase 3: Sostener",
+      "wastesWord": "Desperdicios:",
+      "resultsWordColon": "Resultados:",
+      "followUpWordColon": "Responsables de Seguimiento:",
+      "followUpLegacyColon": "Seguimiento:",
+      "auditScheduleColon": "Cronograma de Auditoría:",
+      "day30": "30 días",
+      "day60": "60 días",
+      "day90": "90 días",
+      "winsWordColon": "Logros:"
+    },
+    "kaizenTab": {
+      "cancel": "✕ Cancelar",
+      "logEvent": "+ Registrar Evento Kaizen",
+      "newEvent": "Nuevo Evento Kaizen",
+      "editing": "Editando: {{title}}",
+      "emptyTitle": "Aún no hay eventos Kaizen registrados.",
+      "emptyDesc": "Haz clic en \"+ Registrar Evento Kaizen\" para documentar tu primer evento de mejora."
+    },
+    "toast": {
+      "imageTooLarge": "La imagen es demasiado grande (máx 25 MB)",
+      "photoProcessFailed": "No se pudo procesar esta foto. Intenta con una más pequeña.",
+      "chooseImageFile": "Por favor elige un archivo de imagen",
+      "fillLocationDescription": "Por favor completa la ubicación y lo que observaste",
+      "photoUploadFailed": "La carga de la foto falló o expiró el tiempo de espera — guardando el registro sin ella.",
+      "wasteLoggedWithPoint": "¡{{type}} registrado! +1 pt — {{count}}/5 categorías esta semana.",
+      "wasteLogged": "{{type}} registrado. (Registra un tipo de desperdicio diferente para ganar más puntos esta semana.)",
+      "saveFailed": "Error al guardar",
+      "wasteLogDeleted": "Registro de desperdicio eliminado",
+      "enterAreaName": "Por favor ingresa un nombre de área",
+      "areaAlreadyExists": "\"{{name}}\" ya está en tu lista de áreas",
+      "notLoggedIn": "No has iniciado sesión",
+      "addedArea": "Área \"{{name}}\" agregada",
+      "saveFailedWithMsg": "Error al guardar: {{msg}}",
+      "removedArea": "\"{{name}}\" eliminada",
+      "selectArea": "Por favor selecciona el área a auditar",
+      "rateAllItems": "Califica los {{total}} artículos en las 5 áreas antes de guardar — {{remaining}} sin calificar.",
+      "auditSavedPts": "Auditoría guardada — puntaje {{score}}. ¡+5 pts por la auditoría 5S de esta semana!",
+      "auditSavedFor": "Auditoría guardada — puntaje {{score}} para \"{{name}}\"",
+      "auditSavedAlreadyEarned": "Auditoría guardada — puntaje {{score}}. (Los +5 pts de esta semana ya se ganaron.)",
+      "auditSavedDescribeMore": "Auditoría guardada — puntaje {{score}}. Describe {{min}}+ áreas de oportunidad para ganar +5 pts.",
+      "loadedAudit": "Auditoría cargada: {{area}}",
+      "auditDeleted": "Auditoría eliminada",
+      "enterKaizenTitle": "Por favor ingresa un título para el evento Kaizen",
+      "kaizenLogged": "Evento Kaizen registrado",
+      "kaizenUpdated": "Kaizen actualizado",
+      "updateFailedWithMsg": "Error al actualizar: {{msg}}"
+    },
+    "confirm": {
+      "removeArea": "¿Quitar \"{{name}}\" de tu lista de áreas? El historial de auditorías pasado de esta área se conserva."
+    }
   }
 }
