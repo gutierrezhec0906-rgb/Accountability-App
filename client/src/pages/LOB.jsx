@@ -1,4 +1,5 @@
 import { useState, useEffect, Fragment } from 'react';
+import { useTranslation } from 'react-i18next';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -91,8 +92,8 @@ function colHeaderStyle(dateStr) {
   return { bg: '#15803d', text: 'white' };
 }
 
-function fmt(dateStr) {
-  if (!dateStr) return 'Set date';
+function fmt(dateStr, t) {
+  if (!dateStr) return t ? t('lob.setDate', 'Set date') : 'Set date';
   const d = new Date(dateStr + 'T00:00:00');
   return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
@@ -184,6 +185,7 @@ const LOB_STEPS = [
 ];
 
 function LOBGuide() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [expandedStep, setExpandedStep] = useState(null);
 
@@ -196,9 +198,9 @@ function LOBGuide() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontSize: '1.1rem' }}>📘</span>
           <div>
-            <p style={{ color: 'white', fontWeight: 700, fontSize: '0.875rem', margin: 0 }}>LOB Guide — How to Build a Line of Balance</p>
+            <p style={{ color: 'white', fontWeight: 700, fontSize: '0.875rem', margin: 0 }}>{t('lob.guide.header', 'LOB Guide — How to Build a Line of Balance')}</p>
             <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.72rem', margin: '2px 0 0' }}>
-              What it's for · 5 steps · Prompt questions · What to watch for
+              {t('lob.guide.headerSub', "What it's for · 5 steps · Prompt questions · What to watch for")}
             </p>
           </div>
         </div>
@@ -211,10 +213,10 @@ function LOBGuide() {
           {/* What LOB is for */}
           <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #e8edf5', background: 'white' }}>
             <p style={{ fontWeight: 700, color: '#0f2044', fontSize: '0.82rem', margin: '0 0 6px', display: 'flex', alignItems: 'center', gap: 6 }}>
-              <span style={{ background: '#0f2044', color: 'white', padding: '2px 7px', borderRadius: 5, fontSize: '0.7rem', letterSpacing: '0.05em' }}>WHAT IT IS</span>
+              <span style={{ background: '#0f2044', color: 'white', padding: '2px 7px', borderRadius: 5, fontSize: '0.7rem', letterSpacing: '0.05em' }}>{t('lob.guide.whatItIsLabel', 'WHAT IT IS')}</span>
             </p>
             <p style={{ fontSize: '0.8rem', color: '#475569', margin: '0 0 8px', lineHeight: 1.65 }}>
-              Line of Balance is a <strong>planning and scheduling tool</strong> — used when the <em>same sequence of work repeats</em> across multiple units (houses, floors, aircraft, stations). It shows whether each activity is keeping pace with the others, so you can spot where one will bottleneck the whole schedule before it happens.
+              {t('lob.guide.whatItIsText', 'Line of Balance is a planning and scheduling tool — used when the same sequence of work repeats across multiple units (houses, floors, aircraft, stations). It shows whether each activity is keeping pace with the others, so you can spot where one will bottleneck the whole schedule before it happens.')}
             </p>
             <div style={{ background: '#f8fafc', borderRadius: 8, padding: '0.6rem 0.85rem', fontFamily: 'monospace', fontSize: '0.72rem', color: '#0f2044', lineHeight: 1.8, overflowX: 'auto', whiteSpace: 'pre' }}>{`Units
  20 |                    /──Finishes
@@ -228,32 +230,34 @@ function LOBGuide() {
   0 +──────────────────────────── Time
     Wk1  Wk4  Wk8  Wk12  Wk16`}</div>
             <p style={{ fontSize: '0.73rem', color: '#64748b', margin: '8px 0 0', lineHeight: 1.5 }}>
-              Each activity is a diagonal line — its slope is the production rate. <strong>Parallel lines = smooth flow. Converging lines = collision ahead.</strong>
+              {t('lob.guide.chartCaption', 'Each activity is a diagonal line — its slope is the production rate. Parallel lines = smooth flow. Converging lines = collision ahead.')}
             </p>
           </div>
 
           {/* Steps */}
           {LOB_STEPS.map((step, si) => {
             const isEx = expandedStep === step.id;
+            const checks = t(`lob.steps.${step.id}.checks`, { returnObjects: true, defaultValue: step.checks || [] });
+            const prompts = t(`lob.steps.${step.id}.prompts`, { returnObjects: true, defaultValue: step.prompts || [] });
             return (
               <div key={step.id} style={{ borderBottom: si < LOB_STEPS.length - 1 ? '1px solid #e8edf5' : 'none' }}>
                 <button
                   onClick={() => setExpandedStep(isEx ? null : step.id)}
                   style={{ width: '100%', background: 'none', border: 'none', cursor: 'pointer', textAlign: 'left', padding: '0.75rem 1.25rem', display: 'flex', alignItems: 'center', gap: 10 }}>
                   <span style={{ fontSize: '1rem', flexShrink: 0 }}>{step.icon}</span>
-                  <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.82rem', flex: 1 }}>{step.title}</span>
+                  <span style={{ fontWeight: 700, color: '#1e293b', fontSize: '0.82rem', flex: 1 }}>{t(`lob.steps.${step.id}.title`, step.title)}</span>
                   <span style={{ color: '#94a3b8', fontSize: '0.75rem', transition: 'transform 0.15s', display: 'inline-block', transform: isEx ? 'rotate(90deg)' : 'none' }}>›</span>
                 </button>
 
                 {isEx && (
                   <div style={{ padding: '0 1.25rem 1rem 2.75rem', background: 'white' }}>
-                    <p style={{ fontSize: '0.8rem', color: '#475569', margin: '0 0 10px', lineHeight: 1.65 }}>{step.content}</p>
+                    <p style={{ fontSize: '0.8rem', color: '#475569', margin: '0 0 10px', lineHeight: 1.65 }}>{t(`lob.steps.${step.id}.content`, step.content)}</p>
 
                     {step.checks && (
                       <div style={{ marginBottom: 10 }}>
-                        <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0f2044', margin: '0 0 5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>You need these 3 things before starting:</p>
+                        <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0f2044', margin: '0 0 5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('lob.guide.needThese3', 'You need these 3 things before starting:')}</p>
                         <ul style={{ margin: 0, paddingLeft: 18 }}>
-                          {step.checks.map((c, i) => (
+                          {checks.map((c, i) => (
                             <li key={i} style={{ fontSize: '0.78rem', color: '#1e293b', marginBottom: 3, lineHeight: 1.5 }}>{c}</li>
                           ))}
                         </ul>
@@ -261,9 +265,9 @@ function LOBGuide() {
                     )}
 
                     <div style={{ marginBottom: step.watchFor ? 10 : 0 }}>
-                      <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0f2044', margin: '0 0 5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ask yourself</p>
+                      <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0f2044', margin: '0 0 5px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('lob.guide.askYourself', 'Ask yourself')}</p>
                       <ul style={{ margin: 0, paddingLeft: 18 }}>
-                        {step.prompts.map((p, i) => (
+                        {prompts.map((p, i) => (
                           <li key={i} style={{ fontSize: '0.78rem', color: '#475569', marginBottom: 3, lineHeight: 1.5 }}>{p}</li>
                         ))}
                       </ul>
@@ -271,7 +275,7 @@ function LOBGuide() {
 
                     {step.watchFor && (
                       <div style={{ background: '#fef9c3', border: '1px solid #fde047', borderRadius: 7, padding: '6px 10px', fontSize: '0.75rem', color: '#713f12', lineHeight: 1.5 }}>
-                        <span style={{ fontWeight: 700 }}>⚠️ Watch for: </span>{step.watchFor}
+                        <span style={{ fontWeight: 700 }}>⚠️ {t('lob.guide.watchForLabel', 'Watch for:')} </span>{t(`lob.steps.${step.id}.watchFor`, step.watchFor)}
                       </div>
                     )}
                   </div>
@@ -286,6 +290,7 @@ function LOBGuide() {
 }
 
 export default function LOB() {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const { names: savedNames, remember: rememberName } = useSavedNames();
   const [lobs, setLobs] = useState([]);
@@ -323,7 +328,7 @@ export default function LOB() {
     try {
       await setDoc(doc(db, 'users', currentUser.uid), { lobRecords: updatedLobs }, { merge: true });
     } catch {
-      toast.error('Could not save');
+      toast.error(t('lob.toast.saveFailed', 'Could not save'));
     } finally {
       setSaving(false);
     }
@@ -367,7 +372,7 @@ export default function LOB() {
           points: 1, toolLabel: 'Line of Balance Setup',
           reason: `${activeLob.name}: 4+ tasks and 4+ dates set`,
         });
-        if (r?.awarded) { patch.scoredSetup = true; awarded = true; toast.success('⭐ +1 pt — Line of Balance set up (4+ tasks & dates)!', { duration: 5000 }); }
+        if (r?.awarded) { patch.scoredSetup = true; awarded = true; toast.success(t('lob.toast.setupAwarded', '⭐ +1 pt — Line of Balance set up (4+ tasks & dates)!'), { duration: 5000 }); }
       }
 
       // +5 completion (and +2 on-time bonus)
@@ -383,10 +388,10 @@ export default function LOB() {
               points: 2, toolLabel: 'Line of Balance On-Time Bonus',
               reason: `${activeLob.name}: completed with no past-due slips`,
             });
-            if (b?.awarded) toast.success('🏆 +5 pts complete + 2 pts on-time bonus — flawless LOB!', { duration: 6000 });
-            else toast.success('🏆 +5 pts — Line of Balance completed!', { duration: 6000 });
+            if (b?.awarded) toast.success(t('lob.toast.completeBonus', '🏆 +5 pts complete + 2 pts on-time bonus — flawless LOB!'), { duration: 6000 });
+            else toast.success(t('lob.toast.complete', '🏆 +5 pts — Line of Balance completed!'), { duration: 6000 });
           } else {
-            toast('🏆 +5 pts — LOB completed. (No on-time bonus — an activity slipped past its date.)', { duration: 6000, icon: '✅' });
+            toast(t('lob.toast.completeNoBonus', '🏆 +5 pts — LOB completed. (No on-time bonus — an activity slipped past its date.)'), { duration: 6000, icon: '✅' });
           }
         }
       }
@@ -399,12 +404,12 @@ export default function LOB() {
 
   function createLOB(e) {
     e.preventDefault();
-    const lob = blankLOB(newLobName.trim() || 'New Line of Balance');
+    const lob = blankLOB(newLobName.trim() || t('lob.newLobDefaultName', 'New Line of Balance'));
     updateLobs(prev => [lob, ...prev]);
     setActiveLobId(lob.id);
     setNewLobName('');
     setShowNewForm(false);
-    toast.success('Line of Balance created');
+    toast.success(t('lob.toast.created', 'Line of Balance created'));
   }
 
   function addTask(e) {
@@ -415,18 +420,18 @@ export default function LOB() {
     rememberName(taskForm.owner);
     setTaskForm({ name: '', owner: '' });
     setShowTaskForm(false);
-    toast.success('Task row added');
+    toast.success(t('lob.toast.taskAdded', 'Task row added'));
   }
 
   function saveTaskEdit() {
     if (!editingTask) return;
-    const tasks = activeLob.tasks.map(t =>
-      t.id !== editingTask.id ? t : { ...t, name: editingTask.name, owner: editingTask.owner }
+    const tasks = activeLob.tasks.map(t2 =>
+      t2.id !== editingTask.id ? t2 : { ...t2, name: editingTask.name, owner: editingTask.owner }
     );
     patchActive({ tasks });
     rememberName(editingTask.owner);
     setEditingTask(null);
-    toast.success('Task updated');
+    toast.success(t('lob.toast.taskUpdated', 'Task updated'));
   }
 
   function updateCell(taskId, col, val) {
@@ -435,13 +440,13 @@ export default function LOB() {
     let clean = '';
     if (val !== '' && val != null) {
       let n = parseFloat(String(val).replace(/[^0-9.]/g, ''));
-      if (isNaN(n)) { toast.error('Enter a number from 0 to 100'); return; }
-      if (n > 100) { n = 100; toast('Progress is capped at 100%', { icon: '⚠️' }); }
+      if (isNaN(n)) { toast.error(t('lob.toast.enterNumber', 'Enter a number from 0 to 100')); return; }
+      if (n > 100) { n = 100; toast(t('lob.toast.cappedAt100', 'Progress is capped at 100%'), { icon: '⚠️' }); }
       if (n < 0) n = 0;
       clean = String(Math.round(n));
     }
-    const tasks = activeLob.tasks.map(t =>
-      t.id !== taskId ? t : { ...t, cells: t.cells.map((c, i) => i === col ? clean : c) }
+    const tasks = activeLob.tasks.map(t2 =>
+      t2.id !== taskId ? t2 : { ...t2, cells: t2.cells.map((c, i) => i === col ? clean : c) }
     );
     patchActive({ tasks });
   }
@@ -451,16 +456,16 @@ export default function LOB() {
       const today = new Date(); today.setHours(0, 0, 0, 0);
       const chosen = new Date(val + 'T00:00:00');
       if (chosen > today) {
-        toast.error('Actual day of completion cannot be in the future');
+        toast.error(t('lob.toast.actualNotFuture', 'Actual day of completion cannot be in the future'));
         return;
       }
     }
-    const tasks = activeLob.tasks.map(t => {
-      if (t.id !== taskId) return t;
-      const actualDates = t.actualDates && t.actualDates.length === t.cells.length
-        ? t.actualDates
-        : Array(t.cells.length).fill('');
-      return { ...t, actualDates: actualDates.map((d, i) => i === col ? val : d) };
+    const tasks = activeLob.tasks.map(t2 => {
+      if (t2.id !== taskId) return t2;
+      const actualDates = t2.actualDates && t2.actualDates.length === t2.cells.length
+        ? t2.actualDates
+        : Array(t2.cells.length).fill('');
+      return { ...t2, actualDates: actualDates.map((d, i) => i === col ? val : d) };
     });
     patchActive({ tasks });
   }
@@ -496,7 +501,7 @@ export default function LOB() {
     if (prevDate) {
       const prev = new Date(prevDate + 'T00:00:00');
       if (chosen <= prev) {
-        toast.error(`Date must be after ${fmt(prevDate)} — LOB columns must be in ascending order.`);
+        toast.error(t('lob.toast.dateMustBeAfter', 'Date must be after {{date}} — LOB columns must be in ascending order.', { date: fmt(prevDate, t) }));
         return;
       }
     }
@@ -506,7 +511,7 @@ export default function LOB() {
     if (nextDate) {
       const next = new Date(nextDate + 'T00:00:00');
       if (chosen >= next) {
-        toast.error(`Date must be before ${fmt(nextDate)} — LOB columns must be in ascending order.`);
+        toast.error(t('lob.toast.dateMustBeBefore', 'Date must be before {{date}} — LOB columns must be in ascending order.', { date: fmt(nextDate, t) }));
         return;
       }
     }
@@ -519,7 +524,7 @@ export default function LOB() {
 
     // Non-first columns: block past dates
     if (col > 0 && chosen < today) {
-      toast.error('Only the first column can be set to a past date.');
+      toast.error(t('lob.toast.onlyFirstPastDate', 'Only the first column can be set to a past date.'));
       return;
     }
 
@@ -559,11 +564,11 @@ export default function LOB() {
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
       <PageHeader
         icon="📈"
-        title="Line of Balance (LOB) — Accountability to the Detail"
-        subtitle="Visual production planning and schedule tracking"
+        title={t('lob.title', 'Line of Balance (LOB) — Accountability to the Detail')}
+        subtitle={t('lob.subtitle', 'Visual production planning and schedule tracking')}
         action={
           <button className="btn-primary" onClick={() => setShowNewForm(s => !s)}>
-            + New Line of Balance
+            + {t('lob.newLob', 'New Line of Balance')}
           </button>
         }
       />
@@ -575,14 +580,14 @@ export default function LOB() {
         <div className="card" style={{ padding: '1.25rem', marginBottom: '1.25rem' }}>
           <form onSubmit={createLOB} style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 220 }}>
-              <label className="label">Line of Balance Name</label>
+              <label className="label">{t('lob.field.lobName', 'Line of Balance Name')}</label>
               <input className="input" autoFocus value={newLobName}
                 onChange={e => setNewLobName(e.target.value)}
-                placeholder="e.g. Building A — Phase 2" />
+                placeholder={t('lob.field.lobNamePlaceholder', 'e.g. Building A — Phase 2')} />
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn-primary" type="submit">Create</button>
-              <button className="btn-secondary" type="button" onClick={() => setShowNewForm(false)}>Cancel</button>
+              <button className="btn-primary" type="submit">{t('lob.create', 'Create')}</button>
+              <button className="btn-secondary" type="button" onClick={() => setShowNewForm(false)}>{t('lob.cancel', 'Cancel')}</button>
             </div>
           </form>
         </div>
@@ -592,7 +597,7 @@ export default function LOB() {
       {lobs.length > 1 && (
         <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
           <p style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.6rem' }}>
-            Records — {lobs.length} Lines of Balance
+            {t('lob.recordsCount', 'Records — {{count}} Lines of Balance', { count: lobs.length })}
           </p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {lobs.map(lob => (
@@ -610,19 +615,19 @@ export default function LOB() {
                   </span>
                 </button>
                 <button
-                  title="Delete this record"
+                  title={t('lob.deleteRecord', 'Delete this record')}
                   onClick={() => {
-                    if (!window.confirm(`Delete "${lob.name}"? This cannot be undone.`)) return;
+                    if (!window.confirm(t('lob.confirmDelete', 'Delete "{{name}}"? This cannot be undone.', { name: lob.name }))) return;
                     const next = lobs.filter(l => l.id !== lob.id);
                     if (next.length === 0) {
-                      const fresh = blankLOB('My First LOB');
+                      const fresh = blankLOB(t('lob.myFirstLob', 'My First LOB'));
                       updateLobs(() => [fresh]);
                       setActiveLobId(fresh.id);
                     } else {
                       updateLobs(() => next);
                       if (activeLobId === lob.id) setActiveLobId(next[0].id);
                     }
-                    toast.success('Record deleted');
+                    toast.success(t('lob.toast.recordDeleted', 'Record deleted'));
                   }}
                   style={{
                     border: 'none', cursor: 'pointer', padding: '0.4rem 0.6rem',
@@ -651,18 +656,18 @@ export default function LOB() {
           <h2 onClick={() => setEditingName(true)} style={{
             fontWeight: 800, fontSize: '1.1rem', color: 'var(--text-primary)', margin: 0,
             cursor: 'pointer', borderBottom: '1px dashed var(--border)', paddingBottom: 2,
-          }} title="Click to rename">{activeLob.name}</h2>
+          }} title={t('lob.clickToRename', 'Click to rename')}>{activeLob.name}</h2>
         )}
-        {saving && <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Saving…</span>}
+        {saving && <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{t('lob.saving', 'Saving…')}</span>}
       </div>
 
       {/* Legend */}
       <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap', marginBottom: '1.25rem' }}>
         {[
-          ['Past Due', '#fee2e2', '#dc2626'],
-          ['Due < 5 days', '#fef9c3', '#b45309'],
-          ['Due > 6 days', '#dcfce7', '#15803d'],
-          ['No date set', '#f1f5f9', '#94a3b8'],
+          [t('lob.legend.pastDue', 'Past Due'), '#fee2e2', '#dc2626'],
+          [t('lob.legend.due5days', 'Due < 5 days'), '#fef9c3', '#b45309'],
+          [t('lob.legend.due6days', 'Due > 6 days'), '#dcfce7', '#15803d'],
+          [t('lob.legend.noDateSet', 'No date set'), '#f1f5f9', '#94a3b8'],
         ].map(([label, bg, text]) => (
           <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             <div style={{ width: 14, height: 14, borderRadius: 4, background: bg, border: `1px solid ${text}40` }} />
@@ -678,22 +683,22 @@ export default function LOB() {
           display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
         }}>
           <div className="card" style={{ width: '100%', maxWidth: 440, padding: '1.75rem' }}>
-            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 1.25rem' }}>Edit Task</h3>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 1.25rem' }}>{t('lob.editTask', 'Edit Task')}</h3>
             <div style={{ marginBottom: '1rem' }}>
-              <label className="label">Task Name</label>
+              <label className="label">{t('lob.field.taskName', 'Task Name')}</label>
               <input className="input" autoFocus value={editingTask.name}
-                onChange={e => setEditingTask(t => ({ ...t, name: e.target.value }))}
+                onChange={e => setEditingTask(prev => ({ ...prev, name: e.target.value }))}
                 onKeyDown={e => e.key === 'Enter' && saveTaskEdit()} />
             </div>
             <div style={{ marginBottom: '1.5rem' }}>
-              <label className="label">Owner / Team</label>
+              <label className="label">{t('lob.field.ownerTeam', 'Owner / Team')}</label>
               <NameField value={editingTask.owner} names={savedNames}
-                onChange={e => setEditingTask(t => ({ ...t, owner: e.target.value }))}
+                onChange={e => setEditingTask(prev => ({ ...prev, owner: e.target.value }))}
                 onKeyDown={e => e.key === 'Enter' && saveTaskEdit()} />
             </div>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
-              <button className="btn-secondary" onClick={() => setEditingTask(null)}>Cancel</button>
-              <button className="btn-primary" onClick={saveTaskEdit}>Save Changes</button>
+              <button className="btn-secondary" onClick={() => setEditingTask(null)}>{t('lob.cancel', 'Cancel')}</button>
+              <button className="btn-primary" onClick={saveTaskEdit}>{t('lob.saveChanges', 'Save Changes')}</button>
             </div>
           </div>
         </div>
@@ -708,18 +713,17 @@ export default function LOB() {
           <div className="card" style={{ width: '100%', maxWidth: 400, padding: '1.75rem' }}>
             <div style={{ fontSize: '2rem', textAlign: 'center', marginBottom: '0.75rem' }}>⚠️</div>
             <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 0.75rem', textAlign: 'center' }}>
-              Past Due Date
+              {t('lob.pastDueDate', 'Past Due Date')}
             </h3>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem', textAlign: 'center', marginBottom: '1.5rem' }}>
-              You selected <strong>{fmt(pastDueConfirm.val)}</strong>, which is in the past.
-              Are you sure you want to use this as the start date?
+              {t('lob.pastDueConfirmText', 'You selected {{date}}, which is in the past. Are you sure you want to use this as the start date?', { date: fmt(pastDueConfirm.val, t) })}
             </p>
             <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
-              <button className="btn-secondary" onClick={() => setPastDueConfirm(null)}>Cancel</button>
+              <button className="btn-secondary" onClick={() => setPastDueConfirm(null)}>{t('lob.cancel', 'Cancel')}</button>
               <button className="btn-primary" style={{ background: '#dc2626' }} onClick={() => {
                 applyDate(pastDueConfirm.col, pastDueConfirm.val);
                 setPastDueConfirm(null);
-              }}>OK, Use This Date</button>
+              }}>{t('lob.useThisDate', 'OK, Use This Date')}</button>
             </div>
           </div>
         </div>
@@ -731,14 +735,14 @@ export default function LOB() {
           <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
             <thead>
               <tr style={{ background: 'linear-gradient(90deg,#0f2044,#1e3a6e)' }}>
-                <th style={{ textAlign: 'left', padding: '0.875rem 1.25rem', color: 'white', fontWeight: 700, fontSize: '0.8rem', minWidth: 180 }}>Task / Activity</th>
-                <th style={{ textAlign: 'left', padding: '0.875rem 1rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.75rem', minWidth: 110 }}>Owner</th>
+                <th style={{ textAlign: 'left', padding: '0.875rem 1.25rem', color: 'white', fontWeight: 700, fontSize: '0.8rem', minWidth: 180 }}>{t('lob.taskActivity', 'Task / Activity')}</th>
+                <th style={{ textAlign: 'left', padding: '0.875rem 1rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.75rem', minWidth: 110 }}>{t('lob.owner', 'Owner')}</th>
                 {activeLob.dates.map((d, i) => {
                   const s = colHeaderStyle(d);
                   return (
                     <th key={i} style={{ padding: '0.5rem 0.25rem', textAlign: 'center', minWidth: 90 }}>
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
-                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Plan</span>
+                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('lob.plan', 'Plan')}</span>
                         {editing === `date-${i}` ? (
                           <input type="date" autoFocus defaultValue={d}
                             style={{ fontSize: '0.7rem', border: 'none', borderRadius: 6, padding: '3px 4px', outline: 'none', width: 82, background: 'white', color: '#0f172a' }}
@@ -751,13 +755,13 @@ export default function LOB() {
                               padding: '4px 6px', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer',
                               width: 80, transition: 'all 0.15s',
                             }}>
-                            📅 {fmt(d)}
+                            📅 {fmt(d, t)}
                           </button>
                         )}
-                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: 'rgba(153,246,228,0.6)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Actuals ↓</span>
+                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: 'rgba(153,246,228,0.6)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('lob.actuals', 'Actuals ↓')}</span>
                         {numCols > 1 && (
                           <button onClick={() => removeDateColumn(i)}
-                            title="Remove this column"
+                            title={t('lob.removeColumn', 'Remove this column')}
                             style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '0.65rem', lineHeight: 1, padding: '1px 4px' }}>
                             ✕
                           </button>
@@ -768,9 +772,9 @@ export default function LOB() {
                 })}
                 {/* Add column button */}
                 <th style={{ padding: '0.5rem 0.5rem', textAlign: 'center', minWidth: 48 }}>
-                  <button onClick={addDateColumn} title="Add date column"
+                  <button onClick={addDateColumn} title={t('lob.addDateColumn', 'Add date column')}
                     style={{ background: 'rgba(255,255,255,0.12)', border: '1px dashed rgba(255,255,255,0.35)', color: 'white', borderRadius: 7, padding: '4px 8px', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 700 }}>
-                    + Col
+                    + {t('lob.col', 'Col')}
                   </button>
                 </th>
                 <th style={{ padding: '0.875rem 0.5rem', minWidth: 64 }}></th>
@@ -802,13 +806,13 @@ export default function LOB() {
                         onBlur={e => { updateActualDate(task.id, ci, e.target.value); setEditing(null); }}
                         onKeyDown={e => e.key === 'Enter' && e.target.blur()} />
                     ) : (
-                      <button onClick={() => setEditing(actualKey)} title="Actual completion date"
+                      <button onClick={() => setEditing(actualKey)} title={t('lob.actualCompletionDate', 'Actual completion date')}
                         style={{
                           width: 72, minHeight: 26, borderRadius: 8, border: 'none', fontWeight: 700,
                           fontSize: '0.68rem', cursor: 'pointer', transition: 'all 0.15s',
                           background: as.bg, color: as.text, padding: '3px 4px', lineHeight: 1.2,
                         }}>
-                        {actualVal ? fmt(actualVal) : '— set'}
+                        {actualVal ? fmt(actualVal, t) : `— ${t('lob.set', 'set')}`}
                       </button>
                     );
 
@@ -820,7 +824,7 @@ export default function LOB() {
                       return (
                         <td key={ci} style={{ padding: '0.4rem 0.25rem', textAlign: 'center' }}>
                           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}>
-                            <div title="Activity already completed 100%" style={{
+                            <div title={t('lob.alreadyCompleted100', 'Activity already completed 100%')} style={{
                               width: 72, minHeight: 30, borderRadius: 8,
                               display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 3,
                               background: '#e8f2ec', color: '#5a9d78', border: '1px dashed #b6d8c4',
@@ -828,7 +832,7 @@ export default function LOB() {
                             }}>
                               ✓ 100%
                             </div>
-                            <div title="Activity already completed — no actual date needed here" style={{
+                            <div title={t('lob.alreadyCompletedNoDate', 'Activity already completed — no actual date needed here')} style={{
                               width: 72, minHeight: 26, borderRadius: 8,
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               background: '#f1f5f9', color: '#cbd5e1', border: '1px dashed #e2e8f0',
@@ -873,17 +877,17 @@ export default function LOB() {
                   <td style={{ padding: '0.5rem 0.75rem', textAlign: 'center', whiteSpace: 'nowrap' }}>
                     <button
                       onClick={() => toggleNoteCollapsed(task.id)}
-                      title={task.noteCollapsed ? 'Show note' : 'Hide note'}
+                      title={task.noteCollapsed ? t('lob.showNote', 'Show note') : t('lob.hideNote', 'Hide note')}
                       style={{ background: 'none', border: 'none', color: task.note ? '#b45309' : '#94a3b8', cursor: 'pointer', fontSize: '0.85rem', marginRight: 6 }}>
                       {task.noteCollapsed ? '🗒️' : '📝'}
                     </button>
                     <button
                       onClick={() => setEditingTask({ id: task.id, name: task.name, owner: task.owner })}
-                      title="Edit task"
+                      title={t('lob.editTaskTitle', 'Edit task')}
                       style={{ background: 'none', border: 'none', color: '#0d9488', cursor: 'pointer', fontSize: '0.8rem', marginRight: 6 }}>
                       ✏️
                     </button>
-                    <button onClick={() => deleteTask(task.id)} title="Remove row"
+                    <button onClick={() => deleteTask(task.id)} title={t('lob.removeRow', 'Remove row')}
                       style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.8rem', opacity: 0.7 }}>
                       ✕
                     </button>
@@ -897,10 +901,10 @@ export default function LOB() {
                     <td /><td />
                     <td colSpan={numCols + 2} style={{ padding: '0 1rem 0.6rem 0.25rem' }}>
                       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, background: '#fffdf5', border: '1px solid #fde68a', borderRadius: 7, padding: '5px 8px' }}>
-                        <span style={{ fontSize: '0.78rem', flexShrink: 0, marginTop: 1 }} title="Notes / issues">📝</span>
+                        <span style={{ fontSize: '0.78rem', flexShrink: 0, marginTop: 1 }} title={t('lob.notesIssues', 'Notes / issues')}>📝</span>
                         <textarea
                           defaultValue={task.note || ''}
-                          placeholder={`Notes / issues for "${task.name || 'this task'}"…`}
+                          placeholder={t('lob.notesPlaceholder', 'Notes / issues for "{{task}}"…', { task: task.name || t('lob.thisTask', 'this task') })}
                           onBlur={e => updateNote(task.id, e.target.value)}
                           onMouseUp={e => {
                             // Persist a manual drag-resize so the height survives reloads
@@ -919,7 +923,7 @@ export default function LOB() {
               {(activeLob.tasks || []).length === 0 && (
                 <tr>
                   <td colSpan={numCols + 4} style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                    No tasks yet — click "+ Add Task Row" below to get started.
+                    {t('lob.noTasksYet', 'No tasks yet — click "+ Add Task Row" below to get started.')}
                   </td>
                 </tr>
               )}
@@ -946,9 +950,9 @@ export default function LOB() {
           <div style={{ marginBottom: '1rem', background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 10, padding: '0.75rem 1rem', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
             <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>⚠️</span>
             <div>
-              <p style={{ fontWeight: 700, color: '#b91c1c', fontSize: '0.82rem', margin: '0 0 3px' }}>Possible Collision Detected</p>
+              <p style={{ fontWeight: 700, color: '#b91c1c', fontSize: '0.82rem', margin: '0 0 3px' }}>{t('lob.collisionTitle', 'Possible Collision Detected')}</p>
               <p style={{ fontSize: '0.75rem', color: '#7f1d1d', margin: 0, lineHeight: 1.55 }}>
-                At least one activity's % complete is reaching or exceeding the activity above it at the same date column — a sign that a faster activity is catching up to a slower one. Consider adding buffer, adjusting the start date, or increasing the upstream activity's rate.
+                {t('lob.collisionText', "At least one activity's % complete is reaching or exceeding the activity above it at the same date column — a sign that a faster activity is catching up to a slower one. Consider adding buffer, adjusting the start date, or increasing the upstream activity's rate.")}
               </p>
             </div>
           </div>
@@ -960,32 +964,32 @@ export default function LOB() {
         <div className="card" style={{ padding: '1.25rem', marginBottom: '1rem' }}>
           <form onSubmit={addTask} style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, minWidth: 160 }}>
-              <label className="label">Task Name</label>
+              <label className="label">{t('lob.field.taskName', 'Task Name')}</label>
               <input className="input" required autoFocus value={taskForm.name}
                 onChange={e => setTaskForm(f => ({ ...f, name: e.target.value }))}
-                placeholder="e.g. Painting" />
+                placeholder={t('lob.field.taskNamePlaceholder', 'e.g. Painting')} />
             </div>
             <div style={{ flex: 1, minWidth: 160 }}>
-              <label className="label">Owner / Team</label>
+              <label className="label">{t('lob.field.ownerTeam', 'Owner / Team')}</label>
               <NameField value={taskForm.owner} names={savedNames}
                 onChange={e => setTaskForm(f => ({ ...f, owner: e.target.value }))}
-                placeholder="e.g. Team F" />
+                placeholder={t('lob.field.ownerTeamPlaceholder', 'e.g. Team F')} />
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button className="btn-primary" type="submit">Add Row</button>
-              <button className="btn-secondary" type="button" onClick={() => setShowTaskForm(false)}>Cancel</button>
+              <button className="btn-primary" type="submit">{t('lob.addRow', 'Add Row')}</button>
+              <button className="btn-secondary" type="button" onClick={() => setShowTaskForm(false)}>{t('lob.cancel', 'Cancel')}</button>
             </div>
           </form>
         </div>
       ) : (
         <button className="btn-secondary" onClick={() => setShowTaskForm(true)}
           style={{ fontSize: '0.875rem', marginBottom: '0.5rem' }}>
-          + Add Task Row
+          + {t('lob.addTaskRow', 'Add Task Row')}
         </button>
       )}
 
       <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-        Click any date header to set a due date · Click "+ Col" to add more date columns · Click ✏️ to edit a task · Click the LOB name above to rename
+        {t('lob.footerHint', 'Click any date header to set a due date · Click "+ Col" to add more date columns · Click ✏️ to edit a task · Click the LOB name above to rename')}
       </p>
     </div>
   );

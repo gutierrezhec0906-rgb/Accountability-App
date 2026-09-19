@@ -387,5 +387,155 @@
       "returned": "Meta devuelta a Activa con tu comentario — el dueño verá la razón.",
       "rejectFailed": "No se pudo rechazar — intenta de nuevo."
     }
+  },
+  "lob": {
+    "setDate": "Establecer fecha",
+    "guide": {
+      "header": "Guía de LOB — Cómo Construir una Línea de Balance",
+      "headerSub": "Para qué sirve · 5 pasos · Preguntas guía · Qué vigilar",
+      "whatItIsLabel": "QUÉ ES",
+      "whatItIsText": "La Línea de Balance es una herramienta de planificación y programación — usada cuando la misma secuencia de trabajo se repite en múltiples unidades (casas, pisos, aeronaves, estaciones). Muestra si cada actividad mantiene el ritmo de las demás, para que puedas detectar dónde una será un cuello de botella para todo el cronograma antes de que suceda.",
+      "chartCaption": "Cada actividad es una línea diagonal — su pendiente es la tasa de producción. Líneas paralelas = flujo fluido. Líneas convergentes = colisión próxima.",
+      "needThese3": "Necesitas estas 3 cosas antes de comenzar:",
+      "askYourself": "Pregúntate",
+      "watchForLabel": "Vigila esto:"
+    },
+    "steps": {
+      "before": {
+        "title": "Antes de Empezar",
+        "content": "LOB es una herramienta de planificación para trabajo que se repite en múltiples unidades — casas en un desarrollo, pisos en un edificio, aeronaves en una línea de producción, estaciones en una línea de ensamblaje. Muestra si cada actividad mantiene el ritmo de las demás, para que puedas detectar un cuello de botella antes de que ocurra.",
+        "checks": [
+          "La unidad que se repite — qué se está repitiendo (casa, piso, aeronave, estación)",
+          "La secuencia de actividades — el orden fijo de operaciones en cada unidad",
+          "La tasa de producción — cuántas unidades por período de tiempo necesitas entregar para cumplir la fecha límite"
+        ],
+        "prompts": [
+          "¿Cuál es la unidad de repetición, y cuántas unidades hay en total?",
+          "¿Cuál es la tasa de entrega requerida (unidades/semana, unidades/día)?",
+          "¿La secuencia de actividades es realmente idéntica de unidad a unidad, o varía?"
+        ],
+        "watchFor": "Si el trabajo no es realmente repetitivo (cada unidad es diferente), LOB no es la herramienta adecuada."
+      },
+      "sequence": {
+        "title": "Paso 1 — Confirma la Secuencia de Actividades",
+        "content": "Fija el orden en que pasa cada unidad. Cada fila de tu tabla LOB es una actividad — ingrésalas de arriba a abajo en el orden en que ocurren en una sola unidad.",
+        "prompts": [
+          "¿Cuáles son las principales actividades/oficios en orden?",
+          "¿Hay una dependencia estricta entre cada una (no se puede empezar B hasta que A termine en esa unidad), o pueden superponerse?",
+          "¿Hay actividades que solo aplican a algunas unidades (excepciones)?"
+        ]
+      },
+      "rate": {
+        "title": "Paso 2 — Establece la Tasa de Entrega Requerida",
+        "content": "Establece la pendiente \"maestra\" que todo lo demás debe igualar o superar. Tus columnas de fecha representan puntos de control en el tiempo — el espaciado entre columnas debe reflejar tu tasa de producción planeada.",
+        "prompts": [
+          "¿Cuál es la fecha límite contractual o de negocio para la última unidad?",
+          "Trabajando hacia atrás, ¿cuántas unidades por semana/día requiere eso?",
+          "¿Hay también una tasa de entrega requerida (ej. 2 unidades/semana al cliente), separada de la tasa de producción?"
+        ]
+      },
+      "rates": {
+        "title": "Paso 3 — Determina la Tasa y Duración de Cada Actividad",
+        "content": "Averigua qué tan rápido puede avanzar realmente cada oficio/actividad, según el tamaño del equipo y la productividad real — no ilusiones. Ingresa esto como % completado por columna de fecha.",
+        "prompts": [
+          "¿Cuánto tiempo toma esta actividad en una unidad, con el tamaño de equipo planeado?",
+          "¿Cuántos equipos hay disponibles, y agregar un equipo realmente acelera la tasa?",
+          "¿Esta tasa se basa en datos históricos reales, o es una estimación?"
+        ],
+        "watchFor": "Las estimaciones están bien para empezar — pero márcalas. Una suposición de tasa demasiado optimista es la causa más común de colisiones en LOB."
+      },
+      "collisions": {
+        "title": "Paso 4 — Verifica si Hay Colisiones",
+        "content": "Identifica dónde una actividad más rápida detrás alcanzará a una más lenta adelante. En esta tabla: si el % de finalización de una fila posterior alcanza o supera al de una fila anterior en la misma columna de fecha, tienes una colisión.",
+        "prompts": [
+          "¿El progreso de alguna actividad alcanza a la actividad anterior en la misma fecha?",
+          "Si dos actividades están convergiendo, ¿cuál necesita un margen, una tasa más rápida, o un inicio más tardío?",
+          "¿Es la brecha (\"margen\") entre actividades suficiente para absorber variación normal (clima, retraso de materiales, retrabajo)?"
+        ],
+        "watchFor": "Las líneas convergentes son una advertencia — no un fallo todavía. Actúa sobre la convergencia antes de que las líneas se crucen."
+      },
+      "track": {
+        "title": "Paso 5 — Rastrea lo Real vs. lo Planeado",
+        "content": "Actualiza tus celdas de % completado a medida que llega el progreso real. LOB es una herramienta de seguimiento viva — no un plan de una sola vez. Las celdas rojas significan que esa actividad pasó su fecha planeada y necesita atención.",
+        "prompts": [
+          "¿Dónde está divergiendo el progreso real de cada actividad respecto al plan?",
+          "¿Se está reduciendo la brecha entre actividades — hacia una futura colisión — aunque todavía no haya ocurrido ninguna?",
+          "¿Cuál es la acción correctiva si una actividad se está atrasando de su tasa planeada?"
+        ],
+        "watchFor": "Los equipos que construyen el gráfico una vez y nunca lo actualizan pierden todo el valor. Programa una actualización semanal — 10 minutos son suficientes."
+      }
+    },
+    "newLob": "Nueva Línea de Balance",
+    "field": {
+      "lobName": "Nombre de la Línea de Balance",
+      "lobNamePlaceholder": "ej. Edificio A — Fase 2",
+      "taskName": "Nombre de la Tarea",
+      "taskNamePlaceholder": "ej. Pintura",
+      "ownerTeam": "Responsable / Equipo",
+      "ownerTeamPlaceholder": "ej. Equipo F"
+    },
+    "create": "Crear",
+    "cancel": "Cancelar",
+    "recordsCount": "Registros — {{count}} Líneas de Balance",
+    "deleteRecord": "Eliminar este registro",
+    "confirmDelete": "¿Eliminar \"{{name}}\"? Esto no se puede deshacer.",
+    "myFirstLob": "Mi Primera LOB",
+    "clickToRename": "Clic para renombrar",
+    "saving": "Guardando…",
+    "legend": {
+      "pastDue": "Vencida",
+      "due5days": "Vence en < 5 días",
+      "due6days": "Vence en > 6 días",
+      "noDateSet": "Sin fecha establecida"
+    },
+    "editTask": "Editar Tarea",
+    "saveChanges": "Guardar Cambios",
+    "pastDueDate": "Fecha Vencida",
+    "pastDueConfirmText": "Seleccionaste {{date}}, que está en el pasado. ¿Estás seguro de que quieres usar esta como fecha de inicio?",
+    "useThisDate": "Sí, Usar Esta Fecha",
+    "taskActivity": "Tarea / Actividad",
+    "owner": "Responsable",
+    "plan": "Plan",
+    "actuals": "Reales ↓",
+    "removeColumn": "Eliminar esta columna",
+    "addDateColumn": "Agregar columna de fecha",
+    "col": "Col",
+    "actualCompletionDate": "Fecha real de finalización",
+    "set": "establecer",
+    "alreadyCompleted100": "Actividad ya completada al 100%",
+    "alreadyCompletedNoDate": "Actividad ya completada — no se necesita fecha aquí",
+    "showNote": "Mostrar nota",
+    "hideNote": "Ocultar nota",
+    "editTaskTitle": "Editar tarea",
+    "removeRow": "Eliminar fila",
+    "notesIssues": "Notas / problemas",
+    "notesPlaceholder": "Notas / problemas para \"{{task}}\"…",
+    "thisTask": "esta tarea",
+    "noTasksYet": "Aún no hay tareas — haz clic en \"+ Agregar Fila de Tarea\" abajo para comenzar.",
+    "collisionTitle": "Posible Colisión Detectada",
+    "collisionText": "Al menos una actividad tiene un % completado que alcanza o supera a la actividad anterior en la misma columna de fecha — señal de que una actividad más rápida está alcanzando a una más lenta. Considera agregar margen, ajustar la fecha de inicio, o aumentar la tasa de la actividad anterior.",
+    "addRow": "Agregar Fila",
+    "addTaskRow": "Agregar Fila de Tarea",
+    "footerHint": "Haz clic en cualquier encabezado de fecha para establecer una fecha de vencimiento · Haz clic en \"+ Col\" para agregar más columnas de fecha · Haz clic en ✏️ para editar una tarea · Haz clic en el nombre de la LOB arriba para renombrar",
+    "title": "Línea de Balance (LOB) — Responsabilidad al Detalle",
+    "subtitle": "Planificación visual de producción y seguimiento de cronograma",
+    "newLobDefaultName": "Nueva Línea de Balance",
+    "toast": {
+      "saveFailed": "No se pudo guardar",
+      "setupAwarded": "⭐ +1 pt — ¡Línea de Balance configurada (4+ tareas y fechas)!",
+      "completeBonus": "🏆 +5 pts completa + 2 pts de bono a tiempo — ¡LOB impecable!",
+      "complete": "🏆 +5 pts — ¡Línea de Balance completada!",
+      "completeNoBonus": "🏆 +5 pts — LOB completada. (Sin bono a tiempo — una actividad se retrasó de su fecha.)",
+      "created": "Línea de Balance creada",
+      "taskAdded": "Fila de tarea agregada",
+      "taskUpdated": "Tarea actualizada",
+      "enterNumber": "Ingresa un número de 0 a 100",
+      "cappedAt100": "El progreso está limitado a 100%",
+      "actualNotFuture": "El día real de finalización no puede ser en el futuro",
+      "dateMustBeAfter": "La fecha debe ser posterior a {{date}} — las columnas de LOB deben estar en orden ascendente.",
+      "dateMustBeBefore": "La fecha debe ser anterior a {{date}} — las columnas de LOB deben estar en orden ascendente.",
+      "onlyFirstPastDate": "Solo la primera columna puede establecerse con una fecha pasada.",
+      "recordDeleted": "Registro eliminado"
+    }
   }
 }
