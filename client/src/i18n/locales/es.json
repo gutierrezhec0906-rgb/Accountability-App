@@ -4354,5 +4354,57 @@
     "viewProgress": "Ver Progreso",
     "viewResults": "Ver Resultados",
     "viewScoringGuide": "Ver Guía de Puntuación"
+  },
+  "layout": {
+    "expandMenu": "Expandir menú",
+    "collapseMenu": "Colapsar menú",
+    "pro": "PRO",
+    "adminPanel": "Panel de Administración",
+    "scoreDashboard": "Panel de Puntuación",
+    "selfAssessment": "Autoevaluación",
+    "feedback360": "Retroalimentación 360°",
+    "plansPricing": "Planes y Precios",
+    "user": "Usuario",
+    "admin": "Administrador",
+    "signOut": "Cerrar sesión",
+    "seeWhy": "Ver Por Qué",
+    "nPending": "{{count}} pendiente(s)",
+    "pendingSmartGoalApprovals": "Aprobaciones de Metas SMART pendientes",
+    "pendingPeerRequests": "Solicitudes de evaluación entre pares pendientes",
+    "nav": {
+      "dashboard": "Panel Principal",
+      "team": "Equipo",
+      "podcasts": "Podcasts",
+      "approvals": "Aprobaciones del Equipo",
+      "visual-board": "Gestión Visual",
+      "lob": "Línea de Balance (LOB)",
+      "urgency": "Sentido de Urgencia",
+      "eq-opex": "Herramientas OpEx",
+      "vision": "Constructor de Visión",
+      "smart-goals": "Metas SMART",
+      "mindfulness": "Mindfulness",
+      "lean": "Kit de Herramientas Lean",
+      "problem-solving": "Resolución de Problemas",
+      "disc": "Evaluación DISC",
+      "skills": "Desarrollo de Habilidades",
+      "training": "Centro de Capacitación",
+      "mentoring": "Rastreador de Mentoría",
+      "career": "Desarrollo de Carrera",
+      "feedback": "Buzón de Retroalimentación",
+      "coaching": "Registro de Coaching",
+      "quotes": "Frases de Liderazgo",
+      "eq": "Inteligencia Emocional (EQ)",
+      "scores": "Panel de Puntuación"
+    },
+    "categories": {
+      "model": "Establecer el Estándar",
+      "inspire": "Despertar la Visión",
+      "challenge": "Mejorar el Flujo",
+      "enable": "Habilitar al Equipo",
+      "encourage": "Ganar con Compasión"
+    },
+    "toast": {
+      "signedOut": "Sesión cerrada exitosamente"
+    }
   }
 }

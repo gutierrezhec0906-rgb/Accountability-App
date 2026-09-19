@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { collection, getDocs, query, where, doc, getDoc, setDoc } from 'firebase/firestore';
@@ -86,6 +87,9 @@ const navItems = [
   { id: 'scores', label: 'Score Dashboard', icon: '🏆', path: '/scores' },
 ];
 
+function trNavLabel(t, id, label) { return t(`layout.nav.${id}`, label); }
+function trCatLabel(t, id, label) { return t(`layout.categories.${id}`, label); }
+
 const VIDEO_TOOL_IDS = new Set([
   'dashboard',
   'visual-board','quotes','training','coaching','smart-goals','mentoring',
@@ -94,6 +98,7 @@ const VIDEO_TOOL_IDS = new Set([
 ]);
 
 export default function Layout({ children }) {
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   // Start all categories expanded
@@ -231,7 +236,7 @@ export default function Layout({ children }) {
   async function handleLogout() {
     await logout();
     navigate('/login');
-    toast.success('Signed out successfully');
+    toast.success(t('layout.toast.signedOut', 'Signed out successfully'));
   }
 
   const initials = currentUser?.displayName
@@ -261,7 +266,7 @@ export default function Layout({ children }) {
         {collapsed && (
           <button
             onClick={() => setCollapsed(false)}
-            title="Expand menu"
+            title={t('layout.expandMenu', 'Expand menu')}
             className="hidden lg:flex"
             style={{
               position: 'absolute', right: -14, top: '50%', transform: 'translateY(-50%)',
@@ -291,7 +296,7 @@ export default function Layout({ children }) {
             <button
               onClick={() => setCollapsed(c => !c)}
               className="ml-auto lg:flex hidden"
-              title={collapsed ? 'Expand menu' : 'Collapse menu'}
+              title={collapsed ? t('layout.expandMenu', 'Expand menu') : t('layout.collapseMenu', 'Collapse menu')}
               style={{ background: 'rgba(255,255,255,0.12)', border: '1px solid rgba(255,255,255,0.15)', color: 'white', borderRadius: 6, width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.85rem', flexShrink: 0, fontWeight: 700 }}
             >
               {collapsed ? '›' : '‹'}
@@ -308,9 +313,9 @@ export default function Layout({ children }) {
               <button key={item.id}
                 className={`sidebar-link ${location.pathname === item.path ? 'active' : ''}`}
                 onClick={() => { navigate(item.path); setMobileOpen(false); }}
-                title={collapsed ? item.label : ''}>
+                title={collapsed ? trNavLabel(t, item.id, item.label) : ''}>
                 <span style={{ fontSize: '1rem', flexShrink: 0 }}>{item.icon}</span>
-                {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.label}</span>}
+                {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{trNavLabel(t, item.id, item.label)}</span>}
                 {item.id === 'approvals' && pendingCount > 0 && (
                   <span style={{ background: '#ef4444', color: 'white', borderRadius: 9999, fontSize: '0.6rem', fontWeight: 700, padding: '1px 5px', minWidth: 16, textAlign: 'center', flexShrink: 0 }}>{pendingCount}</span>
                 )}
@@ -330,7 +335,7 @@ export default function Layout({ children }) {
                 {/* Category header */}
                 <button
                   onClick={() => !collapsed && toggleCategory(cat.id)}
-                  title={collapsed ? cat.label : ''}
+                  title={collapsed ? trCatLabel(t, cat.id, cat.label) : ''}
                   style={{
                     width: '100%', display: 'flex', alignItems: 'center', gap: 8,
                     background: hasActive ? `${cat.color}22` : 'transparent',
@@ -342,7 +347,7 @@ export default function Layout({ children }) {
                   {!collapsed && (
                     <>
                       <span style={{ flex: 1, fontSize: '0.7rem', fontWeight: 800, color: cat.color, textTransform: 'uppercase', letterSpacing: '0.07em', textAlign: 'left', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                        {cat.label}
+                        {trCatLabel(t, cat.id, cat.label)}
                       </span>
                       <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.3)', flexShrink: 0, transition: 'transform 0.2s', transform: isOpen ? 'rotate(0deg)' : 'rotate(-90deg)', display: 'inline-block' }}>▼</span>
                     </>
@@ -358,21 +363,21 @@ export default function Layout({ children }) {
                         <button key={item.id}
                           className={`sidebar-link ${location.pathname === item.path ? 'active' : ''}`}
                           onClick={() => { navigate(locked ? '/pricing' : item.path); setMobileOpen(false); }}
-                          title={collapsed ? item.label : ''}
+                          title={collapsed ? trNavLabel(t, item.id, item.label) : ''}
                           style={{ fontSize: '0.8rem', opacity: locked ? 0.65 : 1 }}>
                           <span style={{ fontSize: '0.875rem', flexShrink: 0 }}>{locked ? '🔒' : item.icon}</span>
-                          {!collapsed && <span style={{ flex: 1, fontSize: '0.8rem', lineHeight: 1.25, whiteSpace: item.wrap ? 'normal' : 'nowrap', overflow: item.wrap ? 'visible' : 'hidden', textOverflow: item.wrap ? 'clip' : 'ellipsis' }}>{item.num ? `${item.num}. ` : ''}{item.label}</span>}
+                          {!collapsed && <span style={{ flex: 1, fontSize: '0.8rem', lineHeight: 1.25, whiteSpace: item.wrap ? 'normal' : 'nowrap', overflow: item.wrap ? 'visible' : 'hidden', textOverflow: item.wrap ? 'clip' : 'ellipsis' }}>{item.num ? `${item.num}. ` : ''}{trNavLabel(t, item.id, item.label)}</span>}
                           {!collapsed && locked && (
-                            <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#f59e0b', letterSpacing: '0.04em', flexShrink: 0 }}>PRO</span>
+                            <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#f59e0b', letterSpacing: '0.04em', flexShrink: 0 }}>{t('layout.pro', 'PRO')}</span>
                           )}
                           {item.id === 'feedback' && unreadFeedback > 0 && (
                             <span style={{ background: '#ef4444', color: 'white', borderRadius: 9999, fontSize: '0.6rem', fontWeight: 700, padding: '1px 5px', minWidth: 16, textAlign: 'center', flexShrink: 0 }}>{unreadFeedback}</span>
                           )}
                           {item.id === 'smart-goals' && pendingSmartGoals > 0 && (
-                            <span title="Pending SMART Goal approvals" style={{ background: '#ef4444', color: 'white', borderRadius: 9999, fontSize: '0.6rem', fontWeight: 700, padding: '1px 5px', minWidth: 16, textAlign: 'center', flexShrink: 0 }}>{pendingSmartGoals}</span>
+                            <span title={t('layout.pendingSmartGoalApprovals', 'Pending SMART Goal approvals')} style={{ background: '#ef4444', color: 'white', borderRadius: 9999, fontSize: '0.6rem', fontWeight: 700, padding: '1px 5px', minWidth: 16, textAlign: 'center', flexShrink: 0 }}>{pendingSmartGoals}</span>
                           )}
                           {item.id === 'skills' && pendingSkillsRequests > 0 && (
-                            <span title="Pending peer assessment requests" style={{ background: '#ef4444', color: 'white', borderRadius: 9999, fontSize: '0.6rem', fontWeight: 700, padding: '1px 5px', minWidth: 16, textAlign: 'center', flexShrink: 0 }}>{pendingSkillsRequests}</span>
+                            <span title={t('layout.pendingPeerRequests', 'Pending peer assessment requests')} style={{ background: '#ef4444', color: 'white', borderRadius: 9999, fontSize: '0.6rem', fontWeight: 700, padding: '1px 5px', minWidth: 16, textAlign: 'center', flexShrink: 0 }}>{pendingSkillsRequests}</span>
                           )}
                         </button>
                       );
@@ -390,10 +395,10 @@ export default function Layout({ children }) {
               <button
                 className={`sidebar-link ${location.pathname === '/admin' ? 'active' : ''}`}
                 onClick={() => { navigate('/admin'); setMobileOpen(false); }}
-                title={collapsed ? 'Admin Panel' : ''}
+                title={collapsed ? t('layout.adminPanel', 'Admin Panel') : ''}
                 style={{ background: location.pathname === '/admin' ? 'rgba(234,179,8,0.15)' : 'rgba(234,179,8,0.07)', border: '1px solid rgba(234,179,8,0.2)' }}>
                 <span style={{ fontSize: '1rem', flexShrink: 0 }}>⚙️</span>
-                {!collapsed && <span style={{ flex: 1, color: '#fbbf24', fontWeight: 700 }}>Admin Panel</span>}
+                {!collapsed && <span style={{ flex: 1, color: '#fbbf24', fontWeight: 700 }}>{t('layout.adminPanel', 'Admin Panel')}</span>}
               </button>
             </>
           )}
@@ -403,37 +408,37 @@ export default function Layout({ children }) {
           <button
             className={`sidebar-link ${location.pathname === '/scores' ? 'active' : ''}`}
             onClick={() => { navigate('/scores'); setMobileOpen(false); }}
-            title={collapsed ? 'Score Dashboard' : ''}>
+            title={collapsed ? t('layout.scoreDashboard', 'Score Dashboard') : ''}>
             <span style={{ fontSize: '1rem', flexShrink: 0 }}>🏆</span>
-            {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Score Dashboard</span>}
+            {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t('layout.scoreDashboard', 'Score Dashboard')}</span>}
           </button>
 
           <button
             className={`sidebar-link ${location.pathname === '/self-assessment' ? 'active' : ''}`}
             onClick={() => { navigate('/self-assessment'); setMobileOpen(false); }}
-            title={collapsed ? 'Self-Assessment' : ''}>
+            title={collapsed ? t('layout.selfAssessment', 'Self-Assessment') : ''}>
             <span style={{ fontSize: '1rem', flexShrink: 0 }}>📋</span>
-            {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Self-Assessment</span>}
+            {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t('layout.selfAssessment', 'Self-Assessment')}</span>}
           </button>
 
           <button
             className={`sidebar-link ${location.pathname === '/360-feedback' ? 'active' : ''}`}
             onClick={() => { navigate('/360-feedback'); setMobileOpen(false); }}
-            title={collapsed ? '360° Feedback' : ''}>
+            title={collapsed ? t('layout.feedback360', '360° Feedback') : ''}>
             <span style={{ fontSize: '1rem', flexShrink: 0 }}>🔄</span>
-            {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>360° Feedback</span>}
+            {!collapsed && <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t('layout.feedback360', '360° Feedback')}</span>}
           </button>
 
           {/* Pricing / upgrade link */}
           <button
             className={`sidebar-link ${location.pathname === '/pricing' ? 'active' : ''}`}
             onClick={() => { navigate('/pricing'); setMobileOpen(false); }}
-            title={collapsed ? 'Plans & Pricing' : ''}
+            title={collapsed ? t('layout.plansPricing', 'Plans & Pricing') : ''}
             style={{ marginTop: 4 }}>
             <span style={{ fontSize: '1rem', flexShrink: 0 }}>💎</span>
             {!collapsed && (
               <>
-                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>Plans & Pricing</span>
+                <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t('layout.plansPricing', 'Plans & Pricing')}</span>
                 <span style={{
                   fontSize: '0.55rem', fontWeight: 800, letterSpacing: '0.05em',
                   background: userTier === 'free' ? '#f59e0b' : userTier === 'premium' ? '#2563eb' : '#7c3aed',
@@ -465,15 +470,15 @@ export default function Layout({ children }) {
             {!collapsed && (
               <>
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ color: 'white', fontSize: '0.78rem', fontWeight: 700, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentUser?.displayName || 'User'}</p>
+                  <p style={{ color: 'white', fontSize: '0.78rem', fontWeight: 700, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentUser?.displayName || t('layout.user', 'User')}</p>
                   <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.68rem', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{currentUser?.email}</p>
                   {userProfile?.companyName && <p style={{ color: '#5eead4', fontSize: '0.66rem', fontWeight: 600, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>🏢 {userProfile.companyName}</p>}
-                  {userProfile?.isAdmin && <p style={{ color: '#fbbf24', fontSize: '0.62rem', fontWeight: 700, margin: 0 }}>⭐ Admin</p>}
+                  {userProfile?.isAdmin && <p style={{ color: '#fbbf24', fontSize: '0.62rem', fontWeight: 700, margin: 0 }}>⭐ {t('layout.admin', 'Admin')}</p>}
                 </div>
                 <button
                   onClick={e => { e.stopPropagation(); handleLogout(); }}
                   style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.35)', cursor: 'pointer', fontSize: '0.75rem', padding: '2px 4px', borderRadius: 4, flexShrink: 0 }}
-                  title="Sign out"
+                  title={t('layout.signOut', 'Sign out')}
                 >✕</button>
               </>
             )}
@@ -499,7 +504,7 @@ export default function Layout({ children }) {
           <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: '1rem' }}>{currentNavItem?.icon}</span>
             <h2 style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9375rem', margin: 0 }}>
-              {currentNavItem?.label || 'Dashboard'}
+              {currentNavItem ? trNavLabel(t, currentNavItem.id, currentNavItem.label) : t('layout.nav.dashboard', 'Dashboard')}
             </h2>
           </div>
 
@@ -515,7 +520,7 @@ export default function Layout({ children }) {
                   cursor: 'pointer', letterSpacing: '0.01em',
                 }}
               >
-                ▶ See Why
+                ▶ {t('layout.seeWhy', 'See Why')}
               </button>
             )}
 
@@ -524,7 +529,7 @@ export default function Layout({ children }) {
                 onClick={() => navigate('/approvals')}
                 style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fef9c3', color: '#b45309', border: '1px solid #fcd34d', borderRadius: 8, padding: '0.375rem 0.75rem', fontSize: '0.775rem', fontWeight: 700, cursor: 'pointer' }}
               >
-                ⏳ {pendingCount} pending
+                ⏳ {t('layout.nPending', '{{count}} pending', { count: pendingCount })}
               </button>
             )}
 
@@ -544,7 +549,7 @@ export default function Layout({ children }) {
       <GlobalPastDueModal />
       <ToolVideoModal
         toolId={currentToolId}
-        toolLabel={currentNavItem?.label || ''}
+        toolLabel={currentNavItem ? trNavLabel(t, currentNavItem.id, currentNavItem.label) : ''}
         open={toolVideoOpen}
         onClose={() => setToolVideoOpen(false)}
       />
