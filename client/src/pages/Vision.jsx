@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
@@ -23,11 +24,11 @@ function visionReviewStatus(entry) {
   return { dueDate, daysUntil, level };
 }
 
-function printVision(entry, prompts) {
+function printVision(entry, prompts, t) {
   const dateStr = entry.createdAt
     ? new Date(entry.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
     : new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  const typeLabel = entry.mode === 'team' ? 'Team Vision Statement' : 'Personal Vision Statement';
+  const typeLabel = entry.mode === 'team' ? t('vision.teamVisionStatement', 'Team Vision Statement') : t('vision.personalVisionStatement', 'Personal Vision Statement');
 
   const qaRows = prompts
     .filter(p => entry.answers?.[p.step])
@@ -65,7 +66,7 @@ function printVision(entry, prompts) {
   <div class="header">
     <p class="app-name">Accountability App</p>
     <p class="type-label">${typeLabel}</p>
-    <p class="date">Created: ${dateStr}</p>
+    <p class="date">${t('vision.created', 'Created')}: ${dateStr}</p>
   </div>
 
   <div class="vision-box">
@@ -73,9 +74,9 @@ function printVision(entry, prompts) {
     <p class="vision-text">${entry.vision}"</p>
   </div>
 
-  ${qaRows ? `<p class="qa-section-title">Reflection Questions & Answers</p>${qaRows}` : ''}
+  ${qaRows ? `<p class="qa-section-title">${t('vision.reflectionQA', 'Reflection Questions & Answers')}</p>${qaRows}` : ''}
 
-  <div class="footer">Accountability App &nbsp;·&nbsp; Vision Builder &nbsp;·&nbsp; Confidential</div>
+  <div class="footer">Accountability App &nbsp;·&nbsp; ${t('vision.visionBuilder', 'Vision Builder')} &nbsp;·&nbsp; ${t('vision.confidential', 'Confidential')}</div>
 </body>
 </html>`;
 
@@ -86,32 +87,37 @@ function printVision(entry, prompts) {
 }
 
 const personalPrompts = [
-  { step: 1, question: "What kind of leader do I want to be known as in 5 years?",     placeholder: "Describe your ideal leadership identity..." },
-  { step: 2, question: "What impact do I want to have on my team and organization?",    placeholder: "What change or legacy do you want to leave?" },
-  { step: 3, question: "What values are non-negotiable in how I lead?",                 placeholder: "e.g. Integrity, transparency, accountability..." },
-  { step: 4, question: "What does success look like for my career in 3 years?",        placeholder: "Describe your personal future state..." },
-  { step: 5, question: "What specific actions will I commit to starting this week?",    placeholder: "Be concrete — what will you do Monday?" },
+  { step: 1, key: 'leaderIdentity',  question: "What kind of leader do I want to be known as in 5 years?",     placeholder: "Describe your ideal leadership identity..." },
+  { step: 2, key: 'impact',          question: "What impact do I want to have on my team and organization?",    placeholder: "What change or legacy do you want to leave?" },
+  { step: 3, key: 'values',          question: "What values are non-negotiable in how I lead?",                 placeholder: "e.g. Integrity, transparency, accountability..." },
+  { step: 4, key: 'successLooks',    question: "What does success look like for my career in 3 years?",        placeholder: "Describe your personal future state..." },
+  { step: 5, key: 'commitActions',   question: "What specific actions will I commit to starting this week?",    placeholder: "Be concrete — what will you do Monday?" },
 ];
 
 const teamPrompts = [
-  { step: 1, question: "What kind of team do we want to be known as in 5 years?",      placeholder: "Describe your team's ideal identity..." },
-  { step: 2, question: "What impact do we want to have on the organization?",           placeholder: "What change or legacy will your team leave?" },
-  { step: 3, question: "What values are non-negotiable in how we operate?",             placeholder: "e.g. Accountability, trust, continuous improvement..." },
-  { step: 4, question: "What does success look like for our team in 3 years?",         placeholder: "Describe your team's future state..." },
-  { step: 5, question: "What commitments will our team make starting this week?",       placeholder: "Be concrete — what will the team do Monday?" },
+  { step: 1, key: 'leaderIdentity',  question: "What kind of team do we want to be known as in 5 years?",      placeholder: "Describe your team's ideal identity..." },
+  { step: 2, key: 'impact',          question: "What impact do we want to have on the organization?",           placeholder: "What change or legacy will your team leave?" },
+  { step: 3, key: 'values',          question: "What values are non-negotiable in how we operate?",             placeholder: "e.g. Accountability, trust, continuous improvement..." },
+  { step: 4, key: 'successLooks',    question: "What does success look like for our team in 3 years?",         placeholder: "Describe your team's future state..." },
+  { step: 5, key: 'commitActions',   question: "What commitments will our team make starting this week?",       placeholder: "Be concrete — what will the team do Monday?" },
 ];
 
+function trPrompt(t, mode, p, field) {
+  return t(`vision.prompts.${mode}.${p.key}.${field}`, p[field]);
+}
+
 function SavedPanel({ entries, onDelete, onLoad, onEdit, onMarkReviewed, activeTab, setActiveTab, expandedId, setExpandedId }) {
+  const { t } = useTranslation();
   const personal = entries.filter(e => e.mode === 'personal');
   const team     = entries.filter(e => e.mode === 'team');
   const list     = activeTab === 'personal' ? personal : team;
 
   return (
     <div className="vision-saved-panel" style={{ width: 290, flexShrink: 0, background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', alignSelf: 'flex-start', position: 'sticky', top: 24 }}>
-      <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)', margin: '0 0 12px' }}>Saved Visions</p>
+      <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)', margin: '0 0 12px' }}>{t('vision.savedVisions', 'Saved Visions')}</p>
 
       <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-        {[['personal', `👤 Personal (${personal.length})`], ['team', `👥 Team (${team.length})`]].map(([key, label]) => (
+        {[['personal', `👤 ${t('vision.personal', 'Personal')} (${personal.length})`], ['team', `👥 ${t('vision.team', 'Team')} (${team.length})`]].map(([key, label]) => (
           <button key={key} onClick={() => setActiveTab(key)}
             style={{ flex: 1, padding: '0.3rem 0', borderRadius: 8, fontWeight: 700, fontSize: '0.72rem', border: 'none', cursor: 'pointer',
               background: activeTab === key ? '#0f2044' : '#f1f5f9', color: activeTab === key ? 'white' : '#475569' }}>
@@ -121,7 +127,7 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, onMarkReviewed, activeT
       </div>
 
       {list.length === 0
-        ? <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 24 }}>No saved {activeTab} visions yet.</p>
+        ? <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 24 }}>{activeTab === 'personal' ? t('vision.noSavedPersonal', 'No saved personal visions yet.') : t('vision.noSavedTeam', 'No saved team visions yet.')}</p>
         : <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 620, overflowY: 'auto' }}>
             {list.map(e => {
               const d = e.createdAt ? new Date(e.createdAt) : new Date();
@@ -136,10 +142,10 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, onMarkReviewed, activeT
                   {rs && (
                     <p style={{ fontSize: '0.66rem', fontWeight: 700, color: rsColor, background: rsBg, borderRadius: 6, padding: '2px 7px', display: 'inline-block', margin: '0 0 6px' }}>
                       {rs.level === 'overdue'
-                        ? `🔁 Review overdue — was due ${rs.dueDate.toLocaleDateString()}`
+                        ? `🔁 ${t('vision.reviewOverdue', 'Review overdue — was due {{date}}', { date: rs.dueDate.toLocaleDateString() })}`
                         : rs.level === 'upcoming'
-                          ? `🔁 Review due in ${rs.daysUntil}d (${rs.dueDate.toLocaleDateString()})`
-                          : `🔁 Next review ${rs.dueDate.toLocaleDateString()}`}
+                          ? `🔁 ${t('vision.reviewDueIn', 'Review due in {{days}}d ({{date}})', { days: rs.daysUntil, date: rs.dueDate.toLocaleDateString() })}`
+                          : `🔁 ${t('vision.nextReview', 'Next review {{date}}', { date: rs.dueDate.toLocaleDateString() })}`}
                     </p>
                   )}
 
@@ -151,7 +157,7 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, onMarkReviewed, activeT
                   {/* Toggle Q&A dropdown */}
                   <button onClick={() => setExpandedId(isExpanded ? null : e.id)}
                     style={{ background: 'none', border: 'none', color: '#0d9488', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', padding: '0 0 6px' }}>
-                    {isExpanded ? '▲ Hide answers' : '▼ Show Q&A answers'}
+                    {isExpanded ? `▲ ${t('vision.hideAnswers', 'Hide answers')}` : `▼ ${t('vision.showQA', 'Show Q&A answers')}`}
                   </button>
 
                   {/* Q&A answers dropdown */}
@@ -160,7 +166,7 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, onMarkReviewed, activeT
                       {prompts.map(p => e.answers[p.step] && (
                         <div key={p.step} style={{ borderLeft: '3px solid #0d9488', paddingLeft: 8 }}>
                           <p style={{ fontSize: '0.62rem', fontWeight: 700, color: '#0d9488', margin: '0 0 2px', textTransform: 'uppercase' }}>Q{p.step}</p>
-                          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 2px' }}>{p.question}</p>
+                          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 2px' }}>{trPrompt(t, e.mode, p, 'question')}</p>
                           <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>{e.answers[p.step]}</p>
                         </div>
                       ))}
@@ -170,15 +176,15 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, onMarkReviewed, activeT
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     <button onClick={() => onLoad(e)}
                       style={{ flex: 1, padding: '0.25rem 0', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #0d9488', background: 'white', color: '#0d9488', cursor: 'pointer' }}>
-                      Load
+                      {t('vision.load', 'Load')}
                     </button>
                     <button onClick={() => onEdit(e)}
                       style={{ flex: 1, padding: '0.25rem 0', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #0f2044', background: 'white', color: '#0f2044', cursor: 'pointer' }}>
-                      ✏️ Edit
+                      ✏️ {t('vision.edit', 'Edit')}
                     </button>
-                    <button onClick={() => printVision(e, prompts)}
+                    <button onClick={() => printVision(e, prompts, t)}
                       style={{ flex: 1, padding: '0.25rem 0', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #6366f1', background: 'white', color: '#6366f1', cursor: 'pointer' }}>
-                      🖨️ Print
+                      🖨️ {t('vision.print', 'Print')}
                     </button>
                     <button onClick={() => onDelete(e.id)}
                       style={{ padding: '0.25rem 0.5rem', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #fca5a5', background: 'white', color: '#ef4444', cursor: 'pointer' }}>
@@ -187,7 +193,7 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, onMarkReviewed, activeT
                     {rs && rs.level !== 'ok' && (
                       <button onClick={() => onMarkReviewed(e.id)}
                         style={{ flex: '1 1 100%', padding: '0.3rem 0', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #15803d', background: '#f0fdf4', color: '#15803d', cursor: 'pointer' }}>
-                        ✅ I've reviewed this — still on track
+                        ✅ {t('vision.reviewedStillOnTrack', "I've reviewed this — still on track")}
                       </button>
                     )}
                   </div>
@@ -201,6 +207,7 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, onMarkReviewed, activeT
 }
 
 export default function Vision() {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [saved, setSaved]           = useState([]);
   const [panelTab, setPanelTab]     = useState('personal');
@@ -261,7 +268,7 @@ export default function Vision() {
   }, [saved, currentUser]);
 
   function generateVision() {
-    if (Object.keys(answers).filter(k => answers[k]).length < 2) return toast.error('Answer at least 2 questions first');
+    if (Object.keys(answers).filter(k => answers[k]).length < 2) return toast.error(t('vision.toast.answerAtLeast2', 'Answer at least 2 questions first'));
     let stmt;
     if (mode === 'personal') {
       stmt = `As a leader, I am committed to ${answers[3] || 'my core values'}. I will ${answers[2] || 'make a lasting impact'} by ${answers[5] || 'taking deliberate daily actions'}. My vision is to ${answers[4] || 'build a high-performance team'} where ${answers[1] || 'I am known as a trusted leader'}.`;
@@ -269,7 +276,7 @@ export default function Vision() {
       stmt = `As a team, we are committed to ${answers[3] || 'our core values'}. We will ${answers[2] || 'make a lasting impact on the organization'} by ${answers[5] || 'taking deliberate collective action'}. Our vision is to ${answers[4] || 'be a high-performing team'} where ${answers[1] || 'we are known for excellence'}.`;
     }
     setVision(stmt);
-    toast.success('Vision statement generated!');
+    toast.success(t('vision.toast.visionGenerated', 'Vision statement generated!'));
   }
 
   async function polishVision() {
@@ -280,22 +287,22 @@ export default function Vision() {
       const res = await fn({ vision, mode });
       if (res.data?.vision) {
         setVision(res.data.vision);
-        toast.success('✨ Vision polished!');
+        toast.success(`✨ ${t('vision.toast.visionPolished', 'Vision polished!')}`);
       }
     } catch (e) {
-      toast.error(e?.message || 'Could not polish vision — try again');
+      toast.error(e?.message || t('vision.toast.polishFailed', 'Could not polish vision — try again'));
     }
     setPolishing(false);
   }
 
   async function handleSave() {
-    if (!vision) return toast.error('Generate a vision statement first');
-    if (!currentUser) return toast.error('Not logged in');
+    if (!vision) return toast.error(t('vision.toast.generateFirst', 'Generate a vision statement first'));
+    if (!currentUser) return toast.error(t('vision.toast.notLoggedIn', 'Not logged in'));
     try {
       if (loadedId) {
         const updated = saved.map(e => e.id === loadedId ? { ...e, vision, answers, mode } : e);
         await persistSaved(updated);
-        toast.success('Vision updated!');
+        toast.success(t('vision.toast.visionUpdated', 'Vision updated!'));
       } else {
         const newEntry = { id: Date.now().toString(), mode, vision, answers, createdAt: new Date().toISOString() };
         const updated = [newEntry, ...saved];
@@ -318,22 +325,23 @@ export default function Vision() {
               [`visionPointsEarned.${mode}`]: true,
             });
             calculateScore(currentUser.uid).catch(() => {});
-            toast.success(`⭐ Vision saved! +10 pts for your first ${label.toLowerCase()}`, { duration: 6000, icon: '🌟' });
+            const labelLc = mode === 'personal' ? t('vision.personalVisionLc', 'personal vision') : t('vision.teamVisionLc', 'team vision');
+            toast.success(t('vision.toast.savedFirstBonus', '⭐ Vision saved! +10 pts for your first {{label}}', { label: labelLc }), { duration: 6000, icon: '🌟' });
           } else {
             // Still mark as earned so points are awarded next day
             await updateDoc(doc(db, 'users', currentUser.uid), { [`visionPointsEarned.${mode}`]: true });
             if (capReached) {
-              toast('Vision saved! You\'ve hit your 25-pt daily limit — your +10 pts will be credited when you return tomorrow. 🗓', { duration: 6000, icon: '📅' });
+              toast(t('vision.toast.capReached', "Vision saved! You've hit your 25-pt daily limit — your +10 pts will be credited when you return tomorrow. 🗓"), { duration: 6000, icon: '📅' });
             } else {
-              toast.success('Vision saved!');
+              toast.success(t('vision.toast.visionSaved', 'Vision saved!'));
             }
           }
         } else {
-          toast.success('Vision saved!');
+          toast.success(t('vision.toast.visionSaved', 'Vision saved!'));
         }
       }
       setPanelTab(mode);
-    } catch (e) { toast.error('Save failed: ' + e?.message); }
+    } catch (e) { toast.error(t('vision.toast.saveFailed', 'Save failed: {{msg}}', { msg: e?.message })); }
   }
 
   async function handleDelete(id) {
@@ -345,7 +353,7 @@ export default function Vision() {
         team:     prev.team.loadedId     === id ? { ...prev.team,     loadedId: null } : prev.team,
       }));
       if (expandedId === id) setExpandedId(null);
-    } catch (e) { toast.error('Delete failed: ' + e?.message); }
+    } catch (e) { toast.error(t('vision.toast.deleteFailed', 'Delete failed: {{msg}}', { msg: e?.message })); }
   }
 
   // No points involved — this just resets the annual review clock to today.
@@ -353,8 +361,8 @@ export default function Vision() {
     try {
       const updated = saved.map(e => e.id === id ? { ...e, reviewedAt: new Date().toISOString() } : e);
       await persistSaved(updated);
-      toast.success('Nice — marked as reviewed. Next check-in in 12 months.');
-    } catch (e) { toast.error('Could not save: ' + e?.message); }
+      toast.success(t('vision.toast.markedReviewed', 'Nice — marked as reviewed. Next check-in in 12 months.'));
+    } catch (e) { toast.error(t('vision.toast.couldNotSave', 'Could not save: {{msg}}', { msg: e?.message })); }
   }
 
   function handleLoad(entry) {
@@ -365,7 +373,7 @@ export default function Vision() {
     }));
     setEditingId(null);
     setEditingQ(null);
-    toast.success('Vision loaded!');
+    toast.success(t('vision.toast.visionLoaded', 'Vision loaded!'));
   }
 
   function handleEdit(entry) {
@@ -374,7 +382,7 @@ export default function Vision() {
   }
 
   async function handleSaveEdit() {
-    if (!editVision.trim()) return toast.error('Vision statement cannot be empty');
+    if (!editVision.trim()) return toast.error(t('vision.toast.cannotBeEmpty', 'Vision statement cannot be empty'));
     try {
       if (editingId === 'current') {
         setVision(editVision);
@@ -386,10 +394,10 @@ export default function Vision() {
         const updated = saved.map(e => e.id === editingId ? { ...e, vision: editVision } : e);
         await persistSaved(updated);
       }
-      toast.success('Vision updated!');
+      toast.success(t('vision.toast.visionUpdated', 'Vision updated!'));
       setEditingId(null);
       setEditVision('');
-    } catch (e) { toast.error('Update failed: ' + e?.message); }
+    } catch (e) { toast.error(t('vision.toast.updateFailed', 'Update failed: {{msg}}', { msg: e?.message })); }
   }
 
   function startEditQ(stepNum) {
@@ -406,8 +414,8 @@ export default function Vision() {
       try {
         const updated = saved.map(e => e.id === loadedId ? { ...e, answers: newAnswers } : e);
         await persistSaved(updated);
-        toast.success('Answer saved');
-      } catch (e) { toast.error('Save failed: ' + e?.message); }
+        toast.success(t('vision.toast.answerSaved', 'Answer saved'));
+      } catch (e) { toast.error(t('vision.toast.saveFailed', 'Save failed: {{msg}}', { msg: e?.message })); }
     }
   }
 
@@ -416,14 +424,13 @@ export default function Vision() {
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-      <PageHeader icon="🔭" title="Vision Builder — The Framework of the Accountability" subtitle="Create a compelling personal or team vision statement" />
+      <PageHeader icon="🔭" title={t('vision.title', 'Vision Builder — The Framework of the Accountability')} subtitle={t('vision.subtitle', 'Create a compelling personal or team vision statement')} />
 
       {/* Annual review reminder — no points, just a nudge to revisit the statement */}
       <div style={{ background: '#f0fdfa', border: '1px solid #99f6e4', borderRadius: 12, padding: '0.75rem 1rem', marginBottom: '1.25rem', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
         <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>🔁</span>
         <p style={{ fontSize: '0.8rem', color: '#0f766e', margin: 0, lineHeight: 1.5 }}>
-          <strong>It's highly recommended to review your Personal and Team Vision at least once a year</strong> — revisit the statement, confirm you're still on track, and edit it if your priorities have shifted.
-          We'll remind you here starting 30 days before each vision's 12-month anniversary.
+          <strong>{t('vision.reviewReminderBold', "It's highly recommended to review your Personal and Team Vision at least once a year")}</strong> — {t('vision.reviewReminderRest', "revisit the statement, confirm you're still on track, and edit it if your priorities have shifted. We'll remind you here starting 30 days before each vision's 12-month anniversary.")}
         </p>
       </div>
 
@@ -433,32 +440,34 @@ export default function Vision() {
           <div style={{ background: 'white', borderRadius: 16, padding: '1.75rem', width: '100%', maxWidth: 480, boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
               <span style={{ fontSize: '1.5rem' }}>🔁</span>
-              <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1.05rem' }}>Time to revisit your vision</h3>
+              <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1.05rem' }}>{t('vision.timeToRevisit', 'Time to revisit your vision')}</h3>
             </div>
             <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '0 0 14px', lineHeight: 1.55 }}>
-              It's been about a year since {reviewPopup.length > 1 ? 'these visions were' : 'this vision was'} last confirmed. Take a moment to make sure you're still on track — edit it if needed.
+              {reviewPopup.length > 1
+                ? t('vision.aboutYearPlural', "It's been about a year since these visions were last confirmed. Take a moment to make sure you're still on track — edit it if needed.")
+                : t('vision.aboutYearSingle', "It's been about a year since this vision was last confirmed. Take a moment to make sure you're still on track — edit it if needed.")}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 16 }}>
               {reviewPopup.map(({ entry, rs }) => (
                 <div key={entry.id} style={{ background: '#f8fafc', borderRadius: 10, padding: '0.75rem', border: '1px solid var(--border)' }}>
                   <p style={{ fontSize: '0.72rem', fontWeight: 700, color: rs.level === 'overdue' ? '#dc2626' : '#b45309', margin: '0 0 4px' }}>
-                    {entry.mode === 'personal' ? '👤 Personal Vision' : '👥 Team Vision'} — {rs.level === 'overdue' ? `overdue since ${rs.dueDate.toLocaleDateString()}` : `due ${rs.dueDate.toLocaleDateString()}`}
+                    {entry.mode === 'personal' ? `👤 ${t('vision.personalVision', 'Personal Vision')}` : `👥 ${t('vision.teamVision', 'Team Vision')}`} — {rs.level === 'overdue' ? t('vision.overdueSince', 'overdue since {{date}}', { date: rs.dueDate.toLocaleDateString() }) : t('vision.dueDate', 'due {{date}}', { date: rs.dueDate.toLocaleDateString() })}
                   </p>
                   <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0 0 8px', lineHeight: 1.45, fontStyle: 'italic' }}>"{entry.vision}"</p>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button onClick={() => { setReviewPopup(null); handleLoad(entry); }}
                       style={{ flex: 1, padding: '0.3rem 0', borderRadius: 7, fontSize: '0.72rem', fontWeight: 700, border: '1px solid #0f2044', background: 'white', color: '#0f2044', cursor: 'pointer' }}>
-                      ✏️ Review / Edit Now
+                      ✏️ {t('vision.reviewEditNow', 'Review / Edit Now')}
                     </button>
                     <button onClick={() => handleMarkReviewed(entry.id)}
                       style={{ flex: 1, padding: '0.3rem 0', borderRadius: 7, fontSize: '0.72rem', fontWeight: 700, border: '1px solid #15803d', background: '#f0fdf4', color: '#15803d', cursor: 'pointer' }}>
-                      ✅ Still on track
+                      ✅ {t('vision.stillOnTrack', 'Still on track')}
                     </button>
                   </div>
                 </div>
               ))}
             </div>
-            <button className="btn-secondary" onClick={() => setReviewPopup(null)} style={{ width: '100%' }}>Remind me later</button>
+            <button className="btn-secondary" onClick={() => setReviewPopup(null)} style={{ width: '100%' }}>{t('vision.remindMeLater', 'Remind me later')}</button>
           </div>
         </div>
       )}
@@ -467,12 +476,12 @@ export default function Vision() {
       {editingId && editingId !== 'current' && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div style={{ background: 'white', borderRadius: 16, padding: '2rem', width: '100%', maxWidth: 560, boxShadow: '0 20px 60px rgba(0,0,0,0.3)' }}>
-            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 1rem', fontSize: '1.05rem' }}>✏️ Edit Vision Statement</h3>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 1rem', fontSize: '1.05rem' }}>✏️ {t('vision.editVisionStatement', 'Edit Vision Statement')}</h3>
             <textarea className="input" rows={6} value={editVision} onChange={e => setEditVision(e.target.value)}
               style={{ width: '100%', fontSize: '0.9rem', lineHeight: 1.7 }} autoFocus />
             <div style={{ display: 'flex', gap: 10, marginTop: '1rem' }}>
-              <button className="btn-primary" onClick={handleSaveEdit}>Save Changes</button>
-              <button className="btn-secondary" onClick={() => { setEditingId(null); setEditVision(''); }}>Cancel</button>
+              <button className="btn-primary" onClick={handleSaveEdit}>{t('vision.saveChanges', 'Save Changes')}</button>
+              <button className="btn-secondary" onClick={() => { setEditingId(null); setEditVision(''); }}>{t('vision.cancel', 'Cancel')}</button>
             </div>
           </div>
         </div>
@@ -488,7 +497,7 @@ export default function Vision() {
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* Mode toggle */}
           <div style={{ display: 'flex', gap: 8, marginBottom: '1.5rem' }}>
-            {[{ key: 'personal', label: '👤 Personal Vision' }, { key: 'team', label: '👥 Team Vision' }].map(m => (
+            {[{ key: 'personal', label: `👤 ${t('vision.personalVision', 'Personal Vision')}` }, { key: 'team', label: `👥 ${t('vision.teamVision', 'Team Vision')}` }].map(m => (
               <button key={m.key} onClick={() => { setMode(m.key); setEditingQ(null); setEditingId(null); setPanelTab(m.key); }}
                 style={{ padding: '0.5rem 1.25rem', borderRadius: 10, fontWeight: 700, fontSize: '0.875rem', border: 'none', cursor: 'pointer', transition: 'all 0.15s', background: mode === m.key ? '#0f2044' : '#f1f5f9', color: mode === m.key ? 'white' : '#475569' }}>
                 {m.label}
@@ -501,13 +510,13 @@ export default function Vision() {
             <div style={{ borderRadius: 16, padding: '1.75rem', marginBottom: '1.5rem', background: 'linear-gradient(135deg,#0b1a38,#0f2044,#1e3a6e)', color: 'white', position: 'relative', overflow: 'hidden', border: '2px dashed rgba(255,255,255,0.15)' }}>
               <div style={{ position: 'absolute', top: 12, right: 20, fontSize: '5rem', opacity: 0.05, fontFamily: 'Georgia,serif', lineHeight: 1 }}>"</div>
               <p style={{ color: '#99f6e4', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 10px' }}>
-                {mode === 'personal' ? '👤 Personal Vision Statement' : '👥 Team Vision Statement'}
+                {mode === 'personal' ? `👤 ${t('vision.personalVisionStatement', 'Personal Vision Statement')}` : `👥 ${t('vision.teamVisionStatement', 'Team Vision Statement')}`}
               </p>
               <p style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.5)', margin: '0 0 6px', fontStyle: 'italic' }}>
-                Your {mode === 'personal' ? 'personal' : 'team'} vision will appear here once generated.
+                {mode === 'personal' ? t('vision.willAppearPersonal', 'Your personal vision will appear here once generated.') : t('vision.willAppearTeam', 'Your team vision will appear here once generated.')}
               </p>
               <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.35)', margin: 0 }}>
-                Answer the {prompts.length} questions below and click ✨ Generate Vision Statement.
+                {t('vision.answerQuestionsBelow', 'Answer the {{count}} questions below and click ✨ Generate Vision Statement.', { count: prompts.length })}
               </p>
             </div>
           )}
@@ -515,7 +524,7 @@ export default function Vision() {
             <div style={{ borderRadius: 16, padding: '1.75rem', marginBottom: '1.5rem', background: 'linear-gradient(135deg,#0b1a38,#0f2044,#0d9488)', color: 'white', position: 'relative', overflow: 'hidden' }}>
               <div style={{ position: 'absolute', top: 12, right: 20, fontSize: '5rem', opacity: 0.07, fontFamily: 'Georgia,serif', lineHeight: 1 }}>"</div>
               <p style={{ color: '#99f6e4', fontSize: '0.72rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', margin: '0 0 10px' }}>
-                Your Vision Statement {loadedId && <span style={{ opacity: 0.7 }}>· Auto-saved</span>}
+                {t('vision.yourVisionStatement', 'Your Vision Statement')} {loadedId && <span style={{ opacity: 0.7 }}>· {t('vision.autoSaved', 'Auto-saved')}</span>}
               </p>
               {editingId === 'current'
                 ? <>
@@ -524,11 +533,11 @@ export default function Vision() {
                     <div style={{ display: 'flex', gap: 10 }}>
                       <button onClick={handleSaveEdit}
                         style={{ background: '#0d9488', border: 'none', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>
-                        ✓ Apply
+                        ✓ {t('vision.apply', 'Apply')}
                       </button>
                       <button onClick={() => setEditingId(null)}
                         style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600 }}>
-                        Cancel
+                        {t('vision.cancel', 'Cancel')}
                       </button>
                     </div>
                   </>
@@ -537,24 +546,24 @@ export default function Vision() {
                     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                       <button onClick={() => updateMode({ vision: '', answers: {}, step: 0, loadedId: null })}
                         style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'rgba(255,255,255,0.7)', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 600 }}>
-                        Clear & Start Over
+                        {t('vision.clearStartOver', 'Clear & Start Over')}
                       </button>
                       <button onClick={() => { setEditingId('current'); setEditVision(vision); }}
                         style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>
-                        ✏️ Edit
+                        ✏️ {t('vision.edit', 'Edit')}
                       </button>
                       <button onClick={polishVision} disabled={polishing}
-                        title="Fix grammar and elevate the language while keeping your own words and ideas"
+                        title={t('vision.aiPolishTooltip', 'Fix grammar and elevate the language while keeping your own words and ideas')}
                         style={{ background: polishing ? 'rgba(255,255,255,0.08)' : '#7c3aed', border: 'none', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: polishing ? 'default' : 'pointer', fontWeight: 700, opacity: polishing ? 0.7 : 1 }}>
-                        {polishing ? '✨ Polishing…' : '🤖 AI Polish'}
+                        {polishing ? `✨ ${t('vision.polishing', 'Polishing…')}` : `🤖 ${t('vision.aiPolish', 'AI Polish')}`}
                       </button>
                       <button onClick={handleSave}
                         style={{ background: '#0d9488', border: 'none', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>
-                        💾 {loadedId ? 'Update Vision' : 'Save Vision'}
+                        💾 {loadedId ? t('vision.updateVision', 'Update Vision') : t('vision.saveVision', 'Save Vision')}
                       </button>
-                      <button onClick={() => printVision({ vision, answers, mode, createdAt: new Date().toISOString() }, prompts)}
+                      <button onClick={() => printVision({ vision, answers, mode, createdAt: new Date().toISOString() }, prompts, t)}
                         style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 8, padding: '0.3rem 0.875rem', color: 'white', fontSize: '0.78rem', cursor: 'pointer', fontWeight: 700 }}>
-                        🖨️ Print
+                        🖨️ {t('vision.print', 'Print')}
                       </button>
                     </div>
                   </>
@@ -565,24 +574,24 @@ export default function Vision() {
           {/* Step progress */}
           <div style={{ display: 'flex', gap: 6, marginBottom: '1.25rem' }}>
             {prompts.map((p, i) => (
-              <button key={p.step} onClick={() => setStep(i)} title={p.question}
+              <button key={p.step} onClick={() => setStep(i)} title={trPrompt(t, mode, p, 'question')}
                 style={{ flex: 1, height: 6, borderRadius: 9999, background: answers[p.step] ? '#0d9488' : step === i ? '#99f6e4' : '#e2e8f0', border: 'none', cursor: 'pointer', transition: 'background 0.2s' }} />
             ))}
           </div>
-          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>{answeredCount} of {prompts.length} questions answered</p>
+          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '1.25rem' }}>{t('vision.questionsAnswered', '{{count}} of {{total}} questions answered', { count: answeredCount, total: prompts.length })}</p>
 
           {/* Current prompt */}
           <div className="card" style={{ padding: '1.75rem', marginBottom: '1.5rem' }}>
-            <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>Question {step + 1} of {prompts.length}</p>
-            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '1.05rem', margin: '0 0 1rem', lineHeight: 1.4 }}>{prompts[step].question}</h3>
+            <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>{t('vision.questionOf', 'Question {{n}} of {{total}}', { n: step + 1, total: prompts.length })}</p>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '1.05rem', margin: '0 0 1rem', lineHeight: 1.4 }}>{trPrompt(t, mode, prompts[step], 'question')}</h3>
             <textarea className="input" rows={5} value={answers[prompts[step].step] || ''}
               onChange={e => setAnswers(a => ({ ...a, [prompts[step].step]: e.target.value }))}
-              placeholder={prompts[step].placeholder} />
+              placeholder={trPrompt(t, mode, prompts[step], 'placeholder')} />
             <div style={{ display: 'flex', gap: 10, marginTop: '1rem' }}>
-              {step > 0 && <button className="btn-secondary" onClick={() => setStep(s => s - 1)}>← Previous</button>}
+              {step > 0 && <button className="btn-secondary" onClick={() => setStep(s => s - 1)}>← {t('vision.previous', 'Previous')}</button>}
               {step < prompts.length - 1
-                ? <button className="btn-primary" onClick={() => setStep(s => s + 1)}>Next →</button>
-                : <button className="btn-primary" onClick={generateVision}>✨ Generate Vision Statement</button>
+                ? <button className="btn-primary" onClick={() => setStep(s => s + 1)}>{t('vision.next', 'Next')} →</button>
+                : <button className="btn-primary" onClick={generateVision}>✨ {t('vision.generateVisionStatement', 'Generate Vision Statement')}</button>
               }
             </div>
           </div>
@@ -596,21 +605,21 @@ export default function Vision() {
                   {editingQ !== p.step
                     ? <button onClick={() => startEditQ(p.step)}
                         style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: 6, padding: '2px 8px', fontSize: '0.68rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>
-                        ✏️ Edit
+                        ✏️ {t('vision.edit', 'Edit')}
                       </button>
                     : <div style={{ display: 'flex', gap: 6 }}>
                         <button onClick={() => saveEditQ(p.step)}
                           style={{ background: '#0d9488', border: 'none', borderRadius: 6, padding: '2px 10px', fontSize: '0.68rem', fontWeight: 700, color: 'white', cursor: 'pointer' }}>
-                          Save
+                          {t('vision.save', 'Save')}
                         </button>
                         <button onClick={() => setEditingQ(null)}
                           style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: 6, padding: '2px 8px', fontSize: '0.68rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>
-                          Cancel
+                          {t('vision.cancel', 'Cancel')}
                         </button>
                       </div>
                   }
                 </div>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0 0 6px' }}>{p.question}</p>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '0 0 6px' }}>{trPrompt(t, mode, p, 'question')}</p>
                 {editingQ === p.step
                   ? <textarea className="input" rows={3} value={editQVal} onChange={e => setEditQVal(e.target.value)}
                       style={{ fontSize: '0.875rem' }} autoFocus />

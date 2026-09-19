@@ -798,5 +798,130 @@
         ]
       }
     }
+  },
+  "vision": {
+    "title": "Constructor de Visión — El Marco de la Rendición de Cuentas",
+    "subtitle": "Crea una declaración de visión personal o de equipo convincente",
+    "reviewReminderBold": "Se recomienda encarecidamente revisar su Visión Personal y de Equipo al menos una vez al año",
+    "reviewReminderRest": "revise la declaración, confirme que sigue en el buen camino y edítela si sus prioridades han cambiado. Le recordaremos aquí a partir de 30 días antes del aniversario de 12 meses de cada visión.",
+    "timeToRevisit": "Es hora de revisar tu visión",
+    "aboutYearPlural": "Ha pasado aproximadamente un año desde que estas visiones fueron confirmadas por última vez. Tómese un momento para asegurarse de que sigue en el buen camino — edítela si es necesario.",
+    "aboutYearSingle": "Ha pasado aproximadamente un año desde que esta visión fue confirmada por última vez. Tómese un momento para asegurarse de que sigue en el buen camino — edítela si es necesario.",
+    "personalVision": "Visión Personal",
+    "teamVision": "Visión de Equipo",
+    "personalVisionLc": "visión personal",
+    "teamVisionLc": "visión de equipo",
+    "overdueSince": "atrasada desde {{date}}",
+    "dueDate": "vence {{date}}",
+    "reviewEditNow": "Revisar / Editar Ahora",
+    "stillOnTrack": "Sigue en el buen camino",
+    "remindMeLater": "Recordarme más tarde",
+    "editVisionStatement": "Editar Declaración de Visión",
+    "saveChanges": "Guardar Cambios",
+    "cancel": "Cancelar",
+    "personal": "Personal",
+    "team": "Equipo",
+    "savedVisions": "Visiones Guardadas",
+    "noSavedPersonal": "Aún no hay visiones personales guardadas.",
+    "noSavedTeam": "Aún no hay visiones de equipo guardadas.",
+    "reviewOverdue": "Revisión atrasada — vencía el {{date}}",
+    "reviewDueIn": "Revisión vence en {{days}}d ({{date}})",
+    "nextReview": "Próxima revisión {{date}}",
+    "hideAnswers": "Ocultar respuestas",
+    "showQA": "Ver respuestas de Preguntas y Respuestas",
+    "load": "Cargar",
+    "edit": "Editar",
+    "print": "Imprimir",
+    "reviewedStillOnTrack": "Ya revisé esto — sigue en el buen camino",
+    "personalVisionStatement": "Declaración de Visión Personal",
+    "teamVisionStatement": "Declaración de Visión de Equipo",
+    "created": "Creado",
+    "reflectionQA": "Preguntas de Reflexión y Respuestas",
+    "visionBuilder": "Constructor de Visión",
+    "confidential": "Confidencial",
+    "willAppearPersonal": "Tu visión personal aparecerá aquí una vez generada.",
+    "willAppearTeam": "Tu visión de equipo aparecerá aquí una vez generada.",
+    "answerQuestionsBelow": "Responde las {{count}} preguntas a continuación y haz clic en ✨ Generar Declaración de Visión.",
+    "yourVisionStatement": "Tu Declaración de Visión",
+    "autoSaved": "Guardado automáticamente",
+    "apply": "Aplicar",
+    "clearStartOver": "Borrar y Comenzar de Nuevo",
+    "aiPolishTooltip": "Corrige la gramática y eleva el lenguaje mientras mantiene tus propias palabras e ideas",
+    "polishing": "Puliendo…",
+    "aiPolish": "Pulido con IA",
+    "updateVision": "Actualizar Visión",
+    "saveVision": "Guardar Visión",
+    "questionsAnswered": "{{count}} de {{total}} preguntas respondidas",
+    "questionOf": "Pregunta {{n}} de {{total}}",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "generateVisionStatement": "Generar Declaración de Visión",
+    "save": "Guardar",
+    "toast": {
+      "answerAtLeast2": "Responde al menos 2 preguntas primero",
+      "visionGenerated": "¡Declaración de visión generada!",
+      "visionPolished": "¡Visión pulida!",
+      "polishFailed": "No se pudo pulir la visión — intenta de nuevo",
+      "generateFirst": "Genera primero una declaración de visión",
+      "notLoggedIn": "No ha iniciado sesión",
+      "visionUpdated": "¡Visión actualizada!",
+      "savedFirstBonus": "⭐ ¡Visión guardada! +10 pts por tu primera {{label}}",
+      "capReached": "¡Visión guardada! Has alcanzado tu límite diario de 25 pts — tus +10 pts se acreditarán cuando regreses mañana. 🗓",
+      "visionSaved": "¡Visión guardada!",
+      "saveFailed": "Error al guardar: {{msg}}",
+      "deleteFailed": "Error al eliminar: {{msg}}",
+      "markedReviewed": "Bien — marcado como revisado. Próxima revisión en 12 meses.",
+      "couldNotSave": "No se pudo guardar: {{msg}}",
+      "visionLoaded": "¡Visión cargada!",
+      "cannotBeEmpty": "La declaración de visión no puede estar vacía",
+      "updateFailed": "Error al actualizar: {{msg}}",
+      "answerSaved": "Respuesta guardada"
+    },
+    "prompts": {
+      "personal": {
+        "leaderIdentity": {
+          "question": "¿Qué tipo de líder quiero ser conocido en 5 años?",
+          "placeholder": "Describe tu identidad de liderazgo ideal..."
+        },
+        "impact": {
+          "question": "¿Qué impacto quiero tener en mi equipo y organización?",
+          "placeholder": "¿Qué cambio o legado quieres dejar?"
+        },
+        "values": {
+          "question": "¿Qué valores son innegociables en cómo lidero?",
+          "placeholder": "ej. Integridad, transparencia, rendición de cuentas..."
+        },
+        "successLooks": {
+          "question": "¿Cómo se ve el éxito para mi carrera en 3 años?",
+          "placeholder": "Describe tu estado futuro personal..."
+        },
+        "commitActions": {
+          "question": "¿Qué acciones específicas me comprometo a tomar comenzando esta semana?",
+          "placeholder": "Sé concreto — ¿qué harás el lunes?"
+        }
+      },
+      "team": {
+        "leaderIdentity": {
+          "question": "¿Qué tipo de equipo queremos ser conocidos en 5 años?",
+          "placeholder": "Describe la identidad ideal de tu equipo..."
+        },
+        "impact": {
+          "question": "¿Qué impacto queremos tener en la organización?",
+          "placeholder": "¿Qué cambio o legado dejará tu equipo?"
+        },
+        "values": {
+          "question": "¿Qué valores son innegociables en cómo operamos?",
+          "placeholder": "ej. Rendición de cuentas, confianza, mejora continua..."
+        },
+        "successLooks": {
+          "question": "¿Cómo se ve el éxito para nuestro equipo en 3 años?",
+          "placeholder": "Describe el estado futuro de tu equipo..."
+        },
+        "commitActions": {
+          "question": "¿Qué compromisos hará nuestro equipo comenzando esta semana?",
+          "placeholder": "Sé concreto — ¿qué hará el equipo el lunes?"
+        }
+      }
+    }
   }
 }
