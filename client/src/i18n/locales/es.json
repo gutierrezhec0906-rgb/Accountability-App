@@ -3756,5 +3756,33 @@
       "accountCreated": "¡Cuenta creada! Bienvenido a bordo.",
       "createFailed": "Error al crear la cuenta"
     }
+  },
+  "completeProfile": {
+    "oneMoreStep": "Un Paso Más",
+    "almostIn": "Ya casi estás dentro",
+    "tellUsAboutTeam": "Cuéntanos sobre tu equipo",
+    "checkingInvitation": "Verificando tu invitación...",
+    "confirmYourTeam": "Confirma tu Equipo",
+    "leaderSetUpNote": "Tu líder ya configuró esto por ti — solo confirma para terminar.",
+    "company": "Empresa",
+    "team": "Equipo",
+    "position": "Posición",
+    "finishing": "Terminando...",
+    "confirmContinue": "Confirmar y Continuar",
+    "completeYourProfile": "Completa tu Perfil",
+    "selectCompanyNote": "Selecciona tu empresa e ingresa el nombre de tu equipo para que tu administrador pueda ubicarte correctamente.",
+    "loadingCompanies": "Cargando empresas...",
+    "selectYourCompany": "— Selecciona tu empresa —",
+    "teamName": "Nombre del Equipo",
+    "teamNamePlaceholder": "ej. Equipo de Ventas A, Turno Nocturno Ops...",
+    "teamNameHint": "Escribe el nombre de tu equipo específico dentro de la empresa.",
+    "saving": "Guardando...",
+    "completeProfileBtn": "Completar Perfil",
+    "toast": {
+      "profileCompleted": "¡Perfil completado!",
+      "saveFailed": "Error al guardar el perfil",
+      "selectCompany": "Por favor selecciona una empresa",
+      "enterTeamName": "Por favor ingresa el nombre de tu equipo"
+    }
   }
 }
