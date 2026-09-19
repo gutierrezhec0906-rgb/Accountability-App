@@ -3052,5 +3052,178 @@
       "sessionUpdated": "Sesión actualizada",
       "updateFailed": "Error al actualizar: {{error}}"
     }
+  },
+  "quotes": {
+    "header": {
+      "title": "Frases de Liderazgo — La Responsabilidad Inspira",
+      "subtitle": "Inspiración diaria para líderes de alto rendimiento",
+      "allQuotes": "Todas las Frases",
+      "favorites": "Favoritos ({{count}})"
+    },
+    "todayQuote": "Frase de Hoy",
+    "saved": "⭐ Guardada",
+    "saveToFavorites": "☆ Guardar en Favoritos",
+    "useInReflection": "Usar en la reflexión",
+    "reflect": "📓 Reflexionar",
+    "selected": "✓ Seleccionada",
+    "react": "Reaccionar",
+    "noFavorites": "Aún no tienes favoritos. Haz clic en ☆ en cualquier frase para guardarla.",
+    "journal": {
+      "title": "Diario de Reflexión sobre Frases",
+      "subtitlePrefix": "Conecta con una frase y comprométete con una acción — gana",
+      "plusPoints": "+5 puntos",
+      "daily": "diariamente",
+      "completedToday": "Completado hoy",
+      "earnedToday": "¡Ganaste +5 puntos hoy!",
+      "comeBackTomorrow": "Vuelve mañana para reflexionar sobre una nueva frase y ganar más puntos.",
+      "step1": "Paso 1 — Selecciona una Frase",
+      "step2": "Paso 2 — ¿Cómo te conectas con esta frase?",
+      "step2Placeholder": "Describe cómo resuena esta frase contigo. ¿Qué significa en tu camino como líder?",
+      "step3": "Paso 3 — ¿Cómo aplicarás esto hoy? Escribe una tarea o acción específica para ti y tu equipo.",
+      "step3Placeholder": "Ejemplo: Hoy realizaré una reunión de pie de 10 minutos enfocada en reconocer públicamente la contribución de un miembro del equipo.",
+      "moreCharsNeeded": "Faltan {{count}} caracteres",
+      "good": "✓ Bien",
+      "saving": "Guardando…",
+      "completeButton": "🏆 Completar Reflexión — Gana +5 Puntos"
+    },
+    "history": {
+      "title": "Reflexiones Pasadas",
+      "latest": "Más reciente",
+      "pts": "+{{points}} pts",
+      "selectedQuote": "Frase Seleccionada",
+      "myConnection": "Mi Conexión",
+      "todaysAction": "Acción de Hoy"
+    },
+    "comments": {
+      "label": "Comentarios",
+      "labelSingularZero": "Comentario",
+      "countOne": "{{count}} comentario",
+      "countOther": "{{count}} comentarios",
+      "needTeam": "Pídele a tu administrador que te asigne a un equipo para ver y publicar los comentarios de tu equipo.",
+      "loading": "Cargando…",
+      "none": "Aún no hay comentarios — sé el primero en decir algo.",
+      "delete": "Eliminar",
+      "placeholder": "Escribe un comentario…",
+      "post": "Publicar"
+    },
+    "toast": {
+      "needTeamComment": "Necesitas estar asignado a un equipo antes de poder comentar. Pregúntale a tu administrador.",
+      "postCommentFailed": "No se pudo publicar el comentario. Inténtalo de nuevo.",
+      "deleteCommentFailed": "No se pudo eliminar el comentario.",
+      "reflectionAwarded": "⭐ ¡+5 pts ganados! Reflexión guardada en tu puntaje.",
+      "reflectionCapReached": "¡Reflexión guardada! Alcanzaste tu límite diario de 25 pts — ¡un esfuerzo increíble! Vuelve mañana para ganar más. 🗓",
+      "reflectionSaved": "¡Reflexión guardada!",
+      "saveFailed": "Error al guardar. Inténtalo de nuevo."
+    },
+    "bank": {
+      "q0": {
+        "text": "El liderazgo no se trata de estar a cargo. Se trata de cuidar a quienes están a tu cargo.",
+        "author": "Simon Sinek"
+      },
+      "q1": {
+        "text": "La función del liderazgo es producir más líderes, no más seguidores.",
+        "author": "Ralph Nader"
+      },
+      "q2": {
+        "text": "Antes de ser líder, el éxito consiste en hacerte crecer a ti mismo. Cuando te conviertes en líder, el éxito consiste en hacer crecer a los demás.",
+        "author": "Jack Welch"
+      },
+      "q3": {
+        "text": "Un líder es quien conoce el camino, recorre el camino y muestra el camino.",
+        "author": "John C. Maxwell"
+      },
+      "q4": {
+        "text": "El mejor líder no es necesariamente quien hace las cosas más grandiosas. Es quien logra que la gente haga las cosas más grandiosas.",
+        "author": "Ronald Reagan"
+      },
+      "q5": {
+        "text": "Si tus acciones inspiran a otros a soñar más, aprender más, hacer más y llegar a ser más, eres un líder.",
+        "author": "John Quincy Adams"
+      },
+      "q6": {
+        "text": "Gestionar es hacer las cosas bien; liderar es hacer las cosas correctas.",
+        "author": "Peter Drucker"
+      },
+      "q7": {
+        "text": "El arte de la comunicación es el lenguaje del liderazgo.",
+        "author": "James Humes"
+      },
+      "q8": {
+        "text": "Los líderes sobresalientes hacen hasta lo imposible por elevar la autoestima de su personal.",
+        "author": "Sam Walton"
+      },
+      "q9": {
+        "text": "A la gente no le importa cuánto sabes hasta que sabe cuánto te importa.",
+        "author": "Theodore Roosevelt"
+      },
+      "q10": {
+        "text": "Un buen líder asume un poco más de su parte de la culpa y toma un poco menos de su parte del mérito.",
+        "author": "Arnold Glasow"
+      },
+      "q11": {
+        "text": "La responsabilidad es el pegamento que une el compromiso con el resultado.",
+        "author": "Bob Proctor"
+      },
+      "q12": {
+        "text": "Gánate tu liderazgo cada día.",
+        "author": "Michael Jordan"
+      },
+      "q13": {
+        "text": "La innovación distingue a un líder de un seguidor.",
+        "author": "Steve Jobs"
+      },
+      "q14": {
+        "text": "El desafío del liderazgo es ser fuerte, pero no grosero; ser amable, pero no débil.",
+        "author": "Jim Rohn"
+      },
+      "q15": {
+        "text": "La clave del liderazgo exitoso hoy es la influencia, no la autoridad.",
+        "author": "Kenneth Blanchard"
+      },
+      "q16": {
+        "text": "La responsabilidad genera capacidad de respuesta.",
+        "author": "Stephen R. Covey"
+      },
+      "q17": {
+        "text": "El alto rendimiento no se trata de perfección. Se trata de progreso y constancia.",
+        "author": "Robin Sharma"
+      },
+      "q18": {
+        "text": "Lo que permites, lo promueves.",
+        "author": "Desconocido"
+      },
+      "q19": {
+        "text": "La cultura se come a la estrategia en el desayuno.",
+        "author": "Peter Drucker"
+      },
+      "q20": {
+        "text": "La disciplina es el puente entre las metas y los logros.",
+        "author": "Jim Rohn"
+      },
+      "q21": {
+        "text": "El secreto del cambio es enfocar toda tu energía no en luchar contra lo viejo, sino en construir lo nuevo.",
+        "author": "Socrates"
+      },
+      "q22": {
+        "text": "Saber no es suficiente; debemos aplicar. Querer no es suficiente; debemos actuar.",
+        "author": "Goethe"
+      },
+      "q23": {
+        "text": "Los líderes deben estar lo suficientemente cerca para relacionarse con los demás, pero lo suficientemente adelante para motivarlos.",
+        "author": "John C. Maxwell"
+      },
+      "q24": {
+        "text": "La verdadera integridad es hacer lo correcto sabiendo que nadie se va a enterar si lo hiciste o no.",
+        "author": "Oprah Winfrey"
+      },
+      "q25": {
+        "text": "Al mirar hacia el próximo siglo, los líderes serán quienes empoderen a los demás.",
+        "author": "Bill Gates"
+      },
+      "q26": {
+        "text": "La excelencia operacional en una empresa es cuando cada persona, tanto en el área de producción como en las oficinas, puede ver y actuar antes de que se rompa el flujo.",
+        "author": "Kevin J. Duggan"
+      }
+    }
   }
 }
