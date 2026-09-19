@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import DateStatus from '../components/DateStatus';
@@ -70,9 +71,13 @@ const GUIDES = {
 };
 
 function FieldGuide({ guideKey }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const g = GUIDES[guideKey];
   if (!g) return null;
+  const goal = t(`coaching.guides.${guideKey}.goal`, g.goal);
+  const questions = t(`coaching.guides.${guideKey}.questions`, { returnObjects: true, defaultValue: g.questions });
+  const watch = g.watch ? t(`coaching.guides.${guideKey}.watch`, g.watch) : null;
   return (
     <div style={{ marginTop: 6 }}>
       <button
@@ -81,22 +86,22 @@ function FieldGuide({ guideKey }) {
         style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '0.75rem', color: '#0d9488', fontWeight: 600, display: 'flex', alignItems: 'center', gap: 4 }}
       >
         <span style={{ display: 'inline-block', transition: 'transform 0.2s', transform: open ? 'rotate(180deg)' : 'rotate(0deg)', fontSize: '0.65rem' }}>▼</span>
-        {open ? 'Hide guide' : 'Show guide'}
+        {open ? t('coaching.hideGuide', 'Hide guide') : t('coaching.showGuide', 'Show guide')}
       </button>
       {open && (
         <div style={{ marginTop: 8, background: '#f8fafc', border: '1.5px solid #e2e8f0', borderRadius: 10, padding: '0.875rem 1rem', fontSize: '0.82rem', lineHeight: 1.65 }}>
-          <p style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 6px' }}>Goal</p>
-          <p style={{ color: '#0d9488', margin: '0 0 10px' }}>{g.goal}</p>
-          <p style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 6px' }}>Ask yourself</p>
+          <p style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 6px' }}>{t('coaching.guideGoal', 'Goal')}</p>
+          <p style={{ color: '#0d9488', margin: '0 0 10px' }}>{goal}</p>
+          <p style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 6px' }}>{t('coaching.askYourself', 'Ask yourself')}</p>
           <ul style={{ margin: '0 0 10px', paddingLeft: '1.1rem', display: 'flex', flexDirection: 'column', gap: 4 }}>
-            {g.questions.map((q, i) => (
+            {questions.map((q, i) => (
               <li key={i} style={{ color: '#0d9488' }}>{q}</li>
             ))}
           </ul>
-          {g.watch && (
+          {watch && (
             <div style={{ background: '#fffbeb', border: '1.5px solid #fde68a', borderRadius: 8, padding: '0.6rem 0.75rem' }}>
-              <span style={{ fontWeight: 700, color: '#92400e' }}>Watch for: </span>
-              <span style={{ color: '#92400e' }}>{g.watch}</span>
+              <span style={{ fontWeight: 700, color: '#92400e' }}>{t('coaching.watchFor', 'Watch for:')} </span>
+              <span style={{ color: '#92400e' }}>{watch}</span>
             </div>
           )}
         </div>
@@ -106,6 +111,7 @@ function FieldGuide({ guideKey }) {
 }
 
 function ActionItemsGrid({ rows, onChange }) {
+  const { t } = useTranslation();
   function updateRow(i, field, value) {
     const updated = rows.map((r, idx) => idx === i ? { ...r, [field]: value } : r);
     onChange(updated);
@@ -120,9 +126,9 @@ function ActionItemsGrid({ rows, onChange }) {
     <div>
       {/* Header row */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px 140px 32px', gap: 6, marginBottom: 6 }}>
-        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: 4 }}>Action</span>
-        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: 4 }}>Responsible</span>
-        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: 4 }}>Due Date</span>
+        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: 4 }}>{t('coaching.grid.action', 'Action')}</span>
+        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: 4 }}>{t('coaching.grid.responsible', 'Responsible')}</span>
+        <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em', paddingLeft: 4 }}>{t('coaching.grid.dueDate', 'Due Date')}</span>
         <span />
       </div>
       {/* Data rows */}
@@ -131,14 +137,14 @@ function ActionItemsGrid({ rows, onChange }) {
           <input
             className="input"
             style={{ fontSize: '0.82rem', padding: '0.45rem 0.6rem' }}
-            placeholder="Describe the action..."
+            placeholder={t('coaching.grid.describeAction', 'Describe the action...')}
             value={row.action}
             onChange={e => updateRow(i, 'action', e.target.value)}
           />
           <input
             className="input"
             style={{ fontSize: '0.82rem', padding: '0.45rem 0.6rem' }}
-            placeholder="Name"
+            placeholder={t('coaching.grid.name', 'Name')}
             value={row.responsible}
             onChange={e => updateRow(i, 'responsible', e.target.value)}
           />
@@ -153,7 +159,7 @@ function ActionItemsGrid({ rows, onChange }) {
             type="button"
             onClick={() => removeRow(i)}
             style={{ background: '#fee2e2', border: 'none', borderRadius: 6, color: '#dc2626', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            title="Remove row"
+            title={t('coaching.grid.removeRow', 'Remove row')}
           >✕</button>
         </div>
       ))}
@@ -161,12 +167,25 @@ function ActionItemsGrid({ rows, onChange }) {
         type="button"
         onClick={addRow}
         style={{ marginTop: 4, background: '#f0fdfa', border: '1.5px dashed #0d9488', borderRadius: 8, color: '#0d9488', fontWeight: 700, fontSize: '0.78rem', padding: '0.4rem 1rem', cursor: 'pointer' }}
-      >+ Add Row</button>
+      >{t('coaching.grid.addRow', '+ Add Row')}</button>
     </div>
   );
 }
 
+function trSessionType(t, type) {
+  const map = {
+    Performance: t('coaching.types.performance', 'Performance'),
+    Development: t('coaching.types.development', 'Development'),
+    Disciplinary: t('coaching.types.disciplinary', 'Disciplinary'),
+    Recognition: t('coaching.types.recognition', 'Recognition'),
+    Career: t('coaching.types.career', 'Career'),
+    General: t('coaching.types.general', 'General'),
+  };
+  return map[type] || type;
+}
+
 export default function Coaching() {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const { names: savedNames, remember: rememberName } = useSavedNames();
   const [sessions, setSessions]           = useState([]);
@@ -238,7 +257,7 @@ export default function Coaching() {
 
   async function addSession(e) {
     e.preventDefault();
-    if (!currentUser) return toast.error('Not logged in');
+    if (!currentUser) return toast.error(t('coaching.toast.notLoggedIn', 'Not logged in'));
     try {
       const newSession = {
         id: Date.now().toString(),
@@ -255,21 +274,21 @@ export default function Coaching() {
       const earned = await maybeLogCoachingPoints(newSession);
       calculateScore(currentUser.uid).catch(() => {});
       if (earned === 'earned') {
-        toast.success('⭐ Session logged — +5 pts for your Coaching Log this week!', { duration: 6000, icon: '🌟' });
+        toast.success(t('coaching.toast.sessionLoggedEarned', '⭐ Session logged — +5 pts for your Coaching Log this week!'), { duration: 6000, icon: '🌟' });
       } else if (earned === 'capped') {
-        toast('Session logged. You\'ve reached your 25-pt daily limit — come back tomorrow to keep scoring! 🗓', { duration: 6000, icon: '📅' });
+        toast(t('coaching.toast.sessionLoggedCapped', "Session logged. You've reached your 25-pt daily limit — come back tomorrow to keep scoring! 🗓"), { duration: 6000, icon: '📅' });
       } else {
-        toast.success('Session logged');
+        toast.success(t('coaching.toast.sessionLogged', 'Session logged'));
       }
     } catch (e) {
-      toast.error('Save failed: ' + e.message);
+      toast.error(t('coaching.toast.saveFailed', 'Save failed: {{error}}', { error: e.message }));
     }
   }
 
   // AI assistant (coachingAiAssist Cloud Function) — suggest coaching questions
   // from a goal, or draft an outcome summary from notes + action items.
   async function suggestQuestions(goal) {
-    if (!(goal || '').trim()) return toast.error('Enter a coaching goal first');
+    if (!(goal || '').trim()) return toast.error(t('coaching.toast.enterGoalFirst', 'Enter a coaching goal first'));
     setSuggestingQuestions(true);
     setSuggestedQuestions([]);
     try {
@@ -277,20 +296,20 @@ export default function Coaching() {
       const res = await fn({ mode: 'questions', goal });
       setSuggestedQuestions(res.data?.questions || []);
     } catch (e) {
-      toast.error(e?.message || 'AI suggestion failed');
+      toast.error(e?.message || t('coaching.toast.aiSuggestionFailed', 'AI suggestion failed'));
     }
     setSuggestingQuestions(false);
   }
 
   async function suggestOutcome(session) {
-    if (!(session?.notes || '').trim()) return toast.error('This session has no notes to summarize');
+    if (!(session?.notes || '').trim()) return toast.error(t('coaching.toast.noNotesToSummarize', 'This session has no notes to summarize'));
     setSuggestingOutcome(true);
     try {
       const fn = httpsCallable(getFunctions(), 'coachingAiAssist');
       const res = await fn({ mode: 'outcome', notes: session.notes, actionItems: session.actionItems });
       if (res.data?.outcome) setCloseForm(f => ({ ...f, outcome: res.data.outcome }));
     } catch (e) {
-      toast.error(e?.message || 'AI suggestion failed');
+      toast.error(e?.message || t('coaching.toast.aiSuggestionFailed', 'AI suggestion failed'));
     }
     setSuggestingOutcome(false);
   }
@@ -303,7 +322,7 @@ export default function Coaching() {
   async function closeSession(e) {
     e.preventDefault();
     if (!currentUser) return;
-    if (!closeForm.outcome.trim()) return toast.error('Please describe the outcome before closing');
+    if (!closeForm.outcome.trim()) return toast.error(t('coaching.toast.describeOutcomeFirst', 'Please describe the outcome before closing'));
     setClosing(true);
     try {
       const s = sessions.find(x => x.id === closingId);
@@ -324,14 +343,14 @@ export default function Coaching() {
       }
       calculateScore(currentUser.uid).catch(() => {});
       if (awarded) {
-        toast.success('⭐ Session closed — +5 pts!', { duration: 6000, icon: '🌟' });
+        toast.success(t('coaching.toast.sessionClosedEarned', '⭐ Session closed — +5 pts!'), { duration: 6000, icon: '🌟' });
       } else if (capReached) {
-        toast('Session closed. Daily 25-pt cap reached — come back tomorrow! 🗓', { duration: 6000, icon: '📅' });
+        toast(t('coaching.toast.sessionClosedCapped', 'Session closed. Daily 25-pt cap reached — come back tomorrow! 🗓'), { duration: 6000, icon: '📅' });
       } else {
-        toast.success('Session closed');
+        toast.success(t('coaching.toast.sessionClosed', 'Session closed'));
       }
     } catch (e) {
-      toast.error('Failed to close session: ' + e.message);
+      toast.error(t('coaching.toast.closeFailed', 'Failed to close session: {{error}}', { error: e.message }));
     }
     setClosing(false);
   }
@@ -363,9 +382,9 @@ export default function Coaching() {
       const saved = updated.find(s => s.id === editingId);
       if (saved) await maybeLogCoachingPoints(saved);
       calculateScore(currentUser.uid).catch(() => {});
-      toast.success('Session updated');
+      toast.success(t('coaching.toast.sessionUpdated', 'Session updated'));
     } catch (e) {
-      toast.error('Update failed: ' + e.message);
+      toast.error(t('coaching.toast.updateFailed', 'Update failed: {{error}}', { error: e.message }));
     }
   }
 
@@ -379,7 +398,7 @@ export default function Coaching() {
   const openCount   = sessions.filter(s => !s.closed).length;
   const closedCount = sessions.filter(s => s.closed).length;
 
-  const STATUS_LABELS = { open: 'Open', closed: 'Closed' };
+  const STATUS_LABELS = { open: t('coaching.status.open', 'Open'), closed: t('coaching.status.closed', 'Closed') };
   const filteredSessions = sessions.filter(s => {
     if (!statusFilter) return true;
     return statusFilter === 'closed' ? !!s.closed : !s.closed;
@@ -387,15 +406,15 @@ export default function Coaching() {
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }}>
-      <PageHeader icon="📝" title="Coaching Log — Accountability that Supports" subtitle="Document sessions, notes, and action items"
-        action={<button className="btn-primary" onClick={() => setShowForm(s => !s)}>+ Log Session</button>} />
+      <PageHeader icon="📝" title={t('coaching.pageTitle', 'Coaching Log — Accountability that Supports')} subtitle={t('coaching.pageSubtitle', 'Document sessions, notes, and action items')}
+        action={<button className="btn-primary" onClick={() => setShowForm(s => !s)}>{t('coaching.logSession', '+ Log Session')}</button>} />
 
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12, marginBottom: '0.75rem' }}>
         {[
-          { label: 'Total Sessions', value: sessions.length, icon: '📝', color: '#0d9488' },
-          { label: 'Coachees',        value: coachees,        icon: '👥', color: '#0f2044' },
-          { label: 'Action Items',    value: actions,          icon: '✅', color: '#f59e0b' },
+          { label: t('coaching.stats.totalSessions', 'Total Sessions'), value: sessions.length, icon: '📝', color: '#0d9488' },
+          { label: t('coaching.stats.coachees', 'Coachees'),        value: coachees,        icon: '👥', color: '#0f2044' },
+          { label: t('coaching.stats.actionItems', 'Action Items'),    value: actions,          icon: '✅', color: '#f59e0b' },
         ].map(s => (
           <div key={s.label} className="stat-tile" style={{ textAlign: 'center' }}>
             <span style={{ fontSize: '1.5rem' }}>{s.icon}</span>
@@ -408,24 +427,24 @@ export default function Coaching() {
       {/* Status filter tiles — click to show only Open or Closed sessions */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: 12, marginBottom: '1.5rem' }}>
         {[
-          { key: 'open',   label: 'Open',   value: openCount,   icon: '🟡', color: '#b45309' },
-          { key: 'closed', label: 'Closed', value: closedCount, icon: '✅', color: '#15803d' },
+          { key: 'open',   label: t('coaching.status.openSessions', 'Open Sessions'),   value: openCount,   icon: '🟡', color: '#b45309' },
+          { key: 'closed', label: t('coaching.status.closedSessions', 'Closed Sessions'), value: closedCount, icon: '✅', color: '#15803d' },
         ].map(s => (
           <button key={s.key} className="stat-tile" onClick={() => setStatusFilter(f => f === s.key ? null : s.key)}
             style={{ textAlign: 'center', cursor: 'pointer', border: 'none', outline: statusFilter === s.key ? `2px solid ${s.color}` : 'none', outlineOffset: -2 }}>
             <span style={{ fontSize: '1.5rem' }}>{s.icon}</span>
             <p style={{ fontSize: '2rem', fontWeight: 900, color: s.color, margin: '4px 0 0', lineHeight: 1 }}>{s.value}</p>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '4px 0 0', fontWeight: 600 }}>{s.label} Sessions</p>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '4px 0 0', fontWeight: 600 }}>{s.label}</p>
           </button>
         ))}
       </div>
 
       {statusFilter && (
         <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: '-0.75rem 0 1rem' }}>
-          Showing only <strong style={{ color: 'var(--text-primary)' }}>{STATUS_LABELS[statusFilter]}</strong> sessions
+          {t('coaching.showingOnly', 'Showing only')} <strong style={{ color: 'var(--text-primary)' }}>{STATUS_LABELS[statusFilter]}</strong> {t('coaching.sessionsWord', 'sessions')}
           <button onClick={() => setStatusFilter(null)}
             style={{ marginLeft: 10, background: 'none', border: 'none', color: '#0d9488', fontWeight: 700, cursor: 'pointer', fontSize: '0.8rem' }}>
-            Clear filter
+            {t('coaching.clearFilter', 'Clear filter')}
           </button>
         </p>
       )}
@@ -433,17 +452,17 @@ export default function Coaching() {
       {/* Worked example banner */}
       <div style={{ background: 'linear-gradient(90deg,#0f2044,#1e3a6e)', borderRadius: 12, padding: '0.85rem 1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', marginBottom: '1rem' }}>
         <div>
-          <p style={{ color: 'white', fontWeight: 700, fontSize: '0.85rem', margin: '0 0 2px' }}>💬 New to coaching? See how a real conversation flows.</p>
-          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.75rem', margin: 0 }}>A full manager–coachee dialogue showing questions-first coaching — every action owned by the coachee.</p>
+          <p style={{ color: 'white', fontWeight: 700, fontSize: '0.85rem', margin: '0 0 2px' }}>{t('coaching.banner.title', '💬 New to coaching? See how a real conversation flows.')}</p>
+          <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.75rem', margin: 0 }}>{t('coaching.banner.subtitle', 'A full manager–coachee dialogue showing questions-first coaching — every action owned by the coachee.')}</p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
           <button onClick={() => setShowPractice(true)}
             style={{ background: '#7c3aed', color: 'white', border: 'none', borderRadius: 9, padding: '0.5rem 1.1rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            🎙️ Practice with AI →
+            {t('coaching.banner.practiceWithAi', '🎙️ Practice with AI →')}
           </button>
           <button onClick={() => window.open('/coaching-example.html', '_blank', 'width=860,height=800')}
             style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 9, padding: '0.5rem 1.1rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            Worked Example →
+            {t('coaching.banner.workedExample', 'Worked Example →')}
           </button>
         </div>
       </div>
@@ -453,27 +472,27 @@ export default function Coaching() {
       {/* New session form */}
       {showForm && (
         <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>New Coaching Session</h3>
+          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>{t('coaching.newSession', 'New Coaching Session')}</h3>
           <form onSubmit={addSession} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            <div><label className="label">Coachee Name</label><NameField required value={form.coachee} names={savedNames} onChange={e => setForm(f => ({ ...f, coachee: e.target.value }))} placeholder="Team member name" /></div>
+            <div><label className="label">{t('coaching.coacheeName', 'Coachee Name')}</label><NameField required value={form.coachee} names={savedNames} onChange={e => setForm(f => ({ ...f, coachee: e.target.value }))} placeholder={t('coaching.teamMemberName', 'Team member name')} /></div>
             <div>
-              <label className="label">Session Type</label>
-              <select className="input" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>{sessionTypes.map(t => <option key={t}>{t}</option>)}</select>
+              <label className="label">{t('coaching.sessionType', 'Session Type')}</label>
+              <select className="input" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>{sessionTypes.map(st => <option key={st} value={st}>{trSessionType(t, st)}</option>)}</select>
               <FieldGuide guideKey="sessionType" />
             </div>
-            <div><label className="label">Date</label><input className="input" type="date" required value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
-            <div><label className="label">Duration</label><input className="input" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))} placeholder="e.g. 45 min" /></div>
+            <div><label className="label">{t('coaching.date', 'Date')}</label><input className="input" type="date" required value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} /></div>
+            <div><label className="label">{t('coaching.duration', 'Duration')}</label><input className="input" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))} placeholder={t('coaching.durationPlaceholder', 'e.g. 45 min')} /></div>
             <div style={{ gridColumn: '1/-1' }}>
-              <label className="label">Coaching Goal</label>
-              <textarea className="input" rows={2} value={form.coachingGoal} onChange={e => setForm(f => ({ ...f, coachingGoal: e.target.value }))} placeholder="What is the specific outcome you want from this session?" />
+              <label className="label">{t('coaching.coachingGoal', 'Coaching Goal')}</label>
+              <textarea className="input" rows={2} value={form.coachingGoal} onChange={e => setForm(f => ({ ...f, coachingGoal: e.target.value }))} placeholder={t('coaching.coachingGoalPlaceholder', 'What is the specific outcome you want from this session?')} />
               <FieldGuide guideKey="coachingGoal" />
               <button type="button" onClick={() => suggestQuestions(form.coachingGoal)} disabled={suggestingQuestions}
                 style={{ marginTop: 6, background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, color: '#6d28d9', fontWeight: 700, fontSize: '0.75rem', padding: '4px 10px', cursor: 'pointer' }}>
-                {suggestingQuestions ? 'Thinking…' : '✨ Suggest Coaching Questions (AI)'}
+                {suggestingQuestions ? t('coaching.thinking', 'Thinking…') : t('coaching.suggestQuestionsAi', '✨ Suggest Coaching Questions (AI)')}
               </button>
               {suggestedQuestions.length > 0 && (
                 <div style={{ marginTop: 8, background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 10, padding: '0.6rem 0.875rem' }}>
-                  <p style={{ fontSize: '0.68rem', fontWeight: 800, color: '#6d28d9', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 6px' }}>AI-Suggested Questions</p>
+                  <p style={{ fontSize: '0.68rem', fontWeight: 800, color: '#6d28d9', textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 6px' }}>{t('coaching.aiSuggestedQuestions', 'AI-Suggested Questions')}</p>
                   <ul style={{ margin: 0, paddingLeft: 18 }}>
                     {suggestedQuestions.map((q, i) => (
                       <li key={i} style={{ fontSize: '0.82rem', color: '#4c1d95', marginBottom: 4 }}>{q}</li>
@@ -483,40 +502,40 @@ export default function Coaching() {
               )}
             </div>
             <div style={{ gridColumn: '1/-1' }}>
-              <label className="label">Session Notes</label>
-              <textarea className="input" required rows={4} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder="Key discussion points, observations, commitments..." />
+              <label className="label">{t('coaching.sessionNotes', 'Session Notes')}</label>
+              <textarea className="input" required rows={4} value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} placeholder={t('coaching.sessionNotesPlaceholder', 'Key discussion points, observations, commitments...')} />
               <FieldGuide guideKey="notes" />
             </div>
             <div style={{ gridColumn: '1/-1' }}>
-              <label className="label" style={{ marginBottom: 8, display: 'block' }}>Action Items</label>
+              <label className="label" style={{ marginBottom: 8, display: 'block' }}>{t('coaching.actionItems', 'Action Items')}</label>
               <ActionItemsGrid rows={form.actionItems} onChange={rows => setForm(f => ({ ...f, actionItems: rows }))} />
               <FieldGuide guideKey="actionItems" />
             </div>
             <div>
-              <label className="label">Next Session Date</label>
+              <label className="label">{t('coaching.nextSessionDate', 'Next Session Date')}</label>
               <input className="input" type="date" value={form.nextSession} onChange={e => setForm(f => ({ ...f, nextSession: e.target.value }))} />
               <FieldGuide guideKey="nextSession" />
             </div>
             <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10 }}>
-              <button className="btn-primary" type="submit">Save Session</button>
-              <button className="btn-secondary" type="button" onClick={() => { setShowForm(false); setSuggestedQuestions([]); }}>Cancel</button>
+              <button className="btn-primary" type="submit">{t('coaching.saveSession', 'Save Session')}</button>
+              <button className="btn-secondary" type="button" onClick={() => { setShowForm(false); setSuggestedQuestions([]); }}>{t('coaching.cancel', 'Cancel')}</button>
             </div>
           </form>
         </div>
       )}
 
-      {loading && <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>Loading sessions...</p>}
+      {loading && <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: '2rem' }}>{t('coaching.loadingSessions', 'Loading sessions...')}</p>}
 
       {!loading && sessions.length === 0 && (
         <div className="card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
           <p style={{ fontSize: '2rem', margin: '0 0 8px' }}>📝</p>
-          <p style={{ fontWeight: 700, margin: 0 }}>No sessions logged yet. Click "+ Log Session" to get started.</p>
+          <p style={{ fontWeight: 700, margin: 0 }}>{t('coaching.noSessionsYet', 'No sessions logged yet. Click "+ Log Session" to get started.')}</p>
         </div>
       )}
 
       {!loading && sessions.length > 0 && filteredSessions.length === 0 && (
         <div className="card" style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
-          <p style={{ fontWeight: 700, margin: 0 }}>No {STATUS_LABELS[statusFilter]?.toLowerCase()} sessions.</p>
+          <p style={{ fontWeight: 700, margin: 0 }}>{t('coaching.noFilteredSessions', 'No {{status}} sessions.', { status: STATUS_LABELS[statusFilter]?.toLowerCase() })}</p>
         </div>
       )}
 
@@ -532,23 +551,23 @@ export default function Coaching() {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
                     <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>{s.coachee}</h4>
-                    <span style={{ background: typeColors[s.type] || '#0d9488', color: 'white', borderRadius: 9999, padding: '2px 10px', fontSize: '0.7rem', fontWeight: 700 }}>{s.type}</span>
-                    {s.closed && <span className="badge-green" style={{ fontSize: '0.68rem' }}>✅ Closed {s.closedAt}</span>}
+                    <span style={{ background: typeColors[s.type] || '#0d9488', color: 'white', borderRadius: 9999, padding: '2px 10px', fontSize: '0.7rem', fontWeight: 700 }}>{trSessionType(t, s.type)}</span>
+                    {s.closed && <span className="badge-green" style={{ fontSize: '0.68rem' }}>{t('coaching.closedOn', '✅ Closed {{date}}', { date: s.closedAt })}</span>}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                     <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>📅 {s.date} · ⏱ {s.duration}</p>
-                    {!s.closed && s.nextSession && <span><DateStatus date={s.nextSession} prefix="Next · " /></span>}
+                    {!s.closed && s.nextSession && <span><DateStatus date={s.nextSession} prefix={t('coaching.nextPrefix', 'Next · ')} /></span>}
                   </div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button onClick={() => { startEdit(s); setSelectedSession(null); setClosingId(null); }}
                   style={{ background: 'none', border: '1px solid #0d9488', borderRadius: 8, padding: '0.3rem 0.875rem', fontSize: '0.78rem', fontWeight: 700, color: '#0d9488', cursor: 'pointer' }}>
-                  ✏️ Edit
+                  {t('coaching.edit', '✏️ Edit')}
                 </button>
                 <button onClick={() => { setSelectedSession(selectedSession?.id === s.id ? null : s); setEditingId(null); setClosingId(null); }}
                   style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '0.3rem 0.875rem', fontSize: '0.78rem', fontWeight: 700, color: '#64748b', cursor: 'pointer' }}>
-                  {selectedSession?.id === s.id ? 'Collapse' : 'View Details'}
+                  {selectedSession?.id === s.id ? t('coaching.collapse', 'Collapse') : t('coaching.viewDetails', 'View Details')}
                 </button>
               </div>
             </div>
@@ -556,39 +575,39 @@ export default function Coaching() {
             {/* Edit form */}
             {editingId === s.id && (
               <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
-                <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.875rem', margin: '0 0 1rem' }}>Edit Session</h4>
+                <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.875rem', margin: '0 0 1rem' }}>{t('coaching.editSession', 'Edit Session')}</h4>
                 <form onSubmit={saveEdit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                  <div><label className="label">Coachee Name</label><NameField required value={editForm.coachee} names={savedNames} onChange={e => setEditForm(f => ({ ...f, coachee: e.target.value }))} /></div>
+                  <div><label className="label">{t('coaching.coacheeName', 'Coachee Name')}</label><NameField required value={editForm.coachee} names={savedNames} onChange={e => setEditForm(f => ({ ...f, coachee: e.target.value }))} /></div>
                   <div>
-                    <label className="label">Session Type</label>
-                    <select className="input" value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))}>{sessionTypes.map(t => <option key={t}>{t}</option>)}</select>
+                    <label className="label">{t('coaching.sessionType', 'Session Type')}</label>
+                    <select className="input" value={editForm.type} onChange={e => setEditForm(f => ({ ...f, type: e.target.value }))}>{sessionTypes.map(st => <option key={st} value={st}>{trSessionType(t, st)}</option>)}</select>
                     <FieldGuide guideKey="sessionType" />
                   </div>
-                  <div><label className="label">Date</label><input className="input" type="date" required value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} /></div>
-                  <div><label className="label">Duration</label><input className="input" value={editForm.duration} onChange={e => setEditForm(f => ({ ...f, duration: e.target.value }))} /></div>
+                  <div><label className="label">{t('coaching.date', 'Date')}</label><input className="input" type="date" required value={editForm.date} onChange={e => setEditForm(f => ({ ...f, date: e.target.value }))} /></div>
+                  <div><label className="label">{t('coaching.duration', 'Duration')}</label><input className="input" value={editForm.duration} onChange={e => setEditForm(f => ({ ...f, duration: e.target.value }))} /></div>
                   <div style={{ gridColumn: '1/-1' }}>
-                    <label className="label">Coaching Goal</label>
-                    <textarea className="input" rows={2} value={editForm.coachingGoal || ''} onChange={e => setEditForm(f => ({ ...f, coachingGoal: e.target.value }))} placeholder="What is the specific outcome you want from this session?" />
+                    <label className="label">{t('coaching.coachingGoal', 'Coaching Goal')}</label>
+                    <textarea className="input" rows={2} value={editForm.coachingGoal || ''} onChange={e => setEditForm(f => ({ ...f, coachingGoal: e.target.value }))} placeholder={t('coaching.coachingGoalPlaceholder', 'What is the specific outcome you want from this session?')} />
                     <FieldGuide guideKey="coachingGoal" />
                   </div>
                   <div style={{ gridColumn: '1/-1' }}>
-                    <label className="label">Session Notes</label>
+                    <label className="label">{t('coaching.sessionNotes', 'Session Notes')}</label>
                     <textarea className="input" rows={4} value={editForm.notes} onChange={e => setEditForm(f => ({ ...f, notes: e.target.value }))} />
                     <FieldGuide guideKey="notes" />
                   </div>
                   <div style={{ gridColumn: '1/-1' }}>
-                    <label className="label" style={{ marginBottom: 8, display: 'block' }}>Action Items</label>
+                    <label className="label" style={{ marginBottom: 8, display: 'block' }}>{t('coaching.actionItems', 'Action Items')}</label>
                     <ActionItemsGrid rows={editForm.actionItems} onChange={rows => setEditForm(f => ({ ...f, actionItems: rows }))} />
                     <FieldGuide guideKey="actionItems" />
                   </div>
                   <div>
-                    <label className="label">Next Session Date</label>
+                    <label className="label">{t('coaching.nextSessionDate', 'Next Session Date')}</label>
                     <input className="input" type="date" value={editForm.nextSession} onChange={e => setEditForm(f => ({ ...f, nextSession: e.target.value }))} />
                     <FieldGuide guideKey="nextSession" />
                   </div>
                   <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10 }}>
-                    <button className="btn-primary" type="submit">Save Changes</button>
-                    <button className="btn-secondary" type="button" onClick={cancelEdit}>Cancel</button>
+                    <button className="btn-primary" type="submit">{t('coaching.saveChanges', 'Save Changes')}</button>
+                    <button className="btn-secondary" type="button" onClick={cancelEdit}>{t('coaching.cancel', 'Cancel')}</button>
                   </div>
                 </form>
               </div>
@@ -599,22 +618,22 @@ export default function Coaching() {
               <div style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid var(--border)' }}>
                 {s.coachingGoal && (
                   <div style={{ marginBottom: '0.875rem' }}>
-                    <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>Coaching Goal</p>
+                    <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>{t('coaching.coachingGoal', 'Coaching Goal')}</p>
                     <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>{s.coachingGoal}</p>
                   </div>
                 )}
                 <div style={{ marginBottom: '0.875rem' }}>
-                  <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>Session Notes</p>
+                  <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>{t('coaching.sessionNotes', 'Session Notes')}</p>
                   <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.6, margin: 0 }}>{s.notes}</p>
                 </div>
                 {s.actionItems?.length > 0 && (
                   <div>
-                    <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>Action Items</p>
+                    <p style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 8px' }}>{t('coaching.actionItems', 'Action Items')}</p>
                     {/* Table header */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 140px 120px', gap: 8, padding: '0.4rem 0.6rem', background: '#f1f5f9', borderRadius: '8px 8px 0 0' }}>
-                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Action</span>
-                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Responsible</span>
-                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Due Date</span>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('coaching.grid.action', 'Action')}</span>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('coaching.grid.responsible', 'Responsible')}</span>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('coaching.grid.dueDate', 'Due Date')}</span>
                     </div>
                     {s.actionItems.map((item, i) => (
                       <div key={i} style={{ display: 'grid', gridTemplateColumns: '1fr 140px 120px', gap: 8, padding: '0.5rem 0.6rem', borderBottom: '1px solid #f1f5f9', background: i % 2 === 0 ? '#fff' : '#fafafa' }}>
@@ -628,50 +647,50 @@ export default function Coaching() {
                     ))}
                   </div>
                 )}
-                {!s.closed && s.nextSession && <div style={{ marginTop: 10 }}><DateStatus date={s.nextSession} prefix="Next session · " /></div>}
+                {!s.closed && s.nextSession && <div style={{ marginTop: 10 }}><DateStatus date={s.nextSession} prefix={t('coaching.nextSessionPrefix', 'Next session · ')} /></div>}
 
                 {/* Close Session — the very last thing in the details view */}
                 <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px dashed var(--border)' }}>
                   {s.closed ? (
                     <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: 10, padding: '0.875rem 1rem' }}>
-                      <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>✅ Session Closed — {s.closedAt}</p>
-                      <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#166534', margin: '0 0 2px' }}>Outcome</p>
+                      <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#15803d', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>{t('coaching.sessionClosedOn', '✅ Session Closed — {{date}}', { date: s.closedAt })}</p>
+                      <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#166534', margin: '0 0 2px' }}>{t('coaching.outcome', 'Outcome')}</p>
                       <p style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.6, margin: '0 0 8px' }}>{s.outcome}</p>
                       {s.closingComments && (
                         <>
-                          <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#166534', margin: '0 0 2px' }}>Additional Comments</p>
+                          <p style={{ fontSize: '0.7rem', fontWeight: 800, color: '#166534', margin: '0 0 2px' }}>{t('coaching.additionalComments', 'Additional Comments')}</p>
                           <p style={{ fontSize: '0.85rem', color: '#334155', lineHeight: 1.6, margin: 0 }}>{s.closingComments}</p>
                         </>
                       )}
                     </div>
                   ) : closingId === s.id ? (
                     <form onSubmit={closeSession}>
-                      <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.875rem', margin: '0 0 0.75rem' }}>Close Session</h4>
+                      <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.875rem', margin: '0 0 0.75rem' }}>{t('coaching.closeSession', 'Close Session')}</h4>
                       <div style={{ marginBottom: 10 }}>
-                        <label className="label">Outcome</label>
+                        <label className="label">{t('coaching.outcome', 'Outcome')}</label>
                         <textarea className="input" rows={2} required value={closeForm.outcome}
                           onChange={e => setCloseForm(f => ({ ...f, outcome: e.target.value }))}
-                          placeholder="What was the result of this coaching session?" />
+                          placeholder={t('coaching.outcomePlaceholder', 'What was the result of this coaching session?')} />
                         <button type="button" onClick={() => suggestOutcome(s)} disabled={suggestingOutcome}
                           style={{ marginTop: 6, background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, color: '#6d28d9', fontWeight: 700, fontSize: '0.75rem', padding: '4px 10px', cursor: 'pointer' }}>
-                          {suggestingOutcome ? 'Thinking…' : '✨ Draft Outcome from Notes (AI)'}
+                          {suggestingOutcome ? t('coaching.thinking', 'Thinking…') : t('coaching.draftOutcomeAi', '✨ Draft Outcome from Notes (AI)')}
                         </button>
                       </div>
                       <div style={{ marginBottom: 12 }}>
-                        <label className="label">Additional Comments (optional)</label>
+                        <label className="label">{t('coaching.additionalCommentsOptional', 'Additional Comments (optional)')}</label>
                         <textarea className="input" rows={2} value={closeForm.comments}
                           onChange={e => setCloseForm(f => ({ ...f, comments: e.target.value }))}
-                          placeholder="Anything else worth noting before closing this session..." />
+                          placeholder={t('coaching.additionalCommentsPlaceholder', 'Anything else worth noting before closing this session...')} />
                       </div>
                       <div style={{ display: 'flex', gap: 10 }}>
-                        <button className="btn-primary" type="submit" disabled={closing}>{closing ? 'Closing...' : '✅ Close Session (+5 pts)'}</button>
-                        <button className="btn-secondary" type="button" onClick={() => setClosingId(null)}>Cancel</button>
+                        <button className="btn-primary" type="submit" disabled={closing}>{closing ? t('coaching.closing', 'Closing...') : t('coaching.closeSessionPts', '✅ Close Session (+5 pts)')}</button>
+                        <button className="btn-secondary" type="button" onClick={() => setClosingId(null)}>{t('coaching.cancel', 'Cancel')}</button>
                       </div>
                     </form>
                   ) : (
                     <button onClick={() => startClose(s)}
                       style={{ background: '#0d9488', border: 'none', borderRadius: 8, padding: '0.5rem 1.25rem', fontWeight: 700, fontSize: '0.85rem', color: 'white', cursor: 'pointer' }}>
-                      ✅ Close Session
+                      {t('coaching.closeSession2', '✅ Close Session')}
                     </button>
                   )}
                 </div>

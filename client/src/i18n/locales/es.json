@@ -2898,5 +2898,159 @@
       "markedFulfilled": "Marcada como cumplida",
       "updateFailed": "Error al actualizar"
     }
+  },
+  "coaching": {
+    "pageTitle": "Registro de Coaching — Responsabilidad que Apoya",
+    "pageSubtitle": "Documenta sesiones, notas y elementos de acción",
+    "logSession": "+ Registrar Sesión",
+    "stats": {
+      "totalSessions": "Sesiones Totales",
+      "coachees": "Personas Asesoradas",
+      "actionItems": "Elementos de Acción"
+    },
+    "status": {
+      "open": "Abierta",
+      "closed": "Cerrada",
+      "openSessions": "Sesiones Abiertas",
+      "closedSessions": "Sesiones Cerradas"
+    },
+    "showingOnly": "Mostrando solo",
+    "sessionsWord": "sesiones",
+    "clearFilter": "Limpiar filtro",
+    "banner": {
+      "title": "💬 ¿Nuevo en coaching? Mira cómo fluye una conversación real.",
+      "subtitle": "Un diálogo completo entre líder y persona asesorada que muestra un coaching basado en preguntas — cada acción es propiedad de la persona asesorada.",
+      "practiceWithAi": "🎙️ Practicar con IA →",
+      "workedExample": "Ejemplo Resuelto →"
+    },
+    "newSession": "Nueva Sesión de Coaching",
+    "coacheeName": "Nombre de la Persona Asesorada",
+    "teamMemberName": "Nombre del miembro del equipo",
+    "sessionType": "Tipo de Sesión",
+    "date": "Fecha",
+    "duration": "Duración",
+    "durationPlaceholder": "ej. 45 min",
+    "coachingGoal": "Objetivo del Coaching",
+    "coachingGoalPlaceholder": "¿Cuál es el resultado específico que quieres de esta sesión?",
+    "thinking": "Pensando…",
+    "suggestQuestionsAi": "✨ Sugerir Preguntas de Coaching (IA)",
+    "aiSuggestedQuestions": "Preguntas Sugeridas por IA",
+    "sessionNotes": "Notas de la Sesión",
+    "sessionNotesPlaceholder": "Puntos clave de discusión, observaciones, compromisos...",
+    "actionItems": "Elementos de Acción",
+    "nextSessionDate": "Fecha de la Próxima Sesión",
+    "saveSession": "Guardar Sesión",
+    "cancel": "Cancelar",
+    "loadingSessions": "Cargando sesiones...",
+    "noSessionsYet": "Aún no hay sesiones registradas. Haz clic en \"+ Registrar Sesión\" para comenzar.",
+    "noFilteredSessions": "No hay sesiones {{status}}.",
+    "edit": "✏️ Editar",
+    "collapse": "Contraer",
+    "viewDetails": "Ver Detalles",
+    "editSession": "Editar Sesión",
+    "saveChanges": "Guardar Cambios",
+    "closedOn": "✅ Cerrada {{date}}",
+    "nextPrefix": "Próxima · ",
+    "nextSessionPrefix": "Próxima sesión · ",
+    "outcome": "Resultado",
+    "additionalComments": "Comentarios Adicionales",
+    "additionalCommentsOptional": "Comentarios Adicionales (opcional)",
+    "additionalCommentsPlaceholder": "Cualquier otra cosa que valga la pena anotar antes de cerrar esta sesión...",
+    "outcomePlaceholder": "¿Cuál fue el resultado de esta sesión de coaching?",
+    "draftOutcomeAi": "✨ Redactar Resultado a partir de las Notas (IA)",
+    "closeSession": "Cerrar Sesión",
+    "closeSession2": "✅ Cerrar Sesión",
+    "closeSessionPts": "✅ Cerrar Sesión (+5 pts)",
+    "closing": "Cerrando...",
+    "sessionClosedOn": "✅ Sesión Cerrada — {{date}}",
+    "showGuide": "Mostrar guía",
+    "hideGuide": "Ocultar guía",
+    "guideGoal": "Objetivo",
+    "askYourself": "Pregúntate",
+    "watchFor": "Presta atención a:",
+    "grid": {
+      "action": "Acción",
+      "responsible": "Responsable",
+      "dueDate": "Fecha Límite",
+      "describeAction": "Describe la acción...",
+      "name": "Nombre",
+      "removeRow": "Eliminar fila",
+      "addRow": "+ Agregar Fila"
+    },
+    "types": {
+      "performance": "Desempeño",
+      "development": "Desarrollo",
+      "disciplinary": "Disciplinaria",
+      "recognition": "Reconocimiento",
+      "career": "Carrera",
+      "general": "General"
+    },
+    "guides": {
+      "sessionType": {
+        "goal": "Selecciona el propósito principal de esta conversación para que las sesiones se archiven correctamente y los patrones se vuelvan visibles con el tiempo.",
+        "questions": [
+          "Desempeño — abordar una brecha entre el resultado actual y la expectativa.",
+          "Desarrollo — construir una habilidad o ampliar una capacidad.",
+          "Disciplinaria — una conversación documentada sobre conducta o fallos repetidos. Cada palabra importa.",
+          "Reconocimiento — reforzar un comportamiento específico. Nombra exactamente qué hizo y por qué importó.",
+          "Carrera — metas, ruta de crecimiento, aspiraciones de próximo puesto.",
+          "General — check-in general cuando ningún tipo específico encaja."
+        ]
+      },
+      "coachingGoal": {
+        "goal": "Escribe el resultado específico que quieres que produzca esta conversación — no de qué hablarán, sino qué será diferente al final. Esto te ancla cuando la conversación se desvía.",
+        "questions": [
+          "¿Qué quiero que la persona asesorada comprenda o se comprometa a hacer al final de esta sesión?",
+          "¿Cómo sabré que la sesión tuvo éxito?",
+          "¿Cuál es la única cosa que no puede quedar sin decir?"
+        ],
+        "watch": "Los objetivos vagos (\"hablar sobre delegación\") producen sesiones vagas. \"Ayudar a Sandra a identificar el momento exacto en que asume el control y comprometerse a un hábito concreto para detenerlo\" es lo suficientemente específico para poder darle coaching."
+      },
+      "notes": {
+        "goal": "Captura los momentos clave de la conversación en tres etapas — Identificar, Detonante, Sostener — para que el patrón sea visible con el tiempo.",
+        "questions": [
+          "IDENTIFICAR: ¿Cuál fue el problema real detrás de la queja presentada? ¿Qué dijeron sobre su propio rol en ello?",
+          "DETONANTE: ¿Cuál fue el momento exacto de la decisión? ¿Qué se dijeron a sí mismos justo antes del comportamiento?",
+          "SOSTENER: ¿Qué compromiso específico hicieron? ¿Cuál fue su puntaje de compromiso del 1 al 10, y qué lo movió?"
+        ],
+        "watch": "Si las notas solo describen lo que hicieron otros (\"llegó tarde\", \"no se comunicó\"), redirige — pon su comportamiento en el registro. \"Eso es lo que hicieron ellos. ¿Qué hiciste tú, o no hiciste, en respuesta?\""
+      },
+      "actionItems": {
+        "goal": "Cada fila es un compromiso específico con un nombre y una fecha. Este es el registro que abres en la próxima sesión — es donde la responsabilidad se hace visible.",
+        "questions": [
+          "Acción: Escribe un verbo — ¿qué sucederá físicamente? No \"comunicarse mejor\" sino \"dar retroalimentación directa dentro de las 24 horas de una fecha límite incumplida\".",
+          "Responsable: Casi siempre la persona asesorada. Si está en blanco, nadie es dueño de ello.",
+          "Fecha Límite: Una fecha real. Si dicen \"pronto\", pregunta: \"¿Cuál es lo más tarde que esto podría suceder y aún marcar la diferencia?\""
+        ],
+        "watch": "\"Intentaré hacerlo mejor\" no es un compromiso. Si la columna de Acción no se puede leer en voz alta como algo específico que sucedió o no sucedió — reescríbela."
+      },
+      "nextSession": {
+        "goal": "Establece esto antes de que la persona se vaya. Un compromiso sin fecha de seguimiento se evapora.",
+        "questions": [
+          "Desempeño / Disciplinaria → seguimiento semanal.",
+          "Desarrollo → cada 2 semanas.",
+          "Carrera / General → mensual generalmente está bien.",
+          "Reconocimiento → no se necesita seguimiento a menos que se refuerce más."
+        ],
+        "watch": "Abre la próxima sesión revisando primero los elementos de acción: \"La semana pasada te comprometiste a X para Y — ¿qué pasó?\" Obtén el hecho antes de dar coaching sobre lo que sigue."
+      }
+    },
+    "toast": {
+      "notLoggedIn": "No has iniciado sesión",
+      "sessionLoggedEarned": "⭐ Sesión registrada — ¡+5 pts para tu Registro de Coaching esta semana!",
+      "sessionLoggedCapped": "Sesión registrada. Has alcanzado tu límite diario de 25 pts — ¡vuelve mañana para seguir sumando puntos! 🗓",
+      "sessionLogged": "Sesión registrada",
+      "saveFailed": "Error al guardar: {{error}}",
+      "enterGoalFirst": "Ingresa primero un objetivo de coaching",
+      "aiSuggestionFailed": "Falló la sugerencia de IA",
+      "noNotesToSummarize": "Esta sesión no tiene notas para resumir",
+      "describeOutcomeFirst": "Por favor describe el resultado antes de cerrar",
+      "sessionClosedEarned": "⭐ ¡Sesión cerrada — +5 pts!",
+      "sessionClosedCapped": "Sesión cerrada. Se alcanzó el límite diario de 25 pts — ¡vuelve mañana! 🗓",
+      "sessionClosed": "Sesión cerrada",
+      "closeFailed": "Error al cerrar la sesión: {{error}}",
+      "sessionUpdated": "Sesión actualizada",
+      "updateFailed": "Error al actualizar: {{error}}"
+    }
   }
 }
