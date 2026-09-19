@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -7,20 +8,22 @@ import PageHeader from '../components/PageHeader';
 import UrgencyTrendChart from '../components/UrgencyTrendChart';
 
 const tips = [
-  { title: 'Bias for Action — Start Now, Polish Later', desc: "Perfection is the enemy of momentum. Launch the initiative today — even an imperfect start generates learning, feedback, and energy that waiting never will. Jump into the idea, get alignment, then build and refine in motion. Leaders who act first and adjust along the way consistently outpace those who plan indefinitely. Done and improving beats perfect and delayed every time.", icon: '⚡', type: 'individual' },
-  { title: 'Two-Minute Rule (GTD)', desc: "From David Allen's Getting Things Done: if a task takes less than two minutes, do it immediately. The overhead of capturing, categorizing, scheduling, and revisiting it later costs more time and mental energy than just acting on the spot. Stop queuing small actions — close them now.", icon: '⏲️', type: 'individual' },
-  { title: 'Set Clear Deadlines', desc: "Every task should have a specific, non-negotiable deadline. Vague timelines breed complacency. And if circumstances require a date change, communicate it before the deadline — never after. Recommitting early shows respect for others' time, preserves trust, and signals that you take commitments seriously. Missing a deadline silently is a leadership failure; adjusting proactively is a leadership behavior.", icon: '📅', type: 'individual' },
-  { title: 'Model Urgency Yourself', desc: "You are the standard. Respond to emails in under 4 hours. Show up on time, start meetings on time, and finish on time — every time. If the leader moves slowly, the team moves slowly. If the leader cuts corners on commitments, the team will too. The bar is always set at the top, so set it high. Urgency is not a policy you enforce — it is a behavior you demonstrate, every single day, in every interaction.", icon: '⚡', type: 'individual' },
-  { title: 'Time-Box Everything', desc: "Time-boxing manufactures urgency by putting a hard stop on every task. A visible countdown — typically 25 minutes (Pomodoro) — triggers deadline pressure, eliminates open-ended drift, and makes procrastination visible in real time. Each sprint ends with a clear done/not-done moment, keeping accountability active all day.", icon: '⏱', type: 'individual' },
-  { title: 'Follow Up on Delegated Tasks', desc: "Delegation without follow-up is just hope. Once you hand off a task, your job shifts to ensuring the work lands. Set a clear check-in point at the moment of delegation, not after. A brief \"Where are we on this?\" keeps accountability alive, surfaces blockers early, and signals that you take the commitment seriously.", icon: '🔁', type: 'individual' },
-  { title: 'Create Momentum', desc: "Break work into smaller deliverables to create more frequent \"done\" moments. Sustain this rhythm throughout the day, the week, and the month. Quick wins fuel energy — for you and your team. Each small completion builds confidence, reinforces progress, and gradually shifts the mindset from just getting through the work to expecting to win.", icon: '🚀', type: 'individual' },
-  { title: 'Communicate the "Why"', desc: 'People move faster when they understand why urgency matters. Connect tasks to mission and impact. When the team sees the purpose behind the deadline, speed becomes a shared value rather than a top-down demand.', icon: '💬', type: 'team' },
-  { title: 'Remove Obstacles Fast', desc: 'Leaders who remove blockers within hours instead of days set the pace for urgency culture. Ask your team daily: "What is slowing you down?" Then act on the answer before end of day.', icon: '🚧', type: 'team' },
-  { title: 'Use Visual Boards', desc: 'Make progress visible. When teams see stagnation, they self-correct faster. A shared board where work moves — or stalls — in plain sight creates natural peer accountability and keeps urgency alive without micromanaging.', icon: '📊', type: 'team' },
-  { title: 'Daily Stand-ups', desc: 'Short, focused daily check-ins maintain momentum and surface blockers quickly. Keep it to 15 minutes: what did you finish, what are you doing today, and what is in your way? No solutions in the stand-up — just visibility.', icon: '🏃', type: 'team' },
-  { title: 'Celebrate Speed Wins', desc: 'Recognize team members who complete tasks ahead of schedule. What gets rewarded gets repeated. A public shout-out for finishing early sends a louder signal than any policy document about urgency.', icon: '🏆', type: 'team' },
-  { title: 'Limit Meetings', desc: 'Excessive meetings kill urgency. Move decision-making out of meeting rooms and into action. Challenge every recurring meeting: does this still deserve the time? Replace status meetings with async updates and reserve live time for decisions only.', icon: '🚫', type: 'team' },
+  { title: 'Bias for Action — Start Now, Polish Later', key: 'biasForAction', desc: "Perfection is the enemy of momentum. Launch the initiative today — even an imperfect start generates learning, feedback, and energy that waiting never will. Jump into the idea, get alignment, then build and refine in motion. Leaders who act first and adjust along the way consistently outpace those who plan indefinitely. Done and improving beats perfect and delayed every time.", icon: '⚡', type: 'individual' },
+  { title: 'Two-Minute Rule (GTD)', key: 'twoMinuteRule', desc: "From David Allen's Getting Things Done: if a task takes less than two minutes, do it immediately. The overhead of capturing, categorizing, scheduling, and revisiting it later costs more time and mental energy than just acting on the spot. Stop queuing small actions — close them now.", icon: '⏲️', type: 'individual' },
+  { title: 'Set Clear Deadlines', key: 'setClearDeadlines', desc: "Every task should have a specific, non-negotiable deadline. Vague timelines breed complacency. And if circumstances require a date change, communicate it before the deadline — never after. Recommitting early shows respect for others' time, preserves trust, and signals that you take commitments seriously. Missing a deadline silently is a leadership failure; adjusting proactively is a leadership behavior.", icon: '📅', type: 'individual' },
+  { title: 'Model Urgency Yourself', key: 'modelUrgency', desc: "You are the standard. Respond to emails in under 4 hours. Show up on time, start meetings on time, and finish on time — every time. If the leader moves slowly, the team moves slowly. If the leader cuts corners on commitments, the team will too. The bar is always set at the top, so set it high. Urgency is not a policy you enforce — it is a behavior you demonstrate, every single day, in every interaction.", icon: '⚡', type: 'individual' },
+  { title: 'Time-Box Everything', key: 'timeBoxEverything', desc: "Time-boxing manufactures urgency by putting a hard stop on every task. A visible countdown — typically 25 minutes (Pomodoro) — triggers deadline pressure, eliminates open-ended drift, and makes procrastination visible in real time. Each sprint ends with a clear done/not-done moment, keeping accountability active all day.", icon: '⏱', type: 'individual' },
+  { title: 'Follow Up on Delegated Tasks', key: 'followUpDelegated', desc: "Delegation without follow-up is just hope. Once you hand off a task, your job shifts to ensuring the work lands. Set a clear check-in point at the moment of delegation, not after. A brief \"Where are we on this?\" keeps accountability alive, surfaces blockers early, and signals that you take the commitment seriously.", icon: '🔁', type: 'individual' },
+  { title: 'Create Momentum', key: 'createMomentum', desc: "Break work into smaller deliverables to create more frequent \"done\" moments. Sustain this rhythm throughout the day, the week, and the month. Quick wins fuel energy — for you and your team. Each small completion builds confidence, reinforces progress, and gradually shifts the mindset from just getting through the work to expecting to win.", icon: '🚀', type: 'individual' },
+  { title: 'Communicate the "Why"', key: 'communicateWhy', desc: 'People move faster when they understand why urgency matters. Connect tasks to mission and impact. When the team sees the purpose behind the deadline, speed becomes a shared value rather than a top-down demand.', icon: '💬', type: 'team' },
+  { title: 'Remove Obstacles Fast', key: 'removeObstacles', desc: 'Leaders who remove blockers within hours instead of days set the pace for urgency culture. Ask your team daily: "What is slowing you down?" Then act on the answer before end of day.', icon: '🚧', type: 'team' },
+  { title: 'Use Visual Boards', key: 'useVisualBoards', desc: 'Make progress visible. When teams see stagnation, they self-correct faster. A shared board where work moves — or stalls — in plain sight creates natural peer accountability and keeps urgency alive without micromanaging.', icon: '📊', type: 'team' },
+  { title: 'Daily Stand-ups', key: 'dailyStandups', desc: 'Short, focused daily check-ins maintain momentum and surface blockers quickly. Keep it to 15 minutes: what did you finish, what are you doing today, and what is in your way? No solutions in the stand-up — just visibility.', icon: '🏃', type: 'team' },
+  { title: 'Celebrate Speed Wins', key: 'celebrateSpeedWins', desc: 'Recognize team members who complete tasks ahead of schedule. What gets rewarded gets repeated. A public shout-out for finishing early sends a louder signal than any policy document about urgency.', icon: '🏆', type: 'team' },
+  { title: 'Limit Meetings', key: 'limitMeetings', desc: 'Excessive meetings kill urgency. Move decision-making out of meeting rooms and into action. Challenge every recurring meeting: does this still deserve the time? Replace status meetings with async updates and reserve live time for decisions only.', icon: '🚫', type: 'team' },
 ];
+function trTipTitle(t, tip) { return t(`urgency.tips.${tip.key}.title`, tip.title); }
+function trTipDesc(t, tip) { return t(`urgency.tips.${tip.key}.desc`, tip.desc); }
 
 // Individual reflection questions — personal urgency habits
 const INDIVIDUAL_REFLECTION_QS = [
@@ -64,6 +67,7 @@ function dailyIdx(arr) {
 }
 
 export default function Urgency() {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [filter, setFilter] = useState('all');
   const [ratings, setRatings] = useState({});
@@ -83,6 +87,8 @@ export default function Urgency() {
 
   const indQIdx  = dailyIdx(INDIVIDUAL_REFLECTION_QS);
   const teamQIdx = dailyIdx(TEAM_REFLECTION_QS);
+  const indQs = t('urgency.individualQs', { returnObjects: true, defaultValue: INDIVIDUAL_REFLECTION_QS });
+  const teamQs = t('urgency.teamQs', { returnObjects: true, defaultValue: TEAM_REFLECTION_QS });
 
   useEffect(() => {
     async function load() {
@@ -166,13 +172,13 @@ export default function Urgency() {
       if (awarded) {
         await calculateScore(currentUser.uid);
         setTodayPts(p => ({ ...p, indSurvey: true }));
-        showToast('Individual survey saved! +1 pt earned.');
+        showToast(t('urgency.toast.indSurveySavedPt', 'Individual survey saved! +1 pt earned.'));
       } else if (capReached) {
-        showToast('Individual survey saved. Daily point cap reached.');
+        showToast(t('urgency.toast.indSurveySavedCap', 'Individual survey saved. Daily point cap reached.'));
       } else {
-        showToast('Individual survey saved.');
+        showToast(t('urgency.toast.indSurveySaved', 'Individual survey saved.'));
       }
-    } catch (e) { console.error(e); showToast('Save failed.'); }
+    } catch (e) { console.error(e); showToast(t('urgency.toast.saveFailed', 'Save failed.')); }
     setSaving(s => ({ ...s, ind: false }));
   }
 
@@ -189,13 +195,13 @@ export default function Urgency() {
       if (awarded) {
         await calculateScore(currentUser.uid);
         setTodayPts(p => ({ ...p, teamSurvey: true }));
-        showToast('Team survey saved! +1 pt earned.');
+        showToast(t('urgency.toast.teamSurveySavedPt', 'Team survey saved! +1 pt earned.'));
       } else if (capReached) {
-        showToast('Team survey saved. Daily point cap reached.');
+        showToast(t('urgency.toast.teamSurveySavedCap', 'Team survey saved. Daily point cap reached.'));
       } else {
-        showToast('Team survey saved.');
+        showToast(t('urgency.toast.teamSurveySaved', 'Team survey saved.'));
       }
-    } catch (e) { console.error(e); showToast('Save failed.'); }
+    } catch (e) { console.error(e); showToast(t('urgency.toast.saveFailed', 'Save failed.')); }
     setSaving(s => ({ ...s, team: false }));
   }
 
@@ -208,7 +214,7 @@ export default function Urgency() {
         id: now,
         savedAt: now,
         type: 'individual',
-        question: INDIVIDUAL_REFLECTION_QS[indQIdx],
+        question: indQs[indQIdx],
         answer: indAnswer.trim(),
       };
       const updated = [record, ...reflRecords].slice(0, 20);
@@ -224,16 +230,16 @@ export default function Urgency() {
         await calculateScore(currentUser.uid);
         setTodayPts(p => ({ ...p, indRefl: true }));
         setIndAnswer('');
-        showToast('Reflection saved! +1 pt earned.');
+        showToast(t('urgency.toast.reflectionSavedPt', 'Reflection saved! +1 pt earned.'));
       } else if (capReached) {
         setTodayPts(p => ({ ...p, indRefl: true }));
         setIndAnswer('');
-        showToast('Reflection saved. Daily point cap reached.');
+        showToast(t('urgency.toast.reflectionSavedCap', 'Reflection saved. Daily point cap reached.'));
       } else {
         setIndAnswer('');
-        showToast('Reflection saved.');
+        showToast(t('urgency.toast.reflectionSaved', 'Reflection saved.'));
       }
-    } catch (e) { console.error(e); showToast('Save failed.'); }
+    } catch (e) { console.error(e); showToast(t('urgency.toast.saveFailed', 'Save failed.')); }
     setSavingRefl(s => ({ ...s, ind: false }));
   }
 
@@ -246,7 +252,7 @@ export default function Urgency() {
         id: now,
         savedAt: now,
         type: 'team',
-        question: TEAM_REFLECTION_QS[teamQIdx],
+        question: teamQs[teamQIdx],
         answer: teamAnswer.trim(),
       };
       const updated = [record, ...reflRecords].slice(0, 20);
@@ -262,16 +268,16 @@ export default function Urgency() {
         await calculateScore(currentUser.uid);
         setTodayPts(p => ({ ...p, teamRefl: true }));
         setTeamAnswer('');
-        showToast('Reflection saved! +1 pt earned.');
+        showToast(t('urgency.toast.reflectionSavedPt', 'Reflection saved! +1 pt earned.'));
       } else if (capReached) {
         setTodayPts(p => ({ ...p, teamRefl: true }));
         setTeamAnswer('');
-        showToast('Reflection saved. Daily point cap reached.');
+        showToast(t('urgency.toast.reflectionSavedCap', 'Reflection saved. Daily point cap reached.'));
       } else {
         setTeamAnswer('');
-        showToast('Reflection saved.');
+        showToast(t('urgency.toast.reflectionSaved', 'Reflection saved.'));
       }
-    } catch (e) { console.error(e); showToast('Save failed.'); }
+    } catch (e) { console.error(e); showToast(t('urgency.toast.saveFailed', 'Save failed.')); }
     setSavingRefl(s => ({ ...s, team: false }));
   }
 
@@ -282,7 +288,7 @@ export default function Urgency() {
 
   return (
     <div style={{ maxWidth: 900, margin: '0 auto' }}>
-      <PageHeader icon="⚡" title="Sense of Urgency — The Rhythm of Accountability" subtitle="Tools and reflection for individual and team urgency" />
+      <PageHeader icon="⚡" title={t('urgency.title', 'Sense of Urgency — The Rhythm of Accountability')} subtitle={t('urgency.subtitle', 'Tools and reflection for individual and team urgency')} />
 
       {/* Toast */}
       {toastMsg && (
@@ -295,14 +301,14 @@ export default function Urgency() {
       <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <span style={{ fontSize: '1.5rem', fontWeight: 900, color: ptsEarned === 4 ? '#15803d' : '#0f2044' }}>{ptsEarned}/4</span>
-          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>pts earned today</span>
+          <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-secondary)' }}>{t('urgency.ptsEarnedToday', 'pts earned today')}</span>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {[
-            { label: 'Individual Survey', key: 'indSurvey' },
-            { label: 'Individual Reflection', key: 'indRefl' },
-            { label: 'Team Survey', key: 'teamSurvey' },
-            { label: 'Team Reflection', key: 'teamRefl' },
+            { label: t('urgency.badge.indSurvey', 'Individual Survey'), key: 'indSurvey' },
+            { label: t('urgency.badge.indRefl', 'Individual Reflection'), key: 'indRefl' },
+            { label: t('urgency.badge.teamSurvey', 'Team Survey'), key: 'teamSurvey' },
+            { label: t('urgency.badge.teamRefl', 'Team Reflection'), key: 'teamRefl' },
           ].map(({ label, key }) => (
             <span key={key} style={{
               padding: '3px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 700,
@@ -320,29 +326,29 @@ export default function Urgency() {
       <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap' }}>
         <div style={{ background: avgBg, borderRadius: 14, padding: '0.875rem 1.25rem', display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 90 }}>
           <span style={{ fontSize: '2rem', fontWeight: 900, color: avgColor, lineHeight: 1 }}>{avgScore || '—'}</span>
-          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: avgColor, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 3 }}>Avg / 5</span>
+          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: avgColor, textTransform: 'uppercase', letterSpacing: '0.06em', marginTop: 3 }}>{t('urgency.avgOf5', 'Avg / 5')}</span>
         </div>
         <div style={{ flex: 1 }}>
-          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '1rem' }}>Your Urgency Self-Assessment</h3>
+          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '1rem' }}>{t('urgency.selfAssessment', 'Your Urgency Self-Assessment')}</h3>
           <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 8px' }}>
-            {avgScore >= 4 ? '✅ Strong urgency culture' : avgScore >= 3 ? '🟡 Room to improve' : avgScore > 0 ? '⚠️ Needs attention' : 'Rate each tip below to see your score'}
+            {avgScore >= 4 ? `✅ ${t('urgency.strongCulture', 'Strong urgency culture')}` : avgScore >= 3 ? `🟡 ${t('urgency.roomToImprove', 'Room to improve')}` : avgScore > 0 ? `⚠️ ${t('urgency.needsAttention', 'Needs attention')}` : t('urgency.rateEachTip', 'Rate each tip below to see your score')}
           </p>
           <div style={{ background: '#e2e8f0', borderRadius: 9999, height: 8, maxWidth: 320 }}>
             <div style={{ height: 8, borderRadius: 9999, background: avgColor, width: `${(avgScore / 5) * 100}%`, transition: 'width 0.5s' }} />
           </div>
-          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '6px 0 0' }}>{ratedTips.length} of {tips.length} tips rated</p>
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '6px 0 0' }}>{t('urgency.tipsRatedCount', '{{rated}} of {{total}} tips rated', { rated: ratedTips.length, total: tips.length })}</p>
         </div>
       </div>
 
       {/* Tips filter */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: '1rem' }}>
-        <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1rem' }}>Urgency Tips & Strategies</h3>
+        <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1rem' }}>{t('urgency.tipsHeading', 'Urgency Tips & Strategies')}</h3>
         <div style={{ display: 'flex', gap: 8 }}>
           {['all', 'individual', 'team'].map(f => (
             <button key={f} onClick={() => setFilter(f)}
               style={{ padding: '0.375rem 0.875rem', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 700, border: 'none', cursor: 'pointer',
                 background: filter === f ? '#0f2044' : '#f1f5f9', color: filter === f ? '#fff' : '#475569' }}>
-              {f === 'all' ? 'All Tips' : f === 'individual' ? 'Individual' : 'Team'}
+              {f === 'all' ? t('urgency.allTips', 'All Tips') : f === 'individual' ? t('urgency.individual', 'Individual') : t('urgency.team', 'Team')}
             </button>
           ))}
         </div>
@@ -358,16 +364,16 @@ export default function Urgency() {
                 <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>{tip.icon}</span>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
-                    <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.875rem', margin: 0 }}>{tip.title}</h4>
+                    <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', fontSize: '0.875rem', margin: 0 }}>{trTipTitle(t, tip)}</h4>
                     <span style={{ padding: '1px 8px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 700,
                       background: tip.type === 'team' ? '#dbeafe' : '#ede9fe',
-                      color: tip.type === 'team' ? '#1d4ed8' : '#7c3aed' }}>{tip.type}</span>
+                      color: tip.type === 'team' ? '#1d4ed8' : '#7c3aed' }}>{tip.type === 'team' ? t('urgency.team', 'Team') : t('urgency.individual', 'Individual')}</span>
                   </div>
-                  <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.55 }}>{tip.desc}</p>
+                  <p style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.55 }}>{trTipDesc(t, tip)}</p>
                 </div>
               </div>
               <div style={{ borderTop: '1px solid var(--border)', paddingTop: 10 }}>
-                <p style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>How well do you practice this?</p>
+                <p style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-muted)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('urgency.howWellPractice', 'How well do you practice this?')}</p>
                 <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
                   {[1, 2, 3, 4, 5].map(n => {
                     const c = scoreColor(n);
@@ -393,36 +399,36 @@ export default function Urgency() {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.75rem' }}>
         {/* Individual survey */}
         <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #7c3aed' }}>
-          <h4 style={{ fontWeight: 800, color: '#5b21b6', margin: '0 0 6px', fontSize: '0.9rem' }}>Individual Survey</h4>
+          <h4 style={{ fontWeight: 800, color: '#5b21b6', margin: '0 0 6px', fontSize: '0.9rem' }}>{t('urgency.individualSurvey', 'Individual Survey')}</h4>
           <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0 0 14px', lineHeight: 1.5 }}>
-            Rate all {indTips.length} individual tips to earn <strong>+1 pt</strong>.
-            {' '}{indTips.filter(t => (ratings[t.title] || 0) > 0).length}/{indTips.length} rated.
+            {t('urgency.rateAllIndividual', 'Rate all {{count}} individual tips to earn', { count: indTips.length })} <strong>+1 pt</strong>.
+            {' '}{indTips.filter(tip => (ratings[tip.title] || 0) > 0).length}/{indTips.length} {t('urgency.rated', 'rated')}.
           </p>
           {todayPts.indSurvey ? (
-            <div style={{ padding: '0.5rem 0.875rem', borderRadius: 9999, background: '#f0fdf4', color: '#15803d', fontWeight: 700, fontSize: '0.78rem', textAlign: 'center' }}>✓ +1 pt earned today</div>
+            <div style={{ padding: '0.5rem 0.875rem', borderRadius: 9999, background: '#f0fdf4', color: '#15803d', fontWeight: 700, fontSize: '0.78rem', textAlign: 'center' }}>✓ {t('urgency.ptEarnedToday', '+1 pt earned today')}</div>
           ) : (
             <button className="btn-primary" onClick={saveIndSurvey}
               disabled={saving.ind || !indAllRated}
               style={{ width: '100%', opacity: indAllRated ? 1 : 0.5, background: '#7c3aed', borderColor: '#7c3aed' }}>
-              {saving.ind ? 'Saving…' : indAllRated ? '💾 Save Individual Survey (+1 pt)' : `Rate all ${indTips.length} individual tips first`}
+              {saving.ind ? t('urgency.saving', 'Saving…') : indAllRated ? `💾 ${t('urgency.saveIndSurvey', 'Save Individual Survey (+1 pt)')}` : t('urgency.rateAllIndividualFirst', 'Rate all {{count}} individual tips first', { count: indTips.length })}
             </button>
           )}
         </div>
 
         {/* Team survey */}
         <div className="card" style={{ padding: '1.25rem', borderLeft: '4px solid #1d4ed8' }}>
-          <h4 style={{ fontWeight: 800, color: '#1e40af', margin: '0 0 6px', fontSize: '0.9rem' }}>Team Survey</h4>
+          <h4 style={{ fontWeight: 800, color: '#1e40af', margin: '0 0 6px', fontSize: '0.9rem' }}>{t('urgency.teamSurvey', 'Team Survey')}</h4>
           <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0 0 14px', lineHeight: 1.5 }}>
-            Rate all {teamTips.length} team tips to earn <strong>+1 pt</strong>.
-            {' '}{teamTips.filter(t => (ratings[t.title] || 0) > 0).length}/{teamTips.length} rated.
+            {t('urgency.rateAllTeam', 'Rate all {{count}} team tips to earn', { count: teamTips.length })} <strong>+1 pt</strong>.
+            {' '}{teamTips.filter(tip => (ratings[tip.title] || 0) > 0).length}/{teamTips.length} {t('urgency.rated', 'rated')}.
           </p>
           {todayPts.teamSurvey ? (
-            <div style={{ padding: '0.5rem 0.875rem', borderRadius: 9999, background: '#f0fdf4', color: '#15803d', fontWeight: 700, fontSize: '0.78rem', textAlign: 'center' }}>✓ +1 pt earned today</div>
+            <div style={{ padding: '0.5rem 0.875rem', borderRadius: 9999, background: '#f0fdf4', color: '#15803d', fontWeight: 700, fontSize: '0.78rem', textAlign: 'center' }}>✓ {t('urgency.ptEarnedToday', '+1 pt earned today')}</div>
           ) : (
             <button className="btn-primary" onClick={saveTeamSurvey}
               disabled={saving.team || !teamAllRated}
               style={{ width: '100%', opacity: teamAllRated ? 1 : 0.5 }}>
-              {saving.team ? 'Saving…' : teamAllRated ? '💾 Save Team Survey (+1 pt)' : `Rate all ${teamTips.length} team tips first`}
+              {saving.team ? t('urgency.saving', 'Saving…') : teamAllRated ? `💾 ${t('urgency.saveTeamSurvey', 'Save Team Survey (+1 pt)')}` : t('urgency.rateAllTeamFirst', 'Rate all {{count}} team tips first', { count: teamTips.length })}
             </button>
           )}
         </div>
@@ -431,32 +437,32 @@ export default function Urgency() {
       {/* Daily Reflection — Individual */}
       <div style={{ borderRadius: 16, padding: '1.5rem', background: 'linear-gradient(135deg,#f5f3ff,#ede9fe)', border: '1px solid #c4b5fd', marginBottom: '1.25rem' }}>
         <div style={{ marginBottom: 14 }}>
-          <h3 style={{ fontWeight: 800, color: '#5b21b6', margin: '0 0 2px', fontSize: '1rem' }}>Daily Reflection — Individual</h3>
-          <p style={{ fontSize: '0.78rem', color: '#7c3aed', margin: 0 }}>Personal urgency question · rotates daily · 20+ words to earn +1 pt</p>
+          <h3 style={{ fontWeight: 800, color: '#5b21b6', margin: '0 0 2px', fontSize: '1rem' }}>{t('urgency.dailyReflIndTitle', 'Daily Reflection — Individual')}</h3>
+          <p style={{ fontSize: '0.78rem', color: '#7c3aed', margin: 0 }}>{t('urgency.dailyReflIndSub', 'Personal urgency question · rotates daily · 20+ words to earn +1 pt')}</p>
         </div>
         <div style={{ background: 'white', borderRadius: 12, padding: '1rem', marginBottom: '0.875rem', boxShadow: '0 1px 4px rgba(15,32,68,0.06)' }}>
           <p style={{ fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.6 }}>
-            "{INDIVIDUAL_REFLECTION_QS[indQIdx]}"
+            "{indQs[indQIdx]}"
           </p>
         </div>
         {todayPts.indRefl ? (
-          <div style={{ padding: '0.625rem 1rem', borderRadius: 9999, background: '#f0fdf4', color: '#15803d', fontWeight: 700, fontSize: '0.8rem', textAlign: 'center' }}>✓ +1 pt earned today — reflection saved</div>
+          <div style={{ padding: '0.625rem 1rem', borderRadius: 9999, background: '#f0fdf4', color: '#15803d', fontWeight: 700, fontSize: '0.8rem', textAlign: 'center' }}>✓ {t('urgency.reflSavedToday', '+1 pt earned today — reflection saved')}</div>
         ) : (
           <>
             <textarea className="input" rows={3}
-              placeholder="Write your reflection here (minimum 20 words)..."
+              placeholder={t('urgency.reflPlaceholder', 'Write your reflection here (minimum 20 words)...')}
               value={indAnswer}
               onChange={e => setIndAnswer(e.target.value)}
               style={{ marginBottom: '0.5rem', background: 'white' }} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
               <span style={{ fontSize: '0.72rem', color: indWc >= 20 ? '#15803d' : '#94a3b8', fontWeight: 600 }}>
-                {indWc} / 20 words {indWc >= 20 ? '✓' : ''}
+                {t('urgency.wordCountOf20', '{{count}} / 20 words', { count: indWc })} {indWc >= 20 ? '✓' : ''}
               </span>
               <button className="btn-primary"
                 onClick={saveIndReflection}
                 disabled={savingRefl.ind || indWc < 20}
                 style={{ opacity: indWc >= 20 ? 1 : 0.5, background: '#7c3aed', borderColor: '#7c3aed' }}>
-                {savingRefl.ind ? 'Saving…' : '💾 Save Reflection (+1 pt)'}
+                {savingRefl.ind ? t('urgency.saving', 'Saving…') : `💾 ${t('urgency.saveReflection', 'Save Reflection (+1 pt)')}`}
               </button>
             </div>
           </>
@@ -466,32 +472,32 @@ export default function Urgency() {
       {/* Daily Reflection — Team */}
       <div style={{ borderRadius: 16, padding: '1.5rem', background: 'linear-gradient(135deg,#eff6ff,#dbeafe)', border: '1px solid #93c5fd', marginBottom: '1.75rem' }}>
         <div style={{ marginBottom: 14 }}>
-          <h3 style={{ fontWeight: 800, color: '#1e40af', margin: '0 0 2px', fontSize: '1rem' }}>Daily Reflection — Team</h3>
-          <p style={{ fontSize: '0.78rem', color: '#1d4ed8', margin: 0 }}>Team leadership urgency question · rotates daily · 20+ words to earn +1 pt</p>
+          <h3 style={{ fontWeight: 800, color: '#1e40af', margin: '0 0 2px', fontSize: '1rem' }}>{t('urgency.dailyReflTeamTitle', 'Daily Reflection — Team')}</h3>
+          <p style={{ fontSize: '0.78rem', color: '#1d4ed8', margin: 0 }}>{t('urgency.dailyReflTeamSub', 'Team leadership urgency question · rotates daily · 20+ words to earn +1 pt')}</p>
         </div>
         <div style={{ background: 'white', borderRadius: 12, padding: '1rem', marginBottom: '0.875rem', boxShadow: '0 1px 4px rgba(15,32,68,0.06)' }}>
           <p style={{ fontWeight: 600, color: 'var(--text-primary)', margin: 0, lineHeight: 1.6 }}>
-            "{TEAM_REFLECTION_QS[teamQIdx]}"
+            "{teamQs[teamQIdx]}"
           </p>
         </div>
         {todayPts.teamRefl ? (
-          <div style={{ padding: '0.625rem 1rem', borderRadius: 9999, background: '#f0fdf4', color: '#15803d', fontWeight: 700, fontSize: '0.8rem', textAlign: 'center' }}>✓ +1 pt earned today — reflection saved</div>
+          <div style={{ padding: '0.625rem 1rem', borderRadius: 9999, background: '#f0fdf4', color: '#15803d', fontWeight: 700, fontSize: '0.8rem', textAlign: 'center' }}>✓ {t('urgency.reflSavedToday', '+1 pt earned today — reflection saved')}</div>
         ) : (
           <>
             <textarea className="input" rows={3}
-              placeholder="Write your reflection here (minimum 20 words)..."
+              placeholder={t('urgency.reflPlaceholder', 'Write your reflection here (minimum 20 words)...')}
               value={teamAnswer}
               onChange={e => setTeamAnswer(e.target.value)}
               style={{ marginBottom: '0.5rem', background: 'white' }} />
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
               <span style={{ fontSize: '0.72rem', color: teamWc >= 20 ? '#15803d' : '#94a3b8', fontWeight: 600 }}>
-                {teamWc} / 20 words {teamWc >= 20 ? '✓' : ''}
+                {t('urgency.wordCountOf20', '{{count}} / 20 words', { count: teamWc })} {teamWc >= 20 ? '✓' : ''}
               </span>
               <button className="btn-primary"
                 onClick={saveTeamReflection}
                 disabled={savingRefl.team || teamWc < 20}
                 style={{ opacity: teamWc >= 20 ? 1 : 0.5 }}>
-                {savingRefl.team ? 'Saving…' : '💾 Save Reflection (+1 pt)'}
+                {savingRefl.team ? t('urgency.saving', 'Saving…') : `💾 ${t('urgency.saveReflection', 'Save Reflection (+1 pt)')}`}
               </button>
             </div>
           </>
@@ -501,7 +507,7 @@ export default function Urgency() {
       {/* Trend chart — last 8 assessments (individual + team combined) */}
       {records.length > 0 && (
         <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
-          <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.9rem' }}>Score Trend — Last 8 Assessments</h4>
+          <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.9rem' }}>{t('urgency.scoreTrend', 'Score Trend — Last 8 Assessments')}</h4>
           <UrgencyTrendChart records={records} />
         </div>
       )}
@@ -509,20 +515,20 @@ export default function Urgency() {
       {/* Assessment records */}
       {records.length > 0 && (
         <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1.25rem' }}>
-          <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.9rem' }}>Assessment Records</h4>
+          <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.9rem' }}>{t('urgency.assessmentRecords', 'Assessment Records')}</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
             {records.slice(0, 8).map((rec, i) => (
               <div key={rec.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0.6rem 0.875rem', background: i === 0 ? '#f5f3ff' : '#f8fafc', borderRadius: 10, border: `1px solid ${i === 0 ? '#c4b5fd' : '#e2e8f0'}` }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                    {i === 0 && <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#7c3aed', color: 'white', padding: '1px 7px', borderRadius: 9999 }}>Latest</span>}
+                    {i === 0 && <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#7c3aed', color: 'white', padding: '1px 7px', borderRadius: 9999 }}>{t('urgency.latest', 'Latest')}</span>}
                     <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>{fmtDate(rec.savedAt)}</span>
                     <span style={{ fontSize: '0.72rem', padding: '1px 8px', borderRadius: 9999, fontWeight: 700,
                       background: rec.type === 'team' ? '#dbeafe' : '#ede9fe',
-                      color: rec.type === 'team' ? '#1d4ed8' : '#7c3aed' }}>{rec.type}</span>
+                      color: rec.type === 'team' ? '#1d4ed8' : '#7c3aed' }}>{rec.type === 'team' ? t('urgency.team', 'Team') : t('urgency.individual', 'Individual')}</span>
                   </div>
                   <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: 3 }}>
-                    Avg: {rec.avg ?? '—'} / 5 · {Object.keys(rec.ratings || {}).length} tips rated
+                    {t('urgency.avgTipsRated', 'Avg: {{avg}} / 5 · {{count}} tips rated', { avg: rec.avg ?? '—', count: Object.keys(rec.ratings || {}).length })}
                   </div>
                 </div>
               </div>
@@ -534,20 +540,20 @@ export default function Urgency() {
       {/* Reflection history */}
       {reflRecords.length > 0 && (
         <div className="card" style={{ padding: '1rem 1.25rem' }}>
-          <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.9rem' }}>Reflection History</h4>
+          <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.9rem' }}>{t('urgency.reflectionHistory', 'Reflection History')}</h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {reflRecords.slice(0, 10).map((rec, i) => (
               <div key={rec.id} style={{ borderRadius: 10, border: `1px solid ${i === 0 ? '#c4b5fd' : '#e2e8f0'}`, overflow: 'hidden' }}>
                 <button onClick={() => setExpandedRefl(expandedRefl === rec.id ? null : rec.id)}
                   style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.65rem 0.875rem', background: i === 0 ? '#f5f3ff' : '#f8fafc', border: 'none', cursor: 'pointer', textAlign: 'left' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {i === 0 && <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#7c3aed', color: 'white', padding: '1px 7px', borderRadius: 9999 }}>Latest</span>}
+                    {i === 0 && <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#7c3aed', color: 'white', padding: '1px 7px', borderRadius: 9999 }}>{t('urgency.latest', 'Latest')}</span>}
                     <span style={{ fontSize: '0.72rem', padding: '1px 8px', borderRadius: 9999, fontWeight: 700,
                       background: rec.type === 'team' ? '#dbeafe' : '#ede9fe',
-                      color: rec.type === 'team' ? '#1d4ed8' : '#7c3aed' }}>{rec.type}</span>
+                      color: rec.type === 'team' ? '#1d4ed8' : '#7c3aed' }}>{rec.type === 'team' ? t('urgency.team', 'Team') : t('urgency.individual', 'Individual')}</span>
                     <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{fmtDate(rec.savedAt)}</span>
                   </div>
-                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{expandedRefl === rec.id ? '▲ Hide' : '▼ View'}</span>
+                  <span style={{ fontSize: '0.75rem', color: '#64748b' }}>{expandedRefl === rec.id ? `▲ ${t('urgency.hide', 'Hide')}` : `▼ ${t('urgency.view', 'View')}`}</span>
                 </button>
                 {expandedRefl === rec.id && (
                   <div style={{ padding: '0.75rem 0.875rem', background: 'white' }}>

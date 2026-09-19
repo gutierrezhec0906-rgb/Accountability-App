@@ -537,5 +537,136 @@
       "onlyFirstPastDate": "Solo la primera columna puede establecerse con una fecha pasada.",
       "recordDeleted": "Registro eliminado"
     }
+  },
+  "urgency": {
+    "title": "Sentido de Urgencia — El Ritmo de la Responsabilidad",
+    "subtitle": "Herramientas y reflexión para la urgencia individual y de equipo",
+    "ptsEarnedToday": "pts ganados hoy",
+    "badge": {
+      "indSurvey": "Encuesta Individual",
+      "indRefl": "Reflexión Individual",
+      "teamSurvey": "Encuesta de Equipo",
+      "teamRefl": "Reflexión de Equipo"
+    },
+    "avgOf5": "Prom / 5",
+    "selfAssessment": "Tu Autoevaluación de Urgencia",
+    "strongCulture": "Cultura de urgencia fuerte",
+    "roomToImprove": "Espacio para mejorar",
+    "needsAttention": "Necesita atención",
+    "rateEachTip": "Califica cada consejo abajo para ver tu puntuación",
+    "tipsRatedCount": "{{rated}} de {{total}} consejos calificados",
+    "tipsHeading": "Consejos y Estrategias de Urgencia",
+    "allTips": "Todos los Consejos",
+    "individual": "Individual",
+    "team": "Equipo",
+    "howWellPractice": "¿Qué tan bien practicas esto?",
+    "individualSurvey": "Encuesta Individual",
+    "rateAllIndividual": "Califica los {{count}} consejos individuales para ganar",
+    "rated": "calificados",
+    "ptEarnedToday": "+1 pt ganado hoy",
+    "saving": "Guardando…",
+    "saveIndSurvey": "Guardar Encuesta Individual (+1 pt)",
+    "rateAllIndividualFirst": "Califica los {{count}} consejos individuales primero",
+    "teamSurvey": "Encuesta de Equipo",
+    "rateAllTeam": "Califica los {{count}} consejos de equipo para ganar",
+    "saveTeamSurvey": "Guardar Encuesta de Equipo (+1 pt)",
+    "rateAllTeamFirst": "Califica los {{count}} consejos de equipo primero",
+    "dailyReflIndTitle": "Reflexión Diaria — Individual",
+    "dailyReflIndSub": "Pregunta personal de urgencia · rota diariamente · 20+ palabras para ganar +1 pt",
+    "reflSavedToday": "+1 pt ganado hoy — reflexión guardada",
+    "reflPlaceholder": "Escribe tu reflexión aquí (mínimo 20 palabras)...",
+    "wordCountOf20": "{{count}} / 20 palabras",
+    "saveReflection": "Guardar Reflexión (+1 pt)",
+    "dailyReflTeamTitle": "Reflexión Diaria — Equipo",
+    "dailyReflTeamSub": "Pregunta de liderazgo de equipo sobre urgencia · rota diariamente · 20+ palabras para ganar +1 pt",
+    "scoreTrend": "Tendencia de Puntuación — Últimas 8 Evaluaciones",
+    "assessmentRecords": "Registros de Evaluación",
+    "latest": "Más reciente",
+    "avgTipsRated": "Prom: {{avg}} / 5 · {{count}} consejos calificados",
+    "reflectionHistory": "Historial de Reflexiones",
+    "hide": "Ocultar",
+    "view": "Ver",
+    "tips": {
+      "biasForAction": {
+        "title": "Sesgo Hacia la Acción — Empieza Ahora, Pule Después",
+        "desc": "La perfección es enemiga del impulso. Lanza la iniciativa hoy — incluso un comienzo imperfecto genera aprendizaje, retroalimentación y energía que esperar nunca dará. Lánzate a la idea, consigue alineación, luego construye y refina en movimiento. Los líderes que actúan primero y ajustan sobre la marcha superan consistentemente a los que planifican indefinidamente. Hecho y mejorando gana a perfecto y retrasado, siempre."
+      },
+      "twoMinuteRule": {
+        "title": "Regla de los Dos Minutos (GTD)",
+        "desc": "De \"Organízate con Eficacia\" de David Allen: si una tarea toma menos de dos minutos, hazla de inmediato. El costo de capturarla, categorizarla, programarla y revisarla después cuesta más tiempo y energía mental que simplemente actuar en el momento. Deja de acumular acciones pequeñas — ciérralas ahora."
+      },
+      "setClearDeadlines": {
+        "title": "Establece Plazos Claros",
+        "desc": "Cada tarea debe tener un plazo específico y no negociable. Los plazos vagos generan complacencia. Y si las circunstancias requieren un cambio de fecha, comunícalo antes del plazo — nunca después. Recomprometerse temprano muestra respeto por el tiempo de los demás, preserva la confianza y señala que tomas los compromisos en serio. Perder un plazo en silencio es un fallo de liderazgo; ajustar proactivamente es un comportamiento de liderazgo."
+      },
+      "modelUrgency": {
+        "title": "Modela la Urgencia Tú Mismo",
+        "desc": "Tú eres el estándar. Responde correos en menos de 4 horas. Llega a tiempo, inicia reuniones a tiempo y termina a tiempo — siempre. Si el líder se mueve lento, el equipo se mueve lento. Si el líder recorta esquinas en sus compromisos, el equipo también lo hará. El estándar siempre se fija desde arriba, así que ponlo alto. La urgencia no es una política que impones — es un comportamiento que demuestras, todos los días, en cada interacción."
+      },
+      "timeBoxEverything": {
+        "title": "Ponle Límite de Tiempo a Todo",
+        "desc": "Poner límites de tiempo genera urgencia al imponer un tope duro en cada tarea. Una cuenta regresiva visible — típicamente 25 minutos (Pomodoro) — activa presión de plazo, elimina la deriva abierta y hace visible la procrastinación en tiempo real. Cada sprint termina con un momento claro de hecho/no hecho, manteniendo la responsabilidad activa todo el día."
+      },
+      "followUpDelegated": {
+        "title": "Da Seguimiento a las Tareas Delegadas",
+        "desc": "Delegar sin seguimiento es solo esperanza. Una vez que entregas una tarea, tu trabajo pasa a asegurar que se cumpla. Establece un punto de control claro en el momento de delegar, no después. Un breve \"¿Cómo vamos con esto?\" mantiene viva la responsabilidad, saca a la luz obstáculos temprano y señala que tomas el compromiso en serio."
+      },
+      "createMomentum": {
+        "title": "Crea Impulso",
+        "desc": "Divide el trabajo en entregables más pequeños para crear momentos de \"hecho\" más frecuentes. Sostén este ritmo durante el día, la semana y el mes. Las victorias rápidas alimentan energía — para ti y tu equipo. Cada pequeña finalización genera confianza, refuerza el progreso y gradualmente cambia la mentalidad de solo pasar el trabajo a esperar ganar."
+      },
+      "communicateWhy": {
+        "title": "Comunica el \"Por Qué\"",
+        "desc": "La gente se mueve más rápido cuando entiende por qué importa la urgencia. Conecta las tareas con la misión y el impacto. Cuando el equipo ve el propósito detrás del plazo, la velocidad se convierte en un valor compartido en lugar de una exigencia de arriba hacia abajo."
+      },
+      "removeObstacles": {
+        "title": "Elimina Obstáculos Rápido",
+        "desc": "Los líderes que eliminan obstáculos en horas en lugar de días marcan el ritmo de una cultura de urgencia. Pregunta a tu equipo diariamente: \"¿Qué te está deteniendo?\" Luego actúa sobre la respuesta antes de que termine el día."
+      },
+      "useVisualBoards": {
+        "title": "Usa Tableros Visuales",
+        "desc": "Haz visible el progreso. Cuando los equipos ven estancamiento, se autocorrigen más rápido. Un tablero compartido donde el trabajo avanza — o se estanca — a la vista crea responsabilidad natural entre compañeros y mantiene viva la urgencia sin microgestión."
+      },
+      "dailyStandups": {
+        "title": "Reuniones Diarias de Pie",
+        "desc": "Los check-ins diarios cortos y enfocados mantienen el impulso y sacan a la luz obstáculos rápidamente. Mantenlo en 15 minutos: ¿qué terminaste, qué harás hoy y qué te lo impide? Sin soluciones en la reunión — solo visibilidad."
+      },
+      "celebrateSpeedWins": {
+        "title": "Celebra las Victorias de Velocidad",
+        "desc": "Reconoce a los miembros del equipo que completan tareas antes de tiempo. Lo que se recompensa se repite. Un reconocimiento público por terminar temprano envía una señal más fuerte que cualquier documento de política sobre urgencia."
+      },
+      "limitMeetings": {
+        "title": "Limita las Reuniones",
+        "desc": "El exceso de reuniones mata la urgencia. Mueve la toma de decisiones fuera de las salas de reuniones y hacia la acción. Cuestiona cada reunión recurrente: ¿todavía merece el tiempo? Reemplaza las reuniones de estado con actualizaciones asíncronas y reserva el tiempo en vivo solo para decisiones."
+      }
+    },
+    "individualQs": [
+      "¿Cuál es una cosa que estoy postergando ahora mismo que necesita suceder hoy — y cuál es la primera acción que puedo tomar en los próximos 30 minutos?",
+      "¿Mi calendario de hoy refleja mis prioridades más altas, o estoy llenando el tiempo con tareas que se sienten ocupadas pero no son realmente urgentes?",
+      "¿Qué haría diferente si mi plazo más importante de esta semana se adelantara dos días?",
+      "¿Estoy tomando decisiones rápidas y suficientemente buenas en las cosas que importan, o estoy esperando más información que tal vez nunca llegue?",
+      "¿Cuál acción única en mi lista, si se completa antes del mediodía, crearía más impulso para el resto de mi día?",
+      "¿Cuándo fue la última vez que respondí algo importante más rápido de lo esperado — y cómo se sintió eso para la otra persona?"
+    ],
+    "teamQs": [
+      "¿Estoy comunicando claramente la urgencia a mi equipo, o estoy asumiendo que ya sienten la misma presión que yo?",
+      "¿Hay obstáculos en mi equipo ahora mismo que podría eliminar hoy — y qué me impide hacerlo de inmediato?",
+      "¿Cuál de mis reportes directos se beneficiaría de una conversación sobre urgencia esta semana, y qué comportamiento específico necesita cambiar?",
+      "¿Mi equipo tiene un entendimiento visible y compartido de qué es lo más urgente ahora, o cada quien trabaja con su propia lista de prioridades?",
+      "¿Qué tan rápido di seguimiento al trabajo delegado esta semana — y qué mensaje envió eso a mi equipo sobre la responsabilidad?",
+      "¿Estoy celebrando las victorias de velocidad en mi equipo, o solo noto cuando se pierden los plazos?"
+    ],
+    "toast": {
+      "indSurveySavedPt": "¡Encuesta individual guardada! +1 pt ganado.",
+      "indSurveySavedCap": "Encuesta individual guardada. Límite diario de puntos alcanzado.",
+      "indSurveySaved": "Encuesta individual guardada.",
+      "teamSurveySavedPt": "¡Encuesta de equipo guardada! +1 pt ganado.",
+      "teamSurveySavedCap": "Encuesta de equipo guardada. Límite diario de puntos alcanzado.",
+      "teamSurveySaved": "Encuesta de equipo guardada.",
+      "reflectionSavedPt": "¡Reflexión guardada! +1 pt ganado.",
+      "reflectionSavedCap": "Reflexión guardada. Límite diario de puntos alcanzado.",
+      "reflectionSaved": "Reflexión guardada.",
+      "saveFailed": "Error al guardar."
+    }
   }
 }
