@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
@@ -11,11 +12,13 @@ import { SQDIP_COLORS, SQDIP_STATUS_LABEL, ACTION_STATUS, weeklyStatusCounts, we
 import { useNavigate } from 'react-router-dom';
 
 const opexChecklist = [
-  { category: 'Process Excellence',     items: ['Standard work documented and followed','KPIs are visible and reviewed daily','Process variation is measured and reduced','Value stream mapping completed and updated'] },
-  { category: 'Continuous Improvement', items: ['Kaizen events conducted quarterly','Employee ideas captured and implemented','Lessons learned are shared across teams','PDCA cycle is actively used for problems'] },
-  { category: 'Leadership Behaviors',   items: ['Daily gemba walks completed','Coaching conversations held weekly','Recognition given frequently and specifically','Accountability conversations handled promptly'] },
-  { category: 'Customer Focus',         items: ['Voice of customer captured monthly','Customer complaint root causes addressed','First-time quality metrics tracked','On-time delivery performance monitored'] },
+  { category: 'Process Excellence',     catKey: 'processExcellence', items: ['Standard work documented and followed','KPIs are visible and reviewed daily','Process variation is measured and reduced','Value stream mapping completed and updated'] },
+  { category: 'Continuous Improvement', catKey: 'continuousImprovement', items: ['Kaizen events conducted quarterly','Employee ideas captured and implemented','Lessons learned are shared across teams','PDCA cycle is actively used for problems'] },
+  { category: 'Leadership Behaviors',   catKey: 'leadershipBehaviors', items: ['Daily gemba walks completed','Coaching conversations held weekly','Recognition given frequently and specifically','Accountability conversations handled promptly'] },
+  { category: 'Customer Focus',         catKey: 'customerFocus', items: ['Voice of customer captured monthly','Customer complaint root causes addressed','First-time quality metrics tracked','On-time delivery performance monitored'] },
 ];
+function trCategory(t, cat) { return t(`eqOpex.checklist.${cat.catKey}.category`, cat.category); }
+function trItem(t, cat, i) { return t(`eqOpex.checklist.${cat.catKey}.items.${i}`, cat.items[i]); }
 
 
 // Fixed square size/gap so day-squares are pixel-identical across every
@@ -30,6 +33,7 @@ const SQDIP_MAX_ROWS = Math.max(...SQDIP_ORDER.map(k => letterGridSize(k).rows))
 // with add and remove. Mirrors the lightweight row-editor pattern used
 // elsewhere in the app (Coaching action items, Lean follow-ups).
 function ActionPlanSection({ items, onChange }) {
+  const { t } = useTranslation();
   const [title, setTitle] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [editingId, setEditingId] = useState(null);
@@ -64,7 +68,7 @@ function ActionPlanSection({ items, onChange }) {
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8, flexWrap: 'wrap', gap: 8 }}>
-        <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.85rem' }}>Action Plan</h4>
+        <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.85rem' }}>{t('eqOpex.actionPlan', 'Action Plan')}</h4>
         <div style={{ display: 'flex', gap: 6 }}>
           {Object.entries(ACTION_STATUS).map(([key, s]) => (
             <span key={key} title={s.label} style={{ background: s.bg, color: s.color, fontWeight: 800, fontSize: '0.72rem', borderRadius: 8, padding: '2px 8px', minWidth: 22, textAlign: 'center' }}>
@@ -85,22 +89,22 @@ function ActionPlanSection({ items, onChange }) {
                   style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', padding: '0.3rem 0.45rem', borderRadius: 6, border: '1px solid #bfdbfe' }} />
                 <input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)}
                   style={{ fontSize: '0.68rem', padding: '0.3rem 0.35rem', borderRadius: 6, border: '1px solid #bfdbfe', width: 122, flexShrink: 0 }} />
-                <button onClick={() => saveEdit(it.id)} title="Save"
-                  style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>Save</button>
-                <button onClick={() => setEditingId(null)} title="Cancel"
+                <button onClick={() => saveEdit(it.id)} title={t('eqOpex.save', 'Save')}
+                  style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>{t('eqOpex.save', 'Save')}</button>
+                <button onClick={() => setEditingId(null)} title={t('eqOpex.cancel', 'Cancel')}
                   style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>✕</button>
               </div>
             ) : (
               <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.4rem 0.5rem', borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
-                <span onClick={() => startEdit(it)} title="Click to edit"
+                <span onClick={() => startEdit(it)} title={t('eqOpex.clickToEdit', 'Click to edit')}
                   style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}>{it.title}</span>
                 {it.dueDate && <span style={{ fontSize: '0.68rem', color: '#94a3b8', flexShrink: 0 }}>{it.dueDate}</span>}
                 <select value={it.status} onChange={e => updateStatus(it.id, e.target.value)}
                   style={{ fontSize: '0.68rem', fontWeight: 700, color: ACTION_STATUS[it.status].color, background: ACTION_STATUS[it.status].bg, border: 'none', borderRadius: 999, padding: '2px 6px', flexShrink: 0, cursor: 'pointer' }}>
                   {Object.entries(ACTION_STATUS).map(([key, s]) => <option key={key} value={key}>{s.label}</option>)}
                 </select>
-                <button onClick={() => startEdit(it)} title="Edit" style={{ background: 'none', border: 'none', color: '#93c5fd', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>✏️</button>
-                <button onClick={() => removeItem(it.id)} title="Delete" style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>🗑</button>
+                <button onClick={() => startEdit(it)} title={t('eqOpex.edit', 'Edit')} style={{ background: 'none', border: 'none', color: '#93c5fd', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>✏️</button>
+                <button onClick={() => removeItem(it.id)} title={t('eqOpex.delete', 'Delete')} style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>🗑</button>
               </div>
             )
           ))}
@@ -108,11 +112,11 @@ function ActionPlanSection({ items, onChange }) {
       )}
 
       <div style={{ display: 'flex', gap: 6 }}>
-        <input value={title} onChange={e => setTitle(e.target.value)} placeholder="Action title…"
+        <input value={title} onChange={e => setTitle(e.target.value)} placeholder={t('eqOpex.actionTitlePlaceholder', 'Action title…')}
           style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', padding: '0.35rem 0.5rem', borderRadius: 8, border: '1px solid #e2e8f0' }} />
         <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
           style={{ fontSize: '0.72rem', padding: '0.35rem 0.4rem', borderRadius: 8, border: '1px solid #e2e8f0', width: 128, flexShrink: 0 }} />
-        <button onClick={addItem} style={{ background: '#0f2044', color: 'white', border: 'none', borderRadius: 8, padding: '0.35rem 0.7rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>+ Add</button>
+        <button onClick={addItem} style={{ background: '#0f2044', color: 'white', border: 'none', borderRadius: 8, padding: '0.35rem 0.7rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>+ {t('eqOpex.add', 'Add')}</button>
       </div>
     </div>
   );
@@ -123,6 +127,7 @@ function ActionPlanSection({ items, onChange }) {
 // Clicking a square opens a small popover with explicit Meet Goal / Behind
 // Goal / At Risk / Clear options, so picking a status is a direct choice.
 function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellValues, onSetValue, goal, onGoalChange, metricName, onMetricNameChange, actionItems, onActionItemsChange, monthlyHistory }) {
+  const { t } = useTranslation();
   const meta = SQDIP_META[letterKey];
   const { rows, cols } = letterGridSize(letterKey);
   const cells = letterCells(letterKey, days);
@@ -159,7 +164,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
 
   function saveValue(day) {
     const trimmed = String(valueDraft).trim();
-    if (trimmed !== '' && Number.isNaN(Number(trimmed))) return toast.error('Enter a valid number');
+    if (trimmed !== '' && Number.isNaN(Number(trimmed))) return toast.error(t('eqOpex.enterValidNumber', 'Enter a valid number'));
     const saved = trimmed === '' ? null : Number(trimmed);
     onSetValue(day, saved);
     setValueDraft(saved === null ? '' : saved);
@@ -175,7 +180,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
             <LetterIcon letterKey={letterKey} icon={meta.icon} />
             <h3 style={{ fontWeight: 800, color: 'white', margin: 0, fontSize: '1.05rem' }}>{label}</h3>
           </div>
-          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{filled}/{days} logged</span>
+          <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>{t('eqOpex.loggedOfDays', '{{filled}}/{{days}} logged', { filled, days })}</span>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: SQDIP_MAX_ROWS * (SQDIP_SQUARE + SQDIP_GAP), margin: '0.9rem 0 0' }}>
@@ -201,7 +206,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
               return (
                 <div key={`${row}-${col}`} style={{ position: 'relative', width: SQDIP_SQUARE, height: SQDIP_SQUARE }}>
                   <button onClick={() => openPopover(cell.day)}
-                    title={`Day ${cell.day}${status ? ` — ${SQDIP_STATUS_LABEL[status]}` : ' — click to log'}${hasLoggedValue ? ` — value ${loggedValue}` : ''}`}
+                    title={`${t('eqOpex.day', 'Day')} ${cell.day}${status ? ` — ${SQDIP_STATUS_LABEL[status]}` : ` — ${t('eqOpex.clickToLog', 'click to log')}`}${hasLoggedValue ? ` — ${t('eqOpex.value', 'value')} ${loggedValue}` : ''}`}
                     style={{
                       width: '100%', height: '100%', borderRadius: 3, border: 'none',
                       background: bg, cursor: 'pointer', padding: 0,
@@ -220,14 +225,14 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
                         boxShadow: '0 4px 16px rgba(0,0,0,0.25)', whiteSpace: 'nowrap',
                       }}>
                         <div style={{ display: 'flex', gap: 4 }}>
-                          <button onClick={() => choose(cell.day, 'green')} title="Meet Goal"
+                          <button onClick={() => choose(cell.day, 'green')} title={t('eqOpex.meetGoal', 'Meet Goal')}
                             style={{ background: SQDIP_COLORS.green, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>✓</button>
-                          <button onClick={() => choose(cell.day, 'amber')} title="Behind Goal"
+                          <button onClick={() => choose(cell.day, 'amber')} title={t('eqOpex.behindGoal', 'Behind Goal')}
                             style={{ background: SQDIP_COLORS.amber, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>!</button>
-                          <button onClick={() => choose(cell.day, 'red')} title="At Risk"
+                          <button onClick={() => choose(cell.day, 'red')} title={t('eqOpex.atRisk', 'At Risk')}
                             style={{ background: SQDIP_COLORS.red, border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.85rem' }}>✕</button>
                           {status && (
-                            <button onClick={() => choose(cell.day, null)} title="Clear"
+                            <button onClick={() => choose(cell.day, null)} title={t('eqOpex.clear', 'Clear')}
                               style={{ background: 'rgba(255,255,255,0.92)', color: 'white', border: 'none', borderRadius: 6, width: 28, height: 28, cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700 }}>⨯</button>
                           )}
                         </div>
@@ -235,11 +240,11 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
                           <input type="number" value={valueDraft}
                             onChange={e => { setValueDraft(e.target.value); setJustSaved(false); }}
                             onKeyDown={e => e.key === 'Enter' && saveValue(cell.day)}
-                            placeholder={metricName} title={`Actual ${metricName} value for this day`}
+                            placeholder={metricName} title={t('eqOpex.actualValueFor', 'Actual {{metric}} value for this day', { metric: metricName })}
                             style={{ width: 64, fontSize: '0.72rem', padding: '3px 5px', borderRadius: 5, border: '1px solid rgba(255,255,255,0.25)', background: 'rgba(255,255,255,0.08)', color: 'white' }} />
-                          <button onClick={() => saveValue(cell.day)} title="Save value"
+                          <button onClick={() => saveValue(cell.day)} title={t('eqOpex.saveValue', 'Save value')}
                             style={{ background: justSaved ? '#16a34a' : '#0d9488', color: 'white', border: 'none', borderRadius: 5, padding: '3px 8px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer' }}>
-                            {justSaved ? '✓ Saved' : 'Save'}
+                            {justSaved ? `✓ ${t('eqOpex.saved', 'Saved')}` : t('eqOpex.save', 'Save')}
                           </button>
                         </div>
                       </div>
@@ -253,9 +258,9 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
         </div>
 
         <div style={{ display: 'flex', gap: 10, fontSize: '0.68rem', color: 'rgba(255,255,255,0.85)', fontWeight: 700, marginTop: 10, flexWrap: 'wrap' }}>
-          <span>🟢 {greenCount} meet</span>
-          <span>🟡 {amberCount} behind</span>
-          <span>🔴 {redCount} at risk</span>
+          <span>🟢 {t('eqOpex.meetCount', '{{count}} meet', { count: greenCount })}</span>
+          <span>🟡 {t('eqOpex.behindCount', '{{count}} behind', { count: amberCount })}</span>
+          <span>🔴 {t('eqOpex.atRiskCount', '{{count}} at risk', { count: redCount })}</span>
         </div>
       </div>
 
@@ -267,7 +272,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
               onBlur={() => setEditingMetric(false)} onKeyDown={e => e.key === 'Enter' && setEditingMetric(false)}
               style={{ fontSize: '0.85rem', fontWeight: 700, padding: '0.3rem 0.5rem', borderRadius: 8, border: `1px solid ${meta.color}`, flex: 1, minWidth: 100 }} />
           ) : (
-            <button onClick={() => setEditingMetric(true)} title="Click to rename this metric"
+            <button onClick={() => setEditingMetric(true)} title={t('eqOpex.clickToRenameMetric', 'Click to rename this metric')}
               style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 4 }}>
               <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)' }}>{metricName}</span>
               <span style={{ fontSize: '0.65rem', color: '#cbd5e1' }}>✎</span>
@@ -278,17 +283,17 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <select value={goal?.direction || 'max'} onChange={e => onGoalChange({ ...goal, direction: e.target.value })}
                 style={{ fontSize: '0.68rem', padding: '3px 4px', borderRadius: 6, border: '1px solid #e2e8f0' }}>
-                <option value="max">≤ at most</option>
-                <option value="min">≥ at least</option>
+                <option value="max">{t('eqOpex.atMost', '≤ at most')}</option>
+                <option value="min">{t('eqOpex.atLeast', '≥ at least')}</option>
               </select>
               <input type="number" autoFocus value={goal?.target ?? ''} onChange={e => onGoalChange({ ...goal, target: e.target.value === '' ? null : Number(e.target.value) })}
                 onBlur={() => setEditingGoal(false)} onKeyDown={e => e.key === 'Enter' && setEditingGoal(false)}
-                placeholder="target" style={{ width: 56, fontSize: '0.72rem', padding: '3px 5px', borderRadius: 6, border: '1px solid #e2e8f0' }} />
+                placeholder={t('eqOpex.target', 'target')} style={{ width: 56, fontSize: '0.72rem', padding: '3px 5px', borderRadius: 6, border: '1px solid #e2e8f0' }} />
             </div>
           ) : (
-            <button onClick={() => setEditingGoal(true)} title="Click to set a numeric goal for this metric"
+            <button onClick={() => setEditingGoal(true)} title={t('eqOpex.clickToSetGoal', 'Click to set a numeric goal for this metric')}
               style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: 999, padding: '2px 9px', cursor: 'pointer', fontSize: '0.7rem', fontWeight: 700, color: '#1d4ed8' }}>
-              🎯 {goal?.target !== undefined && goal?.target !== null ? `${goal.direction === 'min' ? '≥' : '≤'} ${goal.target}` : 'Set goal'}
+              🎯 {goal?.target !== undefined && goal?.target !== null ? `${goal.direction === 'min' ? '≥' : '≤'} ${goal.target}` : t('eqOpex.setGoal', 'Set goal')}
             </button>
           )}
         </div>
@@ -302,7 +307,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
 
       {/* One Minute Manager trend chart */}
       <div style={{ padding: '0.75rem 1.25rem 1.25rem', borderTop: '1px solid var(--border)' }}>
-        <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '0.85rem' }}>Monthly Trending</h4>
+        <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '0.85rem' }}>{t('eqOpex.monthlyTrending', 'Monthly Trending')}</h4>
         <WeeklyTrendChart weeks={months} goal={goal} />
       </div>
     </div>
@@ -310,6 +315,7 @@ function SqdipLetterCard({ letterKey, label, days, cellStatus, onSetDay, cellVal
 }
 
 export default function EQOpEx() {
+  const { t } = useTranslation();
   const { currentUser, userProfile } = useAuth();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(() => localStorage.getItem('eqopex-active-tab') || 'opex');
@@ -405,14 +411,14 @@ export default function EQOpEx() {
     };
     try {
       await setDoc(doc(db, 'users', currentUser.uid), { sqdipBoard: board }, { merge: true });
-    } catch { toast.error('Could not save SQDIP Board'); }
+    } catch { toast.error(t('eqOpex.toast.saveSqdipFailed', 'Could not save SQDIP Board')); }
   }
 
   function toggleSqdipLetter(key) {
     const activeCount = Object.values(sqdipEnabled).filter(Boolean).length;
     const turningOn = !sqdipEnabled[key];
-    if (turningOn && activeCount >= 5) return toast.error('Maximum of 5 letters on the board');
-    if (!turningOn && activeCount <= 1) return toast.error('Keep at least one letter active');
+    if (turningOn && activeCount >= 5) return toast.error(t('eqOpex.toast.max5Letters', 'Maximum of 5 letters on the board'));
+    if (!turningOn && activeCount <= 1) return toast.error(t('eqOpex.toast.keepOneLetter', 'Keep at least one letter active'));
     const next = { ...sqdipEnabled, [key]: turningOn };
     setSqdipEnabled(next);
     persistSqdip({ enabled: next });
@@ -466,12 +472,12 @@ export default function EQOpEx() {
   }
 
   async function saveOpexAudit() {
-    if (!currentUser) return toast.error('Not logged in');
-    if (!opexArea.trim()) return toast.error('Please enter the area being audited');
-    if (checkedOpex === 0) return toast.error('Complete at least one checklist item before saving');
+    if (!currentUser) return toast.error(t('eqOpex.toast.notLoggedIn', 'Not logged in'));
+    if (!opexArea.trim()) return toast.error(t('eqOpex.toast.enterArea', 'Please enter the area being audited'));
+    if (checkedOpex === 0) return toast.error(t('eqOpex.toast.completeOneItem', 'Complete at least one checklist item before saving'));
     const dupName = opexArea.trim().toLowerCase();
     if (opexHistory.some(a => a.area.toLowerCase() === dupName)) {
-      return toast.error(`An audit for "${opexArea.trim()}" already exists. Use a different name or delete the existing one first.`);
+      return toast.error(t('eqOpex.toast.auditExists', 'An audit for "{{area}}" already exists. Use a different name or delete the existing one first.', { area: opexArea.trim() }));
     }
     setSaving(true);
     try {
@@ -491,8 +497,8 @@ export default function EQOpEx() {
       const updated = [record, ...opexHistory].slice(0, 50);
       await setDoc(doc(db, 'users', currentUser.uid), { opexAudits: updated }, { merge: true });
       setOpexHistory(updated);
-      toast.success(`Audit saved — ${opexPct}% for "${opexArea}"`);
-    } catch (e) { toast.error('Save failed: ' + e.message); }
+      toast.success(t('eqOpex.toast.auditSaved', 'Audit saved — {{pct}}% for "{{area}}"', { pct: opexPct, area: opexArea }));
+    } catch (e) { toast.error(t('eqOpex.toast.saveFailed', 'Save failed: {{msg}}', { msg: e.message })); }
     setSaving(false);
   }
 
@@ -501,14 +507,14 @@ export default function EQOpEx() {
     setOpexFindings(record.findings || {});
     setOpexArea(record.area || '');
     setOpexExpandedItem(null);
-    toast.success(`Loaded audit: ${record.area}`);
+    toast.success(t('eqOpex.toast.auditLoaded', 'Loaded audit: {{area}}', { area: record.area }));
   }
 
   async function deleteOpexAudit(id) {
     const updated = opexHistory.filter(a => a.id !== id);
     await setDoc(doc(db, 'users', currentUser.uid), { opexAudits: updated }, { merge: true });
     setOpexHistory(updated);
-    toast.success('Audit deleted');
+    toast.success(t('eqOpex.toast.auditDeleted', 'Audit deleted'));
   }
 
   function resetOpexAudit() {
@@ -526,12 +532,12 @@ export default function EQOpEx() {
     const file = e.target.files[0];
     e.target.value = '';
     if (!file) return;
-    if (file.size > 25 * 1024 * 1024) { toast.error('Image is too large (max 25 MB)'); return; }
+    if (file.size > 25 * 1024 * 1024) { toast.error(t('eqOpex.toast.imageTooLarge', 'Image is too large (max 25 MB)')); return; }
     try {
       const { preview } = await compressImage(file);
       setOpexFinding(key, 'image', preview);
     } catch {
-      if (file.size > 5 * 1024 * 1024) { toast.error("Couldn't process this photo. Try a smaller one."); return; }
+      if (file.size > 5 * 1024 * 1024) { toast.error(t('eqOpex.toast.photoProcessFailed', "Couldn't process this photo. Try a smaller one.")); return; }
       const reader = new FileReader();
       reader.onload = ev => setOpexFinding(key, 'image', ev.target.result);
       reader.readAsDataURL(file);
@@ -550,17 +556,17 @@ export default function EQOpEx() {
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-      <PageHeader icon="⚙️" title="OpEx Tools — Accountability in Action" subtitle="Operational Excellence checklist and SQDIP Board" />
+      <PageHeader icon="⚙️" title={t('eqOpex.title', 'OpEx Tools — Accountability in Action')} subtitle={t('eqOpex.subtitle', 'Operational Excellence checklist and SQDIP Board')} />
 
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-        {[{ id: 'sqdip', label: '🗓️ SQDIP Board' }, { id: 'opex', label: '⚙️ OpEx Checklist' }].map(t => (
-          <button key={t.id} onClick={() => {
-            setActiveTab(t.id);
-            localStorage.setItem('eqopex-active-tab', t.id);
-            if (currentUser) setDoc(doc(db, 'users', currentUser.uid), { eqOpexActiveTab: t.id }, { merge: true }).catch(() => {});
+        {[{ id: 'sqdip', label: `🗓️ ${t('eqOpex.sqdipBoard', 'SQDIP Board')}` }, { id: 'opex', label: `⚙️ ${t('eqOpex.opexChecklist', 'OpEx Checklist')}` }].map(tab => (
+          <button key={tab.id} onClick={() => {
+            setActiveTab(tab.id);
+            localStorage.setItem('eqopex-active-tab', tab.id);
+            if (currentUser) setDoc(doc(db, 'users', currentUser.uid), { eqOpexActiveTab: tab.id }, { merge: true }).catch(() => {});
           }}
-            style={{ padding: '0.5rem 1.25rem', borderRadius: 10, fontWeight: 700, fontSize: '0.875rem', border: 'none', cursor: 'pointer', transition: 'all 0.15s', background: activeTab === t.id ? '#0f2044' : '#f1f5f9', color: activeTab === t.id ? 'white' : '#475569' }}>
-            {t.label}
+            style={{ padding: '0.5rem 1.25rem', borderRadius: 10, fontWeight: 700, fontSize: '0.875rem', border: 'none', cursor: 'pointer', transition: 'all 0.15s', background: activeTab === tab.id ? '#0f2044' : '#f1f5f9', color: activeTab === tab.id ? 'white' : '#475569' }}>
+            {tab.label}
           </button>
         ))}
       </div>
@@ -574,24 +580,24 @@ export default function EQOpEx() {
             {/* Area input + score card */}
             <div className="card" style={{ padding: '1.25rem' }}>
               <div style={{ marginBottom: 12 }}>
-                <label className="label">Area / Location Being Audited</label>
+                <label className="label">{t('eqOpex.areaLabel', 'Area / Location Being Audited')}</label>
                 <input className="input" value={opexArea} onChange={e => setOpexArea(e.target.value)}
-                  placeholder="e.g. Production Floor, Warehouse, Office — Q3 2026…" />
+                  placeholder={t('eqOpex.areaPlaceholder', 'e.g. Production Floor, Warehouse, Office — Q3 2026…')} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>OpEx Compliance Score</span>
+                <span style={{ fontWeight: 800, color: 'var(--text-primary)' }}>{t('eqOpex.complianceScore', 'OpEx Compliance Score')}</span>
                 <span style={{ fontSize: '1.75rem', fontWeight: 900, color: opexPct >= 80 ? '#0d9488' : opexPct >= 60 ? '#f59e0b' : '#ef4444' }}>{opexPct}%</span>
               </div>
               <div style={{ background: '#e2e8f0', borderRadius: 9999, height: 10, marginBottom: 6 }}>
                 <div style={{ height: 10, borderRadius: 9999, background: opexPct >= 80 ? '#0d9488' : opexPct >= 60 ? '#f59e0b' : '#ef4444', width: `${opexPct}%`, transition: 'width 0.6s ease' }} />
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{checkedOpex} of {totalOpex} behaviors practiced</p>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>{t('eqOpex.behaviorsPracticed', '{{checked}} of {{total}} behaviors practiced', { checked: checkedOpex, total: totalOpex })}</p>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn-secondary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem' }} onClick={resetOpexAudit}>↺ Reset</button>
-                  <button className="btn-primary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.875rem' }} onClick={saveOpexAudit} disabled={saving}>{saving ? 'Saving…' : '💾 Save Audit'}</button>
+                  <button className="btn-secondary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem' }} onClick={resetOpexAudit}>↺ {t('eqOpex.reset', 'Reset')}</button>
+                  <button className="btn-primary" style={{ fontSize: '0.78rem', padding: '0.3rem 0.875rem' }} onClick={saveOpexAudit} disabled={saving}>{saving ? t('eqOpex.saving', 'Saving…') : `💾 ${t('eqOpex.saveAudit', 'Save Audit')}`}</button>
                   {(opexArea.trim() || checkedOpex > 0) && (
-                    <button style={{ fontSize: '0.78rem', padding: '0.3rem 0.875rem', borderRadius: 9999, fontWeight: 700, border: '1.5px solid #0d9488', background: 'white', color: '#0d9488', cursor: 'pointer' }} onClick={resetOpexAudit}>＋ New Audit</button>
+                    <button style={{ fontSize: '0.78rem', padding: '0.3rem 0.875rem', borderRadius: 9999, fontWeight: 700, border: '1.5px solid #0d9488', background: 'white', color: '#0d9488', cursor: 'pointer' }} onClick={resetOpexAudit}>＋ {t('eqOpex.newAudit', 'New Audit')}</button>
                   )}
                 </div>
               </div>
@@ -600,7 +606,7 @@ export default function EQOpEx() {
             {opexChecklist.map(cat => (
               <div key={cat.category} className="card" style={{ overflow: 'hidden' }}>
                 <div style={{ padding: '0.75rem 1.25rem', background: '#0f2044' }}>
-                  <span style={{ color: 'white', fontWeight: 800, fontSize: '0.875rem' }}>{cat.category}</span>
+                  <span style={{ color: 'white', fontWeight: 800, fontSize: '0.875rem' }}>{trCategory(t, cat)}</span>
                 </div>
                 {cat.items.map((item, i) => {
                   const key = `${cat.category}-${i}`;
@@ -615,11 +621,11 @@ export default function EQOpEx() {
                           <div style={{ width: 22, height: 22, borderRadius: 6, flexShrink: 0, border: `2px solid ${opexChecks[key] ? '#0d9488' : '#e2e8f0'}`, background: opexChecks[key] ? '#0d9488' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '0.75rem', fontWeight: 700, transition: 'all 0.2s' }}>
                             {opexChecks[key] && '✓'}
                           </div>
-                          <span style={{ fontSize: '0.875rem', color: opexChecks[key] ? '#94a3b8' : 'var(--text-secondary)', textDecoration: opexChecks[key] ? 'line-through' : 'none' }}>{item}</span>
+                          <span style={{ fontSize: '0.875rem', color: opexChecks[key] ? '#94a3b8' : 'var(--text-secondary)', textDecoration: opexChecks[key] ? 'line-through' : 'none' }}>{trItem(t, cat, i)}</span>
                         </button>
                         {hasFinding && !isExpanded && (
                           <span style={{ fontSize: '0.65rem', fontWeight: 700, background: '#fef9c3', color: '#b45309', border: '1px solid #fde68a', borderRadius: 9999, padding: '1px 7px', flexShrink: 0 }}>
-                            {finding.image ? '📎 Photo' : '📝 Note'}
+                            {finding.image ? `📎 ${t('eqOpex.photo', 'Photo')}` : `📝 ${t('eqOpex.note', 'Note')}`}
                           </span>
                         )}
                         <button onClick={() => setOpexExpandedItem(isExpanded ? null : key)}
@@ -631,16 +637,16 @@ export default function EQOpEx() {
 
                       {isExpanded && (
                         <div style={{ margin: '0 1.25rem 0.875rem', background: '#f8fafc', borderRadius: 10, border: '1px solid var(--border)', padding: '1rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                          <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>Finding Details</p>
+                          <p style={{ fontSize: '0.72rem', fontWeight: 700, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.06em', margin: 0 }}>{t('eqOpex.findingDetails', 'Finding Details')}</p>
                           <div>
-                            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Description / Finding</label>
+                            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{t('eqOpex.descriptionFinding', 'Description / Finding')}</label>
                             <textarea className="input" rows={3} style={{ fontSize: '0.825rem', resize: 'vertical' }}
-                              placeholder="Describe what was observed, the gap, or the non-conformance…"
+                              placeholder={t('eqOpex.findingPlaceholder', 'Describe what was observed, the gap, or the non-conformance…')}
                               value={finding.note || ''}
                               onChange={e => setOpexFinding(key, 'note', e.target.value)} />
                           </div>
                           <div>
-                            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Photo Evidence (PNG, JPG, GIF — max 5 MB)</label>
+                            <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>{t('eqOpex.photoEvidence', 'Photo Evidence (PNG, JPG, GIF — max 5 MB)')}</label>
                             {finding.image ? (
                               <div style={{ position: 'relative', display: 'inline-block' }}>
                                 <img src={finding.image} alt="Finding" style={{ maxWidth: '100%', maxHeight: 220, borderRadius: 8, border: '1px solid var(--border)', display: 'block' }} />
@@ -649,7 +655,7 @@ export default function EQOpEx() {
                               </div>
                             ) : (
                               <label style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.5rem 1rem', borderRadius: 8, border: '1.5px dashed #cbd5e1', cursor: 'pointer', background: 'white', fontSize: '0.8rem', color: '#64748b', fontWeight: 600 }}>
-                                📷 Click to attach photo
+                                📷 {t('eqOpex.clickToAttachPhoto', 'Click to attach photo')}
                                 <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => handleOpexImageUpload(key, e)} />
                               </label>
                             )}
@@ -666,9 +672,9 @@ export default function EQOpEx() {
           {/* ── Right: audit history ── */}
           <div style={{ width: 300, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             <div className="card" style={{ padding: '1.125rem' }}>
-              <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px', fontSize: '0.9rem' }}>📋 Audit History</h4>
+              <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px', fontSize: '0.9rem' }}>📋 {t('eqOpex.auditHistory', 'Audit History')}</h4>
               {opexHistory.length === 0 ? (
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', margin: '1.5rem 0' }}>No audits saved yet. Complete the checklist and click Save Audit.</p>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', margin: '1.5rem 0' }}>{t('eqOpex.noAuditsYet', 'No audits saved yet. Complete the checklist and click Save Audit.')}</p>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                   {opexHistory.map(record => {
@@ -688,11 +694,11 @@ export default function EQOpEx() {
                         <div style={{ display: 'flex', borderTop: '1px solid var(--border)' }}>
                           <button onClick={() => loadOpexAudit(record)}
                             style={{ flex: 1, padding: '0.4rem', fontSize: '0.72rem', fontWeight: 700, background: 'none', border: 'none', borderRight: '1px solid var(--border)', cursor: 'pointer', color: '#0d9488' }}>
-                            📂 Load
+                            📂 {t('eqOpex.load', 'Load')}
                           </button>
                           <button onClick={() => setOpexExpandedAudit(isExp ? null : record.id)}
                             style={{ flex: 1, padding: '0.4rem', fontSize: '0.72rem', fontWeight: 700, background: 'none', border: 'none', borderRight: '1px solid var(--border)', cursor: 'pointer', color: '#64748b' }}>
-                            {isExp ? '▲' : '▼'} Details
+                            {isExp ? '▲' : '▼'} {t('eqOpex.details', 'Details')}
                           </button>
                           <button onClick={() => deleteOpexAudit(record.id)}
                             style={{ flex: 1, padding: '0.4rem', fontSize: '0.72rem', fontWeight: 700, background: 'none', border: 'none', cursor: 'pointer', color: '#ef4444' }}>
@@ -701,9 +707,9 @@ export default function EQOpEx() {
                         </div>
                         {isExp && (
                           <div style={{ padding: '0.75rem', borderTop: '1px solid var(--border)', background: '#f8fafc', fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-                            <p style={{ margin: '0 0 4px', fontWeight: 700 }}>{record.checked} / {record.total} items completed</p>
+                            <p style={{ margin: '0 0 4px', fontWeight: 700 }}>{t('eqOpex.itemsCompleted', '{{checked}} / {{total}} items completed', { checked: record.checked, total: record.total })}</p>
                             {Object.keys(record.findings || {}).length > 0 && (
-                              <p style={{ margin: 0, color: '#b45309' }}>📝 {Object.keys(record.findings).length} note(s) recorded</p>
+                              <p style={{ margin: 0, color: '#b45309' }}>📝 {t('eqOpex.notesRecorded', '{{count}} note(s) recorded', { count: Object.keys(record.findings).length })}</p>
                             )}
                           </div>
                         )}
@@ -728,14 +734,14 @@ export default function EQOpEx() {
             <div className="card" style={{ padding: '1.125rem 1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 10 }}>
                 <div>
-                  <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.95rem' }}>🗓️ {monthLabel} · {days} days</h3>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Log each day, track the weekly trend, and manage the action plan for each letter.</p>
+                  <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.95rem' }}>🗓️ {t('eqOpex.monthDays', '{{month}} · {{days}} days', { month: monthLabel, days })}</h3>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>{t('eqOpex.sqdipDesc', 'Log each day, track the weekly trend, and manage the action plan for each letter.')}</p>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>{activeCount}/5 letters active</span>
+                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>{t('eqOpex.lettersActive', '{{count}}/5 letters active', { count: activeCount })}</span>
                   <button className="btn-secondary" onClick={() => navigate('/sqdip-board')}
                     style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    📺 SQDIP Board View
+                    📺 {t('eqOpex.sqdipBoardView', 'SQDIP Board View')}
                   </button>
                 </div>
               </div>
@@ -752,7 +758,7 @@ export default function EQOpEx() {
                         <LetterIcon letterKey={key} icon={meta.icon} size="1rem" /> {label}
                       </button>
                       {meta.altLabel && on && (
-                        <button onClick={() => toggleSqdipLabel(key)} title={`Switch to ${label === meta.defaultLabel ? meta.altLabel : meta.defaultLabel}`}
+                        <button onClick={() => toggleSqdipLabel(key)} title={t('eqOpex.switchTo', 'Switch to {{label}}', { label: label === meta.defaultLabel ? meta.altLabel : meta.defaultLabel })}
                           style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: 9999, padding: '2px 6px', fontSize: '0.65rem', cursor: 'pointer', color: '#94a3b8' }}>
                           ⇄
                         </button>

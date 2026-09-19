@@ -55,11 +55,26 @@
       "today": "Hoy"
     },
     "categories": {
-      "model": { "label": "Marca la Pauta", "desc": "Establece el estándar. Lidera con el ejemplo." },
-      "inspire": { "label": "Enciende la Visión", "desc": "Pinta la imagen. Únete en torno a un propósito." },
-      "challenge": { "label": "Mejora el Flujo", "desc": "Cuestiona el status quo. Impulsa la mejora." },
-      "enable": { "label": "Capacita al Equipo", "desc": "Desarrolla capacidad. Fomenta la colaboración." },
-      "encourage": { "label": "Gana con Compasión", "desc": "Reconoce contribuciones. Celebra los logros." }
+      "model": {
+        "label": "Marca la Pauta",
+        "desc": "Establece el estándar. Lidera con el ejemplo."
+      },
+      "inspire": {
+        "label": "Enciende la Visión",
+        "desc": "Pinta la imagen. Únete en torno a un propósito."
+      },
+      "challenge": {
+        "label": "Mejora el Flujo",
+        "desc": "Cuestiona el status quo. Impulsa la mejora."
+      },
+      "enable": {
+        "label": "Capacita al Equipo",
+        "desc": "Desarrolla capacidad. Fomenta la colaboración."
+      },
+      "encourage": {
+        "label": "Gana con Compasión",
+        "desc": "Reconoce contribuciones. Celebra los logros."
+      }
     },
     "modules": {
       "visualBoard": "Gestión Visual",
@@ -667,6 +682,121 @@
       "reflectionSavedCap": "Reflexión guardada. Límite diario de puntos alcanzado.",
       "reflectionSaved": "Reflexión guardada.",
       "saveFailed": "Error al guardar."
+    }
+  },
+  "eqOpex": {
+    "title": "Herramientas OpEx — Rendición de Cuentas en Acción",
+    "subtitle": "Lista de verificación de Excelencia Operacional y Tablero SQDIP",
+    "sqdipBoard": "Tablero SQDIP",
+    "opexChecklist": "Lista OpEx",
+    "areaLabel": "Área / Ubicación Auditada",
+    "areaPlaceholder": "ej. Piso de Producción, Almacén, Oficina — Q3 2026…",
+    "complianceScore": "Puntuación de Cumplimiento OpEx",
+    "behaviorsPracticed": "{{checked}} de {{total}} comportamientos practicados",
+    "reset": "Reiniciar",
+    "saveAudit": "Guardar Auditoría",
+    "saving": "Guardando…",
+    "newAudit": "Nueva Auditoría",
+    "photo": "Foto",
+    "note": "Nota",
+    "findingDetails": "Detalles del Hallazgo",
+    "descriptionFinding": "Descripción / Hallazgo",
+    "findingPlaceholder": "Describa lo observado, la brecha o la no conformidad…",
+    "photoEvidence": "Evidencia Fotográfica (PNG, JPG, GIF — máx. 5 MB)",
+    "clickToAttachPhoto": "Haga clic para adjuntar foto",
+    "auditHistory": "Historial de Auditorías",
+    "noAuditsYet": "Aún no hay auditorías guardadas. Complete la lista y haga clic en Guardar Auditoría.",
+    "load": "Cargar",
+    "details": "Detalles",
+    "itemsCompleted": "{{checked}} / {{total}} elementos completados",
+    "notesRecorded": "{{count}} nota(s) registrada(s)",
+    "monthDays": "{{month}} · {{days}} días",
+    "sqdipDesc": "Registre cada día, siga la tendencia semanal y administre el plan de acción de cada letra.",
+    "lettersActive": "{{count}}/5 letras activas",
+    "sqdipBoardView": "Ver Tablero SQDIP",
+    "switchTo": "Cambiar a {{label}}",
+    "day": "Día",
+    "clickToLog": "clic para registrar",
+    "value": "valor",
+    "actionPlan": "Plan de Acción",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "clickToEdit": "Clic para editar",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "add": "Agregar",
+    "actionTitlePlaceholder": "Título de la acción…",
+    "loggedOfDays": "{{filled}}/{{days}} registrado",
+    "meetGoal": "Cumple Meta",
+    "behindGoal": "Atrás de Meta",
+    "atRisk": "En Riesgo",
+    "clear": "Borrar",
+    "actualValueFor": "Valor real de {{metric}} para este día",
+    "saveValue": "Guardar valor",
+    "saved": "Guardado",
+    "meetCount": "{{count}} cumplen",
+    "behindCount": "{{count}} atrás",
+    "atRiskCount": "{{count}} en riesgo",
+    "clickToRenameMetric": "Clic para renombrar esta métrica",
+    "atMost": "≤ como máximo",
+    "atLeast": "≥ como mínimo",
+    "target": "meta",
+    "clickToSetGoal": "Clic para establecer una meta numérica para esta métrica",
+    "setGoal": "Establecer meta",
+    "monthlyTrending": "Tendencia Mensual",
+    "enterValidNumber": "Ingrese un número válido",
+    "toast": {
+      "saveSqdipFailed": "No se pudo guardar el Tablero SQDIP",
+      "max5Letters": "Máximo de 5 letras en el tablero",
+      "keepOneLetter": "Mantenga al menos una letra activa",
+      "notLoggedIn": "No ha iniciado sesión",
+      "enterArea": "Por favor ingrese el área auditada",
+      "completeOneItem": "Complete al menos un elemento de la lista antes de guardar",
+      "auditExists": "Ya existe una auditoría para \"{{area}}\". Use un nombre diferente o elimine la existente primero.",
+      "auditSaved": "Auditoría guardada — {{pct}}% para \"{{area}}\"",
+      "saveFailed": "Error al guardar: {{msg}}",
+      "auditLoaded": "Auditoría cargada: {{area}}",
+      "auditDeleted": "Auditoría eliminada",
+      "imageTooLarge": "La imagen es demasiado grande (máx. 25 MB)",
+      "photoProcessFailed": "No se pudo procesar esta foto. Intente con una más pequeña."
+    },
+    "checklist": {
+      "processExcellence": {
+        "category": "Excelencia de Procesos",
+        "items": [
+          "El trabajo estándar está documentado y se sigue",
+          "Los KPI son visibles y se revisan a diario",
+          "La variación del proceso se mide y se reduce",
+          "El mapeo del flujo de valor está completo y actualizado"
+        ]
+      },
+      "continuousImprovement": {
+        "category": "Mejora Continua",
+        "items": [
+          "Los eventos Kaizen se realizan trimestralmente",
+          "Las ideas de los empleados se capturan e implementan",
+          "Las lecciones aprendidas se comparten entre equipos",
+          "El ciclo PDCA se usa activamente para resolver problemas"
+        ]
+      },
+      "leadershipBehaviors": {
+        "category": "Comportamientos de Liderazgo",
+        "items": [
+          "Se completan caminatas gemba diarias",
+          "Se realizan conversaciones de coaching semanalmente",
+          "Se da reconocimiento con frecuencia y de forma específica",
+          "Las conversaciones de rendición de cuentas se manejan con prontitud"
+        ]
+      },
+      "customerFocus": {
+        "category": "Enfoque en el Cliente",
+        "items": [
+          "La voz del cliente se captura mensualmente",
+          "Se abordan las causas raíz de las quejas de clientes",
+          "Se rastrean las métricas de calidad a la primera",
+          "Se monitorea el desempeño de entrega a tiempo"
+        ]
+      }
     }
   }
 }
