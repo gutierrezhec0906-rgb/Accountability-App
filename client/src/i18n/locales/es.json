@@ -2396,5 +2396,65 @@
         "high": "Detecta semanalmente a la gente haciendo las cosas bien, adapta el reconocimiento a la persona, y el esfuerzo discrecional del equipo lo demuestra."
       }
     }
+  },
+  "training": {
+    "title": "Centro de Capacitación — Aprendizaje Continuo de Rendición de Cuentas",
+    "subtitle": "Seguimiento del progreso de aprendizaje y certificaciones",
+    "addTraining": "Agregar Capacitación",
+    "overallCompletion": "Finalización General",
+    "ofComplete": "{{count}} de {{total}} completadas",
+    "status": {
+      "completed": "Completado",
+      "completedSub": "capacitaciones terminadas",
+      "ontrack": "En Progreso",
+      "ontrackSub": "abierta, faltan >2 semanas",
+      "warning": "Vence Pronto",
+      "warningSub": "dentro de 2 semanas",
+      "overdue": "Vencida",
+      "overdueSub": "fecha límite pasada"
+    },
+    "showAll": "Mostrar todas las capacitaciones",
+    "showFiltered": "Mostrar capacitaciones de {{label}}",
+    "tapToClear": "toca para borrar",
+    "editTraining": "Editar Capacitación",
+    "category": "Categoría",
+    "typeNewCategory": "Escribe una nueva categoría",
+    "notOneOfThese": "Ninguna de estas — agregar una nueva categoría",
+    "chooseFromCatalog": "Elegir del Catálogo",
+    "selectSuggested": "— Selecciona una capacitación sugerida —",
+    "trainingTitle": "Título de la Capacitación",
+    "titlePlaceholder": "Elige del catálogo arriba, o escribe un título personalizado",
+    "duration": "Duración",
+    "durationPlaceholder": "ej. 2h",
+    "dueDate": "Fecha Límite",
+    "mandatory": "Obligatorio",
+    "saveChanges": "Guardar Cambios",
+    "cancel": "Cancelar",
+    "required": "Requerido",
+    "editTrainingTooltip": "Editar capacitación",
+    "deleteTrainingTooltip": "Eliminar capacitación",
+    "noneInCategory": "Aún no hay capacitaciones en \"{{category}}\" — haz clic en \"+ Agregar Capacitación\" para crear una.",
+    "noneYet": "Aún no hay capacitaciones — haz clic en \"+ Agregar Capacitación\" para crear una.",
+    "confirmDelete": "¿Eliminar \"{{title}}\"? Esto no se puede deshacer.",
+    "thisTraining": "esta capacitación",
+    "categories": {
+      "all": "Todas",
+      "lean": "Lean",
+      "leadership": "Liderazgo",
+      "safety": "Seguridad",
+      "softSkills": "Habilidades Blandas",
+      "analytics": "Analítica",
+      "quality": "Calidad"
+    },
+    "toast": {
+      "saveFailed": "No se pudieron guardar los cambios",
+      "completedOnTime": "+2 pts — ¡capacitación completada a tiempo!",
+      "completedCapReached": "¡Capacitación completada! Límite diario de 25 pts alcanzado hoy.",
+      "deleted": "Capacitación eliminada",
+      "updated": "Capacitación actualizada",
+      "added": "Capacitación agregada",
+      "createdPt": "+1 pt — ¡capacitación creada!",
+      "addedCapReached": "¡Capacitación agregada! Límite diario de 25 pts alcanzado hoy."
+    }
   }
 }

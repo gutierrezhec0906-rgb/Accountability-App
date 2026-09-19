@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { doc, getDoc, setDoc, updateDoc, increment } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -11,10 +12,13 @@ import { TRAINING_CATALOG } from '../utils/trainingCatalog';
 
 const categories = ['All', 'Lean', 'Leadership', 'Safety', 'Soft Skills', 'Analytics', 'Quality'];
 const catColors = { Lean: '#0d9488', Leadership: '#0f2044', Safety: '#ef4444', 'Soft Skills': '#8b5cf6', Analytics: '#0891b2', Quality: '#f59e0b' };
+const catKeys = { All: 'all', Lean: 'lean', Leadership: 'leadership', Safety: 'safety', 'Soft Skills': 'softSkills', Analytics: 'analytics', Quality: 'quality' };
+function trCategory(t, cat) { return t(`training.categories.${catKeys[cat] || cat}`, cat); }
 
 const emptyForm = { title: '', category: 'Leadership', duration: '', dueDate: '', mandatory: false };
 
 export default function Training() {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [trainings, setTrainings] = useState([]);
   const [filter, setFilter] = useState('All');
@@ -37,16 +41,16 @@ export default function Training() {
           if (isUntouchedSampleTrainings(saved)) {
             // Still the old starter placeholders, never customized — clear
             // them out and refund any false past-due penalty they racked up.
-            const refunded = saved.filter(t => t.pastDuePenaltyApplied);
+            const refunded = saved.filter(tr => tr.pastDuePenaltyApplied);
             try {
               await setDoc(doc(db, 'users', currentUser.uid), { trainings: [] }, { merge: true });
               if (refunded.length) {
                 await updateDoc(doc(db, 'users', currentUser.uid), { penaltyPoints: increment(-refunded.length) });
-                for (const t of refunded) {
+                for (const tr of refunded) {
                   await logPointEvent(currentUser.uid, {
                     points: 1,
                     toolLabel: 'Training Past Due Penalty Refunded',
-                    reason: `Refunded false past-due penalty for "${t.title}" (starter placeholder removed)`,
+                    reason: `Refunded false past-due penalty for "${tr.title}" (starter placeholder removed)`,
                   });
                 }
                 calculateScore(currentUser.uid).catch(() => {});
@@ -72,14 +76,14 @@ export default function Training() {
     try {
       await setDoc(doc(db, 'users', currentUser.uid), { trainings: next }, { merge: true });
     } catch {
-      toast.error('Could not save changes');
+      toast.error(t('training.toast.saveFailed', 'Could not save changes'));
     }
   }
 
   async function toggleComplete(id) {
-    const t = trainings.find(x => x.id === id);
-    const completingNow = t && !t.completed;
-    const onTime = completingNow && (!t.dueDate || getDateStatus(t.dueDate)?.level !== 'overdue');
+    const tr = trainings.find(x => x.id === id);
+    const completingNow = tr && !tr.completed;
+    const onTime = completingNow && (!tr.dueDate || getDateStatus(tr.dueDate)?.level !== 'overdue');
     await persist(trainings.map(x => x.id === id
       ? { ...x, completed: !x.completed, completedDate: !x.completed ? new Date().toISOString().split('T')[0] : null }
       : x));
@@ -88,13 +92,13 @@ export default function Training() {
       const { awarded, capReached } = await logPointEvent(currentUser.uid, {
         points: 2,
         toolLabel: 'Training Completed On Time',
-        reason: `Completed "${t.title}" on time`,
+        reason: `Completed "${tr.title}" on time`,
       });
       if (awarded) {
         calculateScore(currentUser.uid).catch(() => {});
-        toast.success('+2 pts — training completed on time!', { duration: 4000 });
+        toast.success(t('training.toast.completedOnTime', '+2 pts — training completed on time!'), { duration: 4000 });
       } else if (capReached) {
-        toast('Training completed! Daily 25-pt cap reached today.', { icon: '📅', duration: 4000 });
+        toast(t('training.toast.completedCapReached', 'Training completed! Daily 25-pt cap reached today.'), { icon: '📅', duration: 4000 });
       }
     }
   }
@@ -104,23 +108,23 @@ export default function Training() {
   // on recommit (GlobalPastDueModal) so a future miss can deduct again.
   useEffect(() => {
     if (!currentUser || !trainings.length) return;
-    const overdue = trainings.filter(t =>
-      !t.completed && t.dueDate && getDateStatus(t.dueDate)?.level === 'overdue' && !t.pastDuePenaltyApplied
+    const overdue = trainings.filter(tr =>
+      !tr.completed && tr.dueDate && getDateStatus(tr.dueDate)?.level === 'overdue' && !tr.pastDuePenaltyApplied
     );
     if (!overdue.length) return;
     (async () => {
       try {
-        const updated = trainings.map(t =>
-          overdue.some(o => o.id === t.id) ? { ...t, pastDuePenaltyApplied: true } : t
+        const updated = trainings.map(tr =>
+          overdue.some(o => o.id === tr.id) ? { ...tr, pastDuePenaltyApplied: true } : tr
         );
         await setDoc(doc(db, 'users', currentUser.uid), { trainings: updated }, { merge: true });
         setTrainings(updated);
         await updateDoc(doc(db, 'users', currentUser.uid), { penaltyPoints: increment(overdue.length) });
-        for (const t of overdue) {
+        for (const tr of overdue) {
           await logPointEvent(currentUser.uid, {
             points: -1,
             toolLabel: 'Training Past Due',
-            reason: `Training went past due: "${t.title}"`,
+            reason: `Training went past due: "${tr.title}"`,
           });
         }
         calculateScore(currentUser.uid).catch(() => {});
@@ -128,19 +132,19 @@ export default function Training() {
     })();
   }, [currentUser, trainings]);
 
-  function startEdit(t) {
-    setEditingId(t.id);
-    setForm({ title: t.title, category: t.category, duration: t.duration || '', dueDate: t.dueDate || '', mandatory: !!t.mandatory });
-    setCustomCategory(!categories.includes(t.category));
+  function startEdit(tr) {
+    setEditingId(tr.id);
+    setForm({ title: tr.title, category: tr.category, duration: tr.duration || '', dueDate: tr.dueDate || '', mandatory: !!tr.mandatory });
+    setCustomCategory(!categories.includes(tr.category));
     setShowForm(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
   function deleteTraining(id) {
-    const t = trainings.find(x => x.id === id);
-    if (!window.confirm(`Delete "${t?.title || 'this training'}"? This cannot be undone.`)) return;
+    const tr = trainings.find(x => x.id === id);
+    if (!window.confirm(t('training.confirmDelete', 'Delete "{{title}}"? This cannot be undone.', { title: tr?.title || t('training.thisTraining', 'this training') }))) return;
     persist(trainings.filter(x => x.id !== id));
-    toast.success('Training deleted');
+    toast.success(t('training.toast.deleted', 'Training deleted'));
   }
 
   function cancelForm() {
@@ -154,10 +158,10 @@ export default function Training() {
     e.preventDefault();
     if (editingId != null) {
       persist(trainings.map(x => x.id === editingId ? { ...x, ...form } : x));
-      toast.success('Training updated');
+      toast.success(t('training.toast.updated', 'Training updated'));
     } else {
       await persist([...trainings, { ...form, id: Date.now(), completed: false }]);
-      toast.success('Training added');
+      toast.success(t('training.toast.added', 'Training added'));
       if (currentUser) {
         const { awarded, capReached } = await logPointEvent(currentUser.uid, {
           points: 1,
@@ -166,9 +170,9 @@ export default function Training() {
         });
         if (awarded) {
           calculateScore(currentUser.uid).catch(() => {});
-          toast.success('+1 pt — training created!', { duration: 4000 });
+          toast.success(t('training.toast.createdPt', '+1 pt — training created!'), { duration: 4000 });
         } else if (capReached) {
-          toast('Training added! Daily 25-pt cap reached today.', { icon: '📅', duration: 4000 });
+          toast(t('training.toast.addedCapReached', 'Training added! Daily 25-pt cap reached today.'), { icon: '📅', duration: 4000 });
         }
       }
     }
@@ -206,17 +210,17 @@ export default function Training() {
 
   return (
     <div style={{ maxWidth: 860, margin: '0 auto' }}>
-      <PageHeader icon="🎓" title="Training Center — Accountability Continuous Learning" subtitle="Track learning progress and certifications"
-        action={<button className="btn-primary" onClick={() => { if (showForm) { cancelForm(); } else { setEditingId(null); setForm(emptyForm); setCustomCategory(false); setShowForm(true); } }}>+ Add Training</button>} />
+      <PageHeader icon="🎓" title={t('training.title', 'Training Center — Accountability Continuous Learning')} subtitle={t('training.subtitle', 'Track learning progress and certifications')}
+        action={<button className="btn-primary" onClick={() => { if (showForm) { cancelForm(); } else { setEditingId(null); setForm(emptyForm); setCustomCategory(false); setShowForm(true); } }}>+ {t('training.addTraining', 'Add Training')}</button>} />
 
       {/* Progress hero */}
       <div style={{ background: 'linear-gradient(135deg,#0f2044,#1e3a6e)', borderRadius: 16, padding: '1.5rem', marginBottom: '1.5rem', color: 'white' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 10 }}>
           <div>
-            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', fontWeight: 600, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.07em' }}>Overall Completion</p>
+            <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', fontWeight: 600, margin: '0 0 4px', textTransform: 'uppercase', letterSpacing: '0.07em' }}>{t('training.overallCompletion', 'Overall Completion')}</p>
             <p style={{ color: '#99f6e4', fontSize: '2.25rem', fontWeight: 900, margin: 0, lineHeight: 1 }}>{pct}%</p>
           </div>
-          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem', margin: 0 }}>{completedCount} of {trainings.length} complete</p>
+          <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem', margin: 0 }}>{t('training.ofComplete', '{{count}} of {{total}} complete', { count: completedCount, total: trainings.length })}</p>
         </div>
         <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 9999, height: 8 }}>
           <div style={{ height: 8, borderRadius: 9999, background: 'linear-gradient(90deg,#0d9488,#14b8a6)', width: `${pct}%`, transition: 'width 0.8s ease' }} />
@@ -226,16 +230,16 @@ export default function Training() {
       {/* Accountability windows: Completed · On Track (green) · Due Soon (yellow) · Past Due (red) */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: '1.5rem' }}>
         {[
-          { key: 'completed', label: 'Completed', sub: 'finished trainings',       value: completedCount, icon: '🎓', color: '#0f766e', bg: '#ccfbf1', border: '#5eead4' },
-          { key: 'ontrack',   label: 'On Track',  sub: 'open, >2 weeks out',        value: status.ontrack, icon: '✅', color: '#15803d', bg: '#dcfce7', border: '#86efac' },
-          { key: 'warning',   label: 'Due Soon',  sub: 'within 2 weeks',           value: status.warning, icon: '⚠️', color: '#b45309', bg: '#fef9c3', border: '#fde68a' },
-          { key: 'overdue',   label: 'Past Due',  sub: 'deadline passed',          value: status.overdue, icon: '🚨', color: '#dc2626', bg: '#fee2e2', border: '#fca5a5' },
+          { key: 'completed', label: t('training.status.completed', 'Completed'), sub: t('training.status.completedSub', 'finished trainings'),       value: completedCount, icon: '🎓', color: '#0f766e', bg: '#ccfbf1', border: '#5eead4' },
+          { key: 'ontrack',   label: t('training.status.ontrack', 'On Track'),  sub: t('training.status.ontrackSub', 'open, >2 weeks out'),        value: status.ontrack, icon: '✅', color: '#15803d', bg: '#dcfce7', border: '#86efac' },
+          { key: 'warning',   label: t('training.status.warning', 'Due Soon'),  sub: t('training.status.warningSub', 'within 2 weeks'),           value: status.warning, icon: '⚠️', color: '#b45309', bg: '#fef9c3', border: '#fde68a' },
+          { key: 'overdue',   label: t('training.status.overdue', 'Past Due'),  sub: t('training.status.overdueSub', 'deadline passed'),          value: status.overdue, icon: '🚨', color: '#dc2626', bg: '#fee2e2', border: '#fca5a5' },
         ].map(s => {
           const active = statusFilter === s.key;
           return (
-            <button key={s.label}
+            <button key={s.key}
               onClick={() => setStatusFilter(active ? 'all' : s.key)}
-              title={active ? 'Show all trainings' : `Show ${s.label} trainings`}
+              title={active ? t('training.showAll', 'Show all trainings') : t('training.showFiltered', 'Show {{label}} trainings', { label: s.label })}
               style={{
                 textAlign: 'center', background: s.bg, borderRadius: 14, padding: '1rem 0.75rem', cursor: 'pointer',
                 border: `2px solid ${active ? s.color : s.border}`,
@@ -245,7 +249,7 @@ export default function Training() {
               <div style={{ fontSize: '1.1rem', lineHeight: 1 }}>{s.icon}</div>
               <p style={{ fontSize: '2rem', fontWeight: 900, color: s.color, margin: '4px 0 0', lineHeight: 1 }}>{s.value}</p>
               <p style={{ fontSize: '0.8rem', color: s.color, margin: '4px 0 0', fontWeight: 800 }}>{s.label}</p>
-              <p style={{ fontSize: '0.68rem', color: s.color, opacity: 0.8, margin: '2px 0 0', fontWeight: 600 }}>{active ? 'tap to clear' : s.sub}</p>
+              <p style={{ fontSize: '0.68rem', color: s.color, opacity: 0.8, margin: '2px 0 0', fontWeight: 600 }}>{active ? t('training.tapToClear', 'tap to clear') : s.sub}</p>
             </button>
           );
         })}
@@ -253,42 +257,42 @@ export default function Training() {
 
       {showForm && (
         <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>{editingId != null ? 'Edit Training' : 'Add Training'}</h3>
+          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>{editingId != null ? t('training.editTraining', 'Edit Training') : t('training.addTraining', 'Add Training')}</h3>
           <form onSubmit={submitTraining} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
             <div>
-              <label className="label">Category</label>
+              <label className="label">{t('training.category', 'Category')}</label>
               {customCategory ? (
                 <input className="input" required value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                  placeholder="Type a new category" />
+                  placeholder={t('training.typeNewCategory', 'Type a new category')} />
               ) : (
                 <select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                  {categories.filter(c => c !== 'All').map(c => <option key={c}>{c}</option>)}
+                  {categories.filter(c => c !== 'All').map(c => <option key={c} value={c}>{trCategory(t, c)}</option>)}
                 </select>
               )}
               <label style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6, cursor: 'pointer' }}>
                 <input type="checkbox" checked={customCategory}
                   onChange={e => { setCustomCategory(e.target.checked); setForm(f => ({ ...f, category: e.target.checked ? '' : 'Leadership' })); }}
                   style={{ width: 14, height: 14 }} />
-                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Not one of these — add a new category</span>
+                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{t('training.notOneOfThese', 'Not one of these — add a new category')}</span>
               </label>
             </div>
             <div>
-              <label className="label">Choose from Catalog</label>
+              <label className="label">{t('training.chooseFromCatalog', 'Choose from Catalog')}</label>
               <select className="input" value="" disabled={customCategory} onChange={e => { if (e.target.value) setForm(f => ({ ...f, title: e.target.value })); }}>
-                <option value="">— Select a suggested training —</option>
-                {(TRAINING_CATALOG[form.category] || []).map(t => <option key={t} value={t}>{t}</option>)}
+                <option value="">{t('training.selectSuggested', '— Select a suggested training —')}</option>
+                {(TRAINING_CATALOG[form.category] || []).map(opt => <option key={opt} value={opt}>{opt}</option>)}
               </select>
             </div>
-            <div style={{ gridColumn: '1/-1' }}><label className="label">Training Title</label><input className="input" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Pick from the catalog above, or type a custom title" /></div>
-            <div><label className="label">Duration</label><input className="input" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))} placeholder="e.g. 2h" /></div>
-            <div><label className="label">Due Date</label><input className="input" type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
+            <div style={{ gridColumn: '1/-1' }}><label className="label">{t('training.trainingTitle', 'Training Title')}</label><input className="input" required value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder={t('training.titlePlaceholder', 'Pick from the catalog above, or type a custom title')} /></div>
+            <div><label className="label">{t('training.duration', 'Duration')}</label><input className="input" value={form.duration} onChange={e => setForm(f => ({ ...f, duration: e.target.value }))} placeholder={t('training.durationPlaceholder', 'e.g. 2h')} /></div>
+            <div><label className="label">{t('training.dueDate', 'Due Date')}</label><input className="input" type="date" value={form.dueDate} onChange={e => setForm(f => ({ ...f, dueDate: e.target.value }))} /></div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
               <input type="checkbox" id="mandatory" checked={form.mandatory} onChange={e => setForm(f => ({ ...f, mandatory: e.target.checked }))} style={{ width: 16, height: 16 }} />
-              <label htmlFor="mandatory" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Mandatory</label>
+              <label htmlFor="mandatory" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{t('training.mandatory', 'Mandatory')}</label>
             </div>
             <div style={{ gridColumn: '1/-1', display: 'flex', gap: 10 }}>
-              <button className="btn-primary" type="submit">{editingId != null ? 'Save Changes' : 'Add Training'}</button>
-              <button className="btn-secondary" type="button" onClick={cancelForm}>Cancel</button>
+              <button className="btn-primary" type="submit">{editingId != null ? t('training.saveChanges', 'Save Changes') : t('training.addTraining', 'Add Training')}</button>
+              <button className="btn-secondary" type="button" onClick={cancelForm}>{t('training.cancel', 'Cancel')}</button>
             </div>
           </form>
         </div>
@@ -300,7 +304,7 @@ export default function Training() {
           <button key={c} onClick={() => setFilter(c)}
             style={{ padding: '0.375rem 1rem', borderRadius: 9999, fontSize: '0.78rem', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
               background: filter === c ? (catColors[c] || '#0f2044') : '#f1f5f9', color: filter === c ? '#fff' : '#475569' }}>
-            {c}
+            {trCategory(t, c)}
           </button>
         ))}
       </div>
@@ -317,33 +321,33 @@ export default function Training() {
         overflowY: 'scroll', paddingRight: 6, paddingBottom: 8,
         scrollbarWidth: 'thin', scrollbarColor: '#64748b #e2e8f0',
       }}>
-        {filtered.map(t => (
-          <div key={t.id} className="card" style={{ flexShrink: 0, padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: 14 }}>
-            <button onClick={() => toggleComplete(t.id)}
-              style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, border: `2px solid ${t.completed ? '#0d9488' : '#e2e8f0'}`, background: t.completed ? '#0d9488' : 'transparent', color: t.completed ? 'white' : 'transparent', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
+        {filtered.map(tr => (
+          <div key={tr.id} className="card" style={{ flexShrink: 0, padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', gap: 14 }}>
+            <button onClick={() => toggleComplete(tr.id)}
+              style={{ width: 32, height: 32, borderRadius: '50%', flexShrink: 0, border: `2px solid ${tr.completed ? '#0d9488' : '#e2e8f0'}`, background: tr.completed ? '#0d9488' : 'transparent', color: tr.completed ? 'white' : 'transparent', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all 0.2s' }}>
               ✓
             </button>
             <div style={{ flex: 1 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 4 }}>
-                <h4 style={{ fontWeight: 700, color: t.completed ? '#94a3b8' : 'var(--text-primary)', margin: 0, textDecoration: t.completed ? 'line-through' : 'none', fontSize: '0.9375rem' }}>{t.title}</h4>
-                {t.mandatory && <span className="badge-red">Required</span>}
+                <h4 style={{ fontWeight: 700, color: tr.completed ? '#94a3b8' : 'var(--text-primary)', margin: 0, textDecoration: tr.completed ? 'line-through' : 'none', fontSize: '0.9375rem' }}>{tr.title}</h4>
+                {tr.mandatory && <span className="badge-red">{t('training.required', 'Required')}</span>}
               </div>
               <div style={{ display: 'flex', gap: 14, fontSize: '0.75rem', color: 'var(--text-muted)', flexWrap: 'wrap' }}>
-                <span style={{ background: catColors[t.category] ? catColors[t.category] + '18' : '#f1f5f9', color: catColors[t.category] || '#475569', padding: '1px 8px', borderRadius: 9999, fontWeight: 700, fontSize: '0.7rem' }}>{t.category}</span>
-                {t.duration && <span>⏱ {t.duration}</span>}
-                {t.dueDate && !t.completed && <DateStatus date={t.dueDate} />}
-                {t.dueDate && t.completed && <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>📅 {t.dueDate}</span>}
-                {t.completedDate && <span style={{ color: '#0d9488', fontWeight: 600 }}>✅ {t.completedDate}</span>}
-                <RecommitBadge count={t.recommitmentCount} />
+                <span style={{ background: catColors[tr.category] ? catColors[tr.category] + '18' : '#f1f5f9', color: catColors[tr.category] || '#475569', padding: '1px 8px', borderRadius: 9999, fontWeight: 700, fontSize: '0.7rem' }}>{trCategory(t, tr.category)}</span>
+                {tr.duration && <span>⏱ {tr.duration}</span>}
+                {tr.dueDate && !tr.completed && <DateStatus date={tr.dueDate} />}
+                {tr.dueDate && tr.completed && <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>📅 {tr.dueDate}</span>}
+                {tr.completedDate && <span style={{ color: '#0d9488', fontWeight: 600 }}>✅ {tr.completedDate}</span>}
+                <RecommitBadge count={tr.recommitmentCount} />
               </div>
             </div>
             {/* Edit + Delete */}
             <div style={{ display: 'flex', gap: 4, flexShrink: 0 }}>
-              <button onClick={() => startEdit(t)} title="Edit training"
+              <button onClick={() => startEdit(tr)} title={t('training.editTrainingTooltip', 'Edit training')}
                 style={{ background: 'none', border: 'none', color: '#0d9488', cursor: 'pointer', fontSize: '0.95rem', padding: '4px 6px' }}>
                 ✏️
               </button>
-              <button onClick={() => deleteTraining(t.id)} title="Delete training"
+              <button onClick={() => deleteTraining(tr.id)} title={t('training.deleteTrainingTooltip', 'Delete training')}
                 style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', fontSize: '0.95rem', padding: '4px 6px' }}>
                 🗑️
               </button>
@@ -352,7 +356,9 @@ export default function Training() {
         ))}
         {filtered.length === 0 && (
           <div className="card" style={{ padding: '1.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-            No trainings{filter !== 'All' ? ` in "${filter}"` : ''} yet — click "+ Add Training" to create one.
+            {filter !== 'All'
+              ? t('training.noneInCategory', 'No trainings in "{{category}}" yet — click "+ Add Training" to create one.', { category: trCategory(t, filter) })
+              : t('training.noneYet', 'No trainings yet — click "+ Add Training" to create one.')}
           </div>
         )}
       </div>
