@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import { arrayUnion, doc, getDoc, setDoc } from 'firebase/firestore';
@@ -16,7 +17,10 @@ const SCALE_LABELS = {
   5: { label: 'Always',    desc: 'Deeply embedded. You demonstrate it when hard, teach it to others, and it shapes how your team operates.' },
 };
 
+function trScale(t, n, field) { return t(`eqAssessment.scale.${n}.${field}`, SCALE_LABELS[n][field]); }
+
 function ScaleButton({ n, selected, onClick, isLast }) {
+  const { t } = useTranslation();
   const [hovered, setHovered] = useState(false);
   const isActive = n <= selected;
   const color = isActive ? '#0d9488' : hovered ? '#0f2044' : '#e2e8f0';
@@ -40,10 +44,10 @@ function ScaleButton({ n, selected, onClick, isLast }) {
           width: 180, boxShadow: '0 4px 16px rgba(0,0,0,0.2)', pointerEvents: 'none',
         }}>
           <p style={{ fontSize: '0.72rem', fontWeight: 800, color: '#99f6e4', margin: '0 0 3px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            {n} — {SCALE_LABELS[n].label}
+            {n} — {trScale(t, n, 'label')}
           </p>
           <p style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.85)', margin: 0, lineHeight: 1.45 }}>
-            {SCALE_LABELS[n].desc}
+            {trScale(t, n, 'desc')}
           </p>
           <div style={{ position: 'absolute', bottom: -6, left: arrowLeft, right: arrowRight, transform: arrowTransform, width: 0, height: 0, borderLeft: '6px solid transparent', borderRight: '6px solid transparent', borderTop: '6px solid #0f2044' }} />
         </div>
@@ -347,6 +351,11 @@ function migratePdpPlan(plan) {
   return { ...plan, areas: migratedAreas, actions: migratedActions };
 }
 
+function trDim(t, dimId, field) { const dim = eqDimensions.find(d => d.id === dimId); return t(`eqAssessment.dimensions.${dimId}.${field}`, dim?.[field]); }
+function trQuestion(t, dimId, idx) { const dim = eqDimensions.find(d => d.id === dimId); return t(`eqAssessment.dimensions.${dimId}.questions.${idx}`, dim?.questions[idx]); }
+function trStrategy(t, dimId, idx) { return t(`eqAssessment.strategies.${dimId}.${idx}`, EQ_STRATEGIES[dimId][idx]); }
+function trSuggestion(t, dimId, idx) { return t(`eqAssessment.suggestedActions.${dimId}.${idx}`, EQ_SUGGESTED_ACTIONS[dimId][idx]); }
+
 function calcDimAvg(scores, dimId, qCount) {
   const vals = Array.from({ length: qCount }, (_, i) => scores[`${dimId}-${i}`] || 0).filter(Boolean);
   return vals.length ? +(vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(1) : 0;
@@ -368,7 +377,10 @@ function ScoreBar({ value, max = 5 }) {
   );
 }
 
+function trGuide(t, key, field) { return t(`eqAssessment.guides.${key}.${field}`, EQ_GUIDES[key][field]); }
+
 function QuestionGuide({ guideKey }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const guide = EQ_GUIDES[guideKey];
   if (!guide) return null;
@@ -387,7 +399,7 @@ function QuestionGuide({ guideKey }) {
           transform: open ? 'rotate(90deg)' : 'rotate(0deg)',
           transition: 'transform 0.18s',
         }}>▶</span>
-        {open ? 'Hide guide' : 'What does this mean?'}
+        {open ? t('eqAssessment.hideGuide', 'Hide guide') : t('eqAssessment.whatDoesThisMean', 'What does this mean?')}
       </button>
 
       {open && (
@@ -397,23 +409,23 @@ function QuestionGuide({ guideKey }) {
         }}>
           {/* What it means */}
           <div style={{ padding: '0.6rem 0.875rem', borderBottom: '1px solid #ccfbf1' }}>
-            <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.05em' }}>What this means</p>
-            <p style={{ margin: 0, fontSize: '0.78rem', color: '#1e293b', lineHeight: 1.55 }}>{guide.what}</p>
+            <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('eqAssessment.whatThisMeans', 'What this means')}</p>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: '#1e293b', lineHeight: 1.55 }}>{trGuide(t, guideKey, 'what')}</p>
           </div>
           {/* Day-to-day example */}
           <div style={{ padding: '0.6rem 0.875rem', borderBottom: '1px solid #ccfbf1', background: 'white' }}>
-            <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#0891b2', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Real-life example</p>
-            <p style={{ margin: 0, fontSize: '0.78rem', color: '#334155', lineHeight: 1.55, fontStyle: 'italic' }}>{guide.example}</p>
+            <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#0891b2', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('eqAssessment.realLifeExample', 'Real-life example')}</p>
+            <p style={{ margin: 0, fontSize: '0.78rem', color: '#334155', lineHeight: 1.55, fontStyle: 'italic' }}>{trGuide(t, guideKey, 'example')}</p>
           </div>
           {/* Low vs High */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr' }}>
             <div style={{ padding: '0.6rem 0.875rem', borderRight: '1px solid #ccfbf1' }}>
-              <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.05em' }}>⬇ Scoring low looks like</p>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b', lineHeight: 1.5 }}>{guide.low}</p>
+              <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#ef4444', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('eqAssessment.scoringLow', '⬇ Scoring low looks like')}</p>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b', lineHeight: 1.5 }}>{trGuide(t, guideKey, 'low')}</p>
             </div>
             <div style={{ padding: '0.6rem 0.875rem' }}>
-              <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.05em' }}>⬆ Scoring high looks like</p>
-              <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b', lineHeight: 1.5 }}>{guide.high}</p>
+              <p style={{ margin: '0 0 3px', fontSize: '0.68rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('eqAssessment.scoringHigh', '⬆ Scoring high looks like')}</p>
+              <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b', lineHeight: 1.5 }}>{trGuide(t, guideKey, 'high')}</p>
             </div>
           </div>
         </div>
@@ -428,13 +440,14 @@ function QuestionGuide({ guideKey }) {
 // (detailed examples / concrete actions) without touching the user's own
 // assessment answers.
 function StrategyBoard() {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState(null); // { dimId, strategy }
   const [deepDive, setDeepDive] = useState('');
   const [loadingDive, setLoadingDive] = useState(false);
   const [diveError, setDiveError] = useState(false);
 
-  function selectStrategy(dimId, strategy) {
-    setSelected({ dimId, strategy });
+  function selectStrategy(dimId, strategy, idx) {
+    setSelected({ dimId, strategy, idx });
     setDeepDive('');
     setDiveError(false);
   }
@@ -450,7 +463,7 @@ function StrategyBoard() {
       setDeepDive(res.data?.explanation || '');
     } catch (e) {
       setDiveError(true);
-      toast.error(e?.message || 'Could not get AI support — try again');
+      toast.error(e?.message || t('eqAssessment.toast.aiSupportFailed', 'Could not get AI support — try again'));
     }
     setLoadingDive(false);
   }
@@ -458,9 +471,9 @@ function StrategyBoard() {
   return (
     <div className="card" style={{ overflow: 'hidden', marginTop: 8 }}>
       <div style={{ padding: '1rem 1.25rem', background: 'linear-gradient(135deg, #0f2044 0%, #134e6a 100%)' }}>
-        <p style={{ margin: 0, fontWeight: 900, color: 'white', fontSize: '1rem' }}>🧭 66 EQ Strategies</p>
+        <p style={{ margin: 0, fontWeight: 900, color: 'white', fontSize: '1rem' }}>{t('eqAssessment.strategiesTitle', '🧭 66 EQ Strategies')}</p>
         <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'rgba(153,246,228,0.85)' }}>
-          Browse concrete tactics by pillar — click one for an AI deep dive with examples and action steps.
+          {t('eqAssessment.strategiesSubtitle', 'Browse concrete tactics by pillar — click one for an AI deep dive with examples and action steps.')}
         </p>
       </div>
 
@@ -468,21 +481,21 @@ function StrategyBoard() {
         {eqDimensions.map(dim => (
           <div key={dim.id} style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
             <div style={{ padding: '0.6rem 0.875rem', background: '#f8fafc', borderBottom: '1px solid var(--border)' }}>
-              <p style={{ margin: 0, fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-primary)' }}>{dim.icon} {dim.label}</p>
-              <p style={{ margin: 0, fontSize: '0.68rem', color: 'var(--text-muted)' }}>{EQ_STRATEGIES[dim.id].length} strategies</p>
+              <p style={{ margin: 0, fontWeight: 800, fontSize: '0.82rem', color: 'var(--text-primary)' }}>{dim.icon} {trDim(t, dim.id, 'label')}</p>
+              <p style={{ margin: 0, fontSize: '0.68rem', color: 'var(--text-muted)' }}>{t('eqAssessment.strategiesCount', '{{count}} strategies', { count: EQ_STRATEGIES[dim.id].length })}</p>
             </div>
             <div style={{ maxHeight: 260, overflowY: 'auto' }}>
               {EQ_STRATEGIES[dim.id].map((s, i) => {
                 const isSel = selected?.dimId === dim.id && selected?.strategy === s;
                 return (
-                  <button key={i} onClick={() => selectStrategy(dim.id, s)}
+                  <button key={i} onClick={() => selectStrategy(dim.id, s, i)}
                     style={{
                       width: '100%', textAlign: 'left', display: 'flex', gap: 8, alignItems: 'flex-start',
                       padding: '0.45rem 0.875rem', border: 'none', borderBottom: '1px solid var(--border)',
                       background: isSel ? '#f0fdfa' : 'transparent', cursor: 'pointer',
                     }}>
                     <span style={{ fontSize: '0.68rem', fontWeight: 800, color: isSel ? '#0d9488' : '#94a3b8', flexShrink: 0, minWidth: 16 }}>{i + 1}</span>
-                    <span style={{ fontSize: '0.78rem', color: isSel ? '#0d9488' : 'var(--text-secondary)', fontWeight: isSel ? 700 : 500, lineHeight: 1.4 }}>{s}</span>
+                    <span style={{ fontSize: '0.78rem', color: isSel ? '#0d9488' : 'var(--text-secondary)', fontWeight: isSel ? 700 : 500, lineHeight: 1.4 }}>{trStrategy(t, dim.id, i)}</span>
                   </button>
                 );
               })}
@@ -495,15 +508,15 @@ function StrategyBoard() {
         <div style={{ margin: '0 1.25rem 1.25rem', padding: '1rem 1.125rem', borderRadius: 12, background: '#f8fafc', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8, marginBottom: deepDive || loadingDive ? 10 : 0 }}>
             <div>
-              <p style={{ margin: '0 0 2px', fontSize: '0.68rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Selected Strategy</p>
-              <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>{selected.strategy}</p>
+              <p style={{ margin: '0 0 2px', fontSize: '0.68rem', fontWeight: 800, color: '#0d9488', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('eqAssessment.selectedStrategy', 'Selected Strategy')}</p>
+              <p style={{ margin: 0, fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-primary)' }}>{trStrategy(t, selected.dimId, selected.idx)}</p>
             </div>
             <button onClick={getAiSupport} disabled={loadingDive} className="btn-primary" style={{ fontSize: '0.78rem', padding: '0.45rem 0.875rem', flexShrink: 0 }}>
-              {loadingDive ? 'Thinking…' : '🤖 AI Support — Examples & Actions'}
+              {loadingDive ? t('eqAssessment.thinking', 'Thinking…') : t('eqAssessment.aiSupportButton', '🤖 AI Support — Examples & Actions')}
             </button>
           </div>
           {diveError && !loadingDive && (
-            <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: 0 }}>Couldn't generate a deep dive this time — try again.</p>
+            <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: 0 }}>{t('eqAssessment.deepDiveFailed', "Couldn't generate a deep dive this time — try again.")}</p>
           )}
           {deepDive && (
             <div style={{ marginTop: 4, padding: '0.875rem 1rem', background: 'white', borderRadius: 10, border: '1px solid #ccfbf1', whiteSpace: 'pre-line', fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
@@ -517,6 +530,7 @@ function StrategyBoard() {
 }
 
 export default function EQAssessment() {
+  const { t } = useTranslation();
   const { currentUser, userProfile } = useAuth();
   const [eqScores, setEqScores] = useState({});
   const [saving, setSaving] = useState(false);
@@ -552,11 +566,11 @@ export default function EQAssessment() {
   }, [currentUser]);
 
   async function saveEQ() {
-    if (!currentUser) return toast.error('Not logged in');
+    if (!currentUser) return toast.error(t('eqAssessment.toast.notLoggedIn', 'Not logged in'));
     const now = new Date();
     const nextTest = new Date(now);
     nextTest.setDate(nextTest.getDate() + 60);
-    const label = saveLabel.trim() || `Assessment — ${now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+    const label = saveLabel.trim() || t('eqAssessment.toast.defaultLabel', 'Assessment — {{date}}', { date: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) });
     setSaving(true);
     try {
       const dimResults = eqDimensions.map(d => ({
@@ -592,14 +606,14 @@ export default function EQAssessment() {
         });
         if (awarded) {
           await calculateScore(currentUser.uid);
-          toast.success('+3 pts — EQ Assessment complete!', { duration: 4000 });
+          toast.success(t('eqAssessment.toast.assessmentAwarded', '+3 pts — EQ Assessment complete!'), { duration: 4000 });
         } else if (capReached) {
-          toast.success('Assessment saved! (daily point cap reached — score unchanged)', { duration: 4000 });
+          toast.success(t('eqAssessment.toast.assessmentCapReached', 'Assessment saved! (daily point cap reached — score unchanged)'), { duration: 4000 });
         } else {
-          toast.success('Assessment saved!');
+          toast.success(t('eqAssessment.toast.assessmentSaved', 'Assessment saved!'));
         }
       } else {
-        toast.success('Assessment saved! (points already awarded within the last 90 days)');
+        toast.success(t('eqAssessment.toast.assessmentAlreadyAwarded', 'Assessment saved! (points already awarded within the last 90 days)'));
       }
 
       setLastSavedRecord(newRecord);
@@ -608,20 +622,20 @@ export default function EQAssessment() {
       setShowLabelInput(false);
     } catch (e) {
       console.error(e);
-      toast.error('Save failed: ' + e.message, { duration: 6000 });
+      toast.error(t('eqAssessment.toast.saveFailed', 'Save failed: {{msg}}', { msg: e.message }), { duration: 6000 });
     }
     setSaving(false);
   }
 
   async function savePdp() {
-    if (!currentUser) return toast.error('Not logged in');
+    if (!currentUser) return toast.error(t('eqAssessment.toast.notLoggedIn', 'Not logged in'));
     const MIN_PER_AREA = 2;
     const areasOk = pdpAreas && pdpAreas.every(dimId => {
       const filled = (pdpActions[dimId] || []).filter(a => a.action.trim()).length;
       return filled >= MIN_PER_AREA;
     });
     if (!areasOk) {
-      return toast.error('Add at least 2 actions for each focus area to earn the points.', { duration: 4000 });
+      return toast.error(t('eqAssessment.toast.pdpMinActions', 'Add at least 2 actions for each focus area to earn the points.'), { duration: 4000 });
     }
     setSavingPdp(true);
     try {
@@ -641,18 +655,18 @@ export default function EQAssessment() {
         });
         if (awarded) {
           await calculateScore(currentUser.uid);
-          toast.success('+2 pts — EQ Development Plan saved!', { duration: 4000 });
+          toast.success(t('eqAssessment.toast.pdpAwarded', '+2 pts — EQ Development Plan saved!'), { duration: 4000 });
         } else if (capReached) {
-          toast.success('Plan saved! (daily point cap reached — score unchanged)', { duration: 4000 });
+          toast.success(t('eqAssessment.toast.pdpCapReached', 'Plan saved! (daily point cap reached — score unchanged)'), { duration: 4000 });
         } else {
-          toast.success('Development plan saved!');
+          toast.success(t('eqAssessment.toast.pdpSaved', 'Development plan saved!'));
         }
       } else {
-        toast.success('Development plan updated! (points already awarded within the last 90 days)');
+        toast.success(t('eqAssessment.toast.pdpAlreadyAwarded', 'Development plan updated! (points already awarded within the last 90 days)'));
       }
     } catch (e) {
       console.error(e);
-      toast.error('Save failed: ' + e.message, { duration: 6000 });
+      toast.error(t('eqAssessment.toast.saveFailed', 'Save failed: {{msg}}', { msg: e.message }), { duration: 6000 });
     }
     setSavingPdp(false);
   }
@@ -717,7 +731,7 @@ export default function EQAssessment() {
   function loadRecord(record) {
     setEqScores(record.scores || {});
     setSelectedRecord(record.id);
-    toast.success(`Loaded: ${record.label}`);
+    toast.success(t('eqAssessment.toast.loaded', 'Loaded: {{label}}', { label: record.label }));
   }
 
   async function deleteRecord(recordId) {
@@ -727,9 +741,9 @@ export default function EQAssessment() {
       await setDoc(doc(db, 'users', currentUser.uid), { eqHistory: updated }, { merge: true });
       setEqHistory(updated);
       if (selectedRecord === recordId) setSelectedRecord(null);
-      toast.success('Assessment deleted.');
+      toast.success(t('eqAssessment.toast.deleted', 'Assessment deleted.'));
     } catch {
-      toast.error('Could not delete — try again.');
+      toast.error(t('eqAssessment.toast.deleteFailed', 'Could not delete — try again.'));
     }
   }
 
@@ -740,7 +754,7 @@ export default function EQAssessment() {
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-      <PageHeader icon="💡" title="Emotional Intelligence (EQ) Assessment — Accountability in Action" subtitle="Emotional Intelligence self-assessment and 90-day development plan" />
+      <PageHeader icon="💡" title={t('eqAssessment.title', 'Emotional Intelligence (EQ) Assessment — Accountability in Action')} subtitle={t('eqAssessment.subtitle', 'Emotional Intelligence self-assessment and 90-day development plan')} />
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
 
@@ -748,12 +762,12 @@ export default function EQAssessment() {
         {(eqHistory.length > 0 || loadError) && (
           <div className="card" style={{ overflow: 'hidden' }}>
             <div style={{ padding: '0.875rem 1.25rem', background: '#0f2044', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <span style={{ color: 'white', fontWeight: 800, fontSize: '0.9rem' }}>📋 Saved Assessments</span>
-              <span style={{ color: '#99f6e4', fontSize: '0.78rem', fontWeight: 700 }}>{eqHistory.length} record{eqHistory.length !== 1 ? 's' : ''}</span>
+              <span style={{ color: 'white', fontWeight: 800, fontSize: '0.9rem' }}>{t('eqAssessment.savedAssessments', '📋 Saved Assessments')}</span>
+              <span style={{ color: '#99f6e4', fontSize: '0.78rem', fontWeight: 700 }}>{t('eqAssessment.recordCount', '{{count}} record(s)', { count: eqHistory.length })}</span>
             </div>
             {loadError && (
               <div style={{ padding: '0.75rem 1.25rem', background: '#fef2f2', borderBottom: '1px solid #fecaca' }}>
-                <p style={{ fontSize: '0.78rem', color: '#ef4444', fontWeight: 700, margin: 0 }}>⚠️ Could not load history — check Firestore rules for the users collection.</p>
+                <p style={{ fontSize: '0.78rem', color: '#ef4444', fontWeight: 700, margin: 0 }}>{t('eqAssessment.loadErrorMsg', '⚠️ Could not load history — check Firestore rules for the users collection.')}</p>
               </div>
             )}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 0 }}>
@@ -767,7 +781,7 @@ export default function EQAssessment() {
                 const daysUntil = rec.nextTestDate ? Math.round((new Date(rec.nextTestDate + 'T00:00:00') - today) / 86400000) : null;
                 const reminderColor = daysUntil !== null && daysUntil <= 0 ? '#ef4444' : daysUntil !== null && daysUntil <= 7 ? '#f59e0b' : '#0d9488';
                 const reminderBg   = daysUntil !== null && daysUntil <= 0 ? '#fef2f2' : daysUntil !== null && daysUntil <= 7 ? '#fefce8' : '#f0fdf4';
-                const reminderText = daysUntil !== null && daysUntil <= 0 ? 'Retake overdue!' : daysUntil !== null ? `Retake in ${daysUntil} days` : null;
+                const reminderText = daysUntil !== null && daysUntil <= 0 ? t('eqAssessment.retakeOverdue', 'Retake overdue!') : daysUntil !== null ? t('eqAssessment.retakeInDays', 'Retake in {{days}} days', { days: daysUntil }) : null;
                 return (
                   <div key={rec.id} style={{ padding: '1rem 1.25rem', borderRight: '1px solid var(--border)', borderBottom: '1px solid var(--border)', background: isSelected ? '#f0fdf4' : 'white' }}>
                     {/* Header */}
@@ -786,7 +800,7 @@ export default function EQAssessment() {
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 10 }}>
                         {rec.dimResults.map(d => (
                           <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                            <span style={{ fontSize: '0.68rem', width: 90, color: 'var(--text-muted)', flexShrink: 0 }}>{d.icon} {d.label}</span>
+                            <span style={{ fontSize: '0.68rem', width: 90, color: 'var(--text-muted)', flexShrink: 0 }}>{d.icon} {trDim(t, d.id, 'label')}</span>
                             <ScoreBar value={d.avg} />
                             <span style={{ fontSize: '0.68rem', fontWeight: 700, color: d.avg >= 4 ? '#0d9488' : d.avg >= 3 ? '#f59e0b' : d.avg > 0 ? '#ef4444' : '#94a3b8', width: 24, textAlign: 'right', flexShrink: 0 }}>{d.avg || '—'}</span>
                           </div>
@@ -803,7 +817,7 @@ export default function EQAssessment() {
                     {/* 60-day reminder */}
                     {nextDate && (
                       <div style={{ background: reminderBg, border: `1px solid ${reminderColor}44`, borderRadius: 8, padding: '6px 10px', marginBottom: 10 }}>
-                        <p style={{ fontSize: '0.72rem', fontWeight: 800, color: reminderColor, margin: '0 0 2px' }}>🔔 Next: {nextDate}</p>
+                        <p style={{ fontSize: '0.72rem', fontWeight: 800, color: reminderColor, margin: '0 0 2px' }}>{t('eqAssessment.nextDate', '🔔 Next: {{date}}', { date: nextDate })}</p>
                         {reminderText && <p style={{ fontSize: '0.68rem', color: reminderColor, margin: 0, fontWeight: 600 }}>{reminderText}</p>}
                       </div>
                     )}
@@ -811,20 +825,20 @@ export default function EQAssessment() {
                     <div style={{ display: 'flex', gap: 6, marginBottom: 6 }}>
                       <button onClick={() => loadRecord(rec)}
                         style={{ flex: 1, padding: '0.35rem', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${isSelected ? '#0d9488' : '#e2e8f0'}`, background: isSelected ? '#0d9488' : 'white', color: isSelected ? 'white' : '#64748b', transition: 'all 0.15s' }}>
-                        {isSelected ? '✓ Loaded' : 'Load'}
+                        {isSelected ? t('eqAssessment.loaded', '✓ Loaded') : t('eqAssessment.load', 'Load')}
                       </button>
                       <button onClick={() => {
-                        if (window.confirm('Delete this assessment? This cannot be undone.')) deleteRecord(rec.id);
+                        if (window.confirm(t('eqAssessment.confirmDelete', 'Delete this assessment? This cannot be undone.'))) deleteRecord(rec.id);
                       }}
                         style={{ padding: '0.35rem 0.6rem', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', border: '1.5px solid #fecaca', background: 'white', color: '#ef4444', transition: 'all 0.15s' }}>
-                        🗑 Delete
+                        {t('eqAssessment.deleteBtn', '🗑 Delete')}
                       </button>
                     </div>
                     {/* PDF Report button */}
                     <button
                       onClick={() => generateEQReport(rec, userProfile?.displayName || currentUser?.displayName || '', userProfile?.role || '')}
                       style={{ width: '100%', padding: '0.4rem', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', border: '1.5px solid #0f2044', background: '#0f2044', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, transition: 'all 0.15s' }}>
-                      📄 Download Recommendations Report
+                      {t('eqAssessment.downloadReport', '📄 Download Recommendations Report')}
                     </button>
 
                     {/* Development plan status badge */}
@@ -849,9 +863,9 @@ export default function EQAssessment() {
                             <div style={{ padding: '0.5rem 0.75rem', display: 'flex', alignItems: 'center', gap: 8 }}>
                               <span style={{ fontSize: '1.2rem' }}>🏆</span>
                               <div style={{ flex: 1, minWidth: 0 }}>
-                                <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 800, color: '#0d9488' }}>Development Plan Complete</p>
+                                <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 800, color: '#0d9488' }}>{t('eqAssessment.planComplete', 'Development Plan Complete')}</p>
                                 <p style={{ margin: 0, fontSize: '0.67rem', color: '#64748b' }}>
-                                  {totalActions} action{totalActions !== 1 ? 's' : ''} · Saved {planDate}
+                                  {t('eqAssessment.planActionsSaved', '{{count}} action(s) · Saved {{date}}', { count: totalActions, date: planDate })}
                                 </p>
                               </div>
                             </div>
@@ -861,7 +875,7 @@ export default function EQAssessment() {
                                   const dim = eqDimensions.find(d => d.id === areaId);
                                   return dim ? (
                                     <span key={areaId} style={{ fontSize: '0.67rem', padding: '2px 7px', borderRadius: 9999, background: '#0d948820', color: '#0d9488', fontWeight: 700 }}>
-                                      {dim.icon} {dim.label}
+                                      {dim.icon} {trDim(t, dim.id, 'label')}
                                     </span>
                                   ) : null;
                                 })}
@@ -880,13 +894,13 @@ export default function EQAssessment() {
                           <span style={{ fontSize: '1.1rem' }}>📋</span>
                           <div style={{ flex: 1, minWidth: 0 }}>
                             <p style={{ margin: 0, fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8' }}>
-                              {isLatest ? 'No development plan yet' : 'No plan for this record'}
+                              {isLatest ? t('eqAssessment.noPlanYet', 'No development plan yet') : t('eqAssessment.noPlanForRecord', 'No plan for this record')}
                             </p>
                             {isLatest && (
                               <button
                                 onClick={() => { initPdp(); document.querySelector('[data-pdp-section]')?.scrollIntoView({ behavior: 'smooth' }); }}
                                 style={{ marginTop: 3, background: 'none', border: 'none', padding: 0, fontSize: '0.67rem', color: '#0d9488', fontWeight: 700, cursor: 'pointer', textDecoration: 'underline' }}>
-                                Build your plan → earn +2 pts
+                                {t('eqAssessment.buildYourPlan', 'Build your plan → earn +2 pts')}
                               </button>
                             )}
                           </div>
@@ -908,7 +922,7 @@ export default function EQAssessment() {
                 <div key={dim.id} className="stat-tile" style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '1.375rem', marginBottom: 4 }}>{dim.icon}</div>
                   <div style={{ fontSize: '1.25rem', fontWeight: 900, color: dim.avg >= 4 ? '#0d9488' : dim.avg >= 3 ? '#f59e0b' : dim.avg > 0 ? '#ef4444' : '#94a3b8' }}>{dim.avg || '—'}</div>
-                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>{dim.label}</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', lineHeight: 1.3 }}>{trDim(t, dim.id, 'label')}</div>
                 </div>
               ))}
             </div>
@@ -920,15 +934,15 @@ export default function EQAssessment() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: '0.75rem' }}>
                   <span style={{ fontSize: '1.25rem' }}>{dim.icon}</span>
                   <div>
-                    <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>{dim.label}</h4>
-                    <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>{dim.desc}</p>
+                    <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.9375rem' }}>{trDim(t, dim.id, 'label')}</h4>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0 }}>{trDim(t, dim.id, 'desc')}</p>
                   </div>
                 </div>
               </div>
               {dim.questions.map((q, i) => (
                 <div key={i} style={{ padding: '0.875rem 1.25rem', display: 'flex', flexDirection: 'column', gap: 8, borderBottom: i < dim.questions.length - 1 ? '1px solid var(--border)' : 'none' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
-                    <p style={{ flex: 1, fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>{q}</p>
+                    <p style={{ flex: 1, fontSize: '0.875rem', color: 'var(--text-secondary)', margin: 0 }}>{trQuestion(t, dim.id, i)}</p>
                     <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
                       {[1, 2, 3, 4, 5].map(n => (
                         <ScaleButton key={n} n={n} selected={eqScores[`${dim.id}-${i}`] || 0} onClick={() => setScore(dim.id, i, n)} isLast={n === 5} />
@@ -954,8 +968,8 @@ export default function EQAssessment() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: '1.5rem' }}>📄</span>
                 <div>
-                  <p style={{ margin: 0, fontWeight: 800, color: 'white', fontSize: '0.875rem' }}>Your EQ Report is ready</p>
-                  <p style={{ margin: 0, fontSize: '0.72rem', color: 'rgba(153,246,228,0.85)' }}>Personalized recommendations, strengths & action plan</p>
+                  <p style={{ margin: 0, fontWeight: 800, color: 'white', fontSize: '0.875rem' }}>{t('eqAssessment.reportReady', 'Your EQ Report is ready')}</p>
+                  <p style={{ margin: 0, fontSize: '0.72rem', color: 'rgba(153,246,228,0.85)' }}>{t('eqAssessment.reportReadySub', 'Personalized recommendations, strengths & action plan')}</p>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
@@ -966,7 +980,7 @@ export default function EQAssessment() {
                     border: 'none', cursor: 'pointer',
                     background: '#0d9488', color: 'white',
                   }}>
-                  Download PDF →
+                  {t('eqAssessment.downloadPdfArrow', 'Download PDF →')}
                 </button>
                 <button
                   onClick={() => setLastSavedRecord(null)}
@@ -988,25 +1002,25 @@ export default function EQAssessment() {
                 <input
                   className="input"
                   style={{ flex: 1 }}
-                  placeholder="Label (e.g. Q2 2025) — optional"
+                  placeholder={t('eqAssessment.labelPlaceholder', 'Label (e.g. Q2 2025) — optional')}
                   value={saveLabel}
                   onChange={e => setSaveLabel(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && saveEQ()}
                   autoFocus
                 />
-                <button className="btn-primary" onClick={saveEQ} disabled={saving}>{saving ? 'Saving…' : 'Save'}</button>
-                <button className="btn-secondary" onClick={() => { setShowLabelInput(false); setSaveLabel(''); }}>Cancel</button>
+                <button className="btn-primary" onClick={saveEQ} disabled={saving}>{saving ? t('eqAssessment.saving', 'Saving…') : t('eqAssessment.save', 'Save')}</button>
+                <button className="btn-secondary" onClick={() => { setShowLabelInput(false); setSaveLabel(''); }}>{t('eqAssessment.cancel', 'Cancel')}</button>
               </div>
             ) : (
               <button className="btn-primary" onClick={() => {
                 const totalQuestions = eqDimensions.reduce((sum, d) => sum + d.questions.length, 0);
                 const answered = eqDimensions.reduce((sum, d) => sum + d.questions.filter((_, i) => eqScores[`${d.id}-${i}`]).length, 0);
                 if (answered < totalQuestions) {
-                  toast.error(`Please complete the full assessment — ${answered} of ${totalQuestions} questions answered.`, { duration: 4000 });
+                  toast.error(t('eqAssessment.toast.incomplete', 'Please complete the full assessment — {{answered}} of {{total}} questions answered.', { answered, total: totalQuestions }), { duration: 4000 });
                   return;
                 }
                 setShowLabelInput(true);
-              }}>Save Assessment</button>
+              }}>{t('eqAssessment.saveAssessment', 'Save Assessment')}</button>
             )}
           </div>
 
@@ -1017,14 +1031,14 @@ export default function EQAssessment() {
             {/* Header */}
             <div style={{ padding: '1rem 1.25rem', background: 'linear-gradient(135deg, #0f2044 0%, #134e6a 100%)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
               <div>
-                <p style={{ margin: 0, fontWeight: 900, color: 'white', fontSize: '1rem' }}>🌱 EQ Personal Development Plan</p>
-                <p style={{ margin: '3px 0 0', fontSize: '0.72rem', color: 'rgba(153,246,228,0.85)' }}>Build a 90-day improvement plan on your two weakest areas and earn +2 pts (5 pts total for the quarter)</p>
+                <p style={{ margin: 0, fontWeight: 900, color: 'white', fontSize: '1rem' }}>{t('eqAssessment.pdpTitle', '🌱 EQ Personal Development Plan')}</p>
+                <p style={{ margin: '3px 0 0', fontSize: '0.72rem', color: 'rgba(153,246,228,0.85)' }}>{t('eqAssessment.pdpSubtitle', 'Build a 90-day improvement plan on your two weakest areas and earn +2 pts (5 pts total for the quarter)')}</p>
               </div>
               {!pdpAreas && (
                 <button
                   onClick={initPdp}
                   style={{ padding: '0.5rem 1.1rem', borderRadius: 10, fontWeight: 800, fontSize: '0.8rem', border: 'none', cursor: 'pointer', background: '#0d9488', color: 'white', flexShrink: 0 }}>
-                  Build My Plan →
+                  {t('eqAssessment.buildMyPlan', 'Build My Plan →')}
                 </button>
               )}
             </div>
@@ -1033,10 +1047,10 @@ export default function EQAssessment() {
             {savedPdp && !pdpAreas && (
               <div style={{ padding: '0.75rem 1.25rem', background: '#f0fdf4', borderBottom: '1px solid #ccfbf1', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
                 <div>
-                  <p style={{ margin: 0, fontWeight: 700, color: '#0d9488', fontSize: '0.8rem' }}>✓ Plan saved on {new Date(savedPdp.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '0.72rem', color: '#64748b' }}>You can edit and re-save your plan at any time</p>
+                  <p style={{ margin: 0, fontWeight: 700, color: '#0d9488', fontSize: '0.8rem' }}>{t('eqAssessment.planSavedOn', '✓ Plan saved on {{date}}', { date: new Date(savedPdp.savedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) })}</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '0.72rem', color: '#64748b' }}>{t('eqAssessment.editAnytime', 'You can edit and re-save your plan at any time')}</p>
                 </div>
-                <button onClick={initPdp} style={{ padding: '0.4rem 0.9rem', borderRadius: 8, fontWeight: 700, fontSize: '0.75rem', border: '1.5px solid #0d9488', background: 'white', color: '#0d9488', cursor: 'pointer' }}>Edit Plan</button>
+                <button onClick={initPdp} style={{ padding: '0.4rem 0.9rem', borderRadius: 8, fontWeight: 700, fontSize: '0.75rem', border: '1.5px solid #0d9488', background: 'white', color: '#0d9488', cursor: 'pointer' }}>{t('eqAssessment.editPlan', 'Edit Plan')}</button>
               </div>
             )}
 
@@ -1054,8 +1068,8 @@ export default function EQAssessment() {
                       <span style={{ fontSize: '1.1rem' }}>{ready ? '✅' : '📝'}</span>
                       <p style={{ margin: 0, fontSize: '0.78rem', fontWeight: 700, color: ready ? '#0d9488' : '#b45309' }}>
                         {ready
-                          ? `Plan complete — ${totalFilled} actions across ${pdpAreas.length} areas. Ready to save and earn +2 pts.`
-                          : `${totalFilled} of ${minNeeded} minimum actions filled in — add at least 2 actions per area to unlock +2 pts.`}
+                          ? t('eqAssessment.pdpReady', 'Plan complete — {{filled}} actions across {{areas}} areas. Ready to save and earn +2 pts.', { filled: totalFilled, areas: pdpAreas.length })
+                          : t('eqAssessment.pdpProgress', '{{filled}} of {{needed}} minimum actions filled in — add at least 2 actions per area to unlock +2 pts.', { filled: totalFilled, needed: minNeeded })}
                       </p>
                     </div>
                   );
@@ -1068,7 +1082,7 @@ export default function EQAssessment() {
                   const rows = pdpActions[dimId] || [];
                   const suggestions = EQ_SUGGESTED_ACTIONS[dimId] || [];
                   const usedSuggestions = new Set(rows.map(r => r.action));
-                  const unusedSuggestions = suggestions.filter(s => !usedSuggestions.has(s));
+                  const unusedSuggestions = suggestions.map((s, i) => ({ s, i })).filter(({ s }) => !usedSuggestions.has(s));
 
                   return (
                     <div key={dimId} style={{ border: '1.5px solid #e2e8f0', borderRadius: 12, overflow: 'hidden' }}>
@@ -1076,15 +1090,15 @@ export default function EQAssessment() {
                       <div style={{ padding: '0.75rem 1rem', background: '#f8fafc', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 10 }}>
                         <span style={{ fontSize: '1.2rem' }}>{dim?.icon}</span>
                         <div style={{ flex: 1 }}>
-                          <p style={{ margin: 0, fontWeight: 800, color: '#0f2044', fontSize: '0.9rem' }}>{dim?.label}</p>
-                          {dimScore && <p style={{ margin: '1px 0 0', fontSize: '0.7rem', color: '#64748b' }}>Current score: <strong style={{ color: dimScore < 3 ? '#ef4444' : '#f59e0b' }}>{dimScore}/5</strong></p>}
+                          <p style={{ margin: 0, fontWeight: 800, color: '#0f2044', fontSize: '0.9rem' }}>{trDim(t, dim?.id, 'label')}</p>
+                          {dimScore && <p style={{ margin: '1px 0 0', fontSize: '0.7rem', color: '#64748b' }}>{t('eqAssessment.currentScore', 'Current score:')} <strong style={{ color: dimScore < 3 ? '#ef4444' : '#f59e0b' }}>{dimScore}/5</strong></p>}
                         </div>
-                        <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: 9999, background: '#fef2f2', color: '#ef4444', fontWeight: 700 }}>Focus area</span>
+                        <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: 9999, background: '#fef2f2', color: '#ef4444', fontWeight: 700 }}>{t('eqAssessment.focusArea', 'Focus area')}</span>
                       </div>
 
                       {/* Column headers */}
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 130px 120px 36px', gap: 0, padding: '0.4rem 1rem', background: '#f1f5f9', borderBottom: '1px solid #e2e8f0' }}>
-                        {['Improvement Action', 'Responsible', 'Due Date', ''].map((h, i) => (
+                        {[t('eqAssessment.colImprovementAction', 'Improvement Action'), t('eqAssessment.colResponsible', 'Responsible'), t('eqAssessment.colDueDate', 'Due Date'), ''].map((h, i) => (
                           <span key={i} style={{ fontSize: '0.65rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</span>
                         ))}
                       </div>
@@ -1095,7 +1109,7 @@ export default function EQAssessment() {
                           <input
                             className="input"
                             style={{ fontSize: '0.8rem', padding: '0.35rem 0.6rem', marginRight: 8 }}
-                            placeholder="Describe the action…"
+                            placeholder={t('eqAssessment.describeAction', 'Describe the action…')}
                             value={row.action}
                             onChange={e => updatePdpAction(dimId, idx, 'action', e.target.value)}
                           />
@@ -1125,13 +1139,13 @@ export default function EQAssessment() {
                         <button
                           onClick={() => addPdpAction(dimId)}
                           style={{ alignSelf: 'flex-start', padding: '0.35rem 0.875rem', borderRadius: 8, fontSize: '0.75rem', fontWeight: 700, border: '1.5px dashed #0d9488', background: 'white', color: '#0d9488', cursor: 'pointer' }}>
-                          + Add Action
+                          {t('eqAssessment.addAction', '+ Add Action')}
                         </button>
                         {unusedSuggestions.length > 0 && (
                           <div>
-                            <p style={{ margin: '0 0 5px', fontSize: '0.68rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>💡 Suggested actions — click to add</p>
+                            <p style={{ margin: '0 0 5px', fontSize: '0.68rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('eqAssessment.suggestedActionsLabel', '💡 Suggested actions — click to add')}</p>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                              {unusedSuggestions.map((s, si) => (
+                              {unusedSuggestions.map(({ s, i: si }) => (
                                 <button key={si} onClick={() => {
                                   const defaultDue = new Date(Date.now() + EQ_DEFAULT_DUE_DAYS * 86400000).toISOString().split('T')[0];
                                   const userName = userProfile?.displayName || currentUser?.displayName || 'Me';
@@ -1141,7 +1155,7 @@ export default function EQAssessment() {
                                   }));
                                 }}
                                 style={{ textAlign: 'left', padding: '0.4rem 0.75rem', borderRadius: 8, fontSize: '0.75rem', border: '1px solid #e2e8f0', background: 'white', color: '#475569', cursor: 'pointer', lineHeight: 1.45 }}>
-                                  ＋ {s}
+                                  ＋ {trSuggestion(t, dimId, si)}
                                 </button>
                               ))}
                             </div>
@@ -1158,14 +1172,14 @@ export default function EQAssessment() {
                     className="btn-primary"
                     onClick={savePdp}
                     disabled={savingPdp}>
-                    {savingPdp ? 'Saving…' : '💾 Save Development Plan'}
+                    {savingPdp ? t('eqAssessment.saving', 'Saving…') : t('eqAssessment.saveDevPlan', '💾 Save Development Plan')}
                   </button>
                   <button
                     className="btn-secondary"
                     onClick={() => { setPdpAreas(null); setPdpActions({}); }}>
-                    Cancel
+                    {t('eqAssessment.cancel', 'Cancel')}
                   </button>
-                  <p style={{ margin: 0, fontSize: '0.72rem', color: '#94a3b8' }}>Minimum 2 actions per area · +2 pts every 90 days · Due dates default to 90 days from today</p>
+                  <p style={{ margin: 0, fontSize: '0.72rem', color: '#94a3b8' }}>{t('eqAssessment.pdpFooterNote', 'Minimum 2 actions per area · +2 pts every 90 days · Due dates default to 90 days from today')}</p>
                 </div>
               </div>
             )}
@@ -1175,9 +1189,9 @@ export default function EQAssessment() {
               <div style={{ padding: '1.25rem', display: 'flex', alignItems: 'center', gap: 14 }}>
                 <div style={{ fontSize: '2rem' }}>📋</div>
                 <div>
-                  <p style={{ margin: '0 0 4px', fontWeight: 700, color: '#1e293b', fontSize: '0.875rem' }}>Turn insights into action</p>
+                  <p style={{ margin: '0 0 4px', fontWeight: 700, color: '#1e293b', fontSize: '0.875rem' }}>{t('eqAssessment.teaserTitle', 'Turn insights into action')}</p>
                   <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', lineHeight: 1.55 }}>
-                    After completing and saving your EQ assessment, click <strong>Build My Plan</strong> above to auto-generate a 90-day development plan focused on your two weakest areas. Completing the plan with at least 4 actions earns you +2 bonus points (5 pts total for the quarter).
+                    {t('eqAssessment.teaserBody', 'After completing and saving your EQ assessment, click Build My Plan above to auto-generate a 90-day development plan focused on your two weakest areas. Completing the plan with at least 4 actions earns you +2 bonus points (5 pts total for the quarter).')}
                   </p>
                 </div>
               </div>

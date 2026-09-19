@@ -3225,5 +3225,381 @@
         "author": "Kevin J. Duggan"
       }
     }
+  },
+  "eqAssessment": {
+    "title": "Evaluación de Inteligencia Emocional (IE) — La Responsabilidad en Acción",
+    "subtitle": "Autoevaluación de Inteligencia Emocional y plan de desarrollo de 90 días",
+    "scale": {
+      "1": {
+        "label": "Rara vez",
+        "desc": "Este comportamiento está ausente o es reactivo. Los demás no lo reconocerían como una fortaleza. Se necesita atención inmediata."
+      },
+      "2": {
+        "label": "A veces",
+        "desc": "Visible en momentos de baja presión pero se desmorona bajo presión o cuando cuesta algo. Inconsistente."
+      },
+      "3": {
+        "label": "A menudo",
+        "desc": "Se practica intencionalmente pero aún no es automático. Te das cuenta después de los hechos más que en el momento."
+      },
+      "4": {
+        "label": "Generalmente",
+        "desc": "Confiable en la mayoría de las situaciones, incluidas las difíciles. Los demás lo notan y confían en ello. Quedan puntos ciegos menores."
+      },
+      "5": {
+        "label": "Siempre",
+        "desc": "Profundamente arraigado. Lo demuestras cuando es difícil, se lo enseñas a otros y moldea cómo opera tu equipo."
+      }
+    },
+    "hideGuide": "Ocultar guía",
+    "whatDoesThisMean": "¿Qué significa esto?",
+    "whatThisMeans": "Qué significa esto",
+    "realLifeExample": "Ejemplo de la vida real",
+    "scoringLow": "⬇ Una puntuación baja se ve así",
+    "scoringHigh": "⬆ Una puntuación alta se ve así",
+    "guides": {
+      "self-awareness-0": {
+        "what": "Notas cómo te sientes en el momento, antes de que afecte tus palabras o acciones.",
+        "example": "Durante una revisión de proyecto acalorada, te das cuenta de que te sientes a la defensiva mientras cuestionan tus ideas. En lugar de responder de golpe, lo nombras internamente: \"Me siento amenazado ahora mismo\". Esa pausa es autoconciencia en acción.",
+        "low": "Solo te das cuenta de que estabas frustrado después de que termina la reunión, o cuando un colega te dice que parecías molesto.",
+        "high": "Puedes decir en medio de una conversación: \"Noto que me estoy tensando, dame un segundo\", y ajustar tu tono antes de que la situación escale."
+      },
+      "self-awareness-1": {
+        "what": "Sabes qué situaciones, palabras o personas específicas tienden a provocar una reacción fuerte en ti, y por qué.",
+        "example": "Sabes que los cambios de alcance de último minuto te generan ansiedad. Así que cuando un cliente llama un viernes a las 4pm con nuevas solicitudes, reconoces el pico de estrés de inmediato y tienes una respuesta planeada lista en lugar de reaccionar impulsivamente.",
+        "low": "Frecuentemente dices cosas como \"no sé por qué me molesté tanto\" o \"simplemente me sacan de quicio\".",
+        "high": "Puedes decirle a un reporte directo: \"Cuando se mueven los plazos sin aviso, tiendo a ponerme cortante. Si necesitas avisar de un retraso, dame algo de tiempo de anticipación y lo manejaré mucho mejor\"."
+      },
+      "self-awareness-2": {
+        "what": "Buscas activamente retroalimentación honesta sobre cómo te experimentan los demás, y la utilizas.",
+        "example": "Después de una revisión trimestral de negocio, le preguntas a tu gerente: \"¿Hubo algo en cómo presenté que no cayera bien con el equipo ejecutivo?\". Tomas la respuesta en serio, incluso si es incómoda.",
+        "low": "Evitas pedir retroalimentación, o solo se la pides a personas que sabes que dirán cosas positivas.",
+        "high": "Tienes el hábito de hacer un breve resumen después de interacciones importantes: \"¿Qué salió bien, qué hubieras hecho diferente?\", y documentas los patrones que escuchas repetidamente."
+      },
+      "self-awareness-3": {
+        "what": "Tienes una imagen clara y honesta de dónde sobresales y dónde todavía tienes brechas, sin autocrítica excesiva ni exceso de confianza.",
+        "example": "Sabes que eres excelente construyendo relaciones e impulsando la alineación, pero luchas con el análisis detallado de datos. Así que delegas el modelado financiero a alguien más fuerte en esa área y enfocas tu energía en la comunicación con las partes interesadas.",
+        "low": "Sobreestimas tus habilidades (lo que lleva a errores evitables) o las subestimas (te contienes cuando deberías dar un paso adelante).",
+        "high": "En una conversación de talento, puedes decir: \"Mi fortaleza es energizar equipos durante el cambio. Mi área de crecimiento es la paciencia con procesos de decisión lentos, estoy trabajando en ello\"."
+      },
+      "self-management-0": {
+        "what": "Bajo estrés, conflicto o plazos ajustados, permaneces compuesto y enfocado en soluciones en lugar de reactivo.",
+        "example": "Un miembro clave del equipo se reporta enfermo la mañana de una presentación importante a un cliente. En lugar de mostrar pánico o frustración frente al equipo, evalúas con calma qué se puede ajustar, reasignas tareas y comunicas el plan revisado con confianza.",
+        "low": "Cuando las cosas salen mal, tu estrés es visible: voz elevada, respuestas cortantes o frustración visible que afecta el propio nivel de ansiedad del equipo.",
+        "high": "Los miembros del equipo dicen que se sienten más tranquilos con solo tenerte en la sala durante una crisis, porque tu firmeza marca el tono."
+      },
+      "self-management-1": {
+        "what": "Cuando algo desencadena una reacción emocional fuerte, te detienes y procesas antes de responder.",
+        "example": "Un colega critica públicamente el desempeño de tu equipo en una reunión de liderazgo. En lugar de responder de inmediato, respiras, dejas que termine y respondes con: \"Agradezco que lo menciones, ¿podemos buscar tiempo para revisar los datos juntos?\".",
+        "low": "Envías correos reactivos de los que luego te arrepientes, interrumpes a las personas cuando estás en desacuerdo, o tomas decisiones enojado que luego tienes que revertir.",
+        "high": "Tienes reglas personales: nunca enviar un correo cuando estás emocionalmente activado. Lo redactas, esperas una hora y luego lo revisas antes de enviarlo."
+      },
+      "self-management-2": {
+        "what": "Cuando las prioridades cambian, los procesos cambian o los planes se desmoronan, te ajustas sin volverte rígido o desestabilizarte.",
+        "example": "A mitad de proyecto, el liderazgo cambia las métricas de éxito y reduce tu presupuesto. En lugar de resistirte o quejarte, replanteas la restricción como un desafío de diseño, actualizas el plan y reenergizas a tu equipo hacia la nueva dirección.",
+        "low": "Te quedas atascado en \"pero así no lo planeamos\" o te desconectas visiblemente cuando cambian las metas.",
+        "high": "Cuando llega el anuncio de una reorganización, eres el primero en preguntar: \"¿Cómo se ve el éxito en la nueva estructura?\" y comienzas a adaptar a tu equipo de inmediato."
+      },
+      "self-management-3": {
+        "what": "Incluso en tramos difíciles (contratiempos, conflictos o fases de rutina aburrida), modelas optimismo e impulso hacia adelante.",
+        "example": "Tu equipo ha fallado dos objetivos consecutivos. En la reunión del lunes, en lugar de detenerte en los fallos, reconoces la realidad brevemente y giras hacia: \"Esto es lo que creo que podemos controlar esta semana\". Tu actitud moldea lo que ellos creen que es posible.",
+        "low": "Cuando las cosas son difíciles, tu actitud se arrastra visiblemente: te desahogas con frecuencia, expresas cinismo sobre la empresa, o traes una presencia de baja energía que el equipo absorbe.",
+        "high": "La gente acude a ti cuando está desmoralizada porque tu perspectiva consistentemente les ayuda a ver un camino hacia adelante sin minimizar la dificultad."
+      },
+      "self-management-4": {
+        "what": "Cuando enfrentas contratiempos, rechazo o progreso lento, permaneces comprometido y sigues avanzando.",
+        "example": "Una propuesta en la que trabajaste durante tres semanas es rechazada por el cliente. Te decepciona, pero en un día ya estás analizando qué mejorar y construyendo una versión de seguimiento más sólida, no porque alguien te presionó, sino porque genuinamente quieres hacerlo bien.",
+        "low": "Los contratiempos hacen que te desconectes, te vuelvas pasivo o esperes a que alguien más reavive el esfuerzo.",
+        "high": "La gente te describe como alguien que \"no se queda caído mucho tiempo\": tu tiempo de recuperación después de fracasos es notablemente rápido."
+      },
+      "self-management-5": {
+        "what": "Te fijas metas que te llevan más allá de tu zona de confort y las persigues con energía visible.",
+        "example": "En lugar de apuntar al mismo número de ventas seguro del año pasado, te fijas una meta 30% más alta y la divides en hitos semanales. Bloqueas tiempo proactivamente para trabajar hacia ella, no solo cuando tienes ganas.",
+        "low": "Tiendes a fijar objetivos conservadores fáciles de alcanzar, o fijas metas ambiciosas pero pierdes impulso una vez que se desvanece el entusiasmo inicial.",
+        "high": "Tus metas incomodan a algunas personas a tu alrededor por lo alto que pones el listón, y las alcanzas regularmente de todos modos."
+      },
+      "self-management-6": {
+        "what": "Buscas proactivamente mejores formas de hacer tu trabajo, no porque te lo digan, sino porque quieres.",
+        "example": "Después de completar un proyecto, haces un breve análisis posterior no para cumplir con un proceso, sino porque genuinamente quieres saber qué te retrasó y qué puedes hacer más rápido la próxima vez. Aplicas ese aprendizaje al siguiente proyecto sin que te lo pidan.",
+        "low": "Haces bien el trabajo pero rara vez te preguntas \"¿cómo podría ser aún mejor?\" a menos que sea parte de un ciclo formal de revisión.",
+        "high": "Regularmente traes ideas no solicitadas a tu gerente: \"Estuve pensando en nuestro proceso de incorporación, aquí hay un cambio que podría reducir el tiempo de adaptación a la mitad\"."
+      },
+      "self-management-7": {
+        "what": "Tu compromiso personal con el trabajo eleva el estándar de las personas a tu alrededor: trabajan más duro porque tú lo haces.",
+        "example": "Cuando tu equipo atraviesa un tramo lento, no das un discurso, pones un esfuerzo extra visible, resuelves un problema difícil frente a ellos, y la energía cambia. Igualan tu nivel porque modelas cómo se ve estar \"totalmente comprometido\".",
+        "low": "Tu nivel de compromiso es constante pero no eleva visiblemente el listón para los demás. Haces tu parte sin generar un efecto de arrastre en el equipo.",
+        "high": "Los miembros del equipo dicen cosas como \"no quería ser el que se rindiera cuando ellos seguían adelante\": tu compromiso crea una prueba social que eleva el estándar del grupo."
+      },
+      "social-awareness-0": {
+        "what": "Cuando alguien está hablando, le das toda tu atención; no estás formulando internamente tu respuesta mientras aún habla.",
+        "example": "Un miembro del equipo viene frustrado por un problema de carga de trabajo. En lugar de saltar a soluciones, haces preguntas de seguimiento, mantienes contacto visual y resumes lo que escuchaste antes de ofrecer algo: \"Parece que el verdadero problema es que sientes que no se respeta tu capacidad, ¿es correcto?\".",
+        "low": "Frecuentemente terminas las frases de la gente, saltas a soluciones antes de que terminen de explicar, o revisas tu teléfono o pantalla mientras otros hablan.",
+        "high": "Las personas terminan las conversaciones contigo sintiéndose genuinamente escuchadas, incluso cuando estás en desacuerdo con ellas o no puedes darles lo que pidieron."
+      },
+      "social-awareness-1": {
+        "what": "Antes de tomar decisiones que afectan a otros, piensas en cómo se sentirán, no solo en qué es lógicamente óptimo.",
+        "example": "Antes de anunciar un cambio de rol que beneficia a la organización, piensas: \"Esta persona ha estado en este puesto durante 8 años, se sentirá desplazada aunque el nuevo rol sea técnicamente un ascenso. ¿Cómo enmarco esta conversación?\". Planeas en consecuencia.",
+        "low": "Tomas decisiones lógicas sólidas pero a menudo te sorprende cómo reacciona emocionalmente la gente: \"No pensé que sería gran cosa\".",
+        "high": "La gente te describe como alguien que \"entiende a las personas\": tus decisiones son tanto analíticamente sólidas como emocionalmente inteligentes en cómo se estructuran y comunican."
+      },
+      "social-awareness-2": {
+        "what": "Reconoces que diferentes personas necesitan escuchar las cosas de manera diferente, y ajustas tu estilo a la persona, no solo al mensaje.",
+        "example": "Con tu reporte directo analítico, lideras con datos al dar retroalimentación. Con tu colega más orientado a las relaciones, lideras con conexión y contexto. Mismo mensaje, entrega diferente, y ambos caen bien.",
+        "low": "Comunicas de la forma que te funciona a ti y esperas que otros se adapten. Eres consistente pero no siempre efectivo con personas que están conectadas de forma diferente.",
+        "high": "Puedes cambiar entre directo/franco y cálido/narrativo en la misma reunión dependiendo de a quién te diriges, y se siente natural, no forzado."
+      },
+      "social-awareness-3": {
+        "what": "Percibes la dinámica del equipo, la tensión no expresada o las caídas en el compromiso, antes de que se conviertan en problemas visibles.",
+        "example": "Durante una reunión diaria del equipo, nadie hace bromas ni conversa como de costumbre. Notas el cambio y apartas a dos personas después: \"La energía se sintió diferente hoy, ¿está todo bien?\". Sacas a la luz un conflicto latente entre dos miembros del equipo antes de que explote.",
+        "low": "A menudo eres el último en enterarte de la tensión interpersonal en tu equipo, o la notas solo después de que ya afectó el desempeño o hizo que alguien renunciara.",
+        "high": "Tratas la energía del equipo como un indicador adelantado, de la misma manera que tratas el pipeline como un indicador adelantado de ingresos: lo monitoreas proactivamente y actúas temprano."
+      },
+      "relationship-management-0": {
+        "what": "Personas de todos los niveles (tus reportes, colegas y líderes senior) confían en que harás lo que dices, dirás la verdad y los tratarás con justicia.",
+        "example": "Das seguimiento a cada compromiso que haces, incluso los pequeños. Cuando no puedes cumplir, lo dices proactivamente antes del plazo. Con el tiempo, la gente deja de verificar dos veces tu trabajo porque sabe que no dejarás que se escape.",
+        "low": "Eres bien apreciado, pero la gente todavía se cubre cuando depende de ti: confirman dos veces, agregan tiempo de margen o mantienen un plan de respaldo porque no están completamente seguros de que cumplirás.",
+        "high": "Tu reputación te precede. Personas que no han trabajado contigo directamente ya confían en ti según lo que otros han dicho."
+      },
+      "relationship-management-1": {
+        "what": "Cuando dos personas o grupos están en conflicto, intervienes y los llevas hacia la resolución, sin tomar partido ni escalar.",
+        "example": "Dos líderes de equipo se culpan mutuamente por una entrega fallida. En lugar de tomar partido o ignorarlo, los reúnes: \"Quiero entender ambas perspectivas, y luego quiero que acordemos un proceso para que esto no vuelva a pasar\". Te vas con un proceso acordado, no solo una tregua.",
+        "low": "Evitas el conflicto cuando es posible, o cuando te involucras, tiendes a tomar partido por una de las partes, lo que aumenta en lugar de resolver la tensión.",
+        "high": "Cuando la gente está atrapada en un conflicto, a menudo te piden que medies, no porque sea tu trabajo, sino porque confían en tu capacidad de mantenerlo justo y hacerlo avanzar."
+      },
+      "relationship-management-2": {
+        "what": "Cuando hablas (en reuniones, correos o reuniones individuales), la gente entiende tu punto y se siente impulsada a actuar sobre él.",
+        "example": "Puedes entrar a una sala de interesados escépticos y, en 10 minutos, cambiar su postura, no abrumándolos con datos, sino conectando los datos con algo que les importa. Sabes qué motiva a tu audiencia y lideras con eso.",
+        "low": "Tu contenido es sólido pero a veces la gente se va sin saber qué estabas pidiendo, o tus actualizaciones toman más tiempo del necesario porque te cuesta enmarcar primero el punto central.",
+        "high": "Tus presentaciones y memos se usan como plantillas internas por lo clara y persuasivamente que están estructuradas."
+      },
+      "relationship-management-3": {
+        "what": "Los equipos que lideras o en los que participas rinden consistentemente por encima del promedio, porque creas un ambiente donde la gente colabora, se responsabiliza mutuamente y da lo mejor de sí.",
+        "example": "En un equipo multifuncional que lideraste, personas que antes nunca trabajaron juntas comenzaron a ayudarse proactivamente fuera de las reuniones formales. El equipo terminó antes de lo previsto, no por horas extra, sino porque la colaboración eliminó fricciones y duplicaciones.",
+        "low": "Los equipos en los que participas funcionan adecuadamente pero rara vez alcanzan el nivel de cohesión donde la gente va más allá de sus responsabilidades definidas para ayudarse.",
+        "high": "La gente compite por estar en equipos que lideras, no por tu título, sino porque trabajar contigo los hace mejores y el resultado suele ser excelente."
+      }
+    },
+    "dimensions": {
+      "self-awareness": {
+        "label": "Autoconciencia",
+        "desc": "Comprender tus emociones y su impacto",
+        "questions": [
+          "Reconozco mis estados emocionales en tiempo real",
+          "Entiendo mis detonantes y cómo afectan mi comportamiento",
+          "Busco retroalimentación para entender mis puntos ciegos",
+          "Conozco claramente mis fortalezas y áreas de desarrollo"
+        ]
+      },
+      "self-management": {
+        "label": "Autogestión",
+        "desc": "Gestionar tus emociones, impulsos y motivación de manera efectiva",
+        "questions": [
+          "Me mantengo calmado bajo presión y en conflictos",
+          "Pienso antes de reaccionar en situaciones tensas",
+          "Adapto mi enfoque cuando las cosas cambian inesperadamente",
+          "Mantengo una actitud positiva en situaciones desafiantes",
+          "Mantengo el entusiasmo incluso frente a obstáculos",
+          "Me fijo metas desafiantes y las persigo con energía",
+          "Busco continuamente formas de mejorar",
+          "Inspiro a otros a través de mi propio compromiso"
+        ]
+      },
+      "social-awareness": {
+        "label": "Conciencia Social",
+        "desc": "Comprender y compartir los sentimientos de los demás",
+        "questions": [
+          "Escucho activamente sin planear mi respuesta",
+          "Considero las emociones de los demás antes de tomar decisiones",
+          "Adapto mi estilo de comunicación a diferentes personas",
+          "Puedo percibir el ánimo del equipo y abordarlo proactivamente"
+        ]
+      },
+      "relationship-management": {
+        "label": "Gestión de Relaciones",
+        "desc": "Gestionar relaciones e inspirar a otros",
+        "questions": [
+          "Genero confianza con personas de todos los niveles",
+          "Resuelvo conflictos de manera constructiva y rápida",
+          "Me comunico de forma clara y persuasiva",
+          "Construyo equipos colaborativos de alto rendimiento"
+        ]
+      }
+    },
+    "strategies": {
+      "self-awareness": [
+        "Deja de Tratar tus Sentimientos como Buenos o Malos",
+        "Observa el Efecto Dominó de tus Emociones",
+        "Inclínate hacia tu Incomodidad",
+        "Siente tus Emociones Físicamente",
+        "Conoce Quién y Qué Presiona tus Botones",
+        "Obsérvate como un Halcón...",
+        "Lleva un Diario sobre tus Emociones",
+        "No te Dejes Engañar por un Mal Estado de Ánimo",
+        "No te Dejes Engañar por un Buen Estado de Ánimo Tampoco",
+        "Detente y Pregúntate por Qué Haces lo que Haces",
+        "Visita tus Valores",
+        "Revísate a Ti Mismo",
+        "Identifica tus Emociones en Libros, Películas y Música",
+        "Busca Retroalimentación",
+        "Conócete a Ti Mismo bajo Estrés"
+      ],
+      "self-management": [
+        "Respira Correctamente",
+        "Crea una Lista de Emoción vs. Razón",
+        "Haz Públicas tus Metas",
+        "Cuenta hasta Diez",
+        "Consúltalo con la Almohada",
+        "Habla con un Autogestor Hábil",
+        "Sonríe y Ríe Más",
+        "Reserva Tiempo en tu Día para Resolver Problemas",
+        "Toma el Control de tu Diálogo Interno",
+        "Visualízate Teniendo Éxito",
+        "Mejora tu Higiene del Sueño",
+        "Enfoca tu Atención en tus Libertades, no en tus Limitaciones",
+        "Mantente Sincronizado",
+        "Habla con Alguien que no esté Emocionalmente Involucrado en tu Problema",
+        "Aprende una Lección Valiosa de Cada Persona que Encuentras",
+        "Programa una Recarga Mental en tu Agenda",
+        "Acepta que el Cambio está a la Vuelta de la Esquina"
+      ],
+      "social-awareness": [
+        "Saluda a las Personas por su Nombre",
+        "Observa el Lenguaje Corporal",
+        "Haz que el Momento Oportuno lo sea Todo",
+        "Desarrolla una Pregunta de Reserva",
+        "No Tomes Notas en las Reuniones",
+        "Planea con Anticipación las Reuniones Sociales",
+        "Elimina el Desorden",
+        "Vive el Momento Presente",
+        "Haz un Recorrido de 15 Minutos",
+        "Observa la Inteligencia Emocional en el Cine",
+        "Practica el Arte de Escuchar",
+        "Observa a la Gente",
+        "Comprende las Reglas del Juego Cultural",
+        "Verifica la Precisión",
+        "Ponte en su Lugar",
+        "Busca el Panorama Completo",
+        "Capta el Ánimo de la Sala"
+      ],
+      "relationship-management": [
+        "Sé Abierto y Curioso",
+        "Mejora tu Estilo Natural de Comunicación",
+        "Evita Enviar Señales Mixtas",
+        "Recuerda los Pequeños Detalles que Marcan la Diferencia",
+        "Acepta Bien la Retroalimentación",
+        "Genera Confianza",
+        "Ten una Política de \"Puertas Abiertas\"",
+        "Enójate Solo a Propósito",
+        "No Evites lo Inevitable",
+        "Reconoce los Sentimientos de la Otra Persona",
+        "Complementa las Emociones o la Situación de la Persona",
+        "Cuando te Importa, Demuéstralo",
+        "Explica tus Decisiones, no Solo las Tomes",
+        "Haz que tu Retroalimentación sea Directa y Constructiva",
+        "Alinea tu Intención con tu Impacto",
+        "Ofrece una Declaración de \"Arreglo\" durante una Conversación Rota",
+        "Enfrenta una Conversación Difícil"
+      ]
+    },
+    "suggestedActions": {
+      "self-awareness": [
+        "Lleva un diario de emociones de 3 minutos al día: escribe una emoción que notaste y qué la desencadenó",
+        "Después de cada reunión importante, pregúntate: \"¿Cómo me sentí y afectó cómo me presenté?\"",
+        "Pide retroalimentación específica a dos colegas sobre un punto ciego que sospechas que tienes",
+        "Crea una \"lista de detonantes\" personal: documenta 3 situaciones que cambian de forma confiable tu comportamiento y por qué"
+      ],
+      "self-management": [
+        "Establece una regla personal: redacta cualquier correo reactivo, espera 30 minutos y luego revísalo antes de enviarlo",
+        "Practica una pausa de respiración de 5 segundos antes de responder en conversaciones tensas",
+        "Identifica tu principal señal de estrés (p. ej. hombros elevados, habla más rápida) y úsala como señal de alto",
+        "Después de un momento que lamentes, escribe qué harías diferente; conviértelo en un ritual de aprendizaje",
+        "Fíjate una meta ambiciosa por trimestre que te incomode un poco; da seguimiento semanal al progreso",
+        "Haz un resumen de 15 minutos después de un proyecto enfocado solo en \"¿qué podríamos mejorar?\"; aplica un hallazgo",
+        "Bloquea 30 minutos cada viernes para revisar lo que lograste y qué sigue energizándote del trabajo",
+        "Identifica una persona de tu equipo a la que puedas inspirar este mes mediante un compromiso visible con una meta compartida"
+      ],
+      "social-awareness": [
+        "En tus próximas 5 reuniones individuales, escucha por completo antes de hablar; resume lo que escuchaste antes de responder",
+        "Antes de una conversación difícil, escribe cómo probablemente se siente la otra persona sobre la situación",
+        "Identifica a un miembro del equipo con un estilo de comunicación diferente y practica adaptar tu enfoque durante 30 días",
+        "Al inicio de cada semana, haz un \"chequeo de pulso del equipo\" de 2 minutos: pregúntale a una persona cómo está realmente"
+      ],
+      "relationship-management": [
+        "Haz un compromiso específico por semana y da seguimiento públicamente; construye deliberadamente tu reputación de confiabilidad",
+        "Identifica un conflicto o tensión continua en tu equipo y programa una conversación de mediación estructurada",
+        "Antes de tu próxima presentación, escribe la principal preocupación de cada interesado clave y abórdala explícitamente",
+        "Introduce una norma de equipo que fomente la ayuda multifuncional; reconócelo públicamente cuando suceda"
+      ]
+    },
+    "strategiesTitle": "🧭 66 Estrategias de Inteligencia Emocional",
+    "strategiesSubtitle": "Explora tácticas concretas por pilar: haz clic en una para un análisis profundo con IA, con ejemplos y pasos de acción.",
+    "strategiesCount": "{{count}} estrategias",
+    "selectedStrategy": "Estrategia Seleccionada",
+    "aiSupportButton": "🤖 Apoyo con IA — Ejemplos y Acciones",
+    "thinking": "Pensando…",
+    "deepDiveFailed": "No se pudo generar un análisis profundo esta vez — inténtalo de nuevo.",
+    "savedAssessments": "📋 Evaluaciones Guardadas",
+    "recordCount": "{{count}} registro(s)",
+    "loadErrorMsg": "⚠️ No se pudo cargar el historial — revisa las reglas de Firestore para la colección de usuarios.",
+    "retakeOverdue": "¡Repetición vencida!",
+    "retakeInDays": "Repetir en {{days}} días",
+    "nextDate": "🔔 Próxima: {{date}}",
+    "loaded": "✓ Cargado",
+    "load": "Cargar",
+    "confirmDelete": "¿Eliminar esta evaluación? Esto no se puede deshacer.",
+    "deleteBtn": "🗑 Eliminar",
+    "downloadReport": "📄 Descargar Informe de Recomendaciones",
+    "planComplete": "Plan de Desarrollo Completo",
+    "planActionsSaved": "{{count}} acción(es) · Guardado {{date}}",
+    "noPlanYet": "Aún no hay plan de desarrollo",
+    "noPlanForRecord": "No hay plan para este registro",
+    "buildYourPlan": "Construye tu plan → gana +2 pts",
+    "reportReady": "Tu Informe de IE está listo",
+    "reportReadySub": "Recomendaciones personalizadas, fortalezas y plan de acción",
+    "downloadPdfArrow": "Descargar PDF →",
+    "labelPlaceholder": "Etiqueta (p. ej. T2 2025) — opcional",
+    "saving": "Guardando…",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "saveAssessment": "Guardar Evaluación",
+    "pdpTitle": "🌱 Plan de Desarrollo Personal de IE",
+    "pdpSubtitle": "Construye un plan de mejora de 90 días en tus dos áreas más débiles y gana +2 pts (5 pts en total por trimestre)",
+    "buildMyPlan": "Construir Mi Plan →",
+    "planSavedOn": "✓ Plan guardado el {{date}}",
+    "editAnytime": "Puedes editar y volver a guardar tu plan en cualquier momento",
+    "editPlan": "Editar Plan",
+    "pdpReady": "Plan completo — {{filled}} acciones en {{areas}} áreas. Listo para guardar y ganar +2 pts.",
+    "pdpProgress": "{{filled}} de {{needed}} acciones mínimas completadas — agrega al menos 2 acciones por área para desbloquear +2 pts.",
+    "currentScore": "Puntuación actual:",
+    "focusArea": "Área de enfoque",
+    "colImprovementAction": "Acción de Mejora",
+    "colResponsible": "Responsable",
+    "colDueDate": "Fecha Límite",
+    "describeAction": "Describe la acción…",
+    "addAction": "+ Agregar Acción",
+    "suggestedActionsLabel": "💡 Acciones sugeridas — haz clic para agregar",
+    "saveDevPlan": "💾 Guardar Plan de Desarrollo",
+    "pdpFooterNote": "Mínimo 2 acciones por área · +2 pts cada 90 días · Las fechas límite se establecen por defecto a 90 días a partir de hoy",
+    "teaserTitle": "Convierte los conocimientos en acción",
+    "teaserBody": "Después de completar y guardar tu evaluación de IE, haz clic en Construir Mi Plan arriba para generar automáticamente un plan de desarrollo de 90 días enfocado en tus dos áreas más débiles. Completar el plan con al menos 4 acciones te da +2 puntos de bonificación (5 pts en total por trimestre).",
+    "toast": {
+      "notLoggedIn": "No has iniciado sesión",
+      "defaultLabel": "Evaluación — {{date}}",
+      "assessmentAwarded": "+3 pts — ¡Evaluación de IE completada!",
+      "assessmentCapReached": "¡Evaluación guardada! (se alcanzó el límite diario de puntos — la puntuación no cambia)",
+      "assessmentSaved": "¡Evaluación guardada!",
+      "assessmentAlreadyAwarded": "¡Evaluación guardada! (los puntos ya se otorgaron en los últimos 90 días)",
+      "saveFailed": "Error al guardar: {{msg}}",
+      "pdpMinActions": "Agrega al menos 2 acciones para cada área de enfoque para ganar los puntos.",
+      "pdpAwarded": "+2 pts — ¡Plan de Desarrollo de IE guardado!",
+      "pdpCapReached": "¡Plan guardado! (se alcanzó el límite diario de puntos — la puntuación no cambia)",
+      "pdpSaved": "¡Plan de desarrollo guardado!",
+      "pdpAlreadyAwarded": "¡Plan de desarrollo actualizado! (los puntos ya se otorgaron en los últimos 90 días)",
+      "loaded": "Cargado: {{label}}",
+      "deleted": "Evaluación eliminada.",
+      "deleteFailed": "No se pudo eliminar — inténtalo de nuevo.",
+      "incomplete": "Por favor completa la evaluación completa — {{answered}} de {{total}} preguntas respondidas.",
+      "aiSupportFailed": "No se pudo obtener apoyo de IA — inténtalo de nuevo"
+    }
   }
 }
