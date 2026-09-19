@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { doc, getDoc, getDocs, collection, query, where, setDoc, updateDoc, arrayUnion } from 'firebase/firestore';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import { db } from '../firebase';
@@ -17,10 +18,18 @@ function useIsMobile(breakpoint = 1024) {
   return isMobile;
 }
 
+// Stable English data values — stored on Firestore records (category, type)
+// and used as comparison/filter values throughout this file. Only the
+// DISPLAYED text is translated, via trCategory/trType below.
 const categories = ['Leadership', 'Performance', 'Communication', 'Coaching', 'Teamwork', 'Technical', 'General'];
 const types = ['All', 'Peer', 'Supervisor', 'Direct Report', 'Other', 'Self'];
 const REACTION_EMOJIS = ['👍', '❤️', '🎉', '🙏', '😍', '👎'];
-const typeLabels = { 'All': 'All', 'Peer': 'Peer', 'Supervisor': 'Supervisor', 'Direct Report': 'Direct Report', 'Other': 'Other', 'Self': 'Self' };
+
+const CATEGORY_KEYS = { Leadership: 'leadership', Performance: 'performance', Communication: 'communication', Coaching: 'coaching', Teamwork: 'teamwork', Technical: 'technical', General: 'general' };
+function trCategory(t, cat) { return t(`feedback.categories.${CATEGORY_KEYS[cat] || cat}`, cat); }
+
+const TYPE_KEYS = { All: 'all', Peer: 'peer', Supervisor: 'supervisor', 'Direct Report': 'directReport', Other: 'other', Self: 'self' };
+function trType(t, type) { return t(`feedback.types.${TYPE_KEYS[type] || type}`, type); }
 
 function StarRow({ rating }) {
   return (
@@ -34,6 +43,7 @@ function StarRow({ rating }) {
 // `reactions` is { emoji: [uid, ...] }. Shows every emoji that has at least
 // one reaction, plus the full picker so a new reaction can always be added.
 function ReactionRow({ reactions = {}, myUid, onToggle }) {
+  const { t } = useTranslation();
   const active = new Set(REACTION_EMOJIS.filter(e => (reactions[e] || []).includes(myUid)));
   return (
     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 10 }}>
@@ -42,7 +52,7 @@ function ReactionRow({ reactions = {}, myUid, onToggle }) {
         const isActive = active.has(emoji);
         if (count === 0 && !isActive) {
           return (
-            <button key={emoji} onClick={() => onToggle(emoji)} title="React"
+            <button key={emoji} onClick={() => onToggle(emoji)} title={t('feedback.react', 'React')}
               style={{ background: 'none', border: '1px solid #e8edf5', borderRadius: 9999, padding: '2px 8px', fontSize: '0.85rem', cursor: 'pointer', opacity: 0.55, transition: 'opacity 0.15s' }}
               onMouseEnter={e => e.currentTarget.style.opacity = '1'} onMouseLeave={e => e.currentTarget.style.opacity = '0.55'}>
               {emoji}
@@ -74,17 +84,18 @@ function Avatar({ name }) {
 // ── Relationship filter (right, small box) ──
 // Filters the Given/Received feed shown in the big left box by relationship type.
 function RelationshipFilter({ filterType, onSelect, isMobile }) {
+  const { t } = useTranslation();
   return (
     <div style={{ width: isMobile ? '100%' : 200, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
       <div style={{ background: '#0f2044', borderRadius: '12px 12px 0 0', padding: '0.75rem 1rem' }}>
-        <p style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem', margin: 0 }}>🔗 Relationship</p>
+        <p style={{ color: 'white', fontWeight: 800, fontSize: '0.85rem', margin: 0 }}>🔗 {t('feedback.relationship', 'Relationship')}</p>
       </div>
       <div style={{ border: '1px solid #e8edf5', borderTop: 'none', borderRadius: '0 0 12px 12px', background: '#fafbfc', padding: '0.625rem', display: 'flex', flexDirection: isMobile ? 'row' : 'column', flexWrap: isMobile ? 'wrap' : 'nowrap', gap: 6 }}>
-        {types.map(t => (
-          <button key={t} onClick={() => onSelect(t)}
+        {types.map(typ => (
+          <button key={typ} onClick={() => onSelect(typ)}
             style={{ textAlign: 'left', padding: '0.5rem 0.75rem', borderRadius: 8, fontSize: '0.8rem', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.15s', flex: isMobile ? '1 1 auto' : 'unset',
-              background: filterType === t ? '#0d9488' : 'white', color: filterType === t ? 'white' : '#475569', boxShadow: filterType === t ? 'none' : '0 0 0 1px #e8edf5 inset' }}>
-            {typeLabels[t]}
+              background: filterType === typ ? '#0d9488' : 'white', color: filterType === typ ? 'white' : '#475569', boxShadow: filterType === typ ? 'none' : '0 0 0 1px #e8edf5 inset' }}>
+            {trType(t, typ)}
           </button>
         ))}
       </div>
@@ -94,6 +105,7 @@ function RelationshipFilter({ filterType, onSelect, isMobile }) {
 
 // ── Request Feedback Modal ──
 function RequestModal({ teamMembers, onClose, onSave }) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState([]);
   const [category, setCategory] = useState('General');
   const [note, setNote] = useState('');
@@ -104,20 +116,20 @@ function RequestModal({ teamMembers, onClose, onSave }) {
   }
 
   async function improveNote() {
-    if (!note.trim()) return toast.error('Write your main idea first');
+    if (!note.trim()) return toast.error(t('feedback.toast.writeMainIdeaFirst', 'Write your main idea first'));
     setImproving(true);
     try {
       const fn = httpsCallable(getFunctions(), 'improveFeedbackMessage');
       const res = await fn({ note, category });
       if (res.data?.improved) setNote(res.data.improved);
     } catch (e) {
-      toast.error(e?.message || 'AI improvement failed');
+      toast.error(e?.message || t('feedback.toast.aiImprovementFailed', 'AI improvement failed'));
     }
     setImproving(false);
   }
 
   function handleSend() {
-    if (selected.length === 0) return toast.error('Select at least one person');
+    if (selected.length === 0) return toast.error(t('feedback.toast.selectAtLeastOnePerson', 'Select at least one person'));
     onSave(selected, category, note.trim());
     onClose();
   }
@@ -128,8 +140,8 @@ function RequestModal({ teamMembers, onClose, onSave }) {
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
           <div>
-            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1.05rem' }}>📨 Request Feedback</h3>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '3px 0 0' }}>Select who you want feedback from</p>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1.05rem' }}>📨 {t('feedback.requestFeedback', 'Request Feedback')}</h3>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '3px 0 0' }}>{t('feedback.selectWhoYouWantFeedbackFrom', 'Select who you want feedback from')}</p>
           </div>
           <button onClick={onClose} style={{ background: '#f1f5f9', border: 'none', borderRadius: 8, padding: '0.3rem 0.75rem', cursor: 'pointer', fontWeight: 700, color: '#475569' }}>✕</button>
         </div>
@@ -138,11 +150,11 @@ function RequestModal({ teamMembers, onClose, onSave }) {
           {/* Team member picker */}
           <div>
             <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 8 }}>
-              Team Members ({selected.length} selected)
+              {t('feedback.teamMembersSelected', 'Team Members ({{count}} selected)', { count: selected.length })}
             </label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 260, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 10, padding: '0.5rem' }}>
               {teamMembers.length === 0 ? (
-                <p style={{ color: '#94a3b8', fontSize: '0.8rem', padding: '0.5rem', margin: 0 }}>No team members found.</p>
+                <p style={{ color: '#94a3b8', fontSize: '0.8rem', padding: '0.5rem', margin: 0 }}>{t('feedback.noTeamMembersFound', 'No team members found.')}</p>
               ) : teamMembers.map(m => {
                 const checked = selected.includes(m.uid);
                 return (
@@ -152,7 +164,7 @@ function RequestModal({ teamMembers, onClose, onSave }) {
                     <Avatar name={m.displayName} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)', margin: 0 }}>{m.displayName || m.email}</p>
-                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>{[m.teamName, m.isAdmin ? 'Manager' : m.role].filter(Boolean).join(' · ') || 'Team Member'}</p>
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', margin: 0 }}>{[m.teamName, m.isAdmin ? t('feedback.manager', 'Manager') : m.role].filter(Boolean).join(' · ') || t('feedback.teamMember', 'Team Member')}</p>
                     </div>
                     {checked && <span style={{ fontSize: '0.8rem', color: '#0d9488', fontWeight: 700 }}>✓</span>}
                   </label>
@@ -164,14 +176,14 @@ function RequestModal({ teamMembers, onClose, onSave }) {
           {/* Category */}
           <div>
             <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
-              Feedback Topic
+              {t('feedback.feedbackTopic', 'Feedback Topic')}
             </label>
             <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
               {categories.map(c => (
                 <button key={c} onClick={() => setCategory(c)}
                   style={{ padding: '0.3rem 0.75rem', borderRadius: 9999, fontSize: '0.75rem', fontWeight: 700, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
                     background: category === c ? '#0f2044' : '#f1f5f9', color: category === c ? 'white' : '#475569' }}>
-                  {c}
+                  {trCategory(t, c)}
                 </button>
               ))}
             </div>
@@ -180,15 +192,15 @@ function RequestModal({ teamMembers, onClose, onSave }) {
           {/* Optional note */}
           <div>
             <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'block', marginBottom: 6 }}>
-              Add a note <span style={{ fontWeight: 400, textTransform: 'none' }}>(optional)</span>
+              {t('feedback.addANote', 'Add a note')} <span style={{ fontWeight: 400, textTransform: 'none' }}>({t('feedback.optional', 'optional')})</span>
             </label>
             <textarea className="input" rows={3}
-              placeholder="Write your main idea — e.g. feedback on my communication style during last week's project..."
+              placeholder={t('feedback.notePlaceholder', "Write your main idea — e.g. feedback on my communication style during last week's project...")}
               value={note} onChange={e => setNote(e.target.value)}
               style={{ resize: 'vertical', marginBottom: 6 }} />
             <button type="button" onClick={improveNote} disabled={improving || !note.trim()}
               style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, color: '#6d28d9', fontWeight: 700, fontSize: '0.75rem', padding: '4px 10px', cursor: note.trim() ? 'pointer' : 'not-allowed', opacity: note.trim() ? 1 : 0.5 }}>
-              {improving ? 'Improving…' : '✨ Improve with AI'}
+              {improving ? t('feedback.improving', 'Improving…') : `✨ ${t('feedback.improveWithAI', 'Improve with AI')}`}
             </button>
           </div>
         </div>
@@ -197,9 +209,9 @@ function RequestModal({ teamMembers, onClose, onSave }) {
         <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
           <button className="btn-primary" onClick={handleSend} style={{ flex: 1 }}
             disabled={selected.length === 0}>
-            📨 Send Request{selected.length > 1 ? `s (${selected.length})` : ''}
+            📨 {selected.length > 1 ? t('feedback.sendRequestsCount', 'Send Requests ({{count}})', { count: selected.length }) : t('feedback.sendRequest', 'Send Request')}
           </button>
-          <button className="btn-secondary" onClick={onClose}>Cancel</button>
+          <button className="btn-secondary" onClick={onClose}>{t('feedback.cancel', 'Cancel')}</button>
         </div>
       </div>
     </div>
@@ -207,6 +219,7 @@ function RequestModal({ teamMembers, onClose, onSave }) {
 }
 
 export default function Feedback() {
+  const { t } = useTranslation();
   const { currentUser, userProfile } = useAuth();
   const isMobile = useIsMobile();
   const [showForm, setShowForm]       = useState(false);
@@ -313,7 +326,7 @@ export default function Feedback() {
 
   async function improveSBI() {
     if (!form.when.trim() && !form.what.trim() && !form.effect.trim()) {
-      return toast.error('Fill in at least one field first');
+      return toast.error(t('feedback.toast.fillInAtLeastOneField', 'Fill in at least one field first'));
     }
     setImprovingSBI(true);
     try {
@@ -328,14 +341,14 @@ export default function Feedback() {
         }));
       }
     } catch (e) {
-      toast.error(e?.message || 'AI improvement failed');
+      toast.error(e?.message || t('feedback.toast.aiImprovementFailed', 'AI improvement failed'));
     }
     setImprovingSBI(false);
   }
 
   async function submitFeedback(e) {
     e.preventDefault();
-    if (!form.toUid) return toast.error('Please select a recipient');
+    if (!form.toUid) return toast.error(t('feedback.toast.selectARecipient', 'Please select a recipient'));
     setSubmitting(true);
     try {
       const newEntry = {
@@ -351,7 +364,11 @@ export default function Feedback() {
         when: form.when,
         what: form.what,
         effect: form.effect,
-        text: [form.when && `When: ${form.when}`, form.what && `What: ${form.what}`, form.effect && `Effect: ${form.effect}`].filter(Boolean).join('\n\n'),
+        text: [
+          form.when && `${t('feedback.whenLabel', 'When')}: ${form.when}`,
+          form.what && `${t('feedback.whatLabel', 'What')}: ${form.what}`,
+          form.effect && `${t('feedback.effectLabel', 'Effect')}: ${form.effect}`,
+        ].filter(Boolean).join('\n\n'),
         date: localDateStr(),
         createdAt: { seconds: Math.floor(Date.now() / 1000) },
       };
@@ -366,15 +383,15 @@ export default function Feedback() {
         delivered = true;
       } catch (e) { console.error('Could not deliver feedback to recipient', e); }
       await persist([{ ...newEntry, delivered }, ...given], undefined);
-      if (!delivered) toast.error(`Saved, but couldn't deliver to ${form.to}'s inbox — they may not see it. Try again shortly.`, { duration: 7000 });
+      if (!delivered) toast.error(t('feedback.toast.notDelivered', "Saved, but couldn't deliver to {{name}}'s inbox — they may not see it. Try again shortly.", { name: form.to }), { duration: 7000 });
       const earned = await awardFeedbackPoint();
-      if (earned === 'earned') toast.success(`Feedback submitted! +1 pt (${monthlyFeedbackCount + 1}/5 this month)`, { duration: 5000 });
-      else if (earned === 'capped-monthly') toast('Feedback submitted! You\'ve reached the 5-pt monthly feedback limit. Points reset in 30 days.', { duration: 6000, icon: '📅' });
-      else if (earned === 'capped-daily') toast('Feedback submitted! Daily 25-pt cap reached — come back tomorrow.', { duration: 6000, icon: '📅' });
-      else toast.success('Feedback submitted!');
+      if (earned === 'earned') toast.success(t('feedback.toast.submittedEarned', 'Feedback submitted! +1 pt ({{count}}/5 this month)', { count: monthlyFeedbackCount + 1 }), { duration: 5000 });
+      else if (earned === 'capped-monthly') toast(t('feedback.toast.submittedCappedMonthly', "Feedback submitted! You've reached the 5-pt monthly feedback limit. Points reset in 30 days."), { duration: 6000, icon: '📅' });
+      else if (earned === 'capped-daily') toast(t('feedback.toast.submittedCappedDaily', 'Feedback submitted! Daily 25-pt cap reached — come back tomorrow.'), { duration: 6000, icon: '📅' });
+      else toast.success(t('feedback.toast.submitted', 'Feedback submitted!'));
       setForm({ type: 'Peer', from: '', to: '', toUid: '', anonymous: false, category: 'Leadership', rating: 5, when: '', what: '', effect: '' });
       setShowForm(false);
-    } catch (e) { toast.error('Submit failed: ' + (e?.message || e)); }
+    } catch (e) { toast.error(t('feedback.toast.submitFailed', 'Submit failed: {{error}}', { error: e?.message || e })); }
     setSubmitting(false);
   }
 
@@ -409,15 +426,15 @@ export default function Feedback() {
     setReceived(updated);
     try {
       await setDoc(doc(db, 'users', currentUser.uid), { feedbackReceived: updated }, { merge: true });
-    } catch { toast.error('Could not save reaction'); }
+    } catch { toast.error(t('feedback.toast.couldNotSaveReaction', 'Could not save reaction')); }
   }
 
   async function handleDelete(id) {
-    if (!confirm('Delete this feedback?')) return;
+    if (!confirm(t('feedback.confirmDelete', 'Delete this feedback?'))) return;
     try {
       await persist(given.filter(f => f.id !== id), undefined);
-      toast.success('Deleted');
-    } catch { toast.error('Delete failed'); }
+      toast.success(t('feedback.toast.deleted', 'Deleted'));
+    } catch { toast.error(t('feedback.toast.deleteFailed', 'Delete failed')); }
   }
 
   async function handleSendRequests(selectedUids, category, note) {
@@ -438,20 +455,22 @@ export default function Feedback() {
     try {
       await persist(undefined, [...newReqs, ...requests]);
       const names = newReqs.map(r => r.to).join(', ');
-      toast.success(`Request${newReqs.length > 1 ? 's' : ''} sent to ${names}`);
-    } catch { toast.error('Could not save requests'); }
+      toast.success(newReqs.length > 1
+        ? t('feedback.toast.requestsSentTo', 'Requests sent to {{names}}', { names })
+        : t('feedback.toast.requestSentTo', 'Request sent to {{names}}', { names }));
+    } catch { toast.error(t('feedback.toast.couldNotSaveRequests', 'Could not save requests')); }
   }
 
   async function handleDismissRequest(id) {
     try {
       await persist(undefined, requests.map(r => r.id === id ? { ...r, status: 'fulfilled' } : r));
-      toast.success('Marked as fulfilled');
-    } catch { toast.error('Update failed'); }
+      toast.success(t('feedback.toast.markedFulfilled', 'Marked as fulfilled'));
+    } catch { toast.error(t('feedback.toast.updateFailed', 'Update failed')); }
   }
 
-  function selectTab(t) {
-    setTab(t);
-    if (t === 'received') markReceivedRead();
+  function selectTab(tabName) {
+    setTab(tabName);
+    if (tabName === 'received') markReceivedRead();
   }
 
   const allFeedback = [...given, ...received.filter(r => !given.find(g => g.id === r.id))];
@@ -467,18 +486,18 @@ export default function Feedback() {
 
   return (
     <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-      <PageHeader icon="📬" title="Feedback Box — Accountability with Care" subtitle="Anonymous or named feedback from peers, supervisors, and leaders"
+      <PageHeader icon="📬" title={t('feedback.pageTitle', 'Feedback Box — Accountability with Care')} subtitle={t('feedback.pageSubtitle', 'Anonymous or named feedback from peers, supervisors, and leaders')}
         action={
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             <button className="btn-secondary" onClick={() => setShowRequest(true)} style={{ position: 'relative' }}>
-              📨 Request Feedback
+              📨 {t('feedback.requestFeedback', 'Request Feedback')}
               {pendingRequests > 0 && (
                 <span style={{ position: 'absolute', top: -6, right: -6, background: '#ef4444', color: 'white', borderRadius: '50%', width: 18, height: 18, fontSize: '0.65rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {pendingRequests}
                 </span>
               )}
             </button>
-            <button className="btn-primary" onClick={() => setShowForm(s => !s)}>+ Give Feedback</button>
+            <button className="btn-primary" onClick={() => setShowForm(s => !s)}>+ {t('feedback.giveFeedback', 'Give Feedback')}</button>
           </div>
         }
       />
@@ -495,9 +514,9 @@ export default function Feedback() {
       {/* Stats */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: isMobile ? 8 : 12, marginBottom: '1.5rem' }}>
         {[
-          { label: 'Avg Rating',        value: avg,                                           color: '#0d9488' },
-          { label: 'Total Feedback',    value: allFeedback.length,                            color: '#0f2044' },
-          { label: 'Pending Requests',  value: pendingRequests,                               color: '#f59e0b' },
+          { label: t('feedback.avgRating', 'Avg Rating'),        value: avg,                                           color: '#0d9488' },
+          { label: t('feedback.totalFeedback', 'Total Feedback'),    value: allFeedback.length,                            color: '#0f2044' },
+          { label: t('feedback.pendingRequests', 'Pending Requests'),  value: pendingRequests,                               color: '#f59e0b' },
         ].map(s => (
           <div key={s.label} className="stat-tile" style={{ textAlign: 'center', padding: isMobile ? '0.75rem 0.25rem' : undefined }}>
             <p style={{ fontSize: isMobile ? '1.4rem' : '2rem', fontWeight: 900, color: s.color, margin: 0, lineHeight: 1 }}>{s.value}</p>
@@ -511,10 +530,10 @@ export default function Feedback() {
         <div style={{ background: '#fef9c3', border: '1px solid #fde68a', borderRadius: 12, padding: '0.75rem 1.1rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <span style={{ fontSize: '1rem' }}>⏳</span>
           <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#92400e' }}>
-            You have {pendingRequests} pending feedback request{pendingRequests > 1 ? 's' : ''}.
+            {t('feedback.youHavePendingRequests', 'You have {{count}} pending feedback request(s).', { count: pendingRequests })}
           </span>
           <button onClick={() => setShowRequest(true)} style={{ marginLeft: 'auto', background: '#0f2044', color: 'white', border: 'none', borderRadius: 8, padding: '0.3rem 0.875rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer' }}>
-            View Requests
+            {t('feedback.viewRequests', 'View Requests')}
           </button>
         </div>
       )}
@@ -526,55 +545,55 @@ export default function Feedback() {
           {/* Submit form */}
           {showForm && (
             <div className="card" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
-              <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>Submit Feedback</h3>
+              <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', marginBottom: '1rem', fontSize: '1rem' }}>{t('feedback.submitFeedback', 'Submit Feedback')}</h3>
               <form onSubmit={submitFeedback} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14 }}>
-                  <div><label className="label">Feedback Type</label>
+                  <div><label className="label">{t('feedback.feedbackType', 'Feedback Type')}</label>
                     <select className="input" value={form.type} onChange={e => setForm(f => ({ ...f, type: e.target.value }))}>
-                      {types.slice(1).map(t => <option key={t}>{t}</option>)}
+                      {types.slice(1).map(typ => <option key={typ} value={typ}>{trType(t, typ)}</option>)}
                     </select>
                   </div>
-                  <div><label className="label">Category</label>
+                  <div><label className="label">{t('feedback.category', 'Category')}</label>
                     <select className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                      {categories.map(c => <option key={c}>{c}</option>)}
+                      {categories.map(c => <option key={c} value={c}>{trCategory(t, c)}</option>)}
                     </select>
                   </div>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                   <input type="checkbox" id="anon" checked={form.anonymous} onChange={e => setForm(f => ({ ...f, anonymous: e.target.checked }))} style={{ width: 16, height: 16 }} />
-                  <label htmlFor="anon" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Submit Anonymously</label>
+                  <label htmlFor="anon" style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{t('feedback.submitAnonymously', 'Submit Anonymously')}</label>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14 }}>
                   {!form.anonymous && (
-                    <div><label className="label">Your Name (From)</label>
-                      <input className="input" value={form.from || myName} onChange={e => setForm(f => ({ ...f, from: e.target.value }))} placeholder="Your name" />
+                    <div><label className="label">{t('feedback.yourNameFrom', 'Your Name (From)')}</label>
+                      <input className="input" value={form.from || myName} onChange={e => setForm(f => ({ ...f, from: e.target.value }))} placeholder={t('feedback.yourNamePlaceholder', 'Your name')} />
                     </div>
                   )}
                   <div style={form.anonymous ? { gridColumn: '1 / -1' } : {}}>
-                    <label className="label">Recipient (To) *</label>
+                    <label className="label">{t('feedback.recipientTo', 'Recipient (To) *')}</label>
                     <select className="input" required value={form.toUid} onChange={e => {
                       const uid = e.target.value;
                       const member = teamMembers.find(m => m.uid === uid);
                       setForm(f => ({ ...f, toUid: uid, to: member?.displayName || member?.email || '' }));
                     }}>
-                      <option value="">— Select team member —</option>
+                      <option value="">— {t('feedback.selectTeamMember', 'Select team member')} —</option>
                       {teamMembers.map(m => (
                         <option key={m.uid} value={m.uid}>
-                          {m.displayName || m.email}{m.teamName ? ` · ${m.teamName}` : ''}{m.isAdmin ? ' (Manager)' : m.role ? ` (${m.role})` : ''}{m.uid === currentUser.uid ? ' — You' : ''}
+                          {m.displayName || m.email}{m.teamName ? ` · ${m.teamName}` : ''}{m.isAdmin ? ` (${t('feedback.manager', 'Manager')})` : m.role ? ` (${m.role})` : ''}{m.uid === currentUser.uid ? ` — ${t('feedback.you', 'You')}` : ''}
                         </option>
                       ))}
                     </select>
                   </div>
                 </div>
                 <div>
-                  <label className="label">Rating</label>
+                  <label className="label">{t('feedback.rating', 'Rating')}</label>
                   <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end' }}>
                     {[
-                      { n: 1, label: 'Small', desc: 'Worth a mention, but limited scope' },
-                      { n: 2, label: 'Noticed', desc: 'A positive moment, but minor' },
-                      { n: 3, label: 'Solid', desc: 'Met the standard well' },
-                      { n: 4, label: 'Strong', desc: 'Clearly did more than expected' },
-                      { n: 5, label: 'Exceptional', desc: 'Went well beyond what the situation required' },
+                      { n: 1, label: t('feedback.ratingLabels.small', 'Small'), desc: t('feedback.ratingDescs.small', 'Worth a mention, but limited scope') },
+                      { n: 2, label: t('feedback.ratingLabels.noticed', 'Noticed'), desc: t('feedback.ratingDescs.noticed', 'A positive moment, but minor') },
+                      { n: 3, label: t('feedback.ratingLabels.solid', 'Solid'), desc: t('feedback.ratingDescs.solid', 'Met the standard well') },
+                      { n: 4, label: t('feedback.ratingLabels.strong', 'Strong'), desc: t('feedback.ratingDescs.strong', 'Clearly did more than expected') },
+                      { n: 5, label: t('feedback.ratingLabels.exceptional', 'Exceptional'), desc: t('feedback.ratingDescs.exceptional', 'Went well beyond what the situation required') },
                     ].map(({ n, label, desc }) => (
                       <div key={n} style={{ position: 'relative', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4 }}
                         onMouseEnter={e => { const tip = e.currentTarget.querySelector('.rating-tip'); if (tip) tip.style.opacity = '1'; }}
@@ -602,9 +621,9 @@ export default function Feedback() {
                   </div>
                 </div>
                 {[
-                  { key: 'when',   label: 'When did this happen?',         placeholder: 'e.g. Tuesday\'s huddle, last Thursday\'s client call…' },
-                  { key: 'what',   label: 'What did they specifically do?', placeholder: 'e.g. flagged the material delay before being asked…' },
-                  { key: 'effect', label: 'What was the positive effect?',  placeholder: 'e.g. team resequenced immediately instead of losing time mid-shift…' },
+                  { key: 'when',   label: t('feedback.whenDidThisHappen', 'When did this happen?'),         placeholder: t('feedback.whenPlaceholder', "e.g. Tuesday's huddle, last Thursday's client call…") },
+                  { key: 'what',   label: t('feedback.whatDidTheyDo', 'What did they specifically do?'), placeholder: t('feedback.whatPlaceholder', 'e.g. flagged the material delay before being asked…') },
+                  { key: 'effect', label: t('feedback.whatWasThePositiveEffect', 'What was the positive effect?'),  placeholder: t('feedback.effectPlaceholder', 'e.g. team resequenced immediately instead of losing time mid-shift…') },
                 ].map(({ key, label, placeholder }) => (
                   <div key={key}>
                     <label className="label">{label}</label>
@@ -616,11 +635,11 @@ export default function Feedback() {
                 ))}
                 <button type="button" onClick={improveSBI} disabled={improvingSBI}
                   style={{ alignSelf: 'flex-start', background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 8, color: '#6d28d9', fontWeight: 700, fontSize: '0.78rem', padding: '5px 12px', cursor: 'pointer' }}>
-                  {improvingSBI ? 'Improving…' : '✨ Improve When/What/Effect with AI'}
+                  {improvingSBI ? t('feedback.improving', 'Improving…') : `✨ ${t('feedback.improveSBIWithAI', 'Improve When/What/Effect with AI')}`}
                 </button>
                 <div style={{ display: 'flex', gap: 10 }}>
-                  <button className="btn-primary" type="submit" disabled={submitting}>{submitting ? 'Submitting...' : 'Submit Feedback'}</button>
-                  <button className="btn-secondary" type="button" onClick={() => setShowForm(false)}>Cancel</button>
+                  <button className="btn-primary" type="submit" disabled={submitting}>{submitting ? t('feedback.submitting', 'Submitting...') : t('feedback.submitFeedback', 'Submit Feedback')}</button>
+                  <button className="btn-secondary" type="button" onClick={() => setShowForm(false)}>{t('feedback.cancel', 'Cancel')}</button>
                 </div>
               </form>
             </div>
@@ -628,13 +647,13 @@ export default function Feedback() {
 
           {/* Given / Received / Requests tabs */}
           <div style={{ display: 'flex', gap: isMobile ? 6 : 8, marginBottom: '1.25rem' }}>
-            {['given', 'received', 'requests'].map(t => (
-              <button key={t} onClick={() => selectTab(t)} style={{ position: 'relative', flex: 1, padding: isMobile ? '0.5rem 0.25rem' : '0.5rem 0', borderRadius: 10, fontSize: isMobile ? '0.72rem' : '0.82rem', fontWeight: 800, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
-                  background: tab === t ? '#0f2044' : '#f1f5f9', color: tab === t ? 'white' : '#475569' }}>
+            {['given', 'received', 'requests'].map(tabName => (
+              <button key={tabName} onClick={() => selectTab(tabName)} style={{ position: 'relative', flex: 1, padding: isMobile ? '0.5rem 0.25rem' : '0.5rem 0', borderRadius: 10, fontSize: isMobile ? '0.72rem' : '0.82rem', fontWeight: 800, border: 'none', cursor: 'pointer', transition: 'all 0.15s',
+                  background: tab === tabName ? '#0f2044' : '#f1f5f9', color: tab === tabName ? 'white' : '#475569' }}>
                 {isMobile
-                  ? (t === 'given' ? `Given (${given.length})` : t === 'received' ? `Rcvd (${received.length})` : `Req (${pendingRequests})`)
-                  : (t === 'given' ? `Given (${given.length})` : t === 'received' ? `Received (${received.length})` : `Requests (${pendingRequests})`)}
-                {t === 'received' && unreadCount > 0 && (
+                  ? (tabName === 'given' ? t('feedback.tabGivenMobile', 'Given ({{count}})', { count: given.length }) : tabName === 'received' ? t('feedback.tabReceivedMobile', 'Rcvd ({{count}})', { count: received.length }) : t('feedback.tabRequestsMobile', 'Req ({{count}})', { count: pendingRequests }))
+                  : (tabName === 'given' ? t('feedback.tabGiven', 'Given ({{count}})', { count: given.length }) : tabName === 'received' ? t('feedback.tabReceived', 'Received ({{count}})', { count: received.length }) : t('feedback.tabRequests', 'Requests ({{count}})', { count: pendingRequests }))}
+                {tabName === 'received' && unreadCount > 0 && (
                   <span style={{ position: 'absolute', top: -6, right: '30%', background: '#ef4444', color: 'white', borderRadius: '50%', width: 18, height: 18, fontSize: '0.65rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     {unreadCount}
                   </span>
@@ -647,24 +666,24 @@ export default function Feedback() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {filtered.length === 0 ? (
               <div className="card" style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
-                {tab === 'requests' ? 'No pending requests.' : `No ${tab} feedback yet.`}
+                {tab === 'requests' ? t('feedback.noPendingRequests', 'No pending requests.') : t('feedback.noFeedbackYet', 'No {{tab}} feedback yet.', { tab: tab === 'given' ? t('feedback.tabGivenWord', 'given') : t('feedback.tabReceivedWord', 'received') })}
               </div>
             ) : tab === 'requests' ? filtered.map(r => (
               <div key={r.id} className="card" style={{ padding: '1.25rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)', margin: '0 0 4px' }}>To: {r.to}</p>
+                    <p style={{ fontWeight: 800, fontSize: '0.9rem', color: 'var(--text-primary)', margin: '0 0 4px' }}>{t('feedback.toLabel', 'To: {{name}}', { name: r.to })}</p>
                     <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-                      <span style={{ background: '#fef3c7', color: '#b45309', borderRadius: 9999, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700 }}>{r.category}</span>
+                      <span style={{ background: '#fef3c7', color: '#b45309', borderRadius: 9999, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700 }}>{trCategory(t, r.category)}</span>
                       <span style={{ background: r.status === 'pending' ? '#fef9c3' : '#dcfce7', color: r.status === 'pending' ? '#b45309' : '#15803d', borderRadius: 9999, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 700 }}>
-                        {r.status === 'pending' ? '⏳ Pending' : '✅ Done'}
+                        {r.status === 'pending' ? `⏳ ${t('feedback.pending', 'Pending')}` : `✅ ${t('feedback.done', 'Done')}`}
                       </span>
                     </div>
                     {r.note && <p style={{ fontSize: '0.8rem', color: '#64748b', margin: '4px 0 0', lineHeight: 1.5 }}>{r.note}</p>}
                     <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '4px 0 0' }}>{r.date}</p>
                   </div>
                   {r.status === 'pending' && (
-                    <button onClick={() => handleDismissRequest(r.id)} title="Mark as fulfilled" className="btn-secondary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem', flexShrink: 0 }}>✓ Mark Fulfilled</button>
+                    <button onClick={() => handleDismissRequest(r.id)} title={t('feedback.markAsFulfilled', 'Mark as fulfilled')} className="btn-secondary" style={{ fontSize: '0.75rem', padding: '0.3rem 0.75rem', flexShrink: 0 }}>✓ {t('feedback.markFulfilled', 'Mark Fulfilled')}</button>
                   )}
                 </div>
               </div>
@@ -677,11 +696,11 @@ export default function Feedback() {
                     </div>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-                        <span style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{f.from}</span>
+                        <span style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)' }}>{f.from === 'Anonymous' ? t('feedback.anonymous', 'Anonymous') : f.from}</span>
                         {f.to && <><span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>→</span><span style={{ fontWeight: 700, fontSize: '0.875rem', color: '#0d9488' }}>{f.to}</span></>}
                         {tab === 'received' && !f.read && <span style={{ color: '#0d9488' }}>●</span>}
-                        <span style={{ background: '#e0f2fe', color: '#0369a1', borderRadius: 9999, padding: '1px 8px', fontSize: '0.7rem', fontWeight: 700 }}>{f.type}</span>
-                        <span style={{ background: '#f1f5f9', color: '#475569', borderRadius: 9999, padding: '1px 8px', fontSize: '0.7rem', fontWeight: 700 }}>{f.category}</span>
+                        <span style={{ background: '#e0f2fe', color: '#0369a1', borderRadius: 9999, padding: '1px 8px', fontSize: '0.7rem', fontWeight: 700 }}>{trType(t, f.type)}</span>
+                        <span style={{ background: '#f1f5f9', color: '#475569', borderRadius: 9999, padding: '1px 8px', fontSize: '0.7rem', fontWeight: 700 }}>{trCategory(t, f.category)}</span>
                       </div>
                       <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>{f.date}</p>
                     </div>
@@ -697,7 +716,9 @@ export default function Feedback() {
                 <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', lineHeight: 1.65, margin: 0 }}>{f.text}</p>
                 {tab === 'given' && f.uid === currentUser.uid && (
                   <p style={{ fontSize: '0.68rem', margin: '8px 0 0', fontWeight: 700, color: f.delivered ? '#15803d' : '#b45309' }}>
-                    {f.delivered ? `✓ Delivered to ${f.to}'s inbox` : `⚠ Not yet delivered to ${f.to}'s inbox${f.toUid ? '' : ' — no matching account found'}`}
+                    {f.delivered
+                      ? `✓ ${t('feedback.deliveredToInbox', "Delivered to {{name}}'s inbox", { name: f.to })}`
+                      : `⚠ ${f.toUid ? t('feedback.notYetDeliveredToInbox', "Not yet delivered to {{name}}'s inbox", { name: f.to }) : t('feedback.notYetDeliveredNoAccount', "Not yet delivered to {{name}}'s inbox — no matching account found", { name: f.to })}`}
                   </p>
                 )}
                 {tab === 'received' && (
