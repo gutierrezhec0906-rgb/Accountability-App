@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import toast from 'react-hot-toast';
 import PageHeader from '../components/PageHeader';
 import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
@@ -23,6 +24,10 @@ const discProfiles = {
   S: { name: 'Steadiness',       color: '#0d9488', traits: ['Patient & consistent','Dependable','Team player','Good listener','Diplomatic'], strengths: 'Creates harmony, reliable under stress, strong team builder', challenges: 'May resist change, avoid confrontation, struggle with urgency', tips: 'Practice speaking up earlier. Change is growth.' },
   C: { name: 'Conscientiousness',color: '#1e3a6e', traits: ['Analytical & precise','Quality-focused','Systematic','Detail-oriented','Fact-based'], strengths: 'Produces high-quality work, identifies risks, ensures accuracy', challenges: 'Analysis paralysis, overly critical, slow to decide', tips: 'Good is sometimes better than perfect. Ship and iterate.' },
 };
+
+function trProfile(t, key, field) { return t(`disc.profiles.${key}.${field}`, discProfiles[key][field]); }
+function trTraits(t, key) { return t(`disc.profiles.${key}.traits`, { returnObjects: true, defaultValue: discProfiles[key].traits }); }
+function trQ(t, q, field) { return t(`disc.questions.${q.id}.${field}`, q[field]); }
 
 const questions = [
   // Group / Team Behavior
@@ -52,33 +57,34 @@ const questions = [
   { id: 20, text: 'I prefer meetings that are:',                       D: 'Short, decisive, and action-focused',         I: 'Open, collaborative, with room to explore ideas', S: 'Structured, inclusive, and well-prepared', C: 'Data-driven with clear agendas and outcomes' },
 ];
 
-function balanceNote(scores) {
+function balanceNote(scores, t) {
   const total = Object.values(scores).reduce((a, b) => a + b, 0);
   const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
   const topScore = sorted[0][1];
   const top = sorted.filter(([, v]) => v >= topScore - Math.ceil(total * 0.1) && v > 0);
   if (top.length === 1) {
-    return { level: 'warn', text: `Strongly ${discProfiles[top[0][0]].name}-dominant. Developing complementary styles will increase your leadership versatility.` };
+    return { level: 'warn', text: t('disc.balance.dominant', 'Strongly {{name}}-dominant. Developing complementary styles will increase your leadership versatility.', { name: trProfile(t, top[0][0], 'name') }) };
   }
   if (top.length >= 3) {
-    return { level: 'good', text: `Well-balanced across ${top.map(([k]) => k).join(', ')} — a versatile, adaptive leadership profile.` };
+    return { level: 'good', text: t('disc.balance.wellBalanced', 'Well-balanced across {{list}} — a versatile, adaptive leadership profile.', { list: top.map(([k]) => k).join(', ') }) };
   }
-  return { level: 'good', text: `Balanced blend of ${top.map(([k]) => `${k} (${discProfiles[k].name})`).join(' & ')} — a strong combination for adaptive leadership.` };
+  return { level: 'good', text: t('disc.balance.blend', 'Balanced blend of {{list}} — a strong combination for adaptive leadership.', { list: top.map(([k]) => `${k} (${trProfile(t, k, 'name')})`).join(' & ') }) };
 }
 
 function SavedPanel({ entries, onDelete, onDownload, userName, isMobile }) {
+  const { t } = useTranslation();
   return (
     <div style={{ width: isMobile ? '100%' : 280, flexShrink: 0, background: '#fff', border: '1px solid var(--border)', borderRadius: 14, padding: '1.25rem', alignSelf: 'flex-start', position: isMobile ? 'relative' : 'sticky', top: isMobile ? 'auto' : 24 }}>
-      <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)', margin: '0 0 4px' }}>Assessment History</p>
-      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 14px' }}>Goal: balanced across 2–3 styles</p>
+      <p style={{ fontWeight: 800, fontSize: '0.875rem', color: 'var(--text-primary)', margin: '0 0 4px' }}>{t('disc.assessmentHistory', 'Assessment History')}</p>
+      <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 14px' }}>{t('disc.goalBalanced', 'Goal: balanced across 2–3 styles')}</p>
 
       {entries.length === 0
-        ? <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 24 }}>No assessments saved yet.</p>
+        ? <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', textAlign: 'center', marginTop: 24 }}>{t('disc.noAssessmentsYet', 'No assessments saved yet.')}</p>
         : <div style={{ display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 600, overflowY: 'auto' }}>
             {entries.map(e => {
               const taken = e.createdAt?.seconds ? new Date(e.createdAt.seconds * 1000) : new Date();
               const next  = new Date(taken); next.setMonth(next.getMonth() + 3);
-              const note  = balanceNote(e.scores);
+              const note  = balanceNote(e.scores, t);
               const sorted = Object.entries(e.scores).sort((a, b) => b[1] - a[1]);
               const total  = Object.values(e.scores).reduce((a, b) => a + b, 0);
               return (
@@ -86,7 +92,7 @@ function SavedPanel({ entries, onDelete, onDownload, userName, isMobile }) {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
                     <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{taken.toLocaleDateString()}</span>
                     <span style={{ padding: '2px 8px', borderRadius: 9999, fontSize: '0.68rem', fontWeight: 800, background: discProfiles[e.primary].color, color: 'white' }}>
-                      {e.primary} — {discProfiles[e.primary].name}
+                      {e.primary} — {trProfile(t, e.primary, 'name')}
                     </span>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
@@ -104,16 +110,16 @@ function SavedPanel({ entries, onDelete, onDownload, userName, isMobile }) {
                     {note.level === 'good' ? '✓' : '⚠'} {note.text}
                   </p>
                   <div style={{ background: '#eff6ff', borderRadius: 7, padding: '0.4rem 0.6rem', marginBottom: 8 }}>
-                    <p style={{ fontSize: '0.65rem', color: '#3b82f6', fontWeight: 700, margin: 0 }}>📅 Re-evaluate by {next.toLocaleDateString()}</p>
+                    <p style={{ fontSize: '0.65rem', color: '#3b82f6', fontWeight: 700, margin: 0 }}>📅 {t('disc.reEvaluateBy', 'Re-evaluate by {{date}}', { date: next.toLocaleDateString() })}</p>
                   </div>
                   {/* PDF download — always available from history */}
                   <button onClick={() => onDownload({ scores: e.scores, primary: e.primary }, userName)}
                     style={{ width: '100%', padding: '0.3rem 0', borderRadius: 7, fontSize: '0.72rem', fontWeight: 700, border: '1.5px solid #0f2044', background: '#0f2044', color: 'white', cursor: 'pointer', marginBottom: 6 }}>
-                    📄 Download PDF Report
+                    📄 {t('disc.downloadPdfReport', 'Download PDF Report')}
                   </button>
                   <button onClick={() => onDelete(e.id)}
                     style={{ width: '100%', padding: '0.25rem 0', borderRadius: 7, fontSize: '0.7rem', fontWeight: 700, border: '1px solid #fca5a5', background: 'white', color: '#ef4444', cursor: 'pointer' }}>
-                    Delete
+                    {t('disc.delete', 'Delete')}
                   </button>
                 </div>
               );
@@ -125,6 +131,7 @@ function SavedPanel({ entries, onDelete, onDownload, userName, isMobile }) {
 }
 
 export default function DISC() {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const [answers, setAnswers]   = useState({});
   const [result, setResult]     = useState(null);
@@ -157,7 +164,7 @@ export default function DISC() {
   useEffect(() => { fetchSaved(); }, [currentUser]);
 
   function calculate() {
-    if (Object.keys(answers).length < questions.length) return toast.error(`Please answer all ${questions.length} questions`);
+    if (Object.keys(answers).length < questions.length) return toast.error(t('disc.toast.answerAll', 'Please answer all {{count}} questions', { count: questions.length }));
     const scores = { D: 0, I: 0, S: 0, C: 0 };
     Object.values(answers).forEach(t => scores[t]++);
     const primary = Object.entries(scores).sort((a, b) => b[1] - a[1])[0][0];
@@ -167,7 +174,7 @@ export default function DISC() {
 
   async function handleSave() {
     if (!result) return;
-    if (!currentUser) return toast.error('Not logged in');
+    if (!currentUser) return toast.error(t('disc.toast.notLoggedIn', 'Not logged in'));
     try {
       const nowSec = Math.floor(Date.now() / 1000);
       const newEntry = { id: Date.now().toString(), scores: result.scores, primary: result.primary, answers, createdAt: { seconds: nowSec } };
@@ -180,20 +187,20 @@ export default function DISC() {
         await updateDoc(doc(db, 'users', currentUser.uid), { discPointsEarned: true });
         if (awarded) {
           await updateDoc(doc(db, 'users', currentUser.uid), { bonusPoints: (await getDoc(doc(db, 'users', currentUser.uid))).data()?.bonusPoints + 5 || 5 });
-          toast.success('⭐ Assessment saved — +5 pts! Valid for 90 days.', { duration: 6000, icon: '🌟' });
+          toast.success(t('disc.toast.savedFirstBonus', '⭐ Assessment saved — +5 pts! Valid for 90 days.'), { duration: 6000, icon: '🌟' });
         } else if (capReached) {
-          toast('Assessment saved! Daily limit reached — your +5 pts will show tomorrow. 🗓', { duration: 6000, icon: '📅' });
+          toast(t('disc.toast.capReached', 'Assessment saved! Daily limit reached — your +5 pts will show tomorrow. 🗓'), { duration: 6000, icon: '📅' });
         } else {
-          toast.success('Assessment saved!');
+          toast.success(t('disc.toast.assessmentSaved', 'Assessment saved!'));
         }
       } else {
-        toast.success('Assessment saved! Your 90-day score window has been reset.');
+        toast.success(t('disc.toast.windowReset', 'Assessment saved! Your 90-day score window has been reset.'));
       }
 
       setDiscMeta({ lastAt: nowSec * 1000, earned: true });
       calculateScore(currentUser.uid).catch(() => {});
     } catch (e) {
-      toast.error('Save failed: ' + e?.message);
+      toast.error(t('disc.toast.saveFailed', 'Save failed: {{msg}}', { msg: e?.message }));
     }
   }
 
@@ -202,23 +209,23 @@ export default function DISC() {
     if (!r) return;
     try {
       generateDISCReport(r, targetName || userName);
-      toast.success('PDF report downloaded!', { duration: 3000 });
+      toast.success(t('disc.toast.pdfDownloaded', 'PDF report downloaded!'), { duration: 3000 });
     } catch (e) {
-      toast.error('PDF generation failed: ' + e?.message);
+      toast.error(t('disc.toast.pdfFailed', 'PDF generation failed: {{msg}}', { msg: e?.message }));
     }
   }
 
   async function handleDelete(id) {
     try { await persist(saved.filter(e => e.id !== id)); }
-    catch (e) { toast.error('Delete failed: ' + e?.message); }
+    catch (e) { toast.error(t('disc.toast.deleteFailed', 'Delete failed: {{msg}}', { msg: e?.message })); }
   }
 
   const answerCount = Object.keys(answers).length;
   const allAnswered  = answerCount === questions.length;
   const tabs = [
-    { id: 'assessment', label: '📋 Assessment' },
-    { id: 'profiles',   label: '📖 DISC Profiles' },
-    ...(result ? [{ id: 'results', label: '🏆 My Results' }] : []),
+    { id: 'assessment', label: `📋 ${t('disc.tabAssessment', 'Assessment')}` },
+    { id: 'profiles',   label: `📖 ${t('disc.tabProfiles', 'DISC Profiles')}` },
+    ...(result ? [{ id: 'results', label: `🏆 ${t('disc.tabResults', 'My Results')}` }] : []),
   ];
 
   const discDaysAgo  = discMeta?.lastAt ? Math.floor((Date.now() - discMeta.lastAt) / 86400000) : null;
@@ -231,25 +238,25 @@ export default function DISC() {
 
   // Group questions by theme for display
   const questionGroups = [
-    { label: 'Group & Team Behavior',          ids: [1, 2, 3, 4] },
-    { label: 'Problem-Solving & Decision Making', ids: [5, 6, 7, 8] },
-    { label: 'Communication & Relationships',  ids: [9, 10, 11, 12] },
-    { label: 'Stress & Pressure Response',     ids: [13, 14, 15, 16] },
-    { label: 'Motivation & Work Values',       ids: [17, 18, 19, 20] },
+    { key: 'groupTeam',        label: 'Group & Team Behavior',          ids: [1, 2, 3, 4] },
+    { key: 'problemSolving',   label: 'Problem-Solving & Decision Making', ids: [5, 6, 7, 8] },
+    { key: 'communication',    label: 'Communication & Relationships',  ids: [9, 10, 11, 12] },
+    { key: 'stressPressure',   label: 'Stress & Pressure Response',     ids: [13, 14, 15, 16] },
+    { key: 'motivationValues', label: 'Motivation & Work Values',       ids: [17, 18, 19, 20] },
   ];
 
   return (
     <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-      <PageHeader icon="🧠" title="DISC Assessment — Accountability Starts With You" subtitle="Understand your behavioral style and leadership tendencies — 20 questions across 5 dimensions" />
+      <PageHeader icon="🧠" title={t('disc.title', 'DISC Assessment — Accountability Starts With You')} subtitle={t('disc.subtitle', 'Understand your behavioral style and leadership tendencies — 20 questions across 5 dimensions')} />
 
       {showExpiredBanner && (
         <div style={{ background: '#fef2f2', border: '1.5px solid #fca5a5', borderRadius: 12, padding: '0.875rem 1.25rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>🔴</span>
           <div>
-            <p style={{ fontWeight: 800, color: '#dc2626', margin: '0 0 2px', fontSize: '0.875rem' }}>DISC Score Expired — 5 points deducted</p>
-            <p style={{ color: '#7f1d1d', fontSize: '0.78rem', margin: 0 }}>Your last assessment was <strong>{Math.abs(discDaysLeft)} days</strong> ago. Complete a new DISC assessment to restore your 5 points.</p>
+            <p style={{ fontWeight: 800, color: '#dc2626', margin: '0 0 2px', fontSize: '0.875rem' }}>{t('disc.scoreExpired', 'DISC Score Expired — 5 points deducted')}</p>
+            <p style={{ color: '#7f1d1d', fontSize: '0.78rem', margin: 0 }}>{t('disc.lastAssessmentWasAgo', 'Your last assessment was')} <strong>{t('disc.daysAgo', '{{count}} days', { count: Math.abs(discDaysLeft) })}</strong> {t('disc.agoCompleteNew', 'ago. Complete a new DISC assessment to restore your 5 points.')}</p>
           </div>
-          <button onClick={() => setView('assessment')} style={{ marginLeft: 'auto', flexShrink: 0, background: '#dc2626', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}>Take Assessment →</button>
+          <button onClick={() => setView('assessment')} style={{ marginLeft: 'auto', flexShrink: 0, background: '#dc2626', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}>{t('disc.takeAssessment', 'Take Assessment')} →</button>
         </div>
       )}
 
@@ -257,20 +264,20 @@ export default function DISC() {
         <div style={{ background: '#fffbeb', border: '1.5px solid #fcd34d', borderRadius: 12, padding: '0.875rem 1.25rem', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: '1.25rem', flexShrink: 0 }}>⚠️</span>
           <div>
-            <p style={{ fontWeight: 800, color: '#92400e', margin: '0 0 2px', fontSize: '0.875rem' }}>DISC Renewal Due — {discDaysLeft} day{discDaysLeft !== 1 ? 's' : ''} left</p>
-            <p style={{ color: '#78350f', fontSize: '0.78rem', margin: 0 }}>Your 5 points expire on <strong>{nextDueDate}</strong>. Complete a new assessment before then to keep your score.</p>
+            <p style={{ fontWeight: 800, color: '#92400e', margin: '0 0 2px', fontSize: '0.875rem' }}>{t('disc.renewalDue', 'DISC Renewal Due — {{days}} day(s) left', { days: discDaysLeft })}</p>
+            <p style={{ color: '#78350f', fontSize: '0.78rem', margin: 0 }}>{t('disc.pointsExpireOn', 'Your 5 points expire on')} <strong>{nextDueDate}</strong>. {t('disc.completeBeforeThen', 'Complete a new assessment before then to keep your score.')}</p>
           </div>
-          <button onClick={() => setView('assessment')} style={{ marginLeft: 'auto', flexShrink: 0, background: '#d97706', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}>Renew Now →</button>
+          <button onClick={() => setView('assessment')} style={{ marginLeft: 'auto', flexShrink: 0, background: '#d97706', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer' }}>{t('disc.renewNow', 'Renew Now')} →</button>
         </div>
       )}
 
       <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: 24, alignItems: 'flex-start' }}>
         <div style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : 'auto' }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: '1.5rem' }}>
-            {tabs.map(t => (
-              <button key={t.id} onClick={() => setView(t.id)}
-                style={{ padding: '0.5rem 1.25rem', borderRadius: 10, fontWeight: 700, fontSize: '0.875rem', border: 'none', cursor: 'pointer', transition: 'all 0.15s', background: view === t.id ? '#0f2044' : '#f1f5f9', color: view === t.id ? 'white' : '#475569' }}>
-                {t.label}
+            {tabs.map(tab => (
+              <button key={tab.id} onClick={() => setView(tab.id)}
+                style={{ padding: '0.5rem 1.25rem', borderRadius: 10, fontWeight: 700, fontSize: '0.875rem', border: 'none', cursor: 'pointer', transition: 'all 0.15s', background: view === tab.id ? '#0f2044' : '#f1f5f9', color: view === tab.id ? 'white' : '#475569' }}>
+                {tab.label}
               </button>
             ))}
           </div>
@@ -294,18 +301,18 @@ export default function DISC() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '8px 0 10px' }}>
                       <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
                       <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap' }}>
-                        {group.label} · {groupAnswered}/{groupQs.length}
+                        {t(`disc.groups.${group.key}`, group.label)} · {groupAnswered}/{groupQs.length}
                       </span>
                       <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
                     </div>
                     {groupQs.map(q => (
                       <div key={q.id} className="card" style={{ padding: '1.25rem', marginBottom: 10 }}>
-                        <p style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.875rem', fontSize: '0.9375rem' }}>{q.id}. {q.text}</p>
+                        <p style={{ fontWeight: 700, color: 'var(--text-primary)', marginBottom: '0.875rem', fontSize: '0.9375rem' }}>{q.id}. {trQ(t, q, 'text')}</p>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-                          {Object.entries({ D: q.D, I: q.I, S: q.S, C: q.C }).map(([type, optText]) => (
+                          {['D', 'I', 'S', 'C'].map(type => (
                             <button key={type} onClick={() => setAnswers(a => ({ ...a, [q.id]: type }))}
                               style={{ textAlign: 'left', padding: '0.625rem 0.875rem', borderRadius: 10, fontSize: '0.85rem', cursor: 'pointer', border: `2px solid ${answers[q.id] === type ? discProfiles[type].color : '#e2e8f0'}`, background: answers[q.id] === type ? discProfiles[type].color : 'transparent', color: answers[q.id] === type ? 'white' : '#475569', fontWeight: answers[q.id] === type ? 700 : 400, transition: 'all 0.15s' }}>
-                              <span style={{ fontWeight: 800, marginRight: 6 }}>{type}:</span>{optText}
+                              <span style={{ fontWeight: 800, marginRight: 6 }}>{type}:</span>{trQ(t, q, type)}
                             </button>
                           ))}
                         </div>
@@ -317,7 +324,7 @@ export default function DISC() {
 
               <button className="btn-primary" onClick={calculate} disabled={!allAnswered}
                 style={{ opacity: allAnswered ? 1 : 0.6, cursor: allAnswered ? 'pointer' : 'not-allowed' }}>
-                {allAnswered ? '✓ Calculate My DISC Profile' : `Answer ${questions.length - answerCount} more question${questions.length - answerCount !== 1 ? 's' : ''}`}
+                {allAnswered ? `✓ ${t('disc.calculateProfile', 'Calculate My DISC Profile')}` : t('disc.answerMoreQuestions', 'Answer {{count}} more question(s)', { count: questions.length - answerCount })}
               </button>
             </div>
           )}
@@ -329,16 +336,16 @@ export default function DISC() {
                 <div key={key} className="card" style={{ padding: '1.25rem' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: '0.875rem' }}>
                     <div style={{ width: 48, height: 48, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontSize: '1.25rem', fontWeight: 900, flexShrink: 0, background: profile.color }}>{key}</div>
-                    <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1.0625rem' }}>{profile.name}</h4>
+                    <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1.0625rem' }}>{trProfile(t, key, 'name')}</h4>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: '0.875rem' }}>
-                    {profile.traits.map(t => (
-                      <span key={t} style={{ padding: '2px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 600, background: profile.color + '18', color: profile.color }}>{t}</span>
+                    {trTraits(t, key).map((trait, i) => (
+                      <span key={i} style={{ padding: '2px 10px', borderRadius: 9999, fontSize: '0.72rem', fontWeight: 600, background: profile.color + '18', color: profile.color }}>{trait}</span>
                     ))}
                   </div>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 4px' }}><strong>Strengths:</strong> {profile.strengths}</p>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 8px' }}><strong>Watch out for:</strong> {profile.challenges}</p>
-                  <p style={{ fontSize: '0.8rem', fontWeight: 600, fontStyle: 'italic', color: profile.color, margin: 0 }}>💡 {profile.tips}</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 4px' }}><strong>{t('disc.strengths', 'Strengths')}:</strong> {trProfile(t, key, 'strengths')}</p>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: '0 0 8px' }}><strong>{t('disc.watchOutFor', 'Watch out for')}:</strong> {trProfile(t, key, 'challenges')}</p>
+                  <p style={{ fontSize: '0.8rem', fontWeight: 600, fontStyle: 'italic', color: profile.color, margin: 0 }}>💡 {trProfile(t, key, 'tips')}</p>
                 </div>
               ))}
             </div>
@@ -346,7 +353,7 @@ export default function DISC() {
 
           {/* ── Results ── */}
           {view === 'results' && result && (() => {
-            const note  = balanceNote(result.scores);
+            const note  = balanceNote(result.scores, t);
             const total = Object.values(result.scores).reduce((a, b) => a + b, 0);
             const sorted = Object.entries(result.scores).sort((a, b) => b[1] - a[1]);
             const secondary = sorted[1]?.[0];
@@ -354,32 +361,32 @@ export default function DISC() {
               <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {/* Hero card */}
                 <div style={{ borderRadius: 16, padding: '1.75rem', color: 'white', background: `linear-gradient(135deg, ${discProfiles[result.primary].color}, #0f2044)` }}>
-                  <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>Your Primary DISC Style</p>
-                  <h2 style={{ fontSize: '2rem', fontWeight: 900, margin: '0 0 4px', color: 'white' }}>{result.primary} — {discProfiles[result.primary].name}</h2>
-                  {secondary && <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.85rem', margin: '0 0 16px' }}>Secondary style: {secondary} — {discProfiles[secondary].name}</p>}
-                  <p style={{ color: 'rgba(255,255,255,0.85)', margin: '0 0 20px', fontSize: '0.9rem' }}>{discProfiles[result.primary].strengths}</p>
+                  <p style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.7)', margin: '0 0 6px', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700 }}>{t('disc.yourPrimaryStyle', 'Your Primary DISC Style')}</p>
+                  <h2 style={{ fontSize: '2rem', fontWeight: 900, margin: '0 0 4px', color: 'white' }}>{result.primary} — {trProfile(t, result.primary, 'name')}</h2>
+                  {secondary && <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.85rem', margin: '0 0 16px' }}>{t('disc.secondaryStyle', 'Secondary style')}: {secondary} — {trProfile(t, secondary, 'name')}</p>}
+                  <p style={{ color: 'rgba(255,255,255,0.85)', margin: '0 0 20px', fontSize: '0.9rem' }}>{trProfile(t, result.primary, 'strengths')}</p>
                   <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                     <button onClick={handleSave}
                       style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 9, padding: '0.4rem 1rem', color: 'white', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>
-                      💾 Save Results
+                      💾 {t('disc.saveResults', 'Save Results')}
                     </button>
                     <button onClick={handleDownloadPDF}
                       style={{ background: 'rgba(255,255,255,0.9)', border: 'none', borderRadius: 9, padding: '0.4rem 1rem', color: '#0f2044', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>
-                      📄 Download PDF Report
+                      📄 {t('disc.downloadPdfReport', 'Download PDF Report')}
                     </button>
                   </div>
                 </div>
 
                 {/* Score bars */}
                 <div className="card" style={{ padding: '1.25rem' }}>
-                  <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 14px', fontSize: '0.9375rem' }}>Score Breakdown</p>
+                  <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 14px', fontSize: '0.9375rem' }}>{t('disc.scoreBreakdown', 'Score Breakdown')}</p>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {sorted.map(([type, score]) => {
                       const pct = Math.round((score / total) * 100);
                       return (
                         <div key={type}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: discProfiles[type].color }}>{type} — {discProfiles[type].name}</span>
+                            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: discProfiles[type].color }}>{type} — {trProfile(t, type, 'name')}</span>
                             <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600 }}>{score}/{total} · {pct}%</span>
                           </div>
                           <div style={{ height: 10, borderRadius: 9999, background: '#e2e8f0', overflow: 'hidden' }}>
@@ -394,11 +401,11 @@ export default function DISC() {
                 {/* Balance insight */}
                 <div className="card" style={{ padding: '1.25rem', borderLeft: `4px solid ${note.level === 'good' ? '#0d9488' : '#f59e0b'}` }}>
                   <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 6px', fontSize: '0.9375rem' }}>
-                    {note.level === 'good' ? '✅ Style Balance' : '⚠️ Style Balance'}
+                    {note.level === 'good' ? `✅ ${t('disc.styleBalance', 'Style Balance')}` : `⚠️ ${t('disc.styleBalance', 'Style Balance')}`}
                   </p>
                   <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', margin: '0 0 8px' }}>{note.text}</p>
                   <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: 0, fontStyle: 'italic' }}>
-                    A well-rounded leader blends 2–3 styles. Download the PDF report for a personalized 90-day development plan.
+                    {t('disc.wellRoundedNote', 'A well-rounded leader blends 2–3 styles. Download the PDF report for a personalized 90-day development plan.')}
                   </p>
                 </div>
 
@@ -406,23 +413,23 @@ export default function DISC() {
                 <div style={{ display: 'grid', gridTemplateColumns: secondary ? '1fr 1fr' : '1fr', gap: 12 }}>
                   <div className="card" style={{ padding: '1.25rem' }}>
                     <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 8px', fontSize: '0.9375rem' }}>
-                      <span style={{ color: discProfiles[result.primary].color }}>{result.primary}</span> — Development Tips
+                      <span style={{ color: discProfiles[result.primary].color }}>{result.primary}</span> — {t('disc.developmentTips', 'Development Tips')}
                     </h4>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 6px' }}><strong>Watch out for:</strong> {discProfiles[result.primary].challenges}</p>
-                    <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0d9488', margin: 0 }}>💡 {discProfiles[result.primary].tips}</p>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 6px' }}><strong>{t('disc.watchOutFor', 'Watch out for')}:</strong> {trProfile(t, result.primary, 'challenges')}</p>
+                    <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0d9488', margin: 0 }}>💡 {trProfile(t, result.primary, 'tips')}</p>
                   </div>
                   {secondary && (
                     <div className="card" style={{ padding: '1.25rem' }}>
                       <h4 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 8px', fontSize: '0.9375rem' }}>
-                        <span style={{ color: discProfiles[secondary].color }}>{secondary}</span> — Secondary Style
+                        <span style={{ color: discProfiles[secondary].color }}>{secondary}</span> — {t('disc.secondaryStyleHeading', 'Secondary Style')}
                       </h4>
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 6px' }}><strong>Strengths:</strong> {discProfiles[secondary].strengths}</p>
-                      <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0d9488', margin: 0 }}>💡 {discProfiles[secondary].tips}</p>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 6px' }}><strong>{t('disc.strengths', 'Strengths')}:</strong> {trProfile(t, secondary, 'strengths')}</p>
+                      <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#0d9488', margin: 0 }}>💡 {trProfile(t, secondary, 'tips')}</p>
                     </div>
                   )}
                 </div>
 
-                <button className="btn-secondary" onClick={() => { setAnswers({}); setResult(null); setView('assessment'); }}>Retake Assessment</button>
+                <button className="btn-secondary" onClick={() => { setAnswers({}); setResult(null); setView('assessment'); }}>{t('disc.retakeAssessment', 'Retake Assessment')}</button>
               </div>
             );
           })()}

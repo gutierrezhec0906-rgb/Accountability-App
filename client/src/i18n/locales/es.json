@@ -1480,5 +1480,260 @@
     "confirm": {
       "removeArea": "¿Quitar \"{{name}}\" de tu lista de áreas? El historial de auditorías pasado de esta área se conserva."
     }
+  },
+  "disc": {
+    "title": "Evaluación DISC — La Rendición de Cuentas Comienza Contigo",
+    "subtitle": "Comprende tu estilo de comportamiento y tendencias de liderazgo — 20 preguntas en 5 dimensiones",
+    "scoreExpired": "Puntuación DISC Vencida — 5 puntos deducidos",
+    "lastAssessmentWasAgo": "Tu última evaluación fue hace",
+    "daysAgo": "{{count}} días",
+    "agoCompleteNew": ". Completa una nueva evaluación DISC para restaurar tus 5 puntos.",
+    "takeAssessment": "Realizar Evaluación",
+    "renewalDue": "Renovación DISC Pendiente — quedan {{days}} día(s)",
+    "pointsExpireOn": "Tus 5 puntos expiran el",
+    "completeBeforeThen": "Completa una nueva evaluación antes de esa fecha para conservar tu puntuación.",
+    "renewNow": "Renovar Ahora",
+    "tabAssessment": "Evaluación",
+    "tabProfiles": "Perfiles DISC",
+    "tabResults": "Mis Resultados",
+    "calculateProfile": "Calcular Mi Perfil DISC",
+    "answerMoreQuestions": "Responde {{count}} pregunta(s) más",
+    "strengths": "Fortalezas",
+    "watchOutFor": "Cuidado con",
+    "assessmentHistory": "Historial de Evaluaciones",
+    "goalBalanced": "Meta: equilibrado entre 2-3 estilos",
+    "noAssessmentsYet": "Aún no hay evaluaciones guardadas.",
+    "reEvaluateBy": "Reevaluar antes del {{date}}",
+    "downloadPdfReport": "Descargar Reporte PDF",
+    "delete": "Eliminar",
+    "yourPrimaryStyle": "Tu Estilo DISC Primario",
+    "secondaryStyle": "Estilo secundario",
+    "secondaryStyleHeading": "Estilo Secundario",
+    "saveResults": "Guardar Resultados",
+    "scoreBreakdown": "Desglose de Puntuación",
+    "styleBalance": "Equilibrio de Estilo",
+    "wellRoundedNote": "Un líder completo combina 2-3 estilos. Descarga el reporte PDF para un plan de desarrollo personalizado de 90 días.",
+    "developmentTips": "Consejos de Desarrollo",
+    "retakeAssessment": "Repetir Evaluación",
+    "groups": {
+      "groupTeam": "Comportamiento Grupal y de Equipo",
+      "problemSolving": "Resolución de Problemas y Toma de Decisiones",
+      "communication": "Comunicación y Relaciones",
+      "stressPressure": "Respuesta al Estrés y la Presión",
+      "motivationValues": "Motivación y Valores de Trabajo"
+    },
+    "balance": {
+      "dominant": "Fuertemente dominante en {{name}}. Desarrollar estilos complementarios aumentará tu versatilidad de liderazgo.",
+      "wellBalanced": "Bien equilibrado entre {{list}} — un perfil de liderazgo versátil y adaptable.",
+      "blend": "Combinación equilibrada de {{list}} — una fuerte combinación para un liderazgo adaptable."
+    },
+    "toast": {
+      "answerAll": "Por favor responde las {{count}} preguntas",
+      "notLoggedIn": "No ha iniciado sesión",
+      "savedFirstBonus": "⭐ ¡Evaluación guardada — +5 pts! Válida por 90 días.",
+      "capReached": "¡Evaluación guardada! Límite diario alcanzado — tus +5 pts se mostrarán mañana. 🗓",
+      "assessmentSaved": "¡Evaluación guardada!",
+      "windowReset": "¡Evaluación guardada! Tu ventana de puntuación de 90 días se ha reiniciado.",
+      "saveFailed": "Error al guardar: {{msg}}",
+      "pdfDownloaded": "¡Reporte PDF descargado!",
+      "pdfFailed": "Error al generar el PDF: {{msg}}",
+      "deleteFailed": "Error al eliminar: {{msg}}"
+    },
+    "profiles": {
+      "D": {
+        "name": "Dominancia",
+        "traits": [
+          "Orientado a resultados",
+          "Directo y decidido",
+          "Competitivo",
+          "Solucionador de problemas",
+          "Alto sentido de urgencia"
+        ],
+        "strengths": "Impulsa resultados, toma la iniciativa, prospera bajo presión",
+        "challenges": "Puede pasar por alto sentimientos, parecer brusco, moverse demasiado rápido",
+        "tips": "Baja la velocidad para escuchar al equipo. Haz preguntas antes de decidir."
+      },
+      "I": {
+        "name": "Influencia",
+        "traits": [
+          "Entusiasta y optimista",
+          "Colaborativo",
+          "Persuasivo",
+          "Enfocado en las personas",
+          "Creativo"
+        ],
+        "strengths": "Inspira a otros, construye relaciones, genera entusiasmo",
+        "challenges": "Puede evitar el conflicto, perder el enfoque, comprometerse en exceso",
+        "tips": "Cumple con tus compromisos. Usa estructura para mantenerte organizado."
+      },
+      "S": {
+        "name": "Estabilidad",
+        "traits": [
+          "Paciente y constante",
+          "Confiable",
+          "Jugador de equipo",
+          "Buen oyente",
+          "Diplomático"
+        ],
+        "strengths": "Crea armonía, confiable bajo estrés, fuerte constructor de equipos",
+        "challenges": "Puede resistirse al cambio, evitar la confrontación, tener dificultades con la urgencia",
+        "tips": "Practica hablar antes. El cambio es crecimiento."
+      },
+      "C": {
+        "name": "Conciencia",
+        "traits": [
+          "Analítico y preciso",
+          "Enfocado en la calidad",
+          "Sistemático",
+          "Orientado al detalle",
+          "Basado en hechos"
+        ],
+        "strengths": "Produce trabajo de alta calidad, identifica riesgos, asegura precisión",
+        "challenges": "Parálisis por análisis, demasiado crítico, lento para decidir",
+        "tips": "Bueno a veces es mejor que perfecto. Lanza e itera."
+      }
+    },
+    "questions": {
+      "1": {
+        "text": "En un proyecto grupal, generalmente:",
+        "D": "Tomo el mando y establezco la dirección",
+        "I": "Motivo y energizo al equipo",
+        "S": "Apoyo a todos y mantengo la paz",
+        "C": "Analizo el plan y aseguro la calidad"
+      },
+      "2": {
+        "text": "Cuando surge un conflicto en el equipo, yo:",
+        "D": "Lo abordo directamente y presiono por una resolución",
+        "I": "Uso el humor y el carisma para calmar la tensión",
+        "S": "Escucho ambas partes y busco un compromiso",
+        "C": "Evalúo los hechos antes de intervenir"
+      },
+      "3": {
+        "text": "Mi rol preferido en un equipo es:",
+        "D": "El líder que impulsa resultados",
+        "I": "El animador que mantiene el ánimo alto",
+        "S": "El pegamento que mantiene unido al equipo",
+        "C": "El experto que asegura la precisión"
+      },
+      "4": {
+        "text": "Otros me describirían como:",
+        "D": "Directo y motivado",
+        "I": "Enérgico y divertido",
+        "S": "Estable, confiable y calmado",
+        "C": "Minucioso, preciso y sistemático"
+      },
+      "5": {
+        "text": "Al enfrentar un problema difícil, yo:",
+        "D": "Actúo rápida y decisivamente",
+        "I": "Hago lluvia de ideas con entusiasmo",
+        "S": "Pienso cuidadosamente y busco consenso",
+        "C": "Investigo a fondo antes de decidir"
+      },
+      "6": {
+        "text": "Cuando me dan un nuevo proyecto, mi primer instinto es:",
+        "D": "Delinear metas y asignar roles de inmediato",
+        "I": "Emocionarme y presentarlo al equipo",
+        "S": "Aclarar cómo encaja en la carga de trabajo actual",
+        "C": "Mapear todos los detalles y riesgos"
+      },
+      "7": {
+        "text": "Si cuestionan mi enfoque, típicamente:",
+        "D": "Defiendo mi posición con confianza",
+        "I": "Lo convierto en una discusión grupal",
+        "S": "Escucho abiertamente y me ajusto si es necesario",
+        "C": "Cito datos y lógica para apoyar mi punto de vista"
+      },
+      "8": {
+        "text": "Al tomar una decisión importante, confío en:",
+        "D": "Mi instinto y experiencia",
+        "I": "La opinión del equipo y cómo se siente",
+        "S": "La deliberación cuidadosa y el precedente",
+        "C": "Datos, análisis y procesos comprobados"
+      },
+      "9": {
+        "text": "Mi estilo de comunicación se describe mejor como:",
+        "D": "Directo, franco y al grano",
+        "I": "Expresivo, cálido y narrativo",
+        "S": "Cálido, diplomático e inclusivo",
+        "C": "Objetivo, estructurado y detallado"
+      },
+      "10": {
+        "text": "En una conversación uno a uno, tiendo a:",
+        "D": "Mantenerme enfocado en la tarea",
+        "I": "Conectar personalmente antes de ir al negocio",
+        "S": "Escuchar más de lo que hablo",
+        "C": "Hacer preguntas aclaratorias y tomar notas"
+      },
+      "11": {
+        "text": "Doy retroalimentación:",
+        "D": "Siendo directo, aunque duela",
+        "I": "Enmarcándola positivamente y con aliento",
+        "S": "Eligiendo el momento adecuado y siendo amable",
+        "C": "Proporcionando ejemplos específicos y documentados"
+      },
+      "12": {
+        "text": "Construyo confianza con otros:",
+        "D": "Entregando resultados de manera consistente",
+        "I": "Siendo amigable y genuinamente cariñoso",
+        "S": "Siendo confiable y emocionalmente disponible",
+        "C": "Demostrando experiencia y precisión"
+      },
+      "13": {
+        "text": "Bajo presión significativa, yo:",
+        "D": "Presiono más fuerte y tomo más control",
+        "I": "Hablo más y reúno a la gente a mi alrededor",
+        "S": "Me mantengo calmado y paciente, aunque estresado",
+        "C": "Me retraigo hacia adentro y analizo opciones"
+      },
+      "14": {
+        "text": "Cuando una fecha límite se adelanta inesperadamente, yo:",
+        "D": "Reprioritizo y ejecuto de inmediato",
+        "I": "Reúno al equipo e improviso con creatividad",
+        "S": "Absorbo la presión y mantengo a otros calmados",
+        "C": "Evalúo el impacto y señalo riesgos de calidad"
+      },
+      "15": {
+        "text": "Mi mayor fuente de estrés en el trabajo es:",
+        "D": "Falta de control o procesos lentos",
+        "I": "Aislamiento, rechazo o ambientes de baja energía",
+        "S": "Conflicto, inestabilidad o cambios repentinos",
+        "C": "Errores, caos o expectativas poco claras"
+      },
+      "16": {
+        "text": "Cuando algo sale mal en un proyecto, yo:",
+        "D": "Asumo la responsabilidad y giro rápido",
+        "I": "Reencuadro la situación y mantengo la moral alta",
+        "S": "Me enfoco en estabilizar y apoyar al equipo",
+        "C": "Realizo un análisis de causa raíz"
+      },
+      "17": {
+        "text": "Mi mayor fortaleza en el trabajo es:",
+        "D": "Obtener resultados rápido y eficientemente",
+        "I": "Construir relaciones e inspirar a otros",
+        "S": "Ser confiable, calmado y consistente",
+        "C": "Alta precisión y atención a la calidad"
+      },
+      "18": {
+        "text": "Me motiva principalmente:",
+        "D": "Alcanzar metas desafiantes y ganar",
+        "I": "Reconocimiento, diversión y conexiones significativas",
+        "S": "Armonía de equipo, estabilidad y propósito",
+        "C": "Maestría, precisión y mejora continua"
+      },
+      "19": {
+        "text": "Prefiero un ambiente de trabajo que sea:",
+        "D": "Rápido, autónomo y orientado a resultados",
+        "I": "Colaborativo, creativo y socialmente energizado",
+        "S": "Estable, predecible y enfocado en el equipo",
+        "C": "Estructurado, metódico y de alto estándar"
+      },
+      "20": {
+        "text": "Prefiero reuniones que sean:",
+        "D": "Cortas, decisivas y enfocadas en la acción",
+        "I": "Abiertas, colaborativas, con espacio para explorar ideas",
+        "S": "Estructuradas, inclusivas y bien preparadas",
+        "C": "Basadas en datos con agendas y resultados claros"
+      }
+    }
   }
 }
