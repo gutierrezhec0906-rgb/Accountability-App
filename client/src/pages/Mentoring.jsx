@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
@@ -11,38 +12,47 @@ import { useSavedNames } from '../utils/savedNames';
 
 const PILLARS = ['Leadership', 'Technical', 'Interpersonal'];
 const PILLAR_COLORS = { Leadership: '#0f2044', Technical: '#0891b2', Interpersonal: '#8b5cf6' };
+const PILLAR_KEYS = { Leadership: 'leadership', Technical: 'technical', Interpersonal: 'interpersonal' };
+function trPillar(t, p) { return t(`mentoring.pillars.${PILLAR_KEYS[p] || p}`, p); }
 
 // Flexible mentor selection — not limited to the direct manager.
 const MENTOR_TYPES = [
-  { value: 'Traditional', desc: 'A senior leader mentors the future leader' },
-  { value: 'Peer',        desc: 'A colleague at the same level with a specific strength' },
-  { value: 'Cross-functional', desc: 'A leader from a different department or function' },
-  { value: 'Reverse',     desc: 'The future leader mentors a senior leader on technology or fresh perspective' },
-  { value: 'Subject Matter Expert', desc: 'The best technical person on a specific skill' },
-  { value: 'External',    desc: 'An outside coach, consultant, or industry peer' },
+  { value: 'Traditional', key: 'traditional', desc: 'A senior leader mentors the future leader' },
+  { value: 'Peer',        key: 'peer', desc: 'A colleague at the same level with a specific strength' },
+  { value: 'Cross-functional', key: 'crossFunctional', desc: 'A leader from a different department or function' },
+  { value: 'Reverse',     key: 'reverse', desc: 'The future leader mentors a senior leader on technology or fresh perspective' },
+  { value: 'Subject Matter Expert', key: 'sme', desc: 'The best technical person on a specific skill' },
+  { value: 'External',    key: 'external', desc: 'An outside coach, consultant, or industry peer' },
 ];
+function trMentorTypeValue(t, mt) { return t(`mentoring.mentorTypes.${mt.key}.value`, mt.value); }
+function trMentorTypeDesc(t, mt) { return t(`mentoring.mentorTypes.${mt.key}.desc`, mt.desc); }
 
 const GOAL_TIMELINES = [
-  { value: '30', label: '30 days' },
-  { value: '60', label: '60 days' },
-  { value: '90', label: '90 days' },
-  { value: '180', label: '6 months' },
+  { value: '30', key: 'd30', label: '30 days' },
+  { value: '60', key: 'd60', label: '60 days' },
+  { value: '90', key: 'd90', label: '90 days' },
+  { value: '180', key: 'm6', label: '6 months' },
 ];
+function trTimeline(t, tl) { return t(`mentoring.timelines.${tl.key}`, tl.label); }
 
 const CADENCES = ['Weekly', 'Bi-weekly (recommended)', 'Monthly'];
 const CADENCE_DAYS = { 'Weekly': 7, 'Bi-weekly (recommended)': 14, 'Monthly': 30 };
+const CADENCE_KEYS = { 'Weekly': 'weekly', 'Bi-weekly (recommended)': 'biweekly', 'Monthly': 'monthly' };
+function trCadence(t, c) { return t(`mentoring.cadences.${CADENCE_KEYS[c] || c}`, c); }
 
 const CYCLE_LENGTHS = [
-  { value: '3', label: '90 days (minimum)' },
-  { value: '6', label: '6 months (recommended)' },
-  { value: '12', label: '12 months (maximum)' },
+  { value: '3', key: 'm3', label: '90 days (minimum)' },
+  { value: '6', key: 'm6', label: '6 months (recommended)' },
+  { value: '12', key: 'm12', label: '12 months (maximum)' },
 ];
+function trCycleLength(t, cl) { return t(`mentoring.cycleLengths.${cl.key}`, cl.label); }
 
 const RECOMMENDATIONS = [
   { value: 'continue', label: 'Continue — extend this cycle', color: '#0d9488' },
   { value: 'graduate', label: 'Graduate — goals met, mentee is ready to move on', color: '#15803d' },
   { value: 'reassign', label: 'Reassign — pair with a different mentor', color: '#b45309' },
 ];
+function trRecommendation(t, r) { return t(`mentoring.recommendations.${r.value}`, r.label); }
 
 function emptyGoal() { return { pillar: 'Leadership', goal: '', timeline: '90', measure: '' }; }
 function emptyPlan() {
@@ -97,6 +107,7 @@ function SectionCard({ n, title, subtitle, children, accent = '#0d9488' }) {
 const labelStyle = { fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.04em' };
 
 export default function Mentoring() {
+  const { t } = useTranslation();
   const { currentUser } = useAuth();
   const { names: savedNames, remember: rememberName } = useSavedNames();
   // Multiple mentoring logs: `plans` is the full list, `activeIdx` selects the one
@@ -135,7 +146,7 @@ export default function Mentoring() {
         setActiveIdx(0);
         setSkillsMatrix(data.skillsMatrix || null);
       }
-    } catch { toast.error('Could not load your mentoring plan'); }
+    } catch { toast.error(t('mentoring.toast.loadFailed', 'Could not load your mentoring plan')); }
     setLoading(false);
   }
 
@@ -157,14 +168,14 @@ export default function Mentoring() {
 
   async function deleteLog(idx) {
     const target = plans[idx];
-    const label = target?.mentor?.name?.trim() || `Log ${idx + 1}`;
-    if (!window.confirm(`Delete the mentoring log "${label}" and its ${target?.sessions?.length || 0} session(s)? This cannot be undone.`)) return;
+    const label = target?.mentor?.name?.trim() || t('mentoring.logN', 'Log {{n}}', { n: idx + 1 });
+    if (!window.confirm(t('mentoring.confirmDeleteLog', 'Delete the mentoring log "{{label}}" and its {{count}} session(s)? This cannot be undone.', { label, count: target?.sessions?.length || 0 }))) return;
     const nextPlans = plans.filter((_, i) => i !== idx);
     const finalPlans = nextPlans.length ? nextPlans : [emptyPlan()];
     await setDoc(doc(db, 'users', currentUser.uid), { mentoringPlans: finalPlans }, { merge: true });
     setPlans(finalPlans);
     setActiveIdx(0);
-    toast.success('Mentoring log deleted');
+    toast.success(t('mentoring.toast.logDeleted', 'Mentoring log deleted'));
   }
 
   function setField(path, value) {
@@ -179,7 +190,7 @@ export default function Mentoring() {
     setPlan(p => ({ ...p, goals: p.goals.map((g, i) => i === idx ? { ...g, [field]: value } : g) }));
   }
   function addGoal() {
-    if (plan.goals.length >= 3) return toast.error('Maximum 3 goals per mentoring cycle');
+    if (plan.goals.length >= 3) return toast.error(t('mentoring.toast.maxGoals', 'Maximum 3 goals per mentoring cycle'));
     setPlan(p => ({ ...p, goals: [...p.goals, emptyGoal()] }));
   }
   function removeGoal(idx) {
@@ -207,14 +218,14 @@ export default function Mentoring() {
       const toSave = { ...plan, cycle, startedAt, updatedAt: now };
       await persistPlans(toSave);
       rememberName(plan.mentor.name);
-      toast.success(!plan.startedAt && startedAt ? 'Mentoring cycle started!' : 'Mentoring plan saved');
-    } catch { toast.error('Save failed'); }
+      toast.success(!plan.startedAt && startedAt ? t('mentoring.toast.cycleStarted', 'Mentoring cycle started!') : t('mentoring.toast.planSaved', 'Mentoring plan saved'));
+    } catch { toast.error(t('mentoring.toast.saveFailed', 'Save failed')); }
     setSaving(false);
   }
 
   async function saveSession() {
     if (!sessionForm) return;
-    if (!sessionForm.date) return toast.error('Please set the session date');
+    if (!sessionForm.date) return toast.error(t('mentoring.toast.setSessionDate', 'Please set the session date'));
     setSavingSession(true);
     try {
       const entry = { id: Date.now().toString(), ...sessionForm, loggedAt: new Date().toISOString() };
@@ -246,21 +257,21 @@ export default function Mentoring() {
         });
         if (awarded) {
           await calculateScore(currentUser.uid);
-          toast.success('Session logged! +5 pts earned.', { duration: 4000 });
+          toast.success(t('mentoring.toast.sessionLoggedPts', 'Session logged! +5 pts earned.'), { duration: 4000 });
         } else {
-          toast.success('Session logged.');
+          toast.success(t('mentoring.toast.sessionLogged', 'Session logged.'));
         }
       } else {
-        toast.success('Session logged — fill in progress review, challenge, and action item next time to earn +5 pts.', { duration: 5000 });
+        toast.success(t('mentoring.toast.sessionLoggedIncomplete', 'Session logged — fill in progress review, challenge, and action item next time to earn +5 pts.'), { duration: 5000 });
       }
-    } catch { toast.error('Save failed'); }
+    } catch { toast.error(t('mentoring.toast.saveFailed', 'Save failed')); }
     setSavingSession(false);
   }
 
   async function deleteSession(id) {
     const sessions = plan.sessions.filter(s => s.id !== id);
     await persistPlans({ ...plan, sessions });
-    toast.success('Session deleted');
+    toast.success(t('mentoring.toast.sessionDeleted', 'Session deleted'));
   }
 
   function openSessionForm() {
@@ -286,29 +297,29 @@ export default function Mentoring() {
       const closeOut = { ...closeForm, closedAt: new Date().toISOString(), sessionsCompleted: plan.sessions.length, sessionsPlanned: plannedSessions, goalsAchieved, goalsSet: plan.goals.length };
       await persistPlans({ ...plan, closeOut });
       setCloseForm(null);
-      toast.success('Mentoring cycle closed out');
-    } catch { toast.error('Save failed'); }
+      toast.success(t('mentoring.toast.closedOut', 'Mentoring cycle closed out'));
+    } catch { toast.error(t('mentoring.toast.saveFailed', 'Save failed')); }
     setSavingClose(false);
   }
 
   function downloadPDF() {
     try {
       generateMentoringPDF(plan, { userName: currentUser?.displayName || '', skillsSummary: skillsMatrix ? summary : null, plannedSessions, avgGoalCompletion, goalsAchieved, challenges });
-    } catch (e) { console.error(e); toast.error('Could not generate PDF'); }
+    } catch (e) { console.error(e); toast.error(t('mentoring.toast.pdfFailed', 'Could not generate PDF')); }
   }
 
-  if (loading) return <div style={{ maxWidth: 860, margin: '0 auto' }}><PageHeader icon="🤝" title="Mentoring" subtitle="Loading…" /></div>;
+  if (loading) return <div style={{ maxWidth: 860, margin: '0 auto' }}><PageHeader icon="🤝" title={t('mentoring.pageTitle', 'Mentoring')} subtitle={t('mentoring.loading', 'Loading…')} /></div>;
 
   return (
     <div style={{ maxWidth: 1180, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 16 }}>
-      <PageHeader icon="🤝" title="Mentoring — Accountability, Multiplied" subtitle="Mentee-owned, mentor-guided. Pick who helps you grow, set goals across all three pillars, and track the journey." />
+      <PageHeader icon="🤝" title={t('mentoring.title', 'Mentoring — Accountability, Multiplied')} subtitle={t('mentoring.subtitle', 'Mentee-owned, mentor-guided. Pick who helps you grow, set goals across all three pillars, and track the journey.')} />
 
       {/* Mentoring log switcher — one tab per log, each with its own mentor,
           goals, cycle, and sessions. */}
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
         {plans.map((p, i) => {
           const active = i === activeIdx;
-          const label = p.mentor?.name?.trim() || `Log ${i + 1}`;
+          const label = p.mentor?.name?.trim() || t('mentoring.logN', 'Log {{n}}', { n: i + 1 });
           const closed = !!p.closeOut;
           return (
             <button key={i} onClick={() => { setActiveIdx(i); setExpandedSession(null); setSessionForm(null); setCloseForm(null); }}
@@ -316,10 +327,10 @@ export default function Mentoring() {
                 background: active ? '#0f2044' : 'white', color: active ? 'white' : '#475569',
                 border: active ? '1.5px solid #0f2044' : '1.5px solid #e2e8f0', cursor: 'pointer' }}>
               🤝 {label}
-              {closed && <span style={{ fontSize: '0.62rem', fontWeight: 800, background: active ? 'rgba(255,255,255,0.18)' : '#f1f5f9', borderRadius: 9999, padding: '1px 7px' }}>closed</span>}
-              <span style={{ fontSize: '0.68rem', opacity: 0.7 }}>{p.sessions?.length || 0} sess.</span>
+              {closed && <span style={{ fontSize: '0.62rem', fontWeight: 800, background: active ? 'rgba(255,255,255,0.18)' : '#f1f5f9', borderRadius: 9999, padding: '1px 7px' }}>{t('mentoring.closed', 'closed')}</span>}
+              <span style={{ fontSize: '0.68rem', opacity: 0.7 }}>{t('mentoring.sessAbbrev', '{{count}} sess.', { count: p.sessions?.length || 0 })}</span>
               {plans.length > 1 && active && (
-                <span role="button" title="Delete this mentoring log"
+                <span role="button" title={t('mentoring.deleteLogTooltip', 'Delete this mentoring log')}
                   onClick={e => { e.stopPropagation(); deleteLog(i); }}
                   style={{ marginLeft: 2, fontWeight: 900, opacity: 0.75 }}>✕</span>
               )}
@@ -328,7 +339,7 @@ export default function Mentoring() {
         })}
         <button onClick={addLog}
           style={{ padding: '7px 14px', borderRadius: 9999, fontSize: '0.8rem', fontWeight: 800, background: 'white', color: '#0d9488', border: '1.5px dashed #0d9488', cursor: 'pointer' }}>
-          ＋ New Mentoring Log
+          ＋ {t('mentoring.newMentoringLog', 'New Mentoring Log')}
         </button>
       </div>
 
@@ -338,17 +349,17 @@ export default function Mentoring() {
         <span style={{ fontSize: '1.25rem' }}>{planStarted ? '🤝' : '🧭'}</span>
         <div style={{ flex: 1, minWidth: 200 }}>
           <p style={{ fontWeight: 800, margin: 0, fontSize: '0.85rem', color: planStarted ? '#15803d' : '#1e40af' }}>
-            {planStarted ? `Cycle active — ${plan.cycle.startDate} → ${plan.cycle.endDate}` : 'Match with a mentor and set your goals to start the cycle'}
+            {planStarted ? t('mentoring.cycleActive', 'Cycle active — {{start}} → {{end}}', { start: plan.cycle.startDate, end: plan.cycle.endDate }) : t('mentoring.matchToStart', 'Match with a mentor and set your goals to start the cycle')}
           </p>
           <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '2px 0 0', lineHeight: 1.5 }}>
             {planStarted
-              ? `${plan.sessions.length} session${plan.sessions.length === 1 ? '' : 's'} logged · ${avgGoalCompletion}% avg goal completion · pillars covered: ${[...pillarsCovered].join(', ') || 'none yet'}`
-              : 'Complete Sections 1 & 2 below, then Save Plan.'}
+              ? t('mentoring.cycleStats', '{{count}} session(s) logged · {{pct}}% avg goal completion · pillars covered: {{pillars}}', { count: plan.sessions.length, pct: avgGoalCompletion, pillars: [...pillarsCovered].map(p => trPillar(t, p)).join(', ') || t('mentoring.noneYet', 'none yet') })
+              : t('mentoring.completeSections12', 'Complete Sections 1 & 2 below, then Save Plan.')}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 8, flexShrink: 0 }}>
-          <button className="btn-secondary" onClick={downloadPDF}>🖨️ PDF</button>
-          <button className="btn-primary" onClick={savePlan} disabled={saving}>{saving ? 'Saving…' : '💾 Save Plan'}</button>
+          <button className="btn-secondary" onClick={downloadPDF}>🖨️ {t('mentoring.pdf', 'PDF')}</button>
+          <button className="btn-primary" onClick={savePlan} disabled={saving}>{saving ? t('mentoring.saving', 'Saving…') : `💾 ${t('mentoring.savePlan', 'Save Plan')}`}</button>
         </div>
       </div>
 
@@ -357,71 +368,71 @@ export default function Mentoring() {
       <div style={{ flex: '1 1 480px', maxWidth: 860, display: 'flex', flexDirection: 'column', gap: 16 }}>
 
       {/* SECTION 1 — Match & Commit */}
-      <SectionCard n="1" title="Match & Commit" accent="#7c3aed"
-        subtitle="You choose your mentor — not assigned. Research shows letting the mentee pick is the single biggest predictor of mentoring success.">
+      <SectionCard n="1" title={t('mentoring.section1.title', 'Match & Commit')} accent="#7c3aed"
+        subtitle={t('mentoring.section1.subtitle', 'You choose your mentor — not assigned. Research shows letting the mentee pick is the single biggest predictor of mentoring success.')}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 14 }}>
           <div>
-            <label style={labelStyle}>Mentor Name</label>
-            <NameField value={plan.mentor.name} names={savedNames} onChange={e => setField(['mentor', 'name'], e.target.value)} placeholder="Full name" />
+            <label style={labelStyle}>{t('mentoring.mentorName', 'Mentor Name')}</label>
+            <NameField value={plan.mentor.name} names={savedNames} onChange={e => setField(['mentor', 'name'], e.target.value)} placeholder={t('mentoring.fullName', 'Full name')} />
           </div>
           <div>
-            <label style={labelStyle}>Mentor Role</label>
-            <input className="input" value={plan.mentor.role} onChange={e => setField(['mentor', 'role'], e.target.value)} placeholder="e.g. Plant Manager" />
+            <label style={labelStyle}>{t('mentoring.mentorRole', 'Mentor Role')}</label>
+            <input className="input" value={plan.mentor.role} onChange={e => setField(['mentor', 'role'], e.target.value)} placeholder={t('mentoring.rolePlaceholder', 'e.g. Plant Manager')} />
           </div>
           <div>
-            <label style={labelStyle}>Focus Area</label>
+            <label style={labelStyle}>{t('mentoring.focusArea', 'Focus Area')}</label>
             <select className="input" value={plan.mentor.focus} onChange={e => setField(['mentor', 'focus'], e.target.value)}>
-              {PILLARS.map(p => <option key={p} value={p}>{p}</option>)}
+              {PILLARS.map(p => <option key={p} value={p}>{trPillar(t, p)}</option>)}
             </select>
           </div>
         </div>
-        <label style={labelStyle}>Type of Mentoring Relationship</label>
+        <label style={labelStyle}>{t('mentoring.typeOfRelationship', 'Type of Mentoring Relationship')}</label>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 8, marginBottom: 14 }}>
-          {MENTOR_TYPES.map(t => (
-            <button key={t.value} type="button" onClick={() => setField(['mentor', 'type'], t.value)}
+          {MENTOR_TYPES.map(mt => (
+            <button key={mt.value} type="button" onClick={() => setField(['mentor', 'type'], mt.value)}
               style={{ textAlign: 'left', padding: '0.6rem 0.75rem', borderRadius: 10, cursor: 'pointer', border: '1.5px solid',
-                background: plan.mentor.type === t.value ? '#faf5ff' : 'white',
-                borderColor: plan.mentor.type === t.value ? '#7c3aed' : '#e2e8f0' }}>
-              <span style={{ fontWeight: 700, fontSize: '0.8rem', color: plan.mentor.type === t.value ? '#7c3aed' : 'var(--text-primary)', display: 'block' }}>{t.value}</span>
-              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>{t.desc}</span>
+                background: plan.mentor.type === mt.value ? '#faf5ff' : 'white',
+                borderColor: plan.mentor.type === mt.value ? '#7c3aed' : '#e2e8f0' }}>
+              <span style={{ fontWeight: 700, fontSize: '0.8rem', color: plan.mentor.type === mt.value ? '#7c3aed' : 'var(--text-primary)', display: 'block' }}>{trMentorTypeValue(t, mt)}</span>
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', lineHeight: 1.4 }}>{trMentorTypeDesc(t, mt)}</span>
             </button>
           ))}
         </div>
         <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
           <input type="checkbox" checked={plan.mentor.committed} onChange={e => setField(['mentor', 'committed'], e.target.checked)} style={{ width: 18, height: 18 }} />
           <span style={{ fontSize: '0.8rem', fontWeight: 700, color: plan.mentor.committed ? '#15803d' : 'var(--text-secondary)' }}>
-            {plan.mentor.committed ? '✅ Commitment confirmed from both parties' : 'Commitment confirmed from both parties'}
+            {plan.mentor.committed ? `✅ ${t('mentoring.commitmentConfirmed', 'Commitment confirmed from both parties')}` : t('mentoring.commitmentConfirmed', 'Commitment confirmed from both parties')}
           </span>
         </label>
       </SectionCard>
 
       {/* SECTION 2 — Set the Goals */}
-      <SectionCard n="2" title="Set the Goals" accent="#0891b2"
-        subtitle="1–3 goals for this cycle, starting with what you want. Written, specific, measurable goals create accountability.">
+      <SectionCard n="2" title={t('mentoring.section2.title', 'Set the Goals')} accent="#0891b2"
+        subtitle={t('mentoring.section2.subtitle', '1–3 goals for this cycle, starting with what you want. Written, specific, measurable goals create accountability.')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {plan.goals.map((g, i) => (
             <div key={i} style={{ border: `1px solid ${PILLAR_COLORS[g.pillar]}30`, borderRadius: 12, overflow: 'hidden' }}>
               <div style={{ background: PILLAR_COLORS[g.pillar], padding: '0.5rem 0.875rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <select value={g.pillar} onChange={e => setGoal(i, 'pillar', e.target.value)}
                   style={{ background: 'transparent', color: 'white', fontWeight: 800, fontSize: '0.82rem', border: 'none', cursor: 'pointer' }}>
-                  {PILLARS.map(p => <option key={p} value={p} style={{ color: '#0f2044' }}>{p}</option>)}
+                  {PILLARS.map(p => <option key={p} value={p} style={{ color: '#0f2044' }}>{trPillar(t, p)}</option>)}
                 </select>
                 {plan.goals.length > 1 && <button onClick={() => removeGoal(i)} style={{ background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: 6, color: 'white', padding: '2px 8px', fontSize: '0.7rem', cursor: 'pointer' }}>✕</button>}
               </div>
               <div style={{ padding: '0.875rem', display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <div>
-                  <label style={labelStyle}>Goal</label>
-                  <textarea className="input" rows={2} value={g.goal} onChange={e => setGoal(i, 'goal', e.target.value)} placeholder="What will you develop?" />
+                  <label style={labelStyle}>{t('mentoring.goal', 'Goal')}</label>
+                  <textarea className="input" rows={2} value={g.goal} onChange={e => setGoal(i, 'goal', e.target.value)} placeholder={t('mentoring.goalPlaceholder', 'What will you develop?')} />
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 160px', gap: 10 }}>
                   <div>
-                    <label style={labelStyle}>How success will be measured</label>
-                    <input className="input" value={g.measure} onChange={e => setGoal(i, 'measure', e.target.value)} placeholder="e.g. Lead 2 Kaizen events independently" />
+                    <label style={labelStyle}>{t('mentoring.howMeasured', 'How success will be measured')}</label>
+                    <input className="input" value={g.measure} onChange={e => setGoal(i, 'measure', e.target.value)} placeholder={t('mentoring.measurePlaceholder', 'e.g. Lead 2 Kaizen events independently')} />
                   </div>
                   <div>
-                    <label style={labelStyle}>Timeline</label>
+                    <label style={labelStyle}>{t('mentoring.timeline', 'Timeline')}</label>
                     <select className="input" value={g.timeline} onChange={e => setGoal(i, 'timeline', e.target.value)}>
-                      {GOAL_TIMELINES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                      {GOAL_TIMELINES.map(tl => <option key={tl.value} value={tl.value}>{trTimeline(t, tl)}</option>)}
                     </select>
                   </div>
                 </div>
@@ -430,48 +441,48 @@ export default function Mentoring() {
           ))}
         </div>
         {plan.goals.length < 3 && (
-          <button onClick={addGoal} className="btn-secondary" style={{ fontSize: '0.78rem', padding: '0.35rem 0.875rem', marginTop: 10 }}>＋ Add another goal</button>
+          <button onClick={addGoal} className="btn-secondary" style={{ fontSize: '0.78rem', padding: '0.35rem 0.875rem', marginTop: 10 }}>＋ {t('mentoring.addAnotherGoal', 'Add another goal')}</button>
         )}
       </SectionCard>
 
       {/* SECTION 3 — Session Cadence */}
-      <SectionCard n="3" title="Session Cadence" accent="#be185d"
-        subtitle="Consistency beats intensity — regular, predictable sessions outperform sporadic marathon conversations.">
+      <SectionCard n="3" title={t('mentoring.section3.title', 'Session Cadence')} accent="#be185d"
+        subtitle={t('mentoring.section3.subtitle', 'Consistency beats intensity — regular, predictable sessions outperform sporadic marathon conversations.')}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12, marginBottom: 16 }}>
           <div>
-            <label style={labelStyle}>Session Cadence</label>
+            <label style={labelStyle}>{t('mentoring.sessionCadence', 'Session Cadence')}</label>
             <select className="input" value={plan.cadence} onChange={e => setField(['cadence'], e.target.value)}>
-              {CADENCES.map(c => <option key={c} value={c}>{c}</option>)}
+              {CADENCES.map(c => <option key={c} value={c}>{trCadence(t, c)}</option>)}
             </select>
           </div>
           <div>
-            <label style={labelStyle}>Cycle Length</label>
+            <label style={labelStyle}>{t('mentoring.cycleLength', 'Cycle Length')}</label>
             <select className="input" value={plan.cycle.lengthMonths} onChange={e => setField(['cycle', 'lengthMonths'], e.target.value)}>
-              {CYCLE_LENGTHS.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
+              {CYCLE_LENGTHS.map(c => <option key={c.value} value={c.value}>{trCycleLength(t, c)}</option>)}
             </select>
           </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 8 }}>
-          <p style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-primary)', margin: 0 }}>Session Log</p>
-          <button className="btn-primary" onClick={openSessionForm}>+ Log Session</button>
+          <p style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--text-primary)', margin: 0 }}>{t('mentoring.sessionLog', 'Session Log')}</p>
+          <button className="btn-primary" onClick={openSessionForm}>+ {t('mentoring.logSession', 'Log Session')}</button>
         </div>
-        {!planStarted && <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '0 0 10px' }}>Logging your first session starts the cycle automatically.</p>}
+        {!planStarted && <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '0 0 10px' }}>{t('mentoring.firstSessionStarts', 'Logging your first session starts the cycle automatically.')}</p>}
         <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: 0 }}>
-          Every fully-logged session (date, progress review, challenge, and action item all filled) earns <strong>+5 pts</strong>. Sessions are listed in the sidebar →
+          {t('mentoring.everySessionEarns', 'Every fully-logged session (date, progress review, challenge, and action item all filled) earns')} <strong>+5 {t('mentoring.pts', 'pts')}</strong>. {t('mentoring.sessionsInSidebar', 'Sessions are listed in the sidebar →')}
         </p>
       </SectionCard>
 
       {/* SECTION 4 — Track Progress */}
-      <SectionCard n="4" title="Track Progress" accent="#0d9488"
-        subtitle="Goal completion, skill growth across the three pillars, and challenges encountered — updated after every session.">
+      <SectionCard n="4" title={t('mentoring.section4.title', 'Track Progress')} accent="#0d9488"
+        subtitle={t('mentoring.section4.subtitle', 'Goal completion, skill growth across the three pillars, and challenges encountered — updated after every session.')}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
           {plan.goals.map((g, i) => {
             const pct = latestProgress[i] || 0;
             return (
               <div key={i}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{g.goal || `Goal ${i + 1}`}</span>
+                  <span style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-primary)' }}>{g.goal || t('mentoring.goalN', 'Goal {{n}}', { n: i + 1 })}</span>
                   <span style={{ fontSize: '0.8rem', fontWeight: 800, color: PILLAR_COLORS[g.pillar] }}>{pct}%</span>
                 </div>
                 <div style={{ background: '#e2e8f0', borderRadius: 9999, height: 7 }}>
@@ -486,7 +497,7 @@ export default function Mentoring() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 10, marginBottom: 16 }}>
             {PILLARS.map(p => (
               <div key={p} style={{ border: `1px solid ${PILLAR_COLORS[p]}30`, borderRadius: 10, padding: '0.6rem 0.75rem', textAlign: 'center' }}>
-                <p style={{ fontSize: '0.65rem', fontWeight: 700, color: PILLAR_COLORS[p], margin: '0 0 2px', textTransform: 'uppercase' }}>{p}</p>
+                <p style={{ fontSize: '0.65rem', fontWeight: 700, color: PILLAR_COLORS[p], margin: '0 0 2px', textTransform: 'uppercase' }}>{trPillar(t, p)}</p>
                 <p style={{ fontSize: '1.3rem', fontWeight: 900, color: PILLAR_COLORS[p], margin: 0 }}>{summary[p] ?? '—'}<span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>/5</span></p>
               </div>
             ))}
@@ -495,7 +506,7 @@ export default function Mentoring() {
 
         {challenges.length > 0 && (
           <div>
-            <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', margin: '0 0 6px', textTransform: 'uppercase' }}>Challenges Encountered</p>
+            <p style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', margin: '0 0 6px', textTransform: 'uppercase' }}>{t('mentoring.challengesEncountered', 'Challenges Encountered')}</p>
             {challenges.slice(0, 5).map((c, i) => (
               <p key={i} style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', margin: '0 0 4px' }}>• <strong>{c.date}:</strong> {c.text}</p>
             ))}
@@ -504,13 +515,13 @@ export default function Mentoring() {
       </SectionCard>
 
       {/* SECTION 5 — Measure & Close */}
-      <SectionCard n="5" title="Measure & Close" accent="#b45309"
-        subtitle="At the end of the cycle: sessions vs. planned, goals achieved vs. set, self vs. mentor rating, and a recommendation.">
+      <SectionCard n="5" title={t('mentoring.section5.title', 'Measure & Close')} accent="#b45309"
+        subtitle={t('mentoring.section5.subtitle', 'At the end of the cycle: sessions vs. planned, goals achieved vs. set, self vs. mentor rating, and a recommendation.')}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 16 }}>
           {[
-            { label: 'Sessions', value: `${plan.sessions.length} / ${plannedSessions || '—'}` },
-            { label: 'Goals Achieved', value: `${goalsAchieved} / ${plan.goals.length}` },
-            { label: 'Avg Completion', value: `${avgGoalCompletion}%` },
+            { label: t('mentoring.sessions', 'Sessions'), value: `${plan.sessions.length} / ${plannedSessions || '—'}` },
+            { label: t('mentoring.goalsAchieved', 'Goals Achieved'), value: `${goalsAchieved} / ${plan.goals.length}` },
+            { label: t('mentoring.avgCompletion', 'Avg Completion'), value: `${avgGoalCompletion}%` },
           ].map(s => (
             <div key={s.label} className="stat-tile" style={{ textAlign: 'center' }}>
               <p style={{ fontSize: '1.4rem', fontWeight: 900, color: '#b45309', margin: 0 }}>{s.value}</p>
@@ -521,17 +532,17 @@ export default function Mentoring() {
 
         {plan.closeOut ? (
           <div style={{ background: '#f0fdf4', border: '1px solid #86efac', borderRadius: 10, padding: '0.875rem 1rem' }}>
-            <p style={{ fontWeight: 800, color: '#15803d', margin: '0 0 4px', fontSize: '0.85rem' }}>✓ Cycle closed on {plan.closeOut.closedAt.slice(0, 10)}</p>
+            <p style={{ fontWeight: 800, color: '#15803d', margin: '0 0 4px', fontSize: '0.85rem' }}>✓ {t('mentoring.cycleClosedOn', 'Cycle closed on {{date}}', { date: plan.closeOut.closedAt.slice(0, 10) })}</p>
             <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', margin: 0 }}>
-              Recommendation: <strong>{RECOMMENDATIONS.find(r => r.value === plan.closeOut.recommendation)?.label}</strong>
+              {t('mentoring.recommendationLabel', 'Recommendation')}: <strong>{trRecommendation(t, RECOMMENDATIONS.find(r => r.value === plan.closeOut.recommendation) || RECOMMENDATIONS[0])}</strong>
             </p>
           </div>
         ) : planStarted ? (
           <button className="btn-secondary" onClick={() => setCloseForm({ menteeSelf: { Leadership: 3, Technical: 3, Interpersonal: 3 }, mentorAssessment: { Leadership: 3, Technical: 3, Interpersonal: 3 }, recommendation: 'continue', notes: '' })}>
-            📋 Close Out This Cycle
+            📋 {t('mentoring.closeOutCycle', 'Close Out This Cycle')}
           </button>
         ) : (
-          <p style={{ fontSize: '0.78rem', color: '#94a3b8' }}>Start the cycle above to unlock close-out.</p>
+          <p style={{ fontSize: '0.78rem', color: '#94a3b8' }}>{t('mentoring.startCycleToUnlock', 'Start the cycle above to unlock close-out.')}</p>
         )}
       </SectionCard>
 
@@ -540,12 +551,12 @@ export default function Mentoring() {
       {/* ── Sidebar: Session Log ── */}
       <div style={{ width: 300, maxWidth: '100%', flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div className="card" style={{ padding: '1.25rem' }}>
-          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 2px', fontSize: '0.95rem' }}>Session Log ({plan.sessions.length})</h3>
+          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 2px', fontSize: '0.95rem' }}>{t('mentoring.sessionLogCount', 'Session Log ({{count}})', { count: plan.sessions.length })}</h3>
           <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', margin: '0 0 12px', lineHeight: 1.5 }}>
-            Every logged session — tap to expand. +5 pts each time all 4 fields are filled.
+            {t('mentoring.everyLoggedSession', 'Every logged session — tap to expand. +5 pts each time all 4 fields are filled.')}
           </p>
           {plan.sessions.length === 0 ? (
-            <p style={{ fontSize: '0.78rem', color: '#94a3b8', textAlign: 'center', margin: '16px 0' }}>No sessions logged yet.</p>
+            <p style={{ fontSize: '0.78rem', color: '#94a3b8', textAlign: 'center', margin: '16px 0' }}>{t('mentoring.noSessionsYet', 'No sessions logged yet.')}</p>
           ) : (
             <>
               <style>{`
@@ -572,11 +583,11 @@ export default function Mentoring() {
                       </button>
                       {open && (
                         <div style={{ padding: '0.65rem 0.75rem', background: 'white', fontSize: '0.75rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>
-                          {s.progressReview && <p style={{ margin: '0 0 5px' }}><strong style={{ color: '#0f2044' }}>Progress:</strong> {s.progressReview}</p>}
-                          {s.challenge && <p style={{ margin: '0 0 5px' }}><strong style={{ color: '#b45309' }}>Challenge:</strong> {s.challenge}</p>}
-                          {s.actionItem && <p style={{ margin: '0 0 5px' }}><strong style={{ color: '#0d9488' }}>Action:</strong> {s.actionItem}</p>}
-                          {s.notes && <p style={{ margin: '0 0 5px' }}><strong style={{ color: '#0f2044' }}>Notes:</strong> {s.notes}</p>}
-                          <button onClick={() => deleteSession(s.id)} style={{ background: 'none', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 7, padding: '2px 9px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer' }}>🗑 Delete</button>
+                          {s.progressReview && <p style={{ margin: '0 0 5px' }}><strong style={{ color: '#0f2044' }}>{t('mentoring.progressLabel', 'Progress')}:</strong> {s.progressReview}</p>}
+                          {s.challenge && <p style={{ margin: '0 0 5px' }}><strong style={{ color: '#b45309' }}>{t('mentoring.challengeLabel', 'Challenge')}:</strong> {s.challenge}</p>}
+                          {s.actionItem && <p style={{ margin: '0 0 5px' }}><strong style={{ color: '#0d9488' }}>{t('mentoring.actionLabel', 'Action')}:</strong> {s.actionItem}</p>}
+                          {s.notes && <p style={{ margin: '0 0 5px' }}><strong style={{ color: '#0f2044' }}>{t('mentoring.notesLabel', 'Notes')}:</strong> {s.notes}</p>}
+                          <button onClick={() => deleteSession(s.id)} style={{ background: 'none', border: '1px solid #fecaca', color: '#dc2626', borderRadius: 7, padding: '2px 9px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer' }}>🗑 {t('mentoring.delete', 'Delete')}</button>
                         </div>
                       )}
                     </div>
@@ -594,33 +605,33 @@ export default function Mentoring() {
       {sessionForm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={() => setSessionForm(null)}>
           <div className="card" style={{ maxWidth: 500, width: '100%', padding: '1.5rem', borderRadius: 16, maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px', fontSize: '1rem' }}>Log Mentoring Session</h3>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px', fontSize: '1rem' }}>{t('mentoring.logMentoringSession', 'Log Mentoring Session')}</h3>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               <div>
-                <label className="label">Date</label>
+                <label className="label">{t('mentoring.date', 'Date')}</label>
                 <input className="input" type="date" value={sessionForm.date} onChange={e => setSessionForm(f => ({ ...f, date: e.target.value }))} />
               </div>
               <div>
-                <label className="label">Progress Review</label>
-                <textarea className="input" rows={2} value={sessionForm.progressReview} onChange={e => setSessionForm(f => ({ ...f, progressReview: e.target.value }))} placeholder="What progress was made since last session?" />
+                <label className="label">{t('mentoring.progressReview', 'Progress Review')}</label>
+                <textarea className="input" rows={2} value={sessionForm.progressReview} onChange={e => setSessionForm(f => ({ ...f, progressReview: e.target.value }))} placeholder={t('mentoring.progressPlaceholder', 'What progress was made since last session?')} />
               </div>
               <div>
-                <label className="label">Challenge Discussed</label>
-                <textarea className="input" rows={2} value={sessionForm.challenge} onChange={e => setSessionForm(f => ({ ...f, challenge: e.target.value }))} placeholder="What obstacle came up?" />
+                <label className="label">{t('mentoring.challengeDiscussed', 'Challenge Discussed')}</label>
+                <textarea className="input" rows={2} value={sessionForm.challenge} onChange={e => setSessionForm(f => ({ ...f, challenge: e.target.value }))} placeholder={t('mentoring.challengePlaceholder', 'What obstacle came up?')} />
               </div>
               <div>
-                <label className="label">Action Item</label>
-                <textarea className="input" rows={2} value={sessionForm.actionItem} onChange={e => setSessionForm(f => ({ ...f, actionItem: e.target.value }))} placeholder="What will you do before next session?" />
+                <label className="label">{t('mentoring.actionItem', 'Action Item')}</label>
+                <textarea className="input" rows={2} value={sessionForm.actionItem} onChange={e => setSessionForm(f => ({ ...f, actionItem: e.target.value }))} placeholder={t('mentoring.actionPlaceholder', 'What will you do before next session?')} />
               </div>
               <div>
-                <label className="label">Additional Notes</label>
+                <label className="label">{t('mentoring.additionalNotes', 'Additional Notes')}</label>
                 <textarea className="input" rows={2} value={sessionForm.notes} onChange={e => setSessionForm(f => ({ ...f, notes: e.target.value }))} />
               </div>
               <div>
-                <label className="label">Update Goal Progress</label>
+                <label className="label">{t('mentoring.updateGoalProgress', 'Update Goal Progress')}</label>
                 {plan.goals.map((g, i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
-                    <span style={{ fontSize: '0.75rem', flex: 1, color: 'var(--text-secondary)' }}>{g.goal || `Goal ${i + 1}`}</span>
+                    <span style={{ fontSize: '0.75rem', flex: 1, color: 'var(--text-secondary)' }}>{g.goal || t('mentoring.goalN', 'Goal {{n}}', { n: i + 1 })}</span>
                     <input type="range" min="0" max="100" step="10" value={sessionForm.goalProgress[i] || 0}
                       onChange={e => setSessionForm(f => ({ ...f, goalProgress: { ...f.goalProgress, [i]: Number(e.target.value) } }))} style={{ width: 100 }} />
                     <span style={{ fontSize: '0.75rem', fontWeight: 700, color: PILLAR_COLORS[g.pillar], width: 36 }}>{sessionForm.goalProgress[i] || 0}%</span>
@@ -629,8 +640,8 @@ export default function Mentoring() {
               </div>
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-              <button className="btn-primary" onClick={saveSession} disabled={savingSession} style={{ flex: 1 }}>{savingSession ? 'Saving…' : '💾 Save Session'}</button>
-              <button className="btn-secondary" onClick={() => setSessionForm(null)}>Cancel</button>
+              <button className="btn-primary" onClick={saveSession} disabled={savingSession} style={{ flex: 1 }}>{savingSession ? t('mentoring.saving', 'Saving…') : `💾 ${t('mentoring.saveSession', 'Save Session')}`}</button>
+              <button className="btn-secondary" onClick={() => setSessionForm(null)}>{t('mentoring.cancel', 'Cancel')}</button>
             </div>
           </div>
         </div>
@@ -640,19 +651,19 @@ export default function Mentoring() {
       {closeForm && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }} onClick={() => setCloseForm(null)}>
           <div className="card" style={{ maxWidth: 500, width: '100%', padding: '1.5rem', borderRadius: 16, maxHeight: '85vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
-            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '1rem' }}>Close Out Mentoring Cycle</h3>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 14px' }}>Rate each pillar 1–5, from both perspectives.</p>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '1rem' }}>{t('mentoring.closeOutTitle', 'Close Out Mentoring Cycle')}</h3>
+            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 14px' }}>{t('mentoring.rateEachPillar', 'Rate each pillar 1–5, from both perspectives.')}</p>
             {PILLARS.map(p => (
               <div key={p} style={{ display: 'grid', gridTemplateColumns: '1fr 90px 90px', gap: 8, alignItems: 'center', marginBottom: 8 }}>
-                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: PILLAR_COLORS[p] }}>{p}</span>
+                <span style={{ fontSize: '0.78rem', fontWeight: 700, color: PILLAR_COLORS[p] }}>{trPillar(t, p)}</span>
                 <div>
-                  <label style={{ fontSize: '0.6rem', color: '#94a3b8', display: 'block' }}>Mentee Self</label>
+                  <label style={{ fontSize: '0.6rem', color: '#94a3b8', display: 'block' }}>{t('mentoring.menteeSelf', 'Mentee Self')}</label>
                   <select className="input" style={{ padding: '0.3rem' }} value={closeForm.menteeSelf[p]} onChange={e => setCloseForm(f => ({ ...f, menteeSelf: { ...f.menteeSelf, [p]: Number(e.target.value) } }))}>
                     {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.6rem', color: '#94a3b8', display: 'block' }}>Mentor</label>
+                  <label style={{ fontSize: '0.6rem', color: '#94a3b8', display: 'block' }}>{t('mentoring.mentor', 'Mentor')}</label>
                   <select className="input" style={{ padding: '0.3rem' }} value={closeForm.mentorAssessment[p]} onChange={e => setCloseForm(f => ({ ...f, mentorAssessment: { ...f.mentorAssessment, [p]: Number(e.target.value) } }))}>
                     {[1,2,3,4,5].map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
@@ -660,18 +671,18 @@ export default function Mentoring() {
               </div>
             ))}
             <div style={{ margin: '10px 0' }}>
-              <label className="label">Recommendation</label>
+              <label className="label">{t('mentoring.recommendationLabel', 'Recommendation')}</label>
               <select className="input" value={closeForm.recommendation} onChange={e => setCloseForm(f => ({ ...f, recommendation: e.target.value }))}>
-                {RECOMMENDATIONS.map(r => <option key={r.value} value={r.value}>{r.label}</option>)}
+                {RECOMMENDATIONS.map(r => <option key={r.value} value={r.value}>{trRecommendation(t, r)}</option>)}
               </select>
             </div>
             <div>
-              <label className="label">Closing Notes</label>
+              <label className="label">{t('mentoring.closingNotes', 'Closing Notes')}</label>
               <textarea className="input" rows={2} value={closeForm.notes} onChange={e => setCloseForm(f => ({ ...f, notes: e.target.value }))} />
             </div>
             <div style={{ display: 'flex', gap: 10, marginTop: 16 }}>
-              <button className="btn-primary" onClick={saveCloseOut} disabled={savingClose} style={{ flex: 1 }}>{savingClose ? 'Saving…' : '💾 Close Cycle'}</button>
-              <button className="btn-secondary" onClick={() => setCloseForm(null)}>Cancel</button>
+              <button className="btn-primary" onClick={saveCloseOut} disabled={savingClose} style={{ flex: 1 }}>{savingClose ? t('mentoring.saving', 'Saving…') : `💾 ${t('mentoring.closeCycle', 'Close Cycle')}`}</button>
+              <button className="btn-secondary" onClick={() => setCloseForm(null)}>{t('mentoring.cancel', 'Cancel')}</button>
             </div>
           </div>
         </div>

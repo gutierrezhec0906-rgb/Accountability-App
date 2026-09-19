@@ -2456,5 +2456,168 @@
       "createdPt": "+1 pt — ¡capacitación creada!",
       "addedCapReached": "¡Capacitación agregada! Límite diario de 25 pts alcanzado hoy."
     }
+  },
+  "mentoring": {
+    "pageTitle": "Mentoría",
+    "loading": "Cargando…",
+    "title": "Mentoría — Rendición de Cuentas, Multiplicada",
+    "subtitle": "Propiedad del mentorizado, guiado por el mentor. Elige quién te ayuda a crecer, establece metas en los tres pilares y sigue el recorrido.",
+    "closed": "cerrado",
+    "sessAbbrev": "{{count}} ses.",
+    "deleteLogTooltip": "Eliminar este registro de mentoría",
+    "newMentoringLog": "Nuevo Registro de Mentoría",
+    "cycleActive": "Ciclo activo — {{start}} → {{end}}",
+    "matchToStart": "Empareja con un mentor y establece tus metas para iniciar el ciclo",
+    "cycleStats": "{{count}} sesión(es) registradas · {{pct}}% finalización promedio de metas · pilares cubiertos: {{pillars}}",
+    "completeSections12": "Completa las Secciones 1 y 2 a continuación, luego Guarda el Plan.",
+    "noneYet": "aún ninguno",
+    "pdf": "PDF",
+    "saving": "Guardando…",
+    "savePlan": "Guardar Plan",
+    "logN": "Registro {{n}}",
+    "confirmDeleteLog": "¿Eliminar el registro de mentoría \"{{label}}\" y sus {{count}} sesión(es)? Esto no se puede deshacer.",
+    "section1": {
+      "title": "Emparejar y Comprometerse",
+      "subtitle": "Tú eliges a tu mentor — no se asigna. La investigación muestra que dejar que el mentorizado elija es el mayor predictor de éxito de la mentoría."
+    },
+    "mentorName": "Nombre del Mentor",
+    "fullName": "Nombre completo",
+    "mentorRole": "Rol del Mentor",
+    "rolePlaceholder": "ej. Gerente de Planta",
+    "focusArea": "Área de Enfoque",
+    "typeOfRelationship": "Tipo de Relación de Mentoría",
+    "commitmentConfirmed": "Compromiso confirmado por ambas partes",
+    "section2": {
+      "title": "Establecer las Metas",
+      "subtitle": "1-3 metas para este ciclo, comenzando con lo que deseas. Metas escritas, específicas y medibles generan rendición de cuentas."
+    },
+    "goal": "Meta",
+    "goalPlaceholder": "¿Qué vas a desarrollar?",
+    "howMeasured": "Cómo se medirá el éxito",
+    "measurePlaceholder": "ej. Liderar 2 eventos Kaizen de forma independiente",
+    "timeline": "Cronograma",
+    "addAnotherGoal": "Agregar otra meta",
+    "section3": {
+      "title": "Cadencia de Sesiones",
+      "subtitle": "La consistencia le gana a la intensidad — sesiones regulares y predecibles superan a las conversaciones maratónicas esporádicas."
+    },
+    "sessionCadence": "Cadencia de Sesiones",
+    "cycleLength": "Duración del Ciclo",
+    "sessionLog": "Registro de Sesiones",
+    "logSession": "Registrar Sesión",
+    "firstSessionStarts": "Registrar tu primera sesión inicia el ciclo automáticamente.",
+    "everySessionEarns": "Cada sesión completamente registrada (fecha, revisión de progreso, desafío y acción, todos completados) gana",
+    "pts": "pts",
+    "sessionsInSidebar": "Las sesiones se enumeran en la barra lateral →",
+    "section4": {
+      "title": "Seguimiento del Progreso",
+      "subtitle": "Finalización de metas, crecimiento de habilidades en los tres pilares y desafíos encontrados — actualizado después de cada sesión."
+    },
+    "goalN": "Meta {{n}}",
+    "challengesEncountered": "Desafíos Encontrados",
+    "section5": {
+      "title": "Medir y Cerrar",
+      "subtitle": "Al final del ciclo: sesiones vs. planificadas, metas logradas vs. establecidas, autoevaluación vs. evaluación del mentor, y una recomendación."
+    },
+    "sessions": "Sesiones",
+    "goalsAchieved": "Metas Logradas",
+    "avgCompletion": "Finalización Promedio",
+    "cycleClosedOn": "Ciclo cerrado el {{date}}",
+    "recommendationLabel": "Recomendación",
+    "closeOutCycle": "Cerrar Este Ciclo",
+    "startCycleToUnlock": "Inicia el ciclo arriba para desbloquear el cierre.",
+    "sessionLogCount": "Registro de Sesiones ({{count}})",
+    "everyLoggedSession": "Cada sesión registrada — toca para expandir. +5 pts cada vez que se completan los 4 campos.",
+    "noSessionsYet": "Aún no hay sesiones registradas.",
+    "progressLabel": "Progreso",
+    "challengeLabel": "Desafío",
+    "actionLabel": "Acción",
+    "notesLabel": "Notas",
+    "delete": "Eliminar",
+    "logMentoringSession": "Registrar Sesión de Mentoría",
+    "date": "Fecha",
+    "progressReview": "Revisión de Progreso",
+    "progressPlaceholder": "¿Qué progreso se logró desde la última sesión?",
+    "challengeDiscussed": "Desafío Discutido",
+    "challengePlaceholder": "¿Qué obstáculo surgió?",
+    "actionItem": "Elemento de Acción",
+    "actionPlaceholder": "¿Qué harás antes de la próxima sesión?",
+    "additionalNotes": "Notas Adicionales",
+    "updateGoalProgress": "Actualizar Progreso de Metas",
+    "saveSession": "Guardar Sesión",
+    "cancel": "Cancelar",
+    "closeOutTitle": "Cerrar Ciclo de Mentoría",
+    "rateEachPillar": "Califica cada pilar del 1 al 5, desde ambas perspectivas.",
+    "menteeSelf": "Autoevaluación del Mentorizado",
+    "mentor": "Mentor",
+    "closingNotes": "Notas de Cierre",
+    "closeCycle": "Cerrar Ciclo",
+    "pillars": {
+      "leadership": "Liderazgo",
+      "technical": "Técnico",
+      "interpersonal": "Interpersonal"
+    },
+    "mentorTypes": {
+      "traditional": {
+        "value": "Tradicional",
+        "desc": "Un líder senior mentoriza al futuro líder"
+      },
+      "peer": {
+        "value": "Par",
+        "desc": "Un colega del mismo nivel con una fortaleza específica"
+      },
+      "crossFunctional": {
+        "value": "Multifuncional",
+        "desc": "Un líder de un departamento o función diferente"
+      },
+      "reverse": {
+        "value": "Inversa",
+        "desc": "El futuro líder mentoriza a un líder senior en tecnología o nueva perspectiva"
+      },
+      "sme": {
+        "value": "Experto en la Materia",
+        "desc": "La mejor persona técnica en una habilidad específica"
+      },
+      "external": {
+        "value": "Externo",
+        "desc": "Un coach externo, consultor o par de la industria"
+      }
+    },
+    "timelines": {
+      "d30": "30 días",
+      "d60": "60 días",
+      "d90": "90 días",
+      "m6": "6 meses"
+    },
+    "cadences": {
+      "weekly": "Semanal",
+      "biweekly": "Quincenal (recomendado)",
+      "monthly": "Mensual"
+    },
+    "cycleLengths": {
+      "m3": "90 días (mínimo)",
+      "m6": "6 meses (recomendado)",
+      "m12": "12 meses (máximo)"
+    },
+    "recommendations": {
+      "continue": "Continuar — extender este ciclo",
+      "graduate": "Graduar — metas cumplidas, el mentorizado está listo para avanzar",
+      "reassign": "Reasignar — emparejar con un mentor diferente"
+    },
+    "toast": {
+      "loadFailed": "No se pudo cargar tu plan de mentoría",
+      "logDeleted": "Registro de mentoría eliminado",
+      "maxGoals": "Máximo 3 metas por ciclo de mentoría",
+      "cycleStarted": "¡Ciclo de mentoría iniciado!",
+      "planSaved": "Plan de mentoría guardado",
+      "saveFailed": "Error al guardar",
+      "setSessionDate": "Por favor establece la fecha de la sesión",
+      "sessionLoggedPts": "¡Sesión registrada! +5 pts ganados.",
+      "sessionLogged": "Sesión registrada.",
+      "sessionLoggedIncomplete": "Sesión registrada — completa la revisión de progreso, el desafío y el elemento de acción la próxima vez para ganar +5 pts.",
+      "sessionDeleted": "Sesión eliminada",
+      "closedOut": "Ciclo de mentoría cerrado",
+      "pdfFailed": "No se pudo generar el PDF"
+    }
   }
 }
