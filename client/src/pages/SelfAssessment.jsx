@@ -4,7 +4,20 @@ import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { generateAssessmentReport } from '../utils/assessmentReport';
+
+// Translate a category's displayed field, keeping English as the data fallback.
+function trCat(t, cat, field) { return t(`selfAssessment.categories.${cat.id}.${field}`, cat[field]); }
+// Translate a question's displayed field (text, tools, or a guide.<level>).
+function trQ(t, q, field) {
+  if (field.startsWith('guide.')) {
+    const level = field.split('.')[1];
+    return t(`selfAssessment.questions.${q.id}.guide.${level}`, q.guide[level]);
+  }
+  return t(`selfAssessment.questions.${q.id}.${field}`, q[field]);
+}
+function trLevelLabel(t, key, fallback) { return t(`selfAssessment.levels.${key}`, fallback); }
 
 // ── Assessment data ──────────────────────────────────────────────
 const CATEGORIES = [
@@ -360,12 +373,13 @@ const GUIDE_LEVELS = [
 
 // ── Scoring guide panel ──────────────────────────────────────────
 function ScoringGuide({ question, catColor }) {
+  const { t } = useTranslation();
   return (
     <div style={{ marginTop: 10, borderRadius: 10, border: '1px solid #e2e8f0', overflow: 'hidden' }}>
       {/* Header */}
       <div style={{ background: '#f8fafc', padding: '0.5rem 0.75rem', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Scoring Guide</span>
-        <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontStyle: 'italic' }}>Related: {question.tools}</span>
+        <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('selfAssessment.scoringGuide', 'Scoring Guide')}</span>
+        <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontStyle: 'italic' }}>{t('selfAssessment.related', 'Related')}: {trQ(t, question, 'tools')}</span>
       </div>
       {/* Level rows */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))' }}>
@@ -377,10 +391,10 @@ function ScoringGuide({ question, catColor }) {
             borderBottom: '0',
           }}>
             <p style={{ fontSize: '0.65rem', fontWeight: 800, color: lvl.color, margin: '0 0 5px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-              {lvl.label}
+              {trLevelLabel(t, `guideLevel_${lvl.key}`, lvl.label)}
             </p>
             <p style={{ fontSize: '0.73rem', color: '#374151', margin: 0, lineHeight: 1.55 }}>
-              {question.guide[lvl.key]}
+              {trQ(t, question, `guide.${lvl.key}`)}
             </p>
           </div>
         ))}
@@ -391,6 +405,7 @@ function ScoringGuide({ question, catColor }) {
 
 // ── Radar/Spider chart ───────────────────────────────────────────
 function RadarChart({ scores, size = 300 }) {
+  const { t } = useTranslation();
   const cx = size / 2, cy = size / 2, r = size * 0.34;
   const n = CATEGORIES.length;
   const angle = i => (Math.PI * 2 * i) / n - Math.PI / 2;
@@ -422,7 +437,7 @@ function RadarChart({ scores, size = 300 }) {
       {dataPoints.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="4" fill="#0d9488" stroke="white" strokeWidth="1.5" />)}
       {CATEGORIES.map((c, i) => {
         const lp = pt(i, 1.32);
-        const lines = labelLines(c.label);
+        const lines = labelLines(trCat(t, c, 'label'));
         const lineH = 13;
         const totalH = lines.length * lineH;
         return (
@@ -439,11 +454,12 @@ function RadarChart({ scores, size = 300 }) {
 
 // ── History line chart ───────────────────────────────────────────
 function HistoryChart({ history }) {
+  const { t } = useTranslation();
   const W = 520, H = 200, PL = 36, PR = 16, PT = 12, PB = 40;
   const cW = W - PL - PR, cH = H - PT - PB;
   if (history.length < 2) return (
     <div style={{ height: H, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', fontSize: '0.78rem', textAlign: 'center', padding: '0 2rem' }}>
-      Complete at least 2 assessments to see your progress trend.
+      {t('selfAssessment.needTwoTrend', 'Complete at least 2 assessments to see your progress trend.')}
     </div>
   );
   const px = i => PL + (i / (history.length - 1)) * cW;
@@ -480,14 +496,15 @@ function HistoryChart({ history }) {
 }
 
 function scoreLevel(s) {
-  if (s >= 50) return { label: 'Exceptional', color: '#7c3aed' };
-  if (s >= 40) return { label: 'Proficient',  color: '#0d9488' };
-  if (s >= 30) return { label: 'Developing',  color: '#f59e0b' };
-  return              { label: 'Emerging',    color: '#ef4444' };
+  if (s >= 50) return { key: 'exceptional', label: 'Exceptional', color: '#7c3aed' };
+  if (s >= 40) return { key: 'proficient',  label: 'Proficient',  color: '#0d9488' };
+  if (s >= 30) return { key: 'developing',  label: 'Developing',  color: '#f59e0b' };
+  return              { key: 'emerging',    label: 'Emerging',    color: '#ef4444' };
 }
 
 // ── Main component ───────────────────────────────────────────────
 export default function SelfAssessment() {
+  const { t } = useTranslation();
   const { currentUser, userProfile } = useAuth();
   const [view, setView]       = useState('intro');
   const [step, setStep]       = useState(0);
@@ -516,7 +533,7 @@ export default function SelfAssessment() {
   function totalScore(scores) { return Object.values(scores).reduce((s, v) => s + v, 0); }
 
   async function handleSave() {
-    if (Object.keys(answers).length < 30) { toast.error('Please answer all 30 questions before saving.'); return; }
+    if (Object.keys(answers).length < 30) { toast.error(t('selfAssessment.toast.answerAll', 'Please answer all 30 questions before saving.')); return; }
     setSaving(true);
     try {
       const scores = computeScores(answers);
@@ -526,9 +543,9 @@ export default function SelfAssessment() {
       await setDoc(doc(db, 'users', currentUser.uid), { selfAssessments: [...existing, entry] }, { merge: true });
       setHistory([...existing, entry]);
       setLatest(entry);
-      toast.success('Assessment saved!');
+      toast.success(t('selfAssessment.toast.saved', 'Assessment saved!'));
       setView('results');
-    } catch (e) { toast.error('Could not save. Try again.'); }
+    } catch (e) { toast.error(t('selfAssessment.toast.saveFailed', 'Could not save. Try again.')); }
     setSaving(false);
   }
 
@@ -545,38 +562,38 @@ export default function SelfAssessment() {
   if (view === 'intro') {
     return (
       <div style={{ maxWidth: 800, margin: '0 auto' }} className="space-y-6">
-        <PageHeader icon="📋" title="Accountability Self-Assessment" subtitle="30 behavior statements · 5 leadership practices · Scored 1–10" />
+        <PageHeader icon="📋" title={t('selfAssessment.pageTitle', 'Accountability Self-Assessment')} subtitle={t('selfAssessment.pageSubtitle', '30 behavior statements · 5 leadership practices · Scored 1–10')} />
         {latest && (
           <div style={{ borderRadius: 14, border: '1px solid #99f6e4', background: '#f0fdfa', padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
             <div>
-              <p style={{ fontWeight: 700, color: '#0f766e', margin: 0, fontSize: '0.875rem' }}>Last assessment: {new Date(latest.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>
-              <p style={{ color: '#0d9488', margin: 0, fontSize: '0.78rem' }}>Total score: <strong>{latest.total}/300</strong> · {history.length} assessment{history.length !== 1 ? 's' : ''} completed</p>
+              <p style={{ fontWeight: 700, color: '#0f766e', margin: 0, fontSize: '0.875rem' }}>{t('selfAssessment.lastAssessment', 'Last assessment: {{date}}', { date: new Date(latest.date + 'T00:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) })}</p>
+              <p style={{ color: '#0d9488', margin: 0, fontSize: '0.78rem' }}>{t('selfAssessment.totalScoreSummary', 'Total score: {{total}}/300', { total: latest.total })} · {history.length === 1 ? t('selfAssessment.assessmentCompletedOne', '{{count}} assessment completed', { count: history.length }) : t('selfAssessment.assessmentsCompletedMany', '{{count}} assessments completed', { count: history.length })}</p>
             </div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => setView('results')} style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 8, padding: '0.5rem 1rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>View Results</button>
-              <button onClick={() => setView('history')} style={{ background: 'white', color: '#0d9488', border: '1px solid #99f6e4', borderRadius: 8, padding: '0.5rem 1rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>View Progress</button>
+              <button onClick={() => setView('results')} style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 8, padding: '0.5rem 1rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>{t('selfAssessment.viewResults', 'View Results')}</button>
+              <button onClick={() => setView('history')} style={{ background: 'white', color: '#0d9488', border: '1px solid #99f6e4', borderRadius: 8, padding: '0.5rem 1rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>{t('selfAssessment.viewProgress', 'View Progress')}</button>
             </div>
           </div>
         )}
         <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
           <div style={{ fontSize: '3rem', marginBottom: 12 }}>📋</div>
-          <h2 style={{ fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 8px', fontSize: '1.25rem' }}>Accountability Practice Inventory</h2>
+          <h2 style={{ fontWeight: 900, color: 'var(--text-primary)', margin: '0 0 8px', fontSize: '1.25rem' }}>{t('selfAssessment.inventoryTitle', 'Accountability Practice Inventory')}</h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', maxWidth: 480, margin: '0 auto 24px', lineHeight: 1.7 }}>
-            Rate yourself honestly on 30 accountability behavior statements across the 5 core practices. Each question includes a <strong>Scoring Guide</strong> with concrete examples to help you calibrate your answer accurately — based on real actions, not intentions.
+            {t('selfAssessment.inventoryDescPre', 'Rate yourself honestly on 30 accountability behavior statements across the 5 core practices. Each question includes a')} <strong>{t('selfAssessment.scoringGuide', 'Scoring Guide')}</strong> {t('selfAssessment.inventoryDescPost', 'with concrete examples to help you calibrate your answer accurately — based on real actions, not intentions.')}
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 10, marginBottom: 20, textAlign: 'left' }}>
             {CATEGORIES.map(c => (
               <div key={c.id} style={{ borderRadius: 10, border: `1px solid ${c.border}`, background: c.light, padding: '0.75rem' }}>
                 <p style={{ fontSize: '1.125rem', margin: '0 0 4px' }}>{c.icon}</p>
-                <p style={{ fontWeight: 800, color: c.color, margin: '0 0 2px', fontSize: '0.75rem' }}>{c.label}</p>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.68rem', margin: 0, lineHeight: 1.4 }}>{c.desc}</p>
+                <p style={{ fontWeight: 800, color: c.color, margin: '0 0 2px', fontSize: '0.75rem' }}>{trCat(t, c, 'label')}</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.68rem', margin: 0, lineHeight: 1.4 }}>{trCat(t, c, 'desc')}</p>
               </div>
             ))}
           </div>
 
           {/* Score scale out of 300 */}
           <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '1rem 1.25rem', marginBottom: 20, textAlign: 'left' }}>
-            <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.8rem', textAlign: 'center' }}>Accountability Leader Score Scale · out of 300 points</p>
+            <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 10px', fontSize: '0.8rem', textAlign: 'center' }}>{t('selfAssessment.scoreScaleTitle', 'Accountability Leader Score Scale · out of 300 points')}</p>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
               {[
                 { key: 'emerging',   label: 'Emerging',   range: '0 – 120',   sub: 'Avg 1–4 per question',   color: '#ef4444', bg: '#fef2f2', border: '#fecaca' },
@@ -585,21 +602,21 @@ export default function SelfAssessment() {
                 { key: 'exemplary',  label: 'Exemplary',  range: '271 – 300', sub: 'Avg 10 per question',    color: '#7c3aed', bg: '#fdf4ff', border: '#e9d5ff' },
               ].map(lvl => (
                 <div key={lvl.key} style={{ borderRadius: 10, border: `1px solid ${lvl.border}`, background: lvl.bg, padding: '0.625rem 0.75rem' }}>
-                  <p style={{ fontWeight: 800, color: lvl.color, margin: '0 0 2px', fontSize: '0.75rem' }}>{lvl.label}</p>
+                  <p style={{ fontWeight: 800, color: lvl.color, margin: '0 0 2px', fontSize: '0.75rem' }}>{trLevelLabel(t, `scaleLevel_${lvl.key}`, lvl.label)}</p>
                   <p style={{ fontWeight: 900, color: lvl.color, margin: '0 0 3px', fontSize: '1rem', lineHeight: 1 }}>{lvl.range}</p>
-                  <p style={{ color: lvl.color, margin: 0, fontSize: '0.62rem', opacity: 0.75 }}>{lvl.sub}</p>
+                  <p style={{ color: lvl.color, margin: 0, fontSize: '0.62rem', opacity: 0.75 }}>{t(`selfAssessment.scaleSub.${lvl.key}`, lvl.sub)}</p>
                 </div>
               ))}
             </div>
           </div>
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
-            <div style={{ background: '#f8fafc', borderRadius: 10, padding: '0.625rem 1rem', fontSize: '0.78rem', color: '#64748b' }}>⏱ ~10–15 minutes</div>
-            <div style={{ background: '#f8fafc', borderRadius: 10, padding: '0.625rem 1rem', fontSize: '0.78rem', color: '#64748b' }}>30 questions · 1–10 scale</div>
-            <div style={{ background: '#f8fafc', borderRadius: 10, padding: '0.625rem 1rem', fontSize: '0.78rem', color: '#64748b' }}>📖 Scoring guide per question</div>
-            <div style={{ background: '#f8fafc', borderRadius: 10, padding: '0.625rem 1rem', fontSize: '0.78rem', color: '#64748b' }}>🔁 Retake every 3 months</div>
+            <div style={{ background: '#f8fafc', borderRadius: 10, padding: '0.625rem 1rem', fontSize: '0.78rem', color: '#64748b' }}>⏱ {t('selfAssessment.timeEstimate', '~10–15 minutes')}</div>
+            <div style={{ background: '#f8fafc', borderRadius: 10, padding: '0.625rem 1rem', fontSize: '0.78rem', color: '#64748b' }}>{t('selfAssessment.questionsScale', '30 questions · 1–10 scale')}</div>
+            <div style={{ background: '#f8fafc', borderRadius: 10, padding: '0.625rem 1rem', fontSize: '0.78rem', color: '#64748b' }}>📖 {t('selfAssessment.guidePerQuestion', 'Scoring guide per question')}</div>
+            <div style={{ background: '#f8fafc', borderRadius: 10, padding: '0.625rem 1rem', fontSize: '0.78rem', color: '#64748b' }}>🔁 {t('selfAssessment.retakeEvery3', 'Retake every 3 months')}</div>
           </div>
           <button onClick={startNew} style={{ background: 'linear-gradient(135deg,#0f2044,#2563eb)', color: 'white', border: 'none', borderRadius: 10, padding: '0.75rem 2rem', fontWeight: 800, fontSize: '0.95rem', cursor: 'pointer' }}>
-            {latest ? 'Retake Assessment' : 'Start Assessment'} →
+            {latest ? t('selfAssessment.retakeAssessment', 'Retake Assessment') : t('selfAssessment.startAssessment', 'Start Assessment')} →
           </button>
         </div>
       </div>
@@ -613,15 +630,15 @@ export default function SelfAssessment() {
         {/* Progress bar */}
         <div style={{ borderRadius: 14, border: '1px solid var(--border)', background: 'var(--card-bg)', padding: '1rem 1.25rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-            <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.875rem' }}>Question {totalAnswered} of 30</span>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{Math.round((totalAnswered / 30) * 100)}% complete</span>
+            <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.875rem' }}>{t('selfAssessment.questionOfTotal', 'Question {{n}} of 30', { n: totalAnswered })}</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{t('selfAssessment.percentComplete', '{{pct}}% complete', { pct: Math.round((totalAnswered / 30) * 100) })}</span>
           </div>
           <div style={{ background: '#e2e8f0', borderRadius: 9999, height: 8 }}>
             <div style={{ height: 8, borderRadius: 9999, background: 'linear-gradient(90deg,#0f2044,#0d9488)', width: `${(totalAnswered / 30) * 100}%`, transition: 'width 0.3s ease' }} />
           </div>
           <div style={{ display: 'flex', gap: 4, marginTop: 10 }}>
             {CATEGORIES.map((c, i) => (
-              <button key={c.id} onClick={() => setStep(i)} title={c.label} style={{ flex: 1, height: 5, borderRadius: 9999, border: 'none', cursor: 'pointer', background: i < step ? c.color : i === step ? c.color : '#e2e8f0', opacity: i < step ? 0.5 : 1 }} />
+              <button key={c.id} onClick={() => setStep(i)} title={trCat(t, c, 'label')} style={{ flex: 1, height: 5, borderRadius: 9999, border: 'none', cursor: 'pointer', background: i < step ? c.color : i === step ? c.color : '#e2e8f0', opacity: i < step ? 0.5 : 1 }} />
             ))}
           </div>
         </div>
@@ -630,9 +647,9 @@ export default function SelfAssessment() {
         <div style={{ borderRadius: 14, background: currentCat.bg, padding: '1.25rem 1.5rem', display: 'flex', alignItems: 'center', gap: 14 }}>
           <span style={{ fontSize: '2rem' }}>{currentCat.icon}</span>
           <div>
-            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>Practice {step + 1} of 5</p>
-            <p style={{ color: 'white', fontWeight: 900, fontSize: '1.1rem', margin: '2px 0' }}>{currentCat.label}</p>
-            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.78rem', margin: 0 }}>{catAnswered}/6 answered · {currentCat.desc}</p>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>{t('selfAssessment.practiceOfTotal', 'Practice {{n}} of 5', { n: step + 1 })}</p>
+            <p style={{ color: 'white', fontWeight: 900, fontSize: '1.1rem', margin: '2px 0' }}>{trCat(t, currentCat, 'label')}</p>
+            <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.78rem', margin: 0 }}>{t('selfAssessment.answeredOf6', '{{n}}/6 answered', { n: catAnswered })} · {trCat(t, currentCat, 'desc')}</p>
           </div>
         </div>
 
@@ -640,7 +657,7 @@ export default function SelfAssessment() {
         <div style={{ borderRadius: 10, background: '#fffbeb', border: '1px solid #fcd34d', padding: '0.625rem 0.875rem', display: 'flex', gap: 8, alignItems: 'center' }}>
           <span style={{ fontSize: '0.875rem' }}>💡</span>
           <p style={{ fontSize: '0.75rem', color: '#92400e', margin: 0, lineHeight: 1.5 }}>
-            <strong>Tip:</strong> Click <strong>"View Scoring Guide"</strong> on any question to see concrete behavior examples for each score range. Rate based on your <em>actual recent actions</em>, not your intentions.
+            <strong>{t('selfAssessment.tipLabel', 'Tip:')}</strong> {t('selfAssessment.tipBodyPre', 'Click')} <strong>"{t('selfAssessment.viewScoringGuide', 'View Scoring Guide')}"</strong> {t('selfAssessment.tipBodyMid', 'on any question to see concrete behavior examples for each score range. Rate based on your')} <em>{t('selfAssessment.actualRecentActions', 'actual recent actions')}</em>{t('selfAssessment.tipBodyPost', ', not your intentions.')}
           </p>
         </div>
 
@@ -656,7 +673,7 @@ export default function SelfAssessment() {
                   <span style={{ background: val ? currentCat.bg : '#f1f5f9', color: val ? 'white' : '#64748b', borderRadius: 8, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.72rem', fontWeight: 800, flexShrink: 0 }}>
                     {q.id}
                   </span>
-                  <p style={{ fontSize: '0.875rem', color: 'var(--text-primary)', margin: 0, lineHeight: 1.6, fontWeight: val ? 600 : 400, flex: 1 }}>{q.text}</p>
+                  <p style={{ fontSize: '0.875rem', color: 'var(--text-primary)', margin: 0, lineHeight: 1.6, fontWeight: val ? 600 : 400, flex: 1 }}>{trQ(t, q, 'text')}</p>
                 </div>
 
                 {/* 1-10 rating buttons */}
@@ -680,10 +697,10 @@ export default function SelfAssessment() {
                       fontSize: '0.7rem', fontWeight: 700, alignSelf: 'center', marginLeft: 4,
                       color: val >= 7 ? currentCat.color : val >= 5 ? '#f59e0b' : '#ef4444',
                     }}>
-                      {val <= 4 ? 'Emerging' : val <= 6 ? 'Developing' : val <= 9 ? 'Strong' : 'Exemplary'}
+                      {val <= 4 ? trLevelLabel(t, 'guideLevelShort_emerging', 'Emerging') : val <= 6 ? trLevelLabel(t, 'guideLevelShort_developing', 'Developing') : val <= 9 ? trLevelLabel(t, 'guideLevelShort_strong', 'Strong') : trLevelLabel(t, 'guideLevelShort_exemplary', 'Exemplary')}
                     </span>
                   )}
-                  {!val && <span style={{ fontSize: '0.68rem', color: '#94a3b8', alignSelf: 'center', marginLeft: 4 }}>1 = Rarely · 10 = Almost Always</span>}
+                  {!val && <span style={{ fontSize: '0.68rem', color: '#94a3b8', alignSelf: 'center', marginLeft: 4 }}>{t('selfAssessment.ratingScaleHint', '1 = Rarely · 10 = Almost Always')}</span>}
                 </div>
 
                 {/* Scoring guide toggle */}
@@ -697,8 +714,8 @@ export default function SelfAssessment() {
                   }}
                 >
                   <span>{guideOpen ? '▲' : '▼'}</span>
-                  {guideOpen ? 'Hide' : 'View'} Scoring Guide
-                  <span style={{ color: '#94a3b8', fontWeight: 400 }}>· {q.tools}</span>
+                  {guideOpen ? t('selfAssessment.hide', 'Hide') : t('selfAssessment.view', 'View')} {t('selfAssessment.scoringGuide', 'Scoring Guide')}
+                  <span style={{ color: '#94a3b8', fontWeight: 400 }}>· {trQ(t, q, 'tools')}</span>
                 </button>
 
                 {guideOpen && <ScoringGuide question={q} catColor={currentCat.color} />}
@@ -715,12 +732,12 @@ export default function SelfAssessment() {
           })).filter(g => g.missing.length > 0);
           return (
             <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 10, padding: '0.75rem 1rem', marginBottom: 4 }}>
-              <p style={{ fontWeight: 700, color: '#92400e', fontSize: '0.8rem', margin: '0 0 6px' }}>⚠️ {unanswered.length} question{unanswered.length > 1 ? 's' : ''} still need{unanswered.length === 1 ? 's' : ''} an answer:</p>
+              <p style={{ fontWeight: 700, color: '#92400e', fontSize: '0.8rem', margin: '0 0 6px' }}>⚠️ {unanswered.length === 1 ? t('selfAssessment.needsAnswerOne', '{{n}} question still needs an answer:', { n: unanswered.length }) : t('selfAssessment.needsAnswerMany', '{{n}} questions still need an answer:', { n: unanswered.length })}</p>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {byStep.map(({ idx, cat, missing }) => (
                   <button key={cat.id} onClick={() => setStep(idx)}
                     style={{ background: '#fef9c3', border: '1px solid #fcd34d', borderRadius: 99, padding: '2px 10px', fontSize: '0.72rem', fontWeight: 700, color: '#92400e', cursor: 'pointer' }}>
-                    {cat.icon} {cat.label}: Q{missing.map(q => q.id).join(', Q')}
+                    {cat.icon} {trCat(t, cat, 'label')}: Q{missing.map(q => q.id).join(', Q')}
                   </button>
                 ))}
               </div>
@@ -732,17 +749,17 @@ export default function SelfAssessment() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1rem' }}>
           <button onClick={() => step > 0 ? setStep(s => s - 1) : setView('intro')}
             style={{ background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 10, padding: '0.625rem 1.25rem', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer' }}>
-            ← {step === 0 ? 'Cancel' : 'Previous'}
+            ← {step === 0 ? t('selfAssessment.cancel', 'Cancel') : t('selfAssessment.previous', 'Previous')}
           </button>
           {step < 4 ? (
             <button onClick={() => setStep(s => s + 1)}
               style={{ background: currentCat.color, color: 'white', border: 'none', borderRadius: 10, padding: '0.625rem 1.5rem', fontWeight: 700, fontSize: '0.875rem', cursor: 'pointer' }}>
-              Next Practice →
+              {t('selfAssessment.nextPractice', 'Next Practice')} →
             </button>
           ) : (
             <button onClick={handleSave} disabled={saving || !allAnswered}
               style={{ background: allAnswered ? 'linear-gradient(135deg,#0f2044,#0d9488)' : '#e2e8f0', color: allAnswered ? 'white' : '#94a3b8', border: 'none', borderRadius: 10, padding: '0.625rem 1.5rem', fontWeight: 800, fontSize: '0.875rem', cursor: allAnswered ? 'pointer' : 'not-allowed' }}>
-              {saving ? '⏳ Saving...' : `💾 Save Results (${totalAnswered}/30)`}
+              {saving ? t('selfAssessment.saving', '⏳ Saving...') : t('selfAssessment.saveResults', '💾 Save Results ({{n}}/30)', { n: totalAnswered })}
             </button>
           )}
         </div>
@@ -758,12 +775,12 @@ export default function SelfAssessment() {
     const overall = scoreLevel(total / 5);
     return (
       <div style={{ maxWidth: 900, margin: '0 auto' }} className="space-y-5">
-        <PageHeader icon="📊" title="Assessment Results" subtitle={`Completed ${date} · ${history.length} assessment${history.length !== 1 ? 's' : ''} total`}
+        <PageHeader icon="📊" title={t('selfAssessment.resultsTitle', 'Assessment Results')} subtitle={history.length === 1 ? t('selfAssessment.completedSummaryOne', 'Completed {{date}} · {{count}} assessment total', { date, count: history.length }) : t('selfAssessment.completedSummaryMany', 'Completed {{date}} · {{count}} assessments total', { date, count: history.length })}
           action={<div style={{ display: 'flex', gap: 8 }}>
-            <button onClick={() => setView('history')} style={{ background: 'var(--card-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>📈 Progress</button>
+            <button onClick={() => setView('history')} style={{ background: 'var(--card-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>📈 {t('selfAssessment.progress', 'Progress')}</button>
             <button onClick={() => generateAssessmentReport(latest, userProfile?.displayName || '', userProfile?.role || '', QUESTIONS)}
-              style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>📄 Download PDF</button>
-            <button onClick={startNew} style={{ background: '#0f2044', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>Retake</button>
+              style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>📄 {t('selfAssessment.downloadPdf', 'Download PDF')}</button>
+            <button onClick={startNew} style={{ background: '#0f2044', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>{t('selfAssessment.retake', 'Retake')}</button>
           </div>}
         />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '1.25rem', alignItems: 'start' }}>
@@ -771,21 +788,21 @@ export default function SelfAssessment() {
             {/* Total score hero */}
             <div style={{ borderRadius: 14, background: 'linear-gradient(135deg,#0f2044,#1e3a6e,#0d9488)', padding: '1.5rem 2rem', display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
               <div style={{ textAlign: 'center' }}>
-                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>Total Score</p>
+                <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 4px' }}>{t('selfAssessment.totalScore', 'Total Score')}</p>
                 <p style={{ color: 'white', fontSize: '3.5rem', fontWeight: 900, margin: 0, lineHeight: 1 }}>{total}</p>
-                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem', margin: '4px 0 0' }}>out of 300</p>
+                <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.72rem', margin: '4px 0 0' }}>{t('selfAssessment.outOf300', 'out of 300')}</p>
               </div>
               <div>
-                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem', margin: '0 0 4px' }}>Overall level</p>
-                <p style={{ color: overall.color, fontWeight: 900, fontSize: '1.5rem', margin: '0 0 8px' }}>{overall.label}</p>
+                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.78rem', margin: '0 0 4px' }}>{t('selfAssessment.overallLevel', 'Overall level')}</p>
+                <p style={{ color: overall.color, fontWeight: 900, fontSize: '1.5rem', margin: '0 0 8px' }}>{trLevelLabel(t, `resultLevel_${overall.key}`, overall.label)}</p>
                 <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.78rem', margin: 0, maxWidth: 280, lineHeight: 1.5 }}>
-                  Each practice is scored out of 60 (6 questions × 10). Retake every 3 months to track your leadership growth.
+                  {t('selfAssessment.eachPracticeNote', 'Each practice is scored out of 60 (6 questions × 10). Retake every 3 months to track your leadership growth.')}
                 </p>
               </div>
             </div>
             {/* Per-category bars */}
             <div className="card" style={{ padding: '1.25rem' }}>
-              <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 14px', fontSize: '0.95rem' }}>Score by Leadership Practice</p>
+              <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 14px', fontSize: '0.95rem' }}>{t('selfAssessment.scoreByPractice', 'Score by Leadership Practice')}</p>
               {CATEGORIES.map(c => {
                 const s = scores[c.id] || 0;
                 const pct = Math.round((s / 60) * 100);
@@ -795,8 +812,8 @@ export default function SelfAssessment() {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                         <span style={{ fontSize: '1rem' }}>{c.icon}</span>
-                        <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.875rem' }}>{c.label}</span>
-                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: lvl.color, background: `${lvl.color}18`, borderRadius: 99, padding: '1px 7px' }}>{lvl.label}</span>
+                        <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.875rem' }}>{trCat(t, c, 'label')}</span>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, color: lvl.color, background: `${lvl.color}18`, borderRadius: 99, padding: '1px 7px' }}>{trLevelLabel(t, `resultLevel_${lvl.key}`, lvl.label)}</span>
                       </div>
                       <span style={{ fontWeight: 900, color: c.color, fontSize: '0.95rem' }}>{s}<span style={{ color: '#94a3b8', fontWeight: 400, fontSize: '0.75rem' }}>/60</span></span>
                     </div>
@@ -817,8 +834,8 @@ export default function SelfAssessment() {
                 <div key={q.id} style={{ display: 'flex', alignItems: 'flex-start', gap: 10, padding: '8px 0', borderBottom: '1px solid #f1f5f9' }}>
                   <div style={{ minWidth: 24, height: 24, borderRadius: '50%', background: accent.bg, color: accent.text, fontWeight: 800, fontSize: '0.7rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{rank}</div>
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-primary)', fontWeight: 600, lineHeight: 1.35 }}>{q.text}</p>
-                    <p style={{ margin: '3px 0 0', fontSize: '0.68rem', color: q.cat?.color || '#94a3b8', fontWeight: 700 }}>{q.cat?.icon} {q.cat?.label}</p>
+                    <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-primary)', fontWeight: 600, lineHeight: 1.35 }}>{trQ(t, q, 'text')}</p>
+                    <p style={{ margin: '3px 0 0', fontSize: '0.68rem', color: q.cat?.color || '#94a3b8', fontWeight: 700 }}>{q.cat?.icon} {q.cat ? trCat(t, q.cat, 'label') : ''}</p>
                   </div>
                   <div style={{ fontWeight: 900, fontSize: '1rem', color: accent.text, flexShrink: 0 }}>{q.score}<span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 400 }}>/10</span></div>
                 </div>
@@ -826,11 +843,11 @@ export default function SelfAssessment() {
               return (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div className="card" style={{ padding: '1.25rem' }}>
-                    <p style={{ fontWeight: 800, color: '#15803d', margin: '0 0 12px', fontSize: '0.9rem' }}>💪 Top 5 Strengths</p>
+                    <p style={{ fontWeight: 800, color: '#15803d', margin: '0 0 12px', fontSize: '0.9rem' }}>💪 {t('selfAssessment.top5Strengths', 'Top 5 Strengths')}</p>
                     {top5.map((q, i) => renderRow(q, i + 1, { bg: '#dcfce7', text: '#15803d' }))}
                   </div>
                   <div className="card" style={{ padding: '1.25rem' }}>
-                    <p style={{ fontWeight: 800, color: '#c2410c', margin: '0 0 12px', fontSize: '0.9rem' }}>🎯 Top 5 Opportunities</p>
+                    <p style={{ fontWeight: 800, color: '#c2410c', margin: '0 0 12px', fontSize: '0.9rem' }}>🎯 {t('selfAssessment.top5Opportunities', 'Top 5 Opportunities')}</p>
                     {bottom5.map((q, i) => renderRow(q, i + 1, { bg: '#fee2e2', text: '#dc2626' }))}
                   </div>
                 </div>
@@ -839,14 +856,14 @@ export default function SelfAssessment() {
           </div>
           {/* Radar chart */}
           <div className="card" style={{ padding: '1.25rem', textAlign: 'center' }}>
-            <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '0.9rem' }}>Practice Profile</p>
-            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 16px' }}>Score per leadership practice</p>
+            <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '0.9rem' }}>{t('selfAssessment.practiceProfile', 'Practice Profile')}</p>
+            <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 16px' }}>{t('selfAssessment.scorePerPractice', 'Score per leadership practice')}</p>
             <RadarChart scores={scores} size={240} />
             <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginTop: 12, textAlign: 'left' }}>
               {CATEGORIES.map(c => (
                 <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: c.color, flexShrink: 0 }} />
-                  <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', flex: 1 }}>{c.label}</span>
+                  <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', flex: 1 }}>{trCat(t, c, 'label')}</span>
                   <span style={{ fontSize: '0.72rem', fontWeight: 700, color: c.color }}>{scores[c.id] || 0}</span>
                 </div>
               ))}
@@ -861,18 +878,18 @@ export default function SelfAssessment() {
   if (view === 'history') {
     return (
       <div style={{ maxWidth: 860, margin: '0 auto' }} className="space-y-5">
-        <PageHeader icon="📈" title="Assessment Progress" subtitle="Track your leadership growth over time — retake every 3 months."
+        <PageHeader icon="📈" title={t('selfAssessment.progressTitle', 'Assessment Progress')} subtitle={t('selfAssessment.progressSubtitle', 'Track your leadership growth over time — retake every 3 months.')}
           action={<div style={{ display: 'flex', gap: 8 }}>
-            {latest && <button onClick={() => setView('results')} style={{ background: 'var(--card-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>📊 Results</button>}
-            <button onClick={startNew} style={{ background: '#0f2044', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>+ New Assessment</button>
+            {latest && <button onClick={() => setView('results')} style={{ background: 'var(--card-bg)', color: 'var(--text-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 600, fontSize: '0.8rem', cursor: 'pointer' }}>📊 {t('selfAssessment.results', 'Results')}</button>}
+            <button onClick={startNew} style={{ background: '#0f2044', color: 'white', border: 'none', borderRadius: 8, padding: '0.4rem 0.875rem', fontWeight: 700, fontSize: '0.8rem', cursor: 'pointer' }}>+ {t('selfAssessment.newAssessment', 'New Assessment')}</button>
           </div>}
         />
         {/* Total trend */}
         <div className="card" style={{ padding: '1.25rem' }}>
-          <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '0.95rem' }}>Overall Score Trend</p>
-          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 16px' }}>Total accountability score (max 300)</p>
+          <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '0.95rem' }}>{t('selfAssessment.overallScoreTrend', 'Overall Score Trend')}</p>
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 16px' }}>{t('selfAssessment.totalScoreMax300', 'Total accountability score (max 300)')}</p>
           {history.length < 2 ? (
-            <p style={{ color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center', padding: '2rem 0' }}>Complete at least 2 assessments to see your trend.</p>
+            <p style={{ color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center', padding: '2rem 0' }}>{t('selfAssessment.needTwoAssessments', 'Complete at least 2 assessments to see your trend.')}</p>
           ) : (() => {
             const W=520,H=160,PL=40,PR=16,PT=12,PB=36,cW=W-PL-PR,cH=H-PT-PB;
             const px=i=>PL+(i/(history.length-1))*cW, py=v=>PT+cH-(v/300)*cH;
@@ -895,13 +912,13 @@ export default function SelfAssessment() {
         </div>
         {/* Per-practice trend */}
         <div className="card" style={{ padding: '1.25rem' }}>
-          <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '0.95rem' }}>Progress by Leadership Practice</p>
-          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>Score per practice (max 60 each)</p>
+          <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 4px', fontSize: '0.95rem' }}>{t('selfAssessment.progressByPractice', 'Progress by Leadership Practice')}</p>
+          <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', margin: '0 0 4px' }}>{t('selfAssessment.scorePerPracticeMax60', 'Score per practice (max 60 each)')}</p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 14 }}>
             {CATEGORIES.map(c => (
               <div key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
                 <div style={{ width: 12, height: 3, borderRadius: 9999, background: c.color }} />
-                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{c.icon} {c.label}</span>
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{c.icon} {trCat(t, c, 'label')}</span>
               </div>
             ))}
           </div>
@@ -909,8 +926,8 @@ export default function SelfAssessment() {
         </div>
         {/* History list */}
         <div className="card" style={{ padding: '1.25rem' }}>
-          <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px', fontSize: '0.95rem' }}>Assessment History</p>
-          {history.length === 0 ? <p style={{ color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center', padding: '1rem 0' }}>No assessments yet.</p> : (
+          <p style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 12px', fontSize: '0.95rem' }}>{t('selfAssessment.assessmentHistory', 'Assessment History')}</p>
+          {history.length === 0 ? <p style={{ color: '#94a3b8', fontSize: '0.8rem', textAlign: 'center', padding: '1rem 0' }}>{t('selfAssessment.noAssessmentsYet', 'No assessments yet.')}</p> : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[...history].reverse().map((h, idx) => {
                 const d = new Date(h.date+'T00:00:00').toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'});
@@ -924,7 +941,7 @@ export default function SelfAssessment() {
                       </div>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                      <span style={{ fontSize: '0.68rem', fontWeight: 800, color: lvl.color, background: `${lvl.color}18`, borderRadius: 99, padding: '2px 9px' }}>{lvl.label}</span>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 800, color: lvl.color, background: `${lvl.color}18`, borderRadius: 99, padding: '2px 9px' }}>{trLevelLabel(t, `resultLevel_${lvl.key}`, lvl.label)}</span>
                       <span style={{ fontWeight: 900, color: 'var(--text-primary)', fontSize: '1rem' }}>{h.total}<span style={{ color: '#94a3b8', fontWeight: 400, fontSize: '0.72rem' }}>/300</span></span>
                     </div>
                   </div>

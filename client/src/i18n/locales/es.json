@@ -3932,5 +3932,427 @@
         "p0": "¿Preguntas sobre esta Política de Privacidad o sus datos? Contáctenos en hectorg@accountability-app.com."
       }
     }
+  },
+  "selfAssessment": {
+    "scoringGuide": "Guía de Puntuación",
+    "related": "Relacionado",
+    "levels": {
+      "guideLevel_emerging": "1–4  Emergente",
+      "guideLevel_developing": "5–6  En Desarrollo",
+      "guideLevel_strong": "7–9  Sólido",
+      "guideLevel_exemplary": "10   Ejemplar",
+      "guideLevelShort_emerging": "Emergente",
+      "guideLevelShort_developing": "En Desarrollo",
+      "guideLevelShort_strong": "Sólido",
+      "guideLevelShort_exemplary": "Ejemplar",
+      "scaleLevel_emerging": "Emergente",
+      "scaleLevel_developing": "En Desarrollo",
+      "scaleLevel_strong": "Sólido",
+      "scaleLevel_exemplary": "Ejemplar",
+      "resultLevel_exceptional": "Excepcional",
+      "resultLevel_proficient": "Competente",
+      "resultLevel_developing": "En Desarrollo",
+      "resultLevel_emerging": "Emergente"
+    },
+    "categories": {
+      "model": {
+        "label": "Marcar el Estándar",
+        "desc": "Dar ejemplo personal y defender los valores compartidos."
+      },
+      "inspire": {
+        "label": "Encender la Visión",
+        "desc": "Pintar el futuro e involucrar a otros en el sueño."
+      },
+      "challenge": {
+        "label": "Mejorar el Flujo",
+        "desc": "Buscar la innovación y aprender de los contratiempos."
+      },
+      "enable": {
+        "label": "Habilitar al Equipo",
+        "desc": "Fomentar la colaboración y desarrollar capacidades."
+      },
+      "encourage": {
+        "label": "Ganar con Compasión",
+        "desc": "Reconocer las contribuciones y celebrar las victorias."
+      }
+    },
+    "questions": {
+      "1": {
+        "text": "Doy un ejemplo personal de lo que espero de los demás.",
+        "tools": "Evaluación EQ · Tablero de Rendición de Cuentas",
+        "guide": {
+          "emerging": "Los miembros del equipo pueden señalar casos específicos en los que tus propias acciones (asistencia, plazos, controles de calidad) no coincidieron con el estándar que pediste a otros que cumplieran en el último mes.",
+          "developing": "Generalmente sigues los estándares que estableces, pero no has documentado ni mostrado cómo se ve \"el estándar\" — las expectativas viven en tu cabeza en lugar de en un tablero o lista escrita.",
+          "strong": "Tienes una referencia escrita o visual (p. ej., un Tablero de Rendición de Cuentas) que muestra los estándares que te exiges a ti mismo, y puedes citar al menos una situación reciente en la que tomaste la acción más difícil pero correcta en lugar de un atajo.",
+          "exemplary": "Tu Tablero de Rendición de Cuentas y tus compromisos personales son visibles para el equipo, se actualizan semanalmente, y los miembros del equipo te citan de forma independiente como la persona que \"predica con el ejemplo\" sin que se lo pidan."
+        }
+      },
+      "2": {
+        "text": "Hablo sobre las tendencias futuras que influirán en cómo se realiza nuestro trabajo.",
+        "tools": "Constructor de Visión",
+        "guide": {
+          "emerging": "No has discutido ninguna tendencia externa (tecnología, mercado, cliente, regulación) que afecte el trabajo del equipo en las reuniones de equipo durante el último trimestre.",
+          "developing": "Mencionas tendencias de la industria o tecnología ocasionalmente en conversaciones informales, pero no las has conectado con un plan específico o una visión escrita para el equipo.",
+          "strong": "Has usado el Constructor de Visión (o un ejercicio escrito equivalente) para capturar al menos una tendencia futura y su implicación para la dirección del equipo a 3–5 años, y la has compartido en al menos una reunión de equipo.",
+          "exemplary": "Mantienes una visión documentada, actualizada con datos de tendencias actuales, y la referencias en las conversaciones de planificación; los miembros del equipo pueden repetir las tendencias sin que se lo pidas."
+        }
+      },
+      "3": {
+        "text": "Busco oportunidades desafiantes que pongan a prueba mis propias habilidades y capacidades.",
+        "tools": "Evaluación DISC · Desarrollo de Carrera",
+        "guide": {
+          "emerging": "No has asumido una asignación desafiante, un proyecto interfuncional o una nueva responsabilidad fuera de tu zona de confort en los últimos 6–12 meses.",
+          "developing": "Has expresado interés en asumir algo nuevo, pero aún no te has inscrito ni has comenzado una asignación desafiante específica.",
+          "strong": "Tienes una meta de desarrollo documentada (Desarrollo de Carrera o Metas SMART) vinculada a una brecha de habilidades específica identificada mediante una autoevaluación como DISC, y estás trabajando activamente un plan para lograrla.",
+          "exemplary": "Has completado al menos una asignación desafiante significativa en el último año, has documentado las habilidades adquiridas, y ya tienes una próxima meta desafiante en cola en tu plan de Desarrollo de Carrera."
+        }
+      },
+      "4": {
+        "text": "Desarrollo relaciones de cooperación entre las personas con las que trabajo.",
+        "tools": "Registro de Mentoría",
+        "guide": {
+          "emerging": "Los miembros del equipo o compañeros describen las relaciones de trabajo como transaccionales o aisladas; no tienes registro de esfuerzos de colaboración entre equipos.",
+          "developing": "Tienes relaciones individuales amistosas, pero no has conectado intencionalmente a personas que no interactúan de forma natural (p. ej., entre turnos, departamentos o funciones).",
+          "strong": "Has registrado al menos una relación de mentoría activa o un emparejamiento interfuncional en el Registro de Mentoría, con notas sobre cómo está mejorando la colaboración.",
+          "exemplary": "Hay múltiples relaciones de mentoría o entre equipos activas y registradas, y puedes señalar un conflicto o aislamiento específico que se resolvió gracias a una relación que construiste intencionalmente."
+        }
+      },
+      "5": {
+        "text": "Elogio a las personas por un trabajo bien hecho.",
+        "tools": "Buzón de Retroalimentación",
+        "guide": {
+          "emerging": "No existen entradas de reconocimiento en el Buzón de Retroalimentación en los últimos 30 días, y los miembros del equipo dicen no recordar la última vez que recibieron un elogio específico.",
+          "developing": "Ofreces elogios verbalmente en el momento, pero no los has registrado ni documentado en ningún lugar, por lo que el reconocimiento no es visible más allá de la conversación individual.",
+          "strong": "Has registrado 2–3 entradas de reconocimiento específicas e individualizadas en el Buzón de Retroalimentación en el último mes, nombrando la acción exacta que fue elogiada.",
+          "exemplary": "Las entradas de reconocimiento se registran casi semanalmente, cada una vinculada a un comportamiento o resultado específico, y los miembros del equipo citan el reconocimiento como una razón por la que permanecen comprometidos."
+        }
+      },
+      "6": {
+        "text": "Dedico tiempo y energía a asegurarme de que las personas con las que trabajo cumplan con los principios y estándares que hemos acordado.",
+        "tools": "Tablero de Rendición de Cuentas · Línea de Balance",
+        "guide": {
+          "emerging": "No existe un mecanismo de seguimiento para los estándares del equipo; las desviaciones de los principios acordados quedan sin atender durante semanas.",
+          "developing": "Abordas las violaciones de estándares cuando alguien más las señala, pero no monitoreas el cumplimiento de forma proactiva.",
+          "strong": "Mantienes un Tablero de Rendición de Cuentas o una Línea de Balance revisado al menos semanalmente, y das seguimiento directo cuando los elementos se ponen en amarillo o rojo.",
+          "exemplary": "El tablero se revisa con una cadencia fija (p. ej., reunión diaria), los elementos atrasados se abordan en 24–48 horas, y el proceso de recompromiso se usa de manera consistente en lugar de ser descartado."
+        }
+      },
+      "7": {
+        "text": "Describo una imagen convincente de cómo podría ser nuestro futuro.",
+        "tools": "Constructor de Visión",
+        "guide": {
+          "emerging": "No tienes una declaración de visión escrita, y cuando se te pide describir el futuro del equipo en una oración, no puedes hacerlo.",
+          "developing": "Puedes describir el futuro de manera informal en la conversación, pero no lo has escrito ni compartido en un formato para todo el equipo.",
+          "strong": "Existe una declaración de visión en el Constructor de Visión, se ha compartido con el equipo al menos una vez, e incluye un lenguaje específico y tangible en lugar de frases genéricas como \"ser los mejores\".",
+          "exemplary": "La visión está documentada, impresa o exhibida, se referencia en las reuniones de equipo, y puedes describirla con detalle vívido y específico sin notas."
+        }
+      },
+      "8": {
+        "text": "Desafío a las personas a probar formas nuevas e innovadoras de hacer su trabajo.",
+        "tools": "Kit de Herramientas Lean (Registro de Eventos Kaizen)",
+        "guide": {
+          "emerging": "No se ha registrado ninguna idea de proceso nuevo o experimento en el Registro de Eventos Kaizen en el último trimestre; el equipo funciona de la misma manera que hace un año.",
+          "developing": "Estás abierto a nuevas ideas cuando alguien más las trae, pero no le has pedido proactivamente a nadie que pruebe algo diferente.",
+          "strong": "Has iniciado al menos un evento Kaizen o experimento de proceso en el último trimestre y le has pedido por nombre a una persona específica que lidere o pruebe un nuevo método.",
+          "exemplary": "Hay múltiples eventos o experimentos Kaizen activos en el registro, y al menos un miembro del equipo ha sido invitado por nombre a pilotar un nuevo enfoque en el último mes."
+        }
+      },
+      "9": {
+        "text": "Escucho activamente los puntos de vista diversos.",
+        "tools": "Evaluación DISC · Registro de Coaching",
+        "guide": {
+          "emerging": "Las reuniones de equipo están dominadas por tu propia voz; cuando se plantea una opinión diferente, se descarta en la misma conversación en lugar de explorarse.",
+          "developing": "Escuchas cortésmente los puntos de vista diferentes, pero rara vez cambias una decisión o plan en base a lo dicho.",
+          "strong": "Has usado una herramienta como DISC para entender cómo se comunican diferentes personas, y puedes citar una decisión específica en el último mes que cambió gracias a la opinión de alguien con una perspectiva diferente.",
+          "exemplary": "Los puntos de vista diferentes se documentan en las conversaciones del Registro de Coaching, solicitas activamente la opinión de las voces más calladas o disidentes antes de finalizar decisiones, y puedes nombrar múltiples ejemplos recientes de decisiones moldeadas por esa opinión."
+        }
+      },
+      "10": {
+        "text": "Me aseguro de hacerle saber a las personas mi confianza en sus capacidades.",
+        "tools": "Registro de Coaching",
+        "guide": {
+          "emerging": "Ninguna conversación de coaching en el último mes incluyó una declaración directa de confianza en la capacidad de una persona para manejar una tarea o desafío específico.",
+          "developing": "Crees en las capacidades del equipo, pero no lo has dicho directamente a las personas en una conversación documentada.",
+          "strong": "Al menos una entrada del Registro de Coaching en el último mes incluye una declaración específica de confianza vinculada a una tarea real (p. ej., \"le dije a J. que estaba lista para liderar la auditoría\").",
+          "exemplary": "Las entradas del Registro de Coaching incluyen regularmente declaraciones de confianza vinculadas a desafíos específicos y nombrados, y los miembros del equipo pueden repetir un voto de confianza específico que les diste recientemente."
+        }
+      },
+      "11": {
+        "text": "Cumplo con las promesas y compromisos que hago.",
+        "tools": "Tablero de Rendición de Cuentas",
+        "guide": {
+          "emerging": "Hay múltiples elementos de acción atrasados en el Tablero de Rendición de Cuentas sin una nueva fecha de compromiso o explicación, y los miembros del equipo pueden citar una promesa incumplida de tu parte en el último mes.",
+          "developing": "Cumples con la mayoría de tus compromisos, pero tienes al menos un elemento abierto que pasó su fecha sin un recompromiso.",
+          "strong": "Los elementos atrasados se abordan mediante el proceso de recompromiso en pocos días, y puedes señalar cero promesas incumplidas sin resolver en el último mes.",
+          "exemplary": "Tienes un patrón documentado de cumplimiento puntual, usas el modal de recompromiso de forma consistente cuando se pierde una fecha, y comunicas proactivamente antes de que un compromiso se retrase en lugar de después."
+        }
+      },
+      "12": {
+        "text": "Invito a otros a compartir un sueño emocionante del futuro.",
+        "tools": "Constructor de Visión",
+        "guide": {
+          "emerging": "La visión del equipo, si existe, no se ha compartido ni discutido con el equipo en grupo.",
+          "developing": "Has compartido una idea de visión una vez, pero no has invitado al equipo a reaccionar, agregar o apropiarse de ella.",
+          "strong": "Has usado el Constructor de Visión para crear una visión y has tenido al menos una conversación invitando la opinión o reacción del equipo.",
+          "exemplary": "La visión se construyó o se refinó de manera colaborativa, los miembros del equipo pueden describirla con sus propias palabras, y varias personas han hecho referencia a \"nuestra visión\" sin que se les pida en el último trimestre."
+        }
+      },
+      "13": {
+        "text": "Busco fuera de los límites formales de mi organización formas innovadoras de mejorar lo que hacemos.",
+        "tools": "Kit de Herramientas Lean",
+        "guide": {
+          "emerging": "Todas las ideas de proceso provienen del interior del equipo actual; ninguna visita de benchmarking, capacitación externa, artículo de la industria o conversación externa ha influido en un cambio reciente.",
+          "developing": "Ocasionalmente lees o escuchas sobre ideas externas, pero no has llevado una idea externa específica a una entrada del Kit de Herramientas Lean o a un cambio de proceso.",
+          "strong": "Al menos un cambio de proceso o entrada de 5S/Kaizen en el último trimestre se puede rastrear hasta una idea proveniente de fuera del equipo inmediato (una visita de referencia, proveedor, conferencia u otra planta).",
+          "exemplary": "Tienes el hábito continuo de traer ideas externas al Kit de Herramientas Lean, y al menos dos mejoras de proceso recientes son directamente atribuibles a fuentes externas."
+        }
+      },
+      "14": {
+        "text": "Trato a los demás con dignidad y respeto.",
+        "tools": "Evaluación EQ",
+        "guide": {
+          "emerging": "Existen quejas documentadas o retroalimentación informal repetida sobre que interrumpes, descartas o hablas de forma condescendiente a los miembros del equipo.",
+          "developing": "Eres respetuoso la mayor parte del tiempo, pero has tenido al menos un incidente reciente (elevar la voz, corrección pública, sarcasmo) que un miembro del equipo señaló como irrespetuoso.",
+          "strong": "Tu Evaluación EQ muestra puntuaciones sólidas en Empatía y Habilidades Sociales, y no se han reportado incidentes de trato irrespetuoso en el último trimestre.",
+          "exemplary": "Varios miembros del equipo te nombran, sin que se les pida, como alguien que trata a las personas con dignidad constante incluso durante conversaciones difíciles (retroalimentación correctiva, conflicto, despidos)."
+        }
+      },
+      "15": {
+        "text": "Me aseguro de que las personas sean recompensadas de manera creativa por sus contribuciones al éxito de nuestros proyectos.",
+        "tools": "Buzón de Retroalimentación",
+        "guide": {
+          "emerging": "Las finalizaciones de proyectos en el último trimestre no tuvieron reconocimiento o recompensa asociados — ni siquiera un agradecimiento verbal documentado.",
+          "developing": "Existen recompensas, pero son genéricas e idénticas para todos (p. ej., un correo estándar), sin adaptarse a lo que motiva a cada individuo.",
+          "strong": "Al menos una finalización de proyecto en el último trimestre estuvo vinculada a una recompensa específica e individualizada registrada en el Buzón de Retroalimentación, más allá de un agradecimiento genérico.",
+          "exemplary": "Mantienes un patrón de reconocimiento individualizado y creativo vinculado a los hitos del proyecto, y puedes describir qué motiva específicamente a 2–3 miembros del equipo de manera diferente."
+        }
+      },
+      "16": {
+        "text": "Pido retroalimentación sobre cómo mis acciones afectan el desempeño de otras personas.",
+        "tools": "Evaluación EQ · Buzón de Retroalimentación",
+        "guide": {
+          "emerging": "No has solicitado retroalimentación sobre tu propio estilo de liderazgo o gestión a un compañero, colaborador directo o gerente en los últimos 6 meses.",
+          "developing": "Estás abierto a la retroalimentación cuando se te ofrece, pero no la has solicitado proactivamente.",
+          "strong": "Has usado el Buzón de Retroalimentación para solicitar retroalimentación al menos una vez en el último trimestre y puedes describir un cambio específico realizado como resultado.",
+          "exemplary": "Solicitas retroalimentación proactivamente con una cadencia regular (p. ej., trimestral), tienes entradas documentadas en el Buzón de Retroalimentación, y puedes señalar múltiples cambios de comportamiento específicos realizados gracias a lo que aprendiste."
+        }
+      },
+      "17": {
+        "text": "Muestro a otros cómo se pueden realizar sus intereses a largo plazo al sumarse a una visión común.",
+        "tools": "Constructor de Visión · Metas SMART",
+        "guide": {
+          "emerging": "Los miembros del equipo no pueden articular cómo se conecta la visión del equipo u organizacional con sus propias metas de carrera individuales.",
+          "developing": "Has discutido la visión, pero no la has conectado explícitamente con las metas personales o de carrera de ningún individuo.",
+          "strong": "Al menos una Meta SMART o conversación de Desarrollo de Carrera vincula explícitamente la meta de un individuo con la visión compartida del equipo.",
+          "exemplary": "Varios miembros del equipo tienen metas individuales documentadas vinculadas explícitamente a la visión compartida, y pueden explicar con sus propias palabras cómo lograr la visión los ayuda personalmente."
+        }
+      },
+      "18": {
+        "text": "Pregunto \"¿Qué podemos aprender?\" cuando las cosas no salen como se esperaba.",
+        "tools": "Resolución de Problemas (5 Porqués / A3)",
+        "guide": {
+          "emerging": "La última vez que un proyecto o tarea no alcanzó su objetivo, no se realizó ningún análisis de causa raíz (5 Porqués, Espina de Pescado, A3) — el equipo simplemente pasó a la siguiente tarea.",
+          "developing": "Discutes informalmente lo que salió mal, pero no usas una herramienta estructurada para documentar la causa raíz o la lección aprendida.",
+          "strong": "Al menos un fallo reciente (en el último trimestre) tiene una entrada completa de 5 Porqués o A3 en la herramienta de Resolución de Problemas con una causa raíz identificada.",
+          "exemplary": "El análisis estructurado de causa raíz es la respuesta predeterminada ante los fallos, existen múltiples entradas en Resolución de Problemas, y las lecciones aprendidas se comparten con el equipo más amplio, no solo se corrigen en silencio."
+        }
+      },
+      "19": {
+        "text": "Apoyo las decisiones que las personas toman por su cuenta.",
+        "tools": "Desarrollo de Habilidades · Desarrollo de Carrera",
+        "guide": {
+          "emerging": "Anulas o rehaces rutinariamente decisiones tomadas por los miembros del equipo sin discutirlo primero con ellos.",
+          "developing": "Permites que algunas decisiones se mantengan, pero cuestionas o revocas decisiones en áreas donde te sientes personalmente más cómodo.",
+          "strong": "Puedes citar al menos una decisión reciente (en el último mes) tomada de forma independiente por un miembro del equipo que dejaste en pie, aunque tú quizás hubieras elegido diferente.",
+          "exemplary": "Tienes un patrón documentado (mediante calificaciones de Desarrollo de Habilidades o ejemplos directos) de delegar autoridad de decisión real, y los miembros del equipo describen sentirse confiables para tomar decisiones sin necesitar aprobación en todo."
+        }
+      },
+      "20": {
+        "text": "Reconozco públicamente a las personas que ejemplifican el compromiso con los valores compartidos.",
+        "tools": "Frases de Liderazgo · Buzón de Retroalimentación",
+        "guide": {
+          "emerging": "No ha ocurrido ningún reconocimiento público (mención en reunión de equipo, nota publicada, mensaje grupal) vinculado a un valor específico en el último trimestre.",
+          "developing": "El reconocimiento ocurre, pero solo en privado (individualmente), no frente al equipo o grupo de pares.",
+          "strong": "Al menos un reconocimiento público en el último mes nombró específicamente un valor (no solo \"buen trabajo\") y estuvo vinculado a una entrada en el Buzón de Retroalimentación o a una reflexión compartida de una Frase de Liderazgo.",
+          "exemplary": "El reconocimiento público y específico de valores ocurre con una cadencia regular y visible (p. ej., un punto fijo en la agenda), y los miembros del equipo pueden nombrar ejemplos recientes de compañeros reconocidos de esta manera."
+        }
+      },
+      "21": {
+        "text": "Construyo consenso en torno a un conjunto común de valores para dirigir nuestra organización.",
+        "tools": "Tablero de Rendición de Cuentas",
+        "guide": {
+          "emerging": "No existe un conjunto documentado o acordado de valores o principios operativos del equipo; cuando se pregunta, los miembros del equipo dan respuestas diferentes.",
+          "developing": "Los valores existen de manera informal (se entienden pero no se escriben ni se discuten en grupo), por lo que la alineación varía según el individuo.",
+          "strong": "Existe un conjunto escrito de valores o estándares del equipo (p. ej., publicado en el Tablero de Rendición de Cuentas) y se construyó con la aportación del equipo en lugar de ser impuesto.",
+          "exemplary": "Los valores del equipo están documentados, son visibles, se revisan periódicamente con el equipo, y los miembros del equipo pueden recitarlos consistentemente cuando se les pregunta individualmente."
+        }
+      },
+      "22": {
+        "text": "Pinto el \"panorama general\" de lo que aspiramos a lograr.",
+        "tools": "Constructor de Visión",
+        "guide": {
+          "emerging": "Los miembros del equipo describen su trabajo solo en términos de tareas diarias y no pueden conectarlo con una meta u propósito organizacional más amplio.",
+          "developing": "Ocasionalmente haces referencia a la meta más grande, pero comunicas principalmente en términos de tareas y plazos inmediatos.",
+          "strong": "Al menos una comunicación de equipo en el último mes conectó explícitamente el trabajo diario con la visión más amplia documentada en el Constructor de Visión.",
+          "exemplary": "La conexión entre las tareas diarias y el panorama general se hace de manera rutinaria (p. ej., referenciada en la mayoría de las reuniones de equipo), y los miembros del equipo pueden explicar cómo su rol específico contribuye a la meta más grande."
+        }
+      },
+      "23": {
+        "text": "Me aseguro de que establezcamos metas alcanzables, hagamos planes concretos y establezcamos hitos medibles para los proyectos y programas en los que trabajamos.",
+        "tools": "Metas SMART · Línea de Balance",
+        "guide": {
+          "emerging": "Los proyectos se siguen con plazos vagos y sin hitos medibles; el progreso se reporta como \"en curso\" sin datos de respaldo.",
+          "developing": "Existen algunas metas, pero les falta al menos un elemento SMART — no son lo suficientemente específicas, no tienen una métrica clara o no tienen un plazo real.",
+          "strong": "Existen Metas SMART activas para los proyectos actuales con campos específicos y medibles completados, y una Línea de Balance o rastreador de hitos similar muestra datos de progreso reales.",
+          "exemplary": "Todos los proyectos activos tienen Metas SMART completas y seguimiento de hitos actualizado con una cadencia regular, y puedes producir datos de porcentaje de finalización actuales a pedido sin consultar primero con alguien más."
+        }
+      },
+      "24": {
+        "text": "Doy a las personas una gran libertad y capacidad de elección para decidir cómo hacer su trabajo.",
+        "tools": "Desarrollo de Habilidades",
+        "guide": {
+          "emerging": "Especificas el método exacto para completar tareas rutinarias, incluso para miembros del equipo calificados como competentes (4–5) en esa área de habilidad.",
+          "developing": "Permites algo de flexibilidad para los miembros del equipo con experiencia, pero aún dictas el \"cómo\" para la mayoría de las tareas sin importar el nivel de habilidad.",
+          "strong": "Consultas las calificaciones de Desarrollo de Habilidades para decidir cuánta autonomía otorgar — las habilidades mejor calificadas reciben más libertad en el método, no solo en el resultado.",
+          "exemplary": "La autonomía se calibra y documenta según el nivel de habilidad; a los miembros del equipo con calificaciones de competencia de 4+ se les dice explícitamente que pueden elegir su propio enfoque, y pueden describir un caso reciente en el que ejercieron esa libertad."
+        }
+      },
+      "25": {
+        "text": "Busco formas de celebrar los logros.",
+        "tools": "Registro de Coaching · Buzón de Retroalimentación",
+        "guide": {
+          "emerging": "El último hito importante o finalización de proyecto pasó sin ningún reconocimiento más allá de pasar a la siguiente tarea.",
+          "developing": "Las celebraciones ocurren, pero solo para victorias muy grandes (fin de un proyecto importante), no para hitos menores a lo largo del camino.",
+          "strong": "Al menos una celebración de hito (almuerzo de equipo, mención, nota) en el último mes está documentada en el Registro de Coaching o el Buzón de Retroalimentación, vinculada a un logro específico.",
+          "exemplary": "La celebración es una práctica regular vinculada tanto a hitos pequeños como grandes, documentada de forma consistente, y los miembros del equipo describen las celebraciones como genuinas en lugar de superficiales."
+        }
+      },
+      "26": {
+        "text": "Tengo claridad sobre mi filosofía de liderazgo.",
+        "tools": "Constructor de Visión",
+        "guide": {
+          "emerging": "No tienes una declaración escrita de tu filosofía de liderazgo y no puedes articular una en menos de un minuto cuando se te pregunta directamente.",
+          "developing": "Tienes ideas informales sobre tu enfoque de liderazgo, pero nunca las has escrito ni compartido con el equipo.",
+          "strong": "Existe una filosofía de liderazgo o visión personal escrita en el Constructor de Visión, que cubre aproximadamente los próximos 3–5 años, aunque aún no se haya compartido ampliamente.",
+          "exemplary": "Tu filosofía de liderazgo está escrita, se ha compartido con el equipo al menos una vez, y puedes explicar decisiones específicas que has tomado guiadas por ella."
+        }
+      },
+      "27": {
+        "text": "Hablo con convicción genuina sobre el significado y propósito superior de nuestro trabajo.",
+        "tools": "Mindfulness · Constructor de Visión",
+        "guide": {
+          "emerging": "Describes el trabajo únicamente en términos de producción, cuota o plazos, sin mencionar un propósito más amplio en las comunicaciones del equipo.",
+          "developing": "Ocasionalmente haces referencia al propósito, pero el lenguaje se siente genérico (p. ej., \"hacemos la diferencia\") sin detalles vinculados al trabajo real.",
+          "strong": "Has usado Mindfulness/autorreflexión o el Constructor de Visión para articular una declaración de propósito específica, y la has comunicado al equipo con lenguaje concreto al menos una vez recientemente.",
+          "exemplary": "El lenguaje orientado al propósito es una parte constante de cómo te comunicas, vinculado a resultados específicos (p. ej., \"esto reduce el defecto que causó la queja del cliente del año pasado\"), y los miembros del equipo pueden repetir el propósito con sus propias palabras."
+        }
+      },
+      "28": {
+        "text": "Experimento y asumo riesgos, incluso cuando existe la posibilidad de fracasar.",
+        "tools": "Kit de Herramientas Lean (Kaizen) · Resolución de Problemas",
+        "guide": {
+          "emerging": "No se ha pilotado ningún enfoque nuevo en los últimos dos trimestres; todo cambio de proceso esperó la aprobación externa o un mandato antes de suceder.",
+          "developing": "Apoyas los experimentos de otros, pero no has iniciado ni asumido personalmente un piloto que pudiera fracasar.",
+          "strong": "Al menos un evento Kaizen o piloto en el último trimestre fue iniciado personalmente por ti, incluyendo uno que no tuvo éxito total y se registró como aprendizaje.",
+          "exemplary": "Tienes un patrón continuo de iniciar experimentos (múltiples entradas en el Registro de Eventos Kaizen), discutes abiertamente los intentos fallidos como aprendizaje en lugar de ocultarlos, y puedes citar un fracaso específico que llevó a un mejor resultado."
+        }
+      },
+      "29": {
+        "text": "Me aseguro de que las personas crezcan en sus trabajos aprendiendo nuevas habilidades y desarrollándose.",
+        "tools": "Centro de Capacitación · Desarrollo de Habilidades · Desarrollo de Carrera",
+        "guide": {
+          "emerging": "Ningún miembro del equipo ha completado un elemento de capacitación ni ha actualizado una calificación de habilidades en el último trimestre; no hay un plan activo de Desarrollo de Carrera para nadie.",
+          "developing": "La capacitación ocurre, pero es genérica y solo obligatoria (capacitación de cumplimiento), sin un plan de desarrollo individualizado vinculado a una brecha de habilidad específica.",
+          "strong": "Al menos un miembro del equipo tiene un plan activo e individualizado en el Centro de Capacitación o Desarrollo de Carrera vinculado a una brecha de habilidad específica identificada en Desarrollo de Habilidades.",
+          "exemplary": "Cada colaborador directo tiene un plan de desarrollo individualizado y actual con progreso rastreado, y puedes nombrar las habilidades específicas que cada persona ha adquirido en los últimos 6 meses."
+        }
+      },
+      "30": {
+        "text": "Doy a los miembros del equipo mucho aprecio y apoyo por sus contribuciones.",
+        "tools": "Registro de Coaching · Buzón de Retroalimentación",
+        "guide": {
+          "emerging": "Los miembros del equipo reportan sentir que sus contribuciones pasan desapercibidas; no existen entradas de aprecio en el Registro de Coaching o el Buzón de Retroalimentación en el último mes.",
+          "developing": "El aprecio se ofrece, pero de manera inconsistente — algunos miembros del equipo lo reciben regularmente mientras que otros reportan escucharlo rara vez.",
+          "strong": "El Registro de Coaching o el Buzón de Retroalimentación muestran entradas de aprecio para la mayoría de los miembros del equipo en el último mes, no solo para tus favoritos habituales.",
+          "exemplary": "El aprecio y el apoyo se distribuyen de manera consistente en todo el equipo (documentado), e incluso los colaboradores más callados o de menor visibilidad tienen ejemplos específicos y recientes de haber sido reconocidos."
+        }
+      }
+    },
+    "scaleSub": {
+      "emerging": "Prom. 1–4 por pregunta",
+      "developing": "Prom. 5–6 por pregunta",
+      "strong": "Prom. 7–9 por pregunta",
+      "exemplary": "Prom. 10 por pregunta"
+    },
+    "actualRecentActions": "acciones reales recientes",
+    "answeredOf6": "{{n}}/6 respondidas",
+    "assessmentCompletedOne": "{{count}} evaluación completada",
+    "assessmentHistory": "Historial de Evaluaciones",
+    "assessmentsCompletedMany": "{{count}} evaluaciones completadas",
+    "cancel": "Cancelar",
+    "completedSummaryMany": "Completada el {{date}} · {{count}} evaluaciones en total",
+    "completedSummaryOne": "Completada el {{date}} · {{count}} evaluación en total",
+    "downloadPdf": "Descargar PDF",
+    "eachPracticeNote": "Cada práctica se puntúa sobre 60 (6 preguntas × 10). Repite la evaluación cada 3 meses para seguir tu crecimiento como líder.",
+    "guidePerQuestion": "Guía de puntuación por pregunta",
+    "hide": "Ocultar",
+    "inventoryDescPost": "con ejemplos concretos para ayudarte a calibrar tu respuesta con precisión — basados en acciones reales, no en intenciones.",
+    "inventoryDescPre": "Evalúate honestamente en 30 afirmaciones de comportamiento de rendición de cuentas en las 5 prácticas principales. Cada pregunta incluye una",
+    "inventoryTitle": "Inventario de Prácticas de Rendición de Cuentas",
+    "lastAssessment": "Última evaluación: {{date}}",
+    "needTwoAssessments": "Completa al menos 2 evaluaciones para ver tu tendencia.",
+    "needTwoTrend": "Completa al menos 2 evaluaciones para ver tu tendencia de progreso.",
+    "needsAnswerMany": "{{n}} preguntas todavía necesitan una respuesta:",
+    "needsAnswerOne": "{{n}} pregunta todavía necesita una respuesta:",
+    "newAssessment": "Nueva Evaluación",
+    "nextPractice": "Siguiente Práctica",
+    "noAssessmentsYet": "Aún no hay evaluaciones.",
+    "outOf300": "de 300",
+    "overallLevel": "Nivel general",
+    "overallScoreTrend": "Tendencia de Puntuación General",
+    "pageSubtitle": "30 afirmaciones de comportamiento · 5 prácticas de liderazgo · Puntuado 1–10",
+    "pageTitle": "Autoevaluación de Rendición de Cuentas",
+    "percentComplete": "{{pct}}% completo",
+    "practiceOfTotal": "Práctica {{n}} de 5",
+    "practiceProfile": "Perfil de la Práctica",
+    "previous": "Anterior",
+    "progress": "Progreso",
+    "progressByPractice": "Progreso por Práctica de Liderazgo",
+    "progressSubtitle": "Sigue tu crecimiento como líder a lo largo del tiempo — repite la evaluación cada 3 meses.",
+    "progressTitle": "Progreso de la Evaluación",
+    "questionOfTotal": "Pregunta {{n}} de 30",
+    "questionsScale": "30 preguntas · escala 1–10",
+    "ratingScaleHint": "1 = Rara vez · 10 = Casi siempre",
+    "results": "Resultados",
+    "resultsTitle": "Resultados de la Evaluación",
+    "retake": "Repetir",
+    "retakeAssessment": "Repetir Evaluación",
+    "retakeEvery3": "Repetir cada 3 meses",
+    "saveResults": "💾 Guardar Resultados ({{n}}/30)",
+    "saving": "⏳ Guardando...",
+    "scoreByPractice": "Puntuación por Práctica de Liderazgo",
+    "scorePerPractice": "Puntuación por práctica de liderazgo",
+    "scorePerPracticeMax60": "Puntuación por práctica (máx. 60 cada una)",
+    "scoreScaleTitle": "Escala de Puntuación del Líder de Rendición de Cuentas · de 300 puntos",
+    "startAssessment": "Comenzar Evaluación",
+    "timeEstimate": "~10–15 minutos",
+    "tipBodyMid": "en cualquier pregunta para ver ejemplos concretos de comportamiento para cada rango de puntuación. Evalúa según tus",
+    "tipBodyPost": ", no tus intenciones.",
+    "tipBodyPre": "Haz clic en",
+    "tipLabel": "Consejo:",
+    "toast": {
+      "answerAll": "Por favor responde las 30 preguntas antes de guardar.",
+      "saveFailed": "No se pudo guardar. Inténtalo de nuevo.",
+      "saved": "¡Evaluación guardada!"
+    },
+    "top5Opportunities": "Las 5 Mejores Oportunidades",
+    "top5Strengths": "Las 5 Mayores Fortalezas",
+    "totalScore": "Puntuación Total",
+    "totalScoreMax300": "Puntuación total de rendición de cuentas (máx. 300)",
+    "totalScoreSummary": "Puntuación total: {{total}}/300",
+    "view": "Ver",
+    "viewProgress": "Ver Progreso",
+    "viewResults": "Ver Resultados",
+    "viewScoringGuide": "Ver Guía de Puntuación"
   }
 }
