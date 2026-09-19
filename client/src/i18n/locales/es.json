@@ -7,12 +7,12 @@
   "dashboard": {
     "leaderFallback": "Líder",
     "welcomeBack": "Bienvenido de nuevo,",
-    "trackSubtitle": "Da seguimiento a tu responsabilidad y crecimiento",
+    "trackSubtitle": "Da seguimiento a tu Accountability y crecimiento",
     "viewMyScore": "Ver mi puntuación",
     "mySmartGoals": "Mis metas SMART",
     "selfAssessment": "Autoevaluación",
     "plan": "Plan",
-    "accountabilityScore": "Puntuación de responsabilidad",
+    "accountabilityScore": "Puntuación de Accountability",
     "outOf100": "de 100",
     "toolsCount": "{{count}} herramientas",
     "skillsRequest": {
@@ -46,7 +46,7 @@
       "subtitle": "Cuánto tiempo has usado la app cada día, últimas 4 semanas (lunes–domingo)."
     },
     "stats": {
-      "score": "Puntuación de responsabilidad",
+      "score": "Puntuación de Accountability",
       "scoreSub": "calculada por la app",
       "activeModules": "Módulos activos",
       "activeModulesSub": "herramientas disponibles",
@@ -105,7 +105,7 @@
     },
     "tip": {
       "label": "Consejo",
-      "text": "Usa más herramientas de forma constante para aumentar tu puntuación de responsabilidad."
+      "text": "Usa más herramientas de forma constante para aumentar tu Puntuación de Accountability."
     },
     "team": {
       "title": "Mi Equipo",
@@ -179,7 +179,7 @@
     }
   },
   "visualBoard": {
-    "title": "Gestión Visual — El Tablero de Responsabilidad",
+    "title": "Gestión Visual — El Tablero de Accountability",
     "subtitle": "Rastreador de escalamiento — el estado se actualiza automáticamente según la fecha de vencimiento",
     "downloadAll": "Descargar Todo (Excel)",
     "downloadClosed": "Descargar Cerradas (Excel)",
@@ -253,7 +253,7 @@
       "title": "Acción Vencida — Se Requiere Recompromiso",
       "overdueInfo": "{{days}}d vencida · Originalmente vencía el {{date}}",
       "deductedBold": "Se han deducido −5 puntos",
-      "deductedRest": "de tu puntuación de responsabilidad por vencerse. Establece una nueva fecha para mantener esta acción activa.",
+      "deductedRest": "de tu Puntuación de Accountability por vencerse. Establece una nueva fecha para mantener esta acción activa.",
       "newDateLabel": "Nueva Fecha de Compromiso",
       "commit": "Comprometerse a la Nueva Fecha",
       "dismiss": "Descartar"
@@ -281,8 +281,8 @@
     }
   },
   "smartGoals": {
-    "title": "Metas SMART — Midiendo la Responsabilidad",
-    "subtitle": "Establece metas con propósito que impulsen la responsabilidad. Cada meta contribuye a tu Puntuación de Responsabilidad.",
+    "title": "Metas SMART — Midiendo el Accountability",
+    "subtitle": "Establece metas con propósito que impulsen el Accountability. Cada meta contribuye a tu Puntuación de Accountability.",
     "pdf": "PDF",
     "newGoal": "Nueva Meta SMART",
     "status": {
@@ -343,7 +343,7 @@
     "clearFilter": "Limpiar filtro",
     "loading": "Cargando metas...",
     "emptyTitle": "Aún no hay metas SMART",
-    "emptySubtitle": "Crea tu primera meta para comenzar a construir tu Puntuación de Responsabilidad.",
+    "emptySubtitle": "Crea tu primera meta para comenzar a construir tu Puntuación de Accountability.",
     "createFirst": "Crear Primera Meta",
     "noneForStatus": "No hay metas {{status}}.",
     "returnedBy": "Devuelta por {{name}}",
@@ -532,7 +532,7 @@
     "addRow": "Agregar Fila",
     "addTaskRow": "Agregar Fila de Tarea",
     "footerHint": "Haz clic en cualquier encabezado de fecha para establecer una fecha de vencimiento · Haz clic en \"+ Col\" para agregar más columnas de fecha · Haz clic en ✏️ para editar una tarea · Haz clic en el nombre de la LOB arriba para renombrar",
-    "title": "Línea de Balance (LOB) — Responsabilidad al Detalle",
+    "title": "Línea de Balance (LOB) — Accountability al Detalle",
     "subtitle": "Planificación visual de producción y seguimiento de cronograma",
     "newLobDefaultName": "Nueva Línea de Balance",
     "toast": {
@@ -554,7 +554,7 @@
     }
   },
   "urgency": {
-    "title": "Sentido de Urgencia — El Ritmo de la Responsabilidad",
+    "title": "Sentido de Urgencia — El Ritmo del Accountability",
     "subtitle": "Herramientas y reflexión para la urgencia individual y de equipo",
     "ptsEarnedToday": "pts ganados hoy",
     "badge": {
@@ -620,11 +620,11 @@
       },
       "timeBoxEverything": {
         "title": "Ponle Límite de Tiempo a Todo",
-        "desc": "Poner límites de tiempo genera urgencia al imponer un tope duro en cada tarea. Una cuenta regresiva visible — típicamente 25 minutos (Pomodoro) — activa presión de plazo, elimina la deriva abierta y hace visible la procrastinación en tiempo real. Cada sprint termina con un momento claro de hecho/no hecho, manteniendo la responsabilidad activa todo el día."
+        "desc": "Poner límites de tiempo genera urgencia al imponer un tope duro en cada tarea. Una cuenta regresiva visible — típicamente 25 minutos (Pomodoro) — activa presión de plazo, elimina la deriva abierta y hace visible la procrastinación en tiempo real. Cada sprint termina con un momento claro de hecho/no hecho, manteniendo el Accountability activo todo el día."
       },
       "followUpDelegated": {
         "title": "Da Seguimiento a las Tareas Delegadas",
-        "desc": "Delegar sin seguimiento es solo esperanza. Una vez que entregas una tarea, tu trabajo pasa a asegurar que se cumpla. Establece un punto de control claro en el momento de delegar, no después. Un breve \"¿Cómo vamos con esto?\" mantiene viva la responsabilidad, saca a la luz obstáculos temprano y señala que tomas el compromiso en serio."
+        "desc": "Delegar sin seguimiento es solo esperanza. Una vez que entregas una tarea, tu trabajo pasa a asegurar que se cumpla. Establece un punto de control claro en el momento de delegar, no después. Un breve \"¿Cómo vamos con esto?\" mantiene vivo el Accountability, saca a la luz obstáculos temprano y señala que tomas el compromiso en serio."
       },
       "createMomentum": {
         "title": "Crea Impulso",
@@ -640,7 +640,7 @@
       },
       "useVisualBoards": {
         "title": "Usa Tableros Visuales",
-        "desc": "Haz visible el progreso. Cuando los equipos ven estancamiento, se autocorrigen más rápido. Un tablero compartido donde el trabajo avanza — o se estanca — a la vista crea responsabilidad natural entre compañeros y mantiene viva la urgencia sin microgestión."
+        "desc": "Haz visible el progreso. Cuando los equipos ven estancamiento, se autocorrigen más rápido. Un tablero compartido donde el trabajo avanza — o se estanca — a la vista crea Accountability natural entre compañeros y mantiene viva la urgencia sin microgestión."
       },
       "dailyStandups": {
         "title": "Reuniones Diarias de Pie",
@@ -668,7 +668,7 @@
       "¿Hay obstáculos en mi equipo ahora mismo que podría eliminar hoy — y qué me impide hacerlo de inmediato?",
       "¿Cuál de mis reportes directos se beneficiaría de una conversación sobre urgencia esta semana, y qué comportamiento específico necesita cambiar?",
       "¿Mi equipo tiene un entendimiento visible y compartido de qué es lo más urgente ahora, o cada quien trabaja con su propia lista de prioridades?",
-      "¿Qué tan rápido di seguimiento al trabajo delegado esta semana — y qué mensaje envió eso a mi equipo sobre la responsabilidad?",
+      "¿Qué tan rápido di seguimiento al trabajo delegado esta semana — y qué mensaje envió eso a mi equipo sobre el Accountability?",
       "¿Estoy celebrando las victorias de velocidad en mi equipo, o solo noto cuando se pierden los plazos?"
     ],
     "toast": {
@@ -685,7 +685,7 @@
     }
   },
   "eqOpex": {
-    "title": "Herramientas OpEx — Rendición de Cuentas en Acción",
+    "title": "Herramientas OpEx — Accountability en Acción",
     "subtitle": "Lista de verificación de Excelencia Operacional y Tablero SQDIP",
     "sqdipBoard": "Tablero SQDIP",
     "opexChecklist": "Lista OpEx",
@@ -785,7 +785,7 @@
           "Se completan caminatas gemba diarias",
           "Se realizan conversaciones de coaching semanalmente",
           "Se da reconocimiento con frecuencia y de forma específica",
-          "Las conversaciones de rendición de cuentas se manejan con prontitud"
+          "Las conversaciones de Accountability se manejan con prontitud"
         ]
       },
       "customerFocus": {
@@ -800,7 +800,7 @@
     }
   },
   "vision": {
-    "title": "Constructor de Visión — El Marco de la Rendición de Cuentas",
+    "title": "Constructor de Visión — El Marco del Accountability",
     "subtitle": "Crea una declaración de visión personal o de equipo convincente",
     "reviewReminderBold": "Se recomienda encarecidamente revisar su Visión Personal y de Equipo al menos una vez al año",
     "reviewReminderRest": "revise la declaración, confirme que sigue en el buen camino y edítela si sus prioridades han cambiado. Le recordaremos aquí a partir de 30 días antes del aniversario de 12 meses de cada visión.",
@@ -889,7 +889,7 @@
         },
         "values": {
           "question": "¿Qué valores son innegociables en cómo lidero?",
-          "placeholder": "ej. Integridad, transparencia, rendición de cuentas..."
+          "placeholder": "ej. Integridad, transparencia, Accountability..."
         },
         "successLooks": {
           "question": "¿Cómo se ve el éxito para mi carrera en 3 años?",
@@ -911,7 +911,7 @@
         },
         "values": {
           "question": "¿Qué valores son innegociables en cómo operamos?",
-          "placeholder": "ej. Rendición de cuentas, confianza, mejora continua..."
+          "placeholder": "ej. Accountability, confianza, mejora continua..."
         },
         "successLooks": {
           "question": "¿Cómo se ve el éxito para nuestro equipo en 3 años?",
@@ -925,7 +925,7 @@
     }
   },
   "mindfulness": {
-    "title": "Respiración y Mindfulness — La Rendición de Cuentas Comienza en Calma",
+    "title": "Respiración y Mindfulness — Accountability Comienza en Calma",
     "subtitle": "Ejercicios de respiración guiada y herramientas de mindfulness para líderes",
     "exercises": {
       "boxBreathing": {
@@ -1018,11 +1018,11 @@
       "17": "Desarrollar a otros no está separado de mi trabajo — es mi trabajo.",
       "18": "Veo a la persona detrás del desempeño.",
       "19": "Reconozco el esfuerzo tan generosamente como espero resultados.",
-      "20": "La compasión y la rendición de cuentas se fortalecen cuando lideran juntas."
+      "20": "La compasión y la Accountability se fortalecen cuando lideran juntas."
     }
   },
   "lean": {
-    "pageTitle": "Kit Lean — Responsabilidad sin desperdicio",
+    "pageTitle": "Kit Lean — Accountability sin Desperdicio",
     "pageSubtitle": "Checklist 5S, identificación de desperdicios y bitácora de eventos Kaizen",
     "tabs": {
       "5s": "Auditoría 5S",
@@ -1482,7 +1482,7 @@
     }
   },
   "disc": {
-    "title": "Evaluación DISC — La Rendición de Cuentas Comienza Contigo",
+    "title": "Evaluación DISC — Accountability Comienza Contigo",
     "subtitle": "Comprende tu estilo de comportamiento y tendencias de liderazgo — 20 preguntas en 5 dimensiones",
     "scoreExpired": "Puntuación DISC Vencida — 5 puntos deducidos",
     "lastAssessmentWasAgo": "Tu última evaluación fue hace",
@@ -1737,7 +1737,7 @@
     }
   },
   "problemSolving": {
-    "pageTitle": "Resolución de Problemas — Responsabilidad que Resuelve",
+    "pageTitle": "Resolución de Problemas — Accountability que Resuelve",
     "pageSubtitle": "5 Por Qués, Diagrama de Ishikawa y Plantilla A3",
     "tools": {
       "fiveWhys": "5 Por Qués",
@@ -1977,10 +1977,10 @@
       "quickActionDesc": "La solución es una tarea única y clara — un responsable, un paso, hecho en días o semanas.",
       "complexProject": "Proyecto Complejo",
       "complexProjectDesc": "La solución involucra a varias personas, fases o incógnitas — necesita planificación estructurada.",
-      "goToBoard": "Ir al Tablero de Responsabilidad",
+      "goToBoard": "Ir al Tablero de Accountability",
       "boardDesc": "Crea una nueva tarjeta de acción directamente vinculada a tu causa raíz. Define un responsable, una fecha límite y da seguimiento hasta completarla en tu tablero.",
       "rootCauseToFix": "Causa raíz a resolver: ",
-      "openBoard": "Abrir el Tablero de Responsabilidad →",
+      "openBoard": "Abrir el Tablero de Accountability →",
       "goToA3": "Ir a la Plantilla A3 de Resolución de Problemas",
       "a3Desc": "El A3 está diseñado para soluciones complejas. Tus respuestas de los 5 Por Qués llenarán automáticamente tres secciones — solo tienes que completar el resto.",
       "rowTitle": "Título",
@@ -2061,7 +2061,7 @@
       "exampleDesc": "Un A3 completado que muestra un proyecto real de reducción de defectos de manufactura — mismo formato, mismas secciones.",
       "viewExample": "Ver Ejemplo Resuelto →",
       "section1Title": "Título, Responsable, Equipo y Fecha",
-      "section1Hint1": "Enmarca la responsabilidad antes que nada — quién es dueño de esto, quién está involucrado, y cuándo comenzó.",
+      "section1Hint1": "Enmarca el Accountability antes que nada — quién es dueño de esto, quién está involucrado, y cuándo comenzó.",
       "section1Hint2": "Usa el título más corto posible que describa el",
       "problem": "problema",
       "notSolution": ", no la solución.",
@@ -2150,7 +2150,7 @@
     }
   },
   "skills": {
-    "pageTitle": "Evaluación de Habilidades — Conciencia de la Rendición de Cuentas",
+    "pageTitle": "Evaluación de Habilidades — Conciencia del Accountability",
     "pageSubtitle": "Autoevaluación y calificaciones de pares en los dominios de habilidades",
     "edit": "Editar",
     "saveAssessment": "Guardar Evaluación",
@@ -2255,7 +2255,7 @@
       "communication": "Comunicación",
       "delegation": "Delegación",
       "changeManagement": "Gestión del Cambio",
-      "accountabilityFollowUp": "Rendición de Cuentas y Seguimiento",
+      "accountabilityFollowUp": "Accountability y Seguimiento",
       "visionSetting": "Definición de Visión",
       "leanPrinciples": "Principios Lean",
       "dataAnalysis": "Análisis de Datos",
@@ -2398,7 +2398,7 @@
     }
   },
   "training": {
-    "title": "Centro de Capacitación — Aprendizaje Continuo de Rendición de Cuentas",
+    "title": "Centro de Capacitación — Aprendizaje Continuo de Accountability",
     "subtitle": "Seguimiento del progreso de aprendizaje y certificaciones",
     "addTraining": "Agregar Capacitación",
     "overallCompletion": "Finalización General",
@@ -2460,7 +2460,7 @@
   "mentoring": {
     "pageTitle": "Mentoría",
     "loading": "Cargando…",
-    "title": "Mentoría — Rendición de Cuentas, Multiplicada",
+    "title": "Mentoría — Accountability, Multiplicado",
     "subtitle": "Propiedad del mentorizado, guiado por el mentor. Elige quién te ayuda a crecer, establece metas en los tres pilares y sigue el recorrido.",
     "closed": "cerrado",
     "sessAbbrev": "{{count}} ses.",
@@ -2489,7 +2489,7 @@
     "commitmentConfirmed": "Compromiso confirmado por ambas partes",
     "section2": {
       "title": "Establecer las Metas",
-      "subtitle": "1-3 metas para este ciclo, comenzando con lo que deseas. Metas escritas, específicas y medibles generan rendición de cuentas."
+      "subtitle": "1-3 metas para este ciclo, comenzando con lo que deseas. Metas escritas, específicas y medibles generan Accountability."
     },
     "goal": "Meta",
     "goalPlaceholder": "¿Qué vas a desarrollar?",
@@ -2623,7 +2623,7 @@
   "career": {
     "pageTitle": "Plan de Desarrollo Profesional",
     "loading": "Cargando…",
-    "title": "Desarrollo Profesional — Responsabilidad para el Crecimiento",
+    "title": "Desarrollo Profesional — Accountability para el Crecimiento",
     "subtitle": "Propiedad del empleado, alineado con la empresa. Comienza con dónde estás, define hacia dónde quieres ir y construye el plan en la intersección.",
     "planPts": "Pts del plan",
     "fullPoints": "10 puntos completos — sigue registrando notas de hitos",
@@ -2720,7 +2720,7 @@
       "interpersonal": "Interpersonal"
     },
     "pillarHints": {
-      "leadership": "toma de decisiones, delegación, coaching, responsabilidad",
+      "leadership": "toma de decisiones, delegación, coaching, Accountability",
       "technical": "competencias específicas del puesto, herramientas lean, sistemas de calidad, conocimiento de procesos",
       "interpersonal": "comunicación, empatía, resolución de conflictos, trabajo en equipo"
     },
@@ -2780,7 +2780,7 @@
     }
   },
   "feedback": {
-    "pageTitle": "Buzón de Retroalimentación — Responsabilidad con Cuidado",
+    "pageTitle": "Buzón de Retroalimentación — Accountability con Cuidado",
     "pageSubtitle": "Retroalimentación anónima o con nombre de compañeros, supervisores y líderes",
     "requestFeedback": "Solicitar Retroalimentación",
     "giveFeedback": "Dar Retroalimentación",
@@ -2900,7 +2900,7 @@
     }
   },
   "coaching": {
-    "pageTitle": "Registro de Coaching — Responsabilidad que Apoya",
+    "pageTitle": "Registro de Coaching — Accountability que Apoya",
     "pageSubtitle": "Documenta sesiones, notas y elementos de acción",
     "logSession": "+ Registrar Sesión",
     "stats": {
@@ -3016,7 +3016,7 @@
         "watch": "Si las notas solo describen lo que hicieron otros (\"llegó tarde\", \"no se comunicó\"), redirige — pon su comportamiento en el registro. \"Eso es lo que hicieron ellos. ¿Qué hiciste tú, o no hiciste, en respuesta?\""
       },
       "actionItems": {
-        "goal": "Cada fila es un compromiso específico con un nombre y una fecha. Este es el registro que abres en la próxima sesión — es donde la responsabilidad se hace visible.",
+        "goal": "Cada fila es un compromiso específico con un nombre y una fecha. Este es el registro que abres en la próxima sesión — es donde el Accountability se hace visible.",
         "questions": [
           "Acción: Escribe un verbo — ¿qué sucederá físicamente? No \"comunicarse mejor\" sino \"dar retroalimentación directa dentro de las 24 horas de una fecha límite incumplida\".",
           "Responsable: Casi siempre la persona asesorada. Si está en blanco, nadie es dueño de ello.",
@@ -3055,7 +3055,7 @@
   },
   "quotes": {
     "header": {
-      "title": "Frases de Liderazgo — La Responsabilidad Inspira",
+      "title": "Frases de Liderazgo — Accountability Inspira",
       "subtitle": "Inspiración diaria para líderes de alto rendimiento",
       "allQuotes": "Todas las Frases",
       "favorites": "Favoritos ({{count}})"
@@ -3161,7 +3161,7 @@
         "author": "Arnold Glasow"
       },
       "q11": {
-        "text": "La responsabilidad es el pegamento que une el compromiso con el resultado.",
+        "text": "Accountability es el pegamento que une el compromiso con el resultado.",
         "author": "Bob Proctor"
       },
       "q12": {
@@ -3181,7 +3181,7 @@
         "author": "Kenneth Blanchard"
       },
       "q16": {
-        "text": "La responsabilidad genera capacidad de respuesta.",
+        "text": "Accountability genera capacidad de respuesta.",
         "author": "Stephen R. Covey"
       },
       "q17": {
@@ -3227,7 +3227,7 @@
     }
   },
   "eqAssessment": {
-    "title": "Evaluación de Inteligencia Emocional (IE) — La Responsabilidad en Acción",
+    "title": "Evaluación de Inteligencia Emocional (IE) — Accountability en Acción",
     "subtitle": "Autoevaluación de Inteligencia Emocional y plan de desarrollo de 90 días",
     "scale": {
       "1": {
@@ -3614,7 +3614,7 @@
     "fullAccessNote": "Tienes acceso completo a todas las funciones de la aplicación.",
     "currentPlan": "Plan Actual",
     "expertCoachingTitle": "Coaching Experto — Exclusivo de Todo Incluido",
-    "expertCoachingDesc": "Trabaja uno a uno con coaches maestros de liderazgo. Sesiones personalizadas, retroalimentación accionable y rendición de cuentas diseñada en torno a tus metas específicas.",
+    "expertCoachingDesc": "Trabaja uno a uno con coaches maestros de liderazgo. Sesiones personalizadas, retroalimentación accionable y Accountability diseñada en torno a tus metas específicas.",
     "comingSoon": "Próximamente",
     "howSubscriptionsWork": "Cómo funcionan las suscripciones",
     "tags": {
@@ -3644,7 +3644,7 @@
         "period": "para siempre",
         "cta": "Plan Actual",
         "features": {
-          "0": "✅ Panel y Puntuación de Rendición de Cuentas",
+          "0": "✅ Panel y Puntuación de Accountability",
           "1": "✅ Registro de Coaching",
           "2": "✅ Buzón de Retroalimentación",
           "3": "✅ Frases de Liderazgo",
@@ -3663,7 +3663,7 @@
         "cta": "Actualizar a Premium",
         "features": {
           "0": "✅ Todo lo del plan Gratis",
-          "1": "✅ El Tablero de Rendición de Cuentas",
+          "1": "✅ El Tablero de Accountability",
           "2": "✅ Línea de Balance",
           "3": "✅ Sentido de Urgencia",
           "4": "✅ Herramientas OpEx",
@@ -3810,8 +3810,8 @@
       },
       "s3": {
         "heading": "4. Descripción del Servicio",
-        "p0": "El Servicio es una plataforma de rendición de cuentas de liderazgo que proporciona herramientas para el establecimiento de metas, autoevaluación y evaluación entre pares, registros de coaching y mentoría, planificación de carrera y actividades relacionadas, junto con una \"Puntuación de Rendición de Cuentas\" calculada automáticamente, paneles y reportes periódicos.",
-        "p1": "IMPORTANTE: La Puntuación de Rendición de Cuentas, las evaluaciones (incluidas las herramientas DISC, de Inteligencia Emocional y de habilidades), los paneles y los reportes son solo herramientas informativas y de desarrollo. No son evaluaciones clínicas, de diagnóstico o profesionales y no están destinadas a ser la única base para ninguna decisión de contratación, promoción, compensación, disciplinaria o de empleo. Usted es el único responsable de las decisiones que tome utilizando el Servicio.",
+        "p0": "El Servicio es una plataforma de Accountability de liderazgo que proporciona herramientas para el establecimiento de metas, autoevaluación y evaluación entre pares, registros de coaching y mentoría, planificación de carrera y actividades relacionadas, junto con una \"Puntuación de Accountability\" calculada automáticamente, paneles y reportes periódicos.",
+        "p1": "IMPORTANTE: La Puntuación de Accountability, las evaluaciones (incluidas las herramientas DISC, de Inteligencia Emocional y de habilidades), los paneles y los reportes son solo herramientas informativas y de desarrollo. No son evaluaciones clínicas, de diagnóstico o profesionales y no están destinadas a ser la única base para ninguna decisión de contratación, promoción, compensación, disciplinaria o de empleo. Usted es el único responsable de las decisiones que tome utilizando el Servicio.",
         "p2": "Podemos agregar, modificar, suspender o descontinuar funciones del Servicio en cualquier momento."
       },
       "s4": {
@@ -3822,7 +3822,7 @@
       "s5": {
         "heading": "6. Contenido de Usuario y Datos",
         "p0": "\"Contenido de Usuario\" significa la información que usted o su organización envían al Servicio, incluyendo metas, evaluaciones, retroalimentación, notas de coaching y mentoría, planes de desarrollo de carrera y entradas similares. Entre usted y nosotros, usted y su organización conservan la propiedad de su Contenido de Usuario.",
-        "p1": "Usted nos otorga una licencia limitada, no exclusiva y mundial para alojar, almacenar, procesar, transmitir y mostrar el Contenido de Usuario únicamente según sea necesario para operar y proporcionar el Servicio a usted y a los miembros autorizados de su organización (por ejemplo, permitir que un gerente vea las Puntuaciones de Rendición de Cuentas de sus subordinados directos cuando dicha visibilidad haya sido configurada).",
+        "p1": "Usted nos otorga una licencia limitada, no exclusiva y mundial para alojar, almacenar, procesar, transmitir y mostrar el Contenido de Usuario únicamente según sea necesario para operar y proporcionar el Servicio a usted y a los miembros autorizados de su organización (por ejemplo, permitir que un gerente vea las Puntuaciones de Accountability de sus subordinados directos cuando dicha visibilidad haya sido configurada).",
         "p2": "Dentro de una organización, cierto contenido se comparte por diseño — por ejemplo, las evaluaciones entre pares se comparten con la persona evaluada, y los administradores o líderes designados pueden ver las puntuaciones y el progreso de los miembros del equipo. Usted reconoce y consiente este intercambio dentro de su organización.",
         "p3": "Podemos generar y usar datos agregados y desidentificados (que no lo identifican a usted) para operar, mejorar y desarrollar el Servicio."
       },
@@ -3878,7 +3878,7 @@
         "heading": "2. Información que Recopilamos",
         "p0": "Información de la cuenta: su nombre, dirección de correo electrónico, rol y la empresa o equipo al que pertenece.",
         "p1": "Contenido que usted proporciona: metas SMART, declaraciones de visión, resultados de evaluaciones DISC y de Inteligencia Emocional, autoevaluaciones y evaluaciones de habilidades entre pares, notas de coaching y mentoría, planes de desarrollo de carrera, retroalimentación y entradas similares. Parte de esta información es de naturaleza reflexiva o evaluativa y debe tratarse como sensible.",
-        "p2": "Información de uso: actividad dentro del Servicio (como las herramientas utilizadas y las marcas de tiempo de sesión), que se utiliza para calcular su Puntuación de Rendición de Cuentas y para mejorar el Servicio.",
+        "p2": "Información de uso: actividad dentro del Servicio (como las herramientas utilizadas y las marcas de tiempo de sesión), que se utiliza para calcular su Puntuación de Accountability y para mejorar el Servicio.",
         "p3": "Información técnica: información almacenada localmente en su navegador o dispositivo (como el almacenamiento local utilizado para recordar qué videos guiados ha visto)."
       },
       "s2": {
@@ -3887,7 +3887,7 @@
       },
       "s3": {
         "heading": "4. Cómo se Comparte la Información Dentro de Su Organización",
-        "p0": "El Servicio está diseñado para uso en equipo y organizacional. Dependiendo de la configuración: los administradores pueden ver la información de los miembros en toda su organización; los líderes o gerentes designados pueden ver las Puntuaciones de Rendición de Cuentas y el progreso de sus subordinados directos cuando se haya otorgado dicha visibilidad; y las evaluaciones entre pares se comparten con la persona evaluada. Tenga esto en cuenta al ingresar contenido."
+        "p0": "El Servicio está diseñado para uso en equipo y organizacional. Dependiendo de la configuración: los administradores pueden ver la información de los miembros en toda su organización; los líderes o gerentes designados pueden ver las Puntuaciones de Accountability y el progreso de sus subordinados directos cuando se haya otorgado dicha visibilidad; y las evaluaciones entre pares se comparten con la persona evaluada. Tenga esto en cuenta al ingresar contenido."
       },
       "s4": {
         "heading": "5. Proveedores de Servicios (Subprocesadores)",
@@ -3979,12 +3979,12 @@
     "questions": {
       "1": {
         "text": "Doy un ejemplo personal de lo que espero de los demás.",
-        "tools": "Evaluación EQ · Tablero de Rendición de Cuentas",
+        "tools": "Evaluación EQ · Tablero de Accountability",
         "guide": {
           "emerging": "Los miembros del equipo pueden señalar casos específicos en los que tus propias acciones (asistencia, plazos, controles de calidad) no coincidieron con el estándar que pediste a otros que cumplieran en el último mes.",
           "developing": "Generalmente sigues los estándares que estableces, pero no has documentado ni mostrado cómo se ve \"el estándar\" — las expectativas viven en tu cabeza en lugar de en un tablero o lista escrita.",
-          "strong": "Tienes una referencia escrita o visual (p. ej., un Tablero de Rendición de Cuentas) que muestra los estándares que te exiges a ti mismo, y puedes citar al menos una situación reciente en la que tomaste la acción más difícil pero correcta en lugar de un atajo.",
-          "exemplary": "Tu Tablero de Rendición de Cuentas y tus compromisos personales son visibles para el equipo, se actualizan semanalmente, y los miembros del equipo te citan de forma independiente como la persona que \"predica con el ejemplo\" sin que se lo pidan."
+          "strong": "Tienes una referencia escrita o visual (p. ej., un Tablero de Accountability) que muestra los estándares que te exiges a ti mismo, y puedes citar al menos una situación reciente en la que tomaste la acción más difícil pero correcta en lugar de un atajo.",
+          "exemplary": "Tu Tablero de Accountability y tus compromisos personales son visibles para el equipo, se actualizan semanalmente, y los miembros del equipo te citan de forma independiente como la persona que \"predica con el ejemplo\" sin que se lo pidan."
         }
       },
       "2": {
@@ -4029,11 +4029,11 @@
       },
       "6": {
         "text": "Dedico tiempo y energía a asegurarme de que las personas con las que trabajo cumplan con los principios y estándares que hemos acordado.",
-        "tools": "Tablero de Rendición de Cuentas · Línea de Balance",
+        "tools": "Tablero de Accountability · Línea de Balance",
         "guide": {
           "emerging": "No existe un mecanismo de seguimiento para los estándares del equipo; las desviaciones de los principios acordados quedan sin atender durante semanas.",
           "developing": "Abordas las violaciones de estándares cuando alguien más las señala, pero no monitoreas el cumplimiento de forma proactiva.",
-          "strong": "Mantienes un Tablero de Rendición de Cuentas o una Línea de Balance revisado al menos semanalmente, y das seguimiento directo cuando los elementos se ponen en amarillo o rojo.",
+          "strong": "Mantienes un Tablero de Accountability o una Línea de Balance revisado al menos semanalmente, y das seguimiento directo cuando los elementos se ponen en amarillo o rojo.",
           "exemplary": "El tablero se revisa con una cadencia fija (p. ej., reunión diaria), los elementos atrasados se abordan en 24–48 horas, y el proceso de recompromiso se usa de manera consistente en lugar de ser descartado."
         }
       },
@@ -4079,9 +4079,9 @@
       },
       "11": {
         "text": "Cumplo con las promesas y compromisos que hago.",
-        "tools": "Tablero de Rendición de Cuentas",
+        "tools": "Tablero de Accountability",
         "guide": {
-          "emerging": "Hay múltiples elementos de acción atrasados en el Tablero de Rendición de Cuentas sin una nueva fecha de compromiso o explicación, y los miembros del equipo pueden citar una promesa incumplida de tu parte en el último mes.",
+          "emerging": "Hay múltiples elementos de acción atrasados en el Tablero de Accountability sin una nueva fecha de compromiso o explicación, y los miembros del equipo pueden citar una promesa incumplida de tu parte en el último mes.",
           "developing": "Cumples con la mayoría de tus compromisos, pero tienes al menos un elemento abierto que pasó su fecha sin un recompromiso.",
           "strong": "Los elementos atrasados se abordan mediante el proceso de recompromiso en pocos días, y puedes señalar cero promesas incumplidas sin resolver en el último mes.",
           "exemplary": "Tienes un patrón documentado de cumplimiento puntual, usas el modal de recompromiso de forma consistente cuando se pierde una fecha, y comunicas proactivamente antes de que un compromiso se retrase en lugar de después."
@@ -4179,11 +4179,11 @@
       },
       "21": {
         "text": "Construyo consenso en torno a un conjunto común de valores para dirigir nuestra organización.",
-        "tools": "Tablero de Rendición de Cuentas",
+        "tools": "Tablero de Accountability",
         "guide": {
           "emerging": "No existe un conjunto documentado o acordado de valores o principios operativos del equipo; cuando se pregunta, los miembros del equipo dan respuestas diferentes.",
           "developing": "Los valores existen de manera informal (se entienden pero no se escriben ni se discuten en grupo), por lo que la alineación varía según el individuo.",
-          "strong": "Existe un conjunto escrito de valores o estándares del equipo (p. ej., publicado en el Tablero de Rendición de Cuentas) y se construyó con la aportación del equipo en lugar de ser impuesto.",
+          "strong": "Existe un conjunto escrito de valores o estándares del equipo (p. ej., publicado en el Tablero de Accountability) y se construyó con la aportación del equipo en lugar de ser impuesto.",
           "exemplary": "Los valores del equipo están documentados, son visibles, se revisan periódicamente con el equipo, y los miembros del equipo pueden recitarlos consistentemente cuando se les pregunta individualmente."
         }
       },
@@ -4297,8 +4297,8 @@
     "guidePerQuestion": "Guía de puntuación por pregunta",
     "hide": "Ocultar",
     "inventoryDescPost": "con ejemplos concretos para ayudarte a calibrar tu respuesta con precisión — basados en acciones reales, no en intenciones.",
-    "inventoryDescPre": "Evalúate honestamente en 30 afirmaciones de comportamiento de rendición de cuentas en las 5 prácticas principales. Cada pregunta incluye una",
-    "inventoryTitle": "Inventario de Prácticas de Rendición de Cuentas",
+    "inventoryDescPre": "Evalúate honestamente en 30 afirmaciones de comportamiento de Accountability en las 5 prácticas principales. Cada pregunta incluye una",
+    "inventoryTitle": "Inventario de Prácticas de Accountability",
     "lastAssessment": "Última evaluación: {{date}}",
     "needTwoAssessments": "Completa al menos 2 evaluaciones para ver tu tendencia.",
     "needTwoTrend": "Completa al menos 2 evaluaciones para ver tu tendencia de progreso.",
@@ -4311,7 +4311,7 @@
     "overallLevel": "Nivel general",
     "overallScoreTrend": "Tendencia de Puntuación General",
     "pageSubtitle": "30 afirmaciones de comportamiento · 5 prácticas de liderazgo · Puntuado 1–10",
-    "pageTitle": "Autoevaluación de Rendición de Cuentas",
+    "pageTitle": "Autoevaluación de Accountability",
     "percentComplete": "{{pct}}% completo",
     "practiceOfTotal": "Práctica {{n}} de 5",
     "practiceProfile": "Perfil de la Práctica",
@@ -4333,7 +4333,7 @@
     "scoreByPractice": "Puntuación por Práctica de Liderazgo",
     "scorePerPractice": "Puntuación por práctica de liderazgo",
     "scorePerPracticeMax60": "Puntuación por práctica (máx. 60 cada una)",
-    "scoreScaleTitle": "Escala de Puntuación del Líder de Rendición de Cuentas · de 300 puntos",
+    "scoreScaleTitle": "Escala de Puntuación del Líder de Accountability · de 300 puntos",
     "startAssessment": "Comenzar Evaluación",
     "timeEstimate": "~10–15 minutos",
     "tipBodyMid": "en cualquier pregunta para ver ejemplos concretos de comportamiento para cada rango de puntuación. Evalúa según tus",
@@ -4348,7 +4348,7 @@
     "top5Opportunities": "Las 5 Mejores Oportunidades",
     "top5Strengths": "Las 5 Mayores Fortalezas",
     "totalScore": "Puntuación Total",
-    "totalScoreMax300": "Puntuación total de rendición de cuentas (máx. 300)",
+    "totalScoreMax300": "Puntuación total de Accountability (máx. 300)",
     "totalScoreSummary": "Puntuación total: {{total}}/300",
     "view": "Ver",
     "viewProgress": "Ver Progreso",
@@ -4481,13 +4481,13 @@
     "submittedSuccessfully": "Tu retroalimentación se envió correctamente para {{name}}.",
     "thisLeader": "este líder",
     "responsesAnonymous": "Tus respuestas son anónimas y se usarán para apoyar su desarrollo de liderazgo.",
-    "pageTitle": "Inventario de Prácticas de Responsabilidad",
+    "pageTitle": "Inventario de Prácticas de Accountability",
     "pageSubtitle": "Encuesta de Retroalimentación de Pares 360°",
     "feedbackFor": "Retroalimentación para",
     "yourLeader": "Tu Líder",
     "yourLeaderLower": "tu líder",
     "aboutThisSurvey": "Acerca de esta encuesta",
-    "inviteBody": "Has sido invitado(a) a brindar retroalimentación honesta y constructiva sobre los comportamientos de responsabilidad de {{name}}. Tus respuestas son completamente anónimas y solo se verán como parte de un informe agregado.",
+    "inviteBody": "Has sido invitado(a) a brindar retroalimentación honesta y constructiva sobre los comportamientos de Accountability de {{name}}. Tus respuestas son completamente anónimas y solo se verán como parte de un informe agregado.",
     "stats": {
       "questionsLabel": "37 preguntas",
       "questionsSub": "~12 minutos",
@@ -4548,7 +4548,7 @@
       "crossFunctionalPartner": "Socio Interfuncional",
       "other": "Otro"
     },
-    "pageTitle": "Retroalimentación de Pares 360° — Responsabilidad desde Todos los Ángulos",
+    "pageTitle": "Retroalimentación de Pares 360° — Accountability desde Todos los Ángulos",
     "pageSubtitle": "Comparte un enlace de encuesta con pares y reportes — sin necesidad de cuenta en la app.",
     "createNewRound": "Crear una nueva ronda de encuesta",
     "createNewRoundBody": "Cada ronda genera un enlace anónimo único. Compártelo por correo, Slack o Teams. Los encuestados no necesitan una cuenta en esta app.",
