@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { doc, getDoc, setDoc, updateDoc, arrayUnion, getFirestore } from 'firebase/firestore';
 import { signInAnonymously } from 'firebase/auth';
+import { useTranslation } from 'react-i18next';
 import { auth, db } from '../firebase';
 import toast from 'react-hot-toast';
 import { GUIDE_LEVELS, QUESTIONS as SHARED_QUESTIONS } from '../utils/assessmentQuestions';
@@ -13,6 +14,10 @@ const CATEGORIES = [
   { id: 'enable',    label: 'Enable the Team',     icon: '🤝', color: '#7c3aed', light: '#fdf4ff', border: '#e9d5ff' },
   { id: 'encourage', label: 'Winning with Compassion',      icon: '❤️', color: '#e11d48', light: '#fff1f2', border: '#fecdd3' },
 ];
+
+// Displayed category label is translated via trCatLabel; `id` stays stable for scoring keys.
+function trCatLabel(t, cat) { return t(`survey360.categories.${cat.id}`, cat.label); }
+function trQuestion(t, q) { return t(`survey360.questions.${q.id}`, q.text); }
 
 const CAT_QUESTIONS = {
   model:     [1,6,11,16,21,26],
@@ -57,6 +62,13 @@ const QUESTIONS = [
 ];
 
 const RELATIONSHIPS = ['Peer', 'Direct Report', 'Manager', 'Cross-functional Partner', 'Other'];
+const RELATIONSHIP_KEYS = {
+  'Peer': 'peer', 'Direct Report': 'directReport', 'Manager': 'manager',
+  'Cross-functional Partner': 'crossFunctionalPartner', 'Other': 'other',
+};
+// `relationship` values themselves stay English (stored on response records and used for
+// color lookups elsewhere) — only the displayed label is translated.
+function trRelationship(t, r) { return t(`survey360.relationships.${RELATIONSHIP_KEYS[r] || r}`, r); }
 
 // Build guide lookup from shared questions data
 const GUIDE_MAP = Object.fromEntries(SHARED_QUESTIONS.map(q => [q.id, q.guide]));
@@ -70,15 +82,19 @@ const OPEN_QUESTIONS = [
   { id: 'teamContinue',  section: 'As a Team',    label: 'What should the team CONTINUE doing?' },
   { id: 'additionalComments', section: 'Additional', label: 'Any additional comments or feedback for this person?' },
 ];
+const OPEN_SECTION_KEYS = { 'As a Leader': 'asALeader', 'As a Team': 'asATeam', 'Additional': 'additional' };
+function trOpenLabel(t, q) { return t(`survey360.openQuestions.${q.id}`, q.label); }
+function trOpenSection(t, section) { return t(`survey360.openSections.${OPEN_SECTION_KEYS[section] || section}`, section); }
 
-function scoreLabel(v) {
-  if (v >= 9) return { label: 'Exemplary', color: '#7c3aed' };
-  if (v >= 7) return { label: 'Strong',    color: '#0d9488' };
-  if (v >= 5) return { label: 'Developing',color: '#f59e0b' };
-  return            { label: 'Emerging',   color: '#ef4444' };
+function scoreLabel(t, v) {
+  if (v >= 9) return { label: t('survey360.scoreLevels.exemplary', 'Exemplary'), color: '#7c3aed' };
+  if (v >= 7) return { label: t('survey360.scoreLevels.strong', 'Strong'),    color: '#0d9488' };
+  if (v >= 5) return { label: t('survey360.scoreLevels.developing', 'Developing'),color: '#f59e0b' };
+  return            { label: t('survey360.scoreLevels.emerging', 'Emerging'),   color: '#ef4444' };
 }
 
 export default function Survey360() {
+  const { t } = useTranslation();
   const { surveyId } = useParams();
   const [survey, setSurvey]       = useState(null);
   const [loading, setLoading]     = useState(true);
@@ -115,9 +131,9 @@ export default function Survey360() {
   const isOpenStep    = step === 5;
 
   async function handleSubmit() {
-    if (!name.trim()) { toast.error('Please enter your name.'); return; }
-    if (!relationship) { toast.error('Please select your relationship.'); return; }
-    if (!allAnswered) { toast.error('Please answer all 30 questions.'); return; }
+    if (!name.trim()) { toast.error(t('survey360.toast.enterName', 'Please enter your name.')); return; }
+    if (!relationship) { toast.error(t('survey360.toast.selectRelationship', 'Please select your relationship.')); return; }
+    if (!allAnswered) { toast.error(t('survey360.toast.answerAll30', 'Please answer all 30 questions.')); return; }
     setSaving(true);
 
     const response = {
@@ -138,7 +154,7 @@ export default function Survey360() {
       anonUid = cred.user.uid;
     } catch (authErr) {
       console.error('Anonymous auth failed:', authErr.code, authErr.message);
-      toast.error(`Auth error: ${authErr.code || authErr.message}. Enable Anonymous sign-in in Firebase console.`);
+      toast.error(t('survey360.toast.authError', 'Auth error: {{error}}. Enable Anonymous sign-in in Firebase console.', { error: authErr.code || authErr.message }));
       setSaving(false);
       return;
     }
@@ -153,7 +169,7 @@ export default function Survey360() {
       }, { merge: true });
     } catch (writeErr) {
       console.error('Write failed:', writeErr.code, writeErr.message);
-      toast.error(`Save error: ${writeErr.code || writeErr.message}`);
+      toast.error(t('survey360.toast.saveError', 'Save error: {{error}}', { error: writeErr.code || writeErr.message }));
       setSaving(false);
       return;
     }
@@ -169,7 +185,7 @@ export default function Survey360() {
 
   if (loading) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
-      <p style={{ color: '#64748b' }}>Loading survey…</p>
+      <p style={{ color: '#64748b' }}>{t('survey360.loadingSurvey', 'Loading survey…')}</p>
     </div>
   );
 
@@ -177,8 +193,8 @@ export default function Survey360() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
       <div style={{ textAlign: 'center', padding: '2rem' }}>
         <div style={{ fontSize: '3rem', marginBottom: 12 }}>🔍</div>
-        <h2 style={{ color: '#0f172a', fontWeight: 800 }}>Survey not found</h2>
-        <p style={{ color: '#64748b' }}>This link may have expired or is invalid. Please contact the person who sent it.</p>
+        <h2 style={{ color: '#0f172a', fontWeight: 800 }}>{t('survey360.surveyNotFound', 'Survey not found')}</h2>
+        <p style={{ color: '#64748b' }}>{t('survey360.surveyNotFoundBody', 'This link may have expired or is invalid. Please contact the person who sent it.')}</p>
       </div>
     </div>
   );
@@ -187,11 +203,11 @@ export default function Survey360() {
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'linear-gradient(135deg,#f0fdfa,#eff6ff)', padding: '2rem' }}>
       <div style={{ background: 'white', borderRadius: 20, padding: '3rem 2rem', textAlign: 'center', maxWidth: 480, boxShadow: '0 4px 32px rgba(0,0,0,0.08)' }}>
         <div style={{ fontSize: '3.5rem', marginBottom: 16 }}>🎉</div>
-        <h2 style={{ fontWeight: 900, color: '#0f2044', margin: '0 0 12px', fontSize: '1.5rem' }}>Thank you!</h2>
+        <h2 style={{ fontWeight: 900, color: '#0f2044', margin: '0 0 12px', fontSize: '1.5rem' }}>{t('survey360.thankYou', 'Thank you!')}</h2>
         <p style={{ color: '#475569', lineHeight: 1.7, margin: '0 0 8px' }}>
-          Your feedback has been submitted successfully for <strong>{survey?.leaderName || 'this leader'}</strong>.
+          {t('survey360.submittedSuccessfully', "Your feedback has been submitted successfully for {{name}}.", { name: survey?.leaderName || t('survey360.thisLeader', 'this leader') })}
         </p>
-        <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Your responses are anonymous and will be used to support their leadership development.</p>
+        <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>{t('survey360.responsesAnonymous', 'Your responses are anonymous and will be used to support their leadership development.')}</p>
       </div>
     </div>
   );
@@ -203,66 +219,71 @@ export default function Survey360() {
         {/* Header */}
         <div style={{ background: 'linear-gradient(135deg,#0f2044,#0d9488)', borderRadius: 16, padding: '2rem', color: 'white', textAlign: 'center', marginBottom: 24 }}>
           <div style={{ fontSize: '2.5rem', marginBottom: 8 }}>📋</div>
-          <h1 style={{ fontWeight: 900, margin: '0 0 6px', fontSize: '1.4rem' }}>Accountability Practice Inventory</h1>
-          <p style={{ color: 'rgba(255,255,255,0.7)', margin: '0 0 12px', fontSize: '0.9rem' }}>360° Peer Feedback Survey</p>
+          <h1 style={{ fontWeight: 900, margin: '0 0 6px', fontSize: '1.4rem' }}>{t('survey360.pageTitle', 'Accountability Practice Inventory')}</h1>
+          <p style={{ color: 'rgba(255,255,255,0.7)', margin: '0 0 12px', fontSize: '0.9rem' }}>{t('survey360.pageSubtitle', '360° Peer Feedback Survey')}</p>
           <div style={{ background: 'rgba(255,255,255,0.12)', borderRadius: 10, padding: '0.75rem 1rem', display: 'inline-block' }}>
-            <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0 0 2px', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Feedback for</p>
-            <p style={{ color: 'white', fontWeight: 800, margin: 0, fontSize: '1.1rem' }}>{survey?.leaderName || 'Your Leader'}</p>
+            <p style={{ color: 'rgba(255,255,255,0.6)', margin: '0 0 2px', fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t('survey360.feedbackFor', 'Feedback for')}</p>
+            <p style={{ color: 'white', fontWeight: 800, margin: 0, fontSize: '1.1rem' }}>{survey?.leaderName || t('survey360.yourLeader', 'Your Leader')}</p>
             {survey?.leaderRole && <p style={{ color: 'rgba(255,255,255,0.6)', margin: 0, fontSize: '0.8rem' }}>{survey.leaderRole}</p>}
           </div>
         </div>
 
         <div style={{ background: 'white', borderRadius: 16, padding: '1.75rem', marginBottom: 20, boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
-          <h3 style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 12px' }}>About this survey</h3>
+          <h3 style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 12px' }}>{t('survey360.aboutThisSurvey', 'About this survey')}</h3>
           <p style={{ color: '#475569', fontSize: '0.9rem', lineHeight: 1.7, margin: '0 0 16px' }}>
-            You've been invited to provide honest, constructive feedback on <strong>{survey?.leaderName || 'your leader'}</strong>'s accountability behaviors. Your responses are <strong>completely anonymous</strong> and will only be seen as part of an aggregated report.
+            {t('survey360.inviteBody', "You've been invited to provide honest, constructive feedback on {{name}}'s accountability behaviors. Your responses are completely anonymous and will only be seen as part of an aggregated report.", { name: survey?.leaderName || t('survey360.yourLeaderLower', 'your leader') })}
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 16 }}>
-            {[['37 questions', '⏱ ~12 minutes'],['Scale of 1–10','📊 Per behavior'],['Anonymous','🔒 Confidential'],['+ Open feedback','✍️ 7 written']].map(([a,b]) => (
+            {[
+              [t('survey360.stats.questionsLabel', '37 questions'), '⏱', t('survey360.stats.questionsSub', '~12 minutes')],
+              [t('survey360.stats.scaleLabel', 'Scale of 1–10'), '📊', t('survey360.stats.scaleSub', 'Per behavior')],
+              [t('survey360.stats.anonymousLabel', 'Anonymous'), '🔒', t('survey360.stats.anonymousSub', 'Confidential')],
+              [t('survey360.stats.openLabel', '+ Open feedback'), '✍️', t('survey360.stats.openSub', '7 written')],
+            ].map(([a, icon, sub]) => (
               <div key={a} style={{ background: '#f8fafc', borderRadius: 10, padding: '0.625rem 0.875rem', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ fontSize: '1rem' }}>{b.split(' ')[0]}</span>
+                <span style={{ fontSize: '1rem' }}>{icon}</span>
                 <div>
                   <p style={{ fontWeight: 700, color: '#0f2044', margin: 0, fontSize: '0.8rem' }}>{a}</p>
-                  <p style={{ color: '#64748b', margin: 0, fontSize: '0.7rem' }}>{b.split(' ').slice(1).join(' ')}</p>
+                  <p style={{ color: '#64748b', margin: 0, fontSize: '0.7rem' }}>{sub}</p>
                 </div>
               </div>
             ))}
           </div>
           <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 10, padding: '0.75rem 1rem' }}>
-            <p style={{ color: '#92400e', fontWeight: 700, margin: '0 0 4px', fontSize: '0.8rem' }}>📌 Rating guide</p>
+            <p style={{ color: '#92400e', fontWeight: 700, margin: '0 0 4px', fontSize: '0.8rem' }}>📌 {t('survey360.ratingGuide', 'Rating guide')}</p>
             <p style={{ color: '#92400e', margin: 0, fontSize: '0.78rem', lineHeight: 1.5 }}>
-              <strong>1–4 Emerging</strong> · <strong>5–6 Developing</strong> · <strong>7–9 Strong</strong> · <strong>10 Exemplary</strong><br/>
-              Rate based on what you actually observe — not what you think this person intends or feels.
+              <strong>{t('survey360.ratingGuideRanges', '1–4 Emerging · 5–6 Developing · 7–9 Strong · 10 Exemplary')}</strong><br/>
+              {t('survey360.ratingGuideNote', 'Rate based on what you actually observe — not what you think this person intends or feels.')}
             </p>
           </div>
         </div>
 
         {/* Your info */}
         <div style={{ background: 'white', borderRadius: 16, padding: '1.75rem', marginBottom: 20, boxShadow: '0 1px 8px rgba(0,0,0,0.06)' }}>
-          <h3 style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 16px' }}>Your information</h3>
+          <h3 style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 16px' }}>{t('survey360.yourInformation', 'Your information')}</h3>
           <div style={{ marginBottom: 14 }}>
-            <label style={{ fontWeight: 600, color: '#475569', fontSize: '0.82rem', display: 'block', marginBottom: 6 }}>Your first name (shown to leader only as a label)</label>
-            <input value={name} onChange={e => setName(e.target.value)} placeholder="e.g. Alex"
+            <label style={{ fontWeight: 600, color: '#475569', fontSize: '0.82rem', display: 'block', marginBottom: 6 }}>{t('survey360.yourFirstName', 'Your first name (shown to leader only as a label)')}</label>
+            <input value={name} onChange={e => setName(e.target.value)} placeholder={t('survey360.namePlaceholder', 'e.g. Alex')}
               style={{ width: '100%', boxSizing: 'border-box', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.625rem 0.875rem', fontSize: '0.9rem', outline: 'none' }} />
           </div>
           <div>
-            <label style={{ fontWeight: 600, color: '#475569', fontSize: '0.82rem', display: 'block', marginBottom: 8 }}>Your relationship to {survey?.leaderName || 'this person'}</label>
+            <label style={{ fontWeight: 600, color: '#475569', fontSize: '0.82rem', display: 'block', marginBottom: 8 }}>{t('survey360.yourRelationshipTo', 'Your relationship to {{name}}', { name: survey?.leaderName || t('survey360.thisPerson', 'this person') })}</label>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {RELATIONSHIPS.map(r => (
                 <button key={r} onClick={() => setRelationship(r)}
                   style={{ padding: '6px 16px', borderRadius: 99, fontWeight: 600, fontSize: '0.8rem', border: `1px solid ${relationship === r ? '#0f2044' : '#e2e8f0'}`, background: relationship === r ? '#0f2044' : '#f8fafc', color: relationship === r ? 'white' : '#64748b', cursor: 'pointer' }}>
-                  {r}
+                  {trRelationship(t, r)}
                 </button>
               ))}
             </div>
           </div>
         </div>
 
-        <button onClick={() => { if (!name.trim()) { toast.error('Please enter your name.'); return; } if (!relationship) { toast.error('Please select your relationship.'); return; } setStep(0); }}
+        <button onClick={() => { if (!name.trim()) { toast.error(t('survey360.toast.enterName', 'Please enter your name.')); return; } if (!relationship) { toast.error(t('survey360.toast.selectRelationship', 'Please select your relationship.')); return; } setStep(0); }}
           style={{ width: '100%', background: 'linear-gradient(135deg,#0f2044,#0d9488)', color: 'white', border: 'none', borderRadius: 12, padding: '0.875rem', fontWeight: 800, fontSize: '1rem', cursor: 'pointer' }}>
-          Start Survey →
+          {t('survey360.startSurvey', 'Start Survey →')}
         </button>
-        <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.75rem', marginTop: 12 }}>Your identity is kept confidential. Only aggregated results are shared.</p>
+        <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: '0.75rem', marginTop: 12 }}>{t('survey360.identityConfidential', 'Your identity is kept confidential. Only aggregated results are shared.')}</p>
       </div>
     </div>
   );
@@ -281,8 +302,8 @@ export default function Survey360() {
           {/* Progress */}
           <div style={{ background: 'white', borderRadius: 12, padding: '0.875rem 1.25rem', marginBottom: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-              <span style={{ fontWeight: 700, color: '#0f2044', fontSize: '0.82rem' }}>Step 6 of 6 · ✍️ Open Feedback</span>
-              <span style={{ color: '#64748b', fontSize: '0.78rem' }}>30/30 rated questions done</span>
+              <span style={{ fontWeight: 700, color: '#0f2044', fontSize: '0.82rem' }}>{t('survey360.step6Of6', 'Step 6 of 6 · ✍️ Open Feedback')}</span>
+              <span style={{ color: '#64748b', fontSize: '0.78rem' }}>{t('survey360.ratedQuestionsDone', '30/30 rated questions done')}</span>
             </div>
             <div style={{ background: '#e2e8f0', borderRadius: 99, height: 7 }}>
               <div style={{ height: 7, borderRadius: 99, background: 'linear-gradient(90deg,#0f2044,#0d9488)', width: '100%' }} />
@@ -290,14 +311,14 @@ export default function Survey360() {
           </div>
 
           <div style={{ background: 'white', borderRadius: 14, padding: '1.25rem', marginBottom: 16, boxShadow: '0 1px 6px rgba(0,0,0,0.06)' }}>
-            <p style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 6px' }}>Open-Ended Feedback</p>
-            <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0 }}>These questions are optional but very valuable. Share as much or as little as you like.</p>
+            <p style={{ fontWeight: 800, color: '#0f2044', margin: '0 0 6px' }}>{t('survey360.openEndedFeedback', 'Open-Ended Feedback')}</p>
+            <p style={{ color: '#64748b', fontSize: '0.82rem', margin: 0 }}>{t('survey360.openEndedNote', 'These questions are optional but very valuable. Share as much or as little as you like.')}</p>
           </div>
 
           {sections.map(section => (
             <div key={section} style={{ marginBottom: 20 }}>
               <div style={{ background: 'linear-gradient(135deg,#0f2044,#1e40af)', borderRadius: 10, padding: '0.5rem 1rem', marginBottom: 12 }}>
-                <p style={{ color: 'white', fontWeight: 800, margin: 0, fontSize: '0.85rem' }}>{section}</p>
+                <p style={{ color: 'white', fontWeight: 800, margin: 0, fontSize: '0.85rem' }}>{trOpenSection(t, section)}</p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {OPEN_QUESTIONS.filter(q => q.section === section).map((q, qi) => {
@@ -305,12 +326,12 @@ export default function Survey360() {
                   return (
                     <div key={q.id} style={{ background: 'white', borderRadius: 12, padding: '1rem 1.25rem', boxShadow: '0 1px 4px rgba(0,0,0,0.05)', border: openAnswers[q.id] ? '1px solid #0d9488' : '1px solid #f1f5f9' }}>
                       <label style={{ display: 'block', fontWeight: 700, color: '#0f172a', fontSize: '0.88rem', marginBottom: 8 }}>
-                        <span style={{ color: '#0d9488', marginRight: 6 }}>{globalIdx}.</span>{q.label}
+                        <span style={{ color: '#0d9488', marginRight: 6 }}>{globalIdx}.</span>{trOpenLabel(t, q)}
                       </label>
                       <textarea
                         value={openAnswers[q.id] || ''}
                         onChange={e => setOpenAnswers(a => ({ ...a, [q.id]: e.target.value }))}
-                        placeholder="Share your thoughts here… (optional)"
+                        placeholder={t('survey360.shareThoughtsPlaceholder', 'Share your thoughts here… (optional)')}
                         rows={3}
                         style={{ width: '100%', boxSizing: 'border-box', border: '1px solid #e2e8f0', borderRadius: 8, padding: '0.625rem 0.875rem', fontSize: '0.875rem', resize: 'vertical', outline: 'none', fontFamily: 'inherit', color: '#0f172a' }}
                       />
@@ -324,11 +345,11 @@ export default function Survey360() {
           <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '2rem' }}>
             <button onClick={() => setStep(4)}
               style={{ background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 10, padding: '0.625rem 1.25rem', fontWeight: 700, cursor: 'pointer' }}>
-              ← Previous
+              {t('survey360.previous', '← Previous')}
             </button>
             <button onClick={handleSubmit} disabled={saving}
               style={{ background: 'linear-gradient(135deg,#0f2044,#0d9488)', color: 'white', border: 'none', borderRadius: 10, padding: '0.625rem 1.75rem', fontWeight: 800, cursor: saving ? 'not-allowed' : 'pointer' }}>
-              {saving ? '⏳ Submitting…' : '✓ Submit Feedback'}
+              {saving ? t('survey360.submitting', '⏳ Submitting…') : t('survey360.submitFeedback', '✓ Submit Feedback')}
             </button>
           </div>
         </div>
@@ -342,8 +363,8 @@ export default function Survey360() {
         {/* Progress bar */}
         <div style={{ background: 'white', borderRadius: 12, padding: '0.875rem 1.25rem', marginBottom: 16, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ fontWeight: 700, color: '#0f2044', fontSize: '0.82rem' }}>Step {step + 1} of 6 · {currentCat.icon} {currentCat.label}</span>
-            <span style={{ color: '#64748b', fontSize: '0.78rem' }}>{totalAnswered}/30 answered</span>
+            <span style={{ fontWeight: 700, color: '#0f2044', fontSize: '0.82rem' }}>{t('survey360.stepOfSix', 'Step {{step}} of 6 · {{icon}} {{label}}', { step: step + 1, icon: currentCat.icon, label: trCatLabel(t, currentCat) })}</span>
+            <span style={{ color: '#64748b', fontSize: '0.78rem' }}>{t('survey360.answeredCount', '{{count}}/30 answered', { count: totalAnswered })}</span>
           </div>
           <div style={{ background: '#e2e8f0', borderRadius: 99, height: 7 }}>
             <div style={{ height: 7, borderRadius: 99, background: `linear-gradient(90deg,#0f2044,#0d9488)`, width: `${progress}%`, transition: 'width 0.3s' }} />
@@ -354,12 +375,12 @@ export default function Survey360() {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 16 }}>
           {catQs.map(q => {
             const val = answers[q.id];
-            const lvl = val ? scoreLabel(val) : null;
+            const lvl = val ? scoreLabel(t, val) : null;
             return (
               <div key={q.id} style={{ background: 'white', borderRadius: 14, padding: '1.25rem', boxShadow: '0 1px 6px rgba(0,0,0,0.06)', border: `1px solid ${val ? currentCat.border : '#f1f5f9'}` }}>
                 <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start', marginBottom: 14 }}>
                   <div style={{ minWidth: 28, height: 28, borderRadius: '50%', background: currentCat.light, color: currentCat.color, fontWeight: 800, fontSize: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, border: `1px solid ${currentCat.border}` }}>{q.id}</div>
-                  <p style={{ fontWeight: 600, color: '#0f172a', margin: 0, lineHeight: 1.5, fontSize: '0.9rem' }}>{q.text}</p>
+                  <p style={{ fontWeight: 600, color: '#0f172a', margin: 0, lineHeight: 1.5, fontSize: '0.9rem' }}>{trQuestion(t, q)}</p>
                 </div>
                 <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center', marginBottom: 10 }}>
                   {[1,2,3,4,5,6,7,8,9,10].map(n => (
@@ -373,7 +394,7 @@ export default function Survey360() {
                 {/* Scoring guide toggle */}
                 <button onClick={() => toggleGuide(q.id)}
                   style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '0.75rem', fontWeight: 600, padding: '2px 0', display: 'flex', alignItems: 'center', gap: 4 }}>
-                  {openGuides[q.id] ? '▲' : '▼'} View Scoring Guide
+                  {openGuides[q.id] ? '▲' : '▼'} {t('survey360.viewScoringGuide', 'View Scoring Guide')}
                 </button>
                 {openGuides[q.id] && GUIDE_MAP[q.id] && (
                   <div style={{ marginTop: 10, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
@@ -394,17 +415,17 @@ export default function Survey360() {
         <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '2rem' }}>
           <button onClick={() => setStep(s => s - 1)}
             style={{ background: '#f1f5f9', color: '#475569', border: 'none', borderRadius: 10, padding: '0.625rem 1.25rem', fontWeight: 700, cursor: 'pointer' }}>
-            ← {step === 0 ? 'Back to intro' : 'Previous'}
+            ← {step === 0 ? t('survey360.backToIntro', 'Back to intro') : t('survey360.previousWord', 'Previous')}
           </button>
           {step < 4 ? (
-            <button onClick={() => { if (catQs.some(q => !answers[q.id])) { toast.error('Please answer all questions in this section.'); return; } setStep(s => s + 1); }}
+            <button onClick={() => { if (catQs.some(q => !answers[q.id])) { toast.error(t('survey360.toast.answerAllInSection', 'Please answer all questions in this section.')); return; } setStep(s => s + 1); }}
               style={{ background: currentCat.color, color: 'white', border: 'none', borderRadius: 10, padding: '0.625rem 1.5rem', fontWeight: 700, cursor: 'pointer' }}>
-              Next Practice →
+              {t('survey360.nextPractice', 'Next Practice →')}
             </button>
           ) : (
-            <button onClick={() => { if (!allAnswered) { toast.error('Please answer all 30 rated questions first.'); return; } setStep(5); }}
+            <button onClick={() => { if (!allAnswered) { toast.error(t('survey360.toast.answerAll30First', 'Please answer all 30 rated questions first.')); return; } setStep(5); }}
               style={{ background: 'linear-gradient(135deg,#0f2044,#0d9488)', color: 'white', border: 'none', borderRadius: 10, padding: '0.625rem 1.5rem', fontWeight: 700, cursor: 'pointer' }}>
-              Next: Open Feedback →
+              {t('survey360.nextOpenFeedback', 'Next: Open Feedback →')}
             </button>
           )}
         </div>
