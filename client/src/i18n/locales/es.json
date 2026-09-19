@@ -3784,5 +3784,153 @@
       "selectCompany": "Por favor selecciona una empresa",
       "enterTeamName": "Por favor ingresa el nombre de tu equipo"
     }
+  },
+  "legal": {
+    "backToSignIn": "Volver a iniciar sesión",
+    "effectiveDate": "Fecha de vigencia",
+    "termsConditions": "Términos y Condiciones",
+    "privacyPolicy": "Política de Privacidad",
+    "termsSubtitle": "{{appName}} — por favor lee estos términos cuidadosamente.",
+    "privacySubtitle": "Cómo {{appName}} maneja tus datos.",
+    "terms": {
+      "s0": {
+        "heading": "1. Aceptación de Estos Términos",
+        "p0": "Estos Términos y Condiciones (\"Términos\") constituyen un acuerdo vinculante entre usted y Leadership Flow Technologies, LLC (\"nosotros\", \"nos\", \"nuestro\"), el proveedor de Accountability App (la \"Aplicación\" o el \"Servicio\"). Al crear una cuenta, acceder o usar el Servicio, usted acepta estar sujeto a estos Términos y a nuestra Política de Privacidad, que se incorpora por referencia.",
+        "p1": "Si usted acepta estos Términos en nombre de una empresa, equipo u otra organización, declara que tiene la autoridad para vincular a dicha organización, y \"usted\" se refiere tanto a usted como a esa organización.",
+        "p2": "Si no está de acuerdo con estos Términos, no use el Servicio."
+      },
+      "s1": {
+        "heading": "2. Elegibilidad",
+        "p0": "Usted debe tener al menos 18 años de edad (o la mayoría de edad en su jurisdicción) y ser legalmente capaz de celebrar un contrato para usar el Servicio. El Servicio está destinado al uso en el lugar de trabajo y para el desarrollo profesional."
+      },
+      "s2": {
+        "heading": "3. Cuentas y Registro",
+        "p0": "Usted debe proporcionar información precisa y completa al registrarse y mantenerla actualizada. Las nuevas cuentas pueden requerir la aprobación de un administrador antes de que se otorgue el acceso.",
+        "p1": "Usted es responsable de mantener la confidencialidad de sus credenciales de inicio de sesión y de toda actividad que ocurra bajo su cuenta. Las cuentas son personales y no se pueden compartir. Notifíquenos de inmediato sobre cualquier uso no autorizado."
+      },
+      "s3": {
+        "heading": "4. Descripción del Servicio",
+        "p0": "El Servicio es una plataforma de rendición de cuentas de liderazgo que proporciona herramientas para el establecimiento de metas, autoevaluación y evaluación entre pares, registros de coaching y mentoría, planificación de carrera y actividades relacionadas, junto con una \"Puntuación de Rendición de Cuentas\" calculada automáticamente, paneles y reportes periódicos.",
+        "p1": "IMPORTANTE: La Puntuación de Rendición de Cuentas, las evaluaciones (incluidas las herramientas DISC, de Inteligencia Emocional y de habilidades), los paneles y los reportes son solo herramientas informativas y de desarrollo. No son evaluaciones clínicas, de diagnóstico o profesionales y no están destinadas a ser la única base para ninguna decisión de contratación, promoción, compensación, disciplinaria o de empleo. Usted es el único responsable de las decisiones que tome utilizando el Servicio.",
+        "p2": "Podemos agregar, modificar, suspender o descontinuar funciones del Servicio en cualquier momento."
+      },
+      "s4": {
+        "heading": "5. Uso Aceptable",
+        "p0": "Usted acepta no: (a) usar el Servicio para cualquier propósito ilegal, de acoso, difamatorio, discriminatorio o abusivo; (b) cargar contenido que infrinja los derechos de otros o que sea falso, engañoso o dañino; (c) intentar obtener acceso no autorizado a cualquier cuenta, sistema o dato; (d) realizar ingeniería inversa, extraer datos, copiar o revender el Servicio excepto según lo permitido por la ley; (e) interferir o interrumpir la integridad o el rendimiento del Servicio; o (f) cargar virus o código malicioso.",
+        "p1": "Podemos eliminar contenido o suspender cuentas que violen estos Términos."
+      },
+      "s5": {
+        "heading": "6. Contenido de Usuario y Datos",
+        "p0": "\"Contenido de Usuario\" significa la información que usted o su organización envían al Servicio, incluyendo metas, evaluaciones, retroalimentación, notas de coaching y mentoría, planes de desarrollo de carrera y entradas similares. Entre usted y nosotros, usted y su organización conservan la propiedad de su Contenido de Usuario.",
+        "p1": "Usted nos otorga una licencia limitada, no exclusiva y mundial para alojar, almacenar, procesar, transmitir y mostrar el Contenido de Usuario únicamente según sea necesario para operar y proporcionar el Servicio a usted y a los miembros autorizados de su organización (por ejemplo, permitir que un gerente vea las Puntuaciones de Rendición de Cuentas de sus subordinados directos cuando dicha visibilidad haya sido configurada).",
+        "p2": "Dentro de una organización, cierto contenido se comparte por diseño — por ejemplo, las evaluaciones entre pares se comparten con la persona evaluada, y los administradores o líderes designados pueden ver las puntuaciones y el progreso de los miembros del equipo. Usted reconoce y consiente este intercambio dentro de su organización.",
+        "p3": "Podemos generar y usar datos agregados y desidentificados (que no lo identifican a usted) para operar, mejorar y desarrollar el Servicio."
+      },
+      "s6": {
+        "heading": "7. Servicios de Terceros",
+        "p0": "El Servicio depende de proveedores externos, incluido Google Firebase (autenticación, base de datos, alojamiento y funciones en la nube) y un proveedor de entrega de correo electrónico utilizado para enviar mensajes transaccionales como correos de bienvenida, recordatorios y reportes semanales. Su uso del Servicio también está sujeto a los términos de esos proveedores cuando corresponda. No somos responsables de los servicios de terceros fuera de nuestro control."
+      },
+      "s7": {
+        "heading": "8. Propiedad Intelectual",
+        "p0": "El Servicio, incluidos su software, diseño, marca, el marco de los \"cinco pilares del liderazgo\", metodología, texto, gráficos y toda la propiedad intelectual relacionada, es propiedad de Leadership Flow Technologies, LLC o sus licenciantes y está protegido por la ley. Le otorgamos una licencia limitada, revocable, intransferible y no exclusiva para acceder y usar el Servicio para su propósito previsto. No se otorgan derechos excepto los expresamente establecidos en estos Términos."
+      },
+      "s8": {
+        "heading": "9. Tarifas y Suscripciones",
+        "p0": "Algunas funciones del Servicio pueden ofrecerse de forma gratuita y otras pueden requerir una suscripción de pago. Cuando se apliquen tarifas, los precios, la frecuencia de facturación, la renovación y los términos de reembolso se le presentarán en el momento de la compra. Las tarifas no incluyen impuestos a menos que se indique lo contrario. Podemos cambiar los precios con notificación previa. El incumplimiento del pago puede resultar en la suspensión o terminación de las funciones de pago."
+      },
+      "s9": {
+        "heading": "10. Terminación",
+        "p0": "Usted puede dejar de usar el Servicio y solicitar la eliminación de su cuenta en cualquier momento. Podemos suspender o terminar su acceso si viola estos Términos, si la ley lo requiere, o si descontinuamos el Servicio.",
+        "p1": "Al finalizar, su derecho a usar el Servicio termina. Manejaremos sus datos de acuerdo con nuestra Política de Privacidad, incluyendo proporcionar una oportunidad razonable para exportar datos cuando corresponda y eliminar los datos dentro de un período razonable, sujeto a las obligaciones legales de retención."
+      },
+      "s10": {
+        "heading": "11. Exenciones de Responsabilidad",
+        "p0": "EL SERVICIO SE PROPORCIONA \"TAL CUAL\" Y \"SEGÚN DISPONIBILIDAD\" SIN GARANTÍAS DE NINGÚN TIPO, YA SEAN EXPRESAS O IMPLÍCITAS, INCLUYENDO GARANTÍAS DE COMERCIABILIDAD, IDONEIDAD PARA UN PROPÓSITO PARTICULAR Y NO INFRACCIÓN. NO GARANTIZAMOS QUE EL SERVICIO SERÁ ININTERRUMPIDO, LIBRE DE ERRORES O SEGURO, NI QUE LAS PUNTUACIONES, EVALUACIONES O REPORTES SEAN PRECISOS O ADECUADOS PARA NINGÚN PROPÓSITO PARTICULAR."
+      },
+      "s11": {
+        "heading": "12. Limitación de Responsabilidad",
+        "p0": "EN LA MEDIDA MÁXIMA PERMITIDA POR LA LEY, NO SEREMOS RESPONSABLES POR NINGÚN DAÑO INDIRECTO, INCIDENTAL, ESPECIAL, CONSECUENTE O PUNITIVO, NI POR NINGUNA PÉRDIDA DE GANANCIAS, DATOS O REPUTACIÓN, QUE SURJA DE O ESTÉ RELACIONADO CON SU USO DEL SERVICIO, INCLUYENDO CUALQUIER DECISIÓN DE EMPLEO O PERSONAL TOMADA EN CONFIANZA EN EL SERVICIO.",
+        "p1": "NUESTRA RESPONSABILIDAD TOTAL AGREGADA POR CUALQUIER RECLAMO QUE SURJA DE O ESTÉ RELACIONADO CON EL SERVICIO NO EXCEDERÁ EL MAYOR DE (A) LOS MONTOS QUE USTED NOS PAGÓ POR EL SERVICIO EN LOS DOCE (12) MESES ANTERIORES AL RECLAMO, O (B) CIEN DÓLARES ESTADOUNIDENSES ($100)."
+      },
+      "s12": {
+        "heading": "13. Indemnización",
+        "p0": "Usted acepta indemnizar y mantener indemne a Leadership Flow Technologies, LLC y a sus funcionarios, empleados y agentes de cualquier reclamo, daño, responsabilidad y gasto (incluidos los honorarios legales razonables) que surjan de su Contenido de Usuario, su uso del Servicio o su violación de estos Términos o de la ley aplicable."
+      },
+      "s13": {
+        "heading": "14. Ley Aplicable y Disputas",
+        "p0": "Estos Términos se rigen por las leyes del Estado de California, EE. UU., sin tener en cuenta sus normas de conflicto de leyes. Las partes acuerdan la jurisdicción exclusiva de los tribunales ubicados allí, excepto cuando la ley aplicable disponga lo contrario. [El asesor legal debe asesorar sobre las disposiciones de arbitraje y renuncia a acciones colectivas.]"
+      },
+      "s14": {
+        "heading": "15. Cambios a Estos Términos",
+        "p0": "Podemos actualizar estos Términos de vez en cuando. Si hacemos cambios materiales, le notificaremos por correo electrónico o a través del Servicio. Su uso continuo del Servicio después de que los cambios entren en vigor constituye la aceptación de los Términos actualizados."
+      },
+      "s15": {
+        "heading": "16. Contáctenos",
+        "p0": "¿Preguntas sobre estos Términos? Contáctenos en hectorg@accountability-app.com."
+      }
+    },
+    "privacy": {
+      "s0": {
+        "heading": "1. Introducción",
+        "p0": "Esta Política de Privacidad explica cómo Leadership Flow Technologies, LLC (\"nosotros\", \"nos\", \"nuestro\") recopila, usa, comparte y protege la información personal cuando usted usa Accountability App (el \"Servicio\"). Al usar el Servicio, usted acepta esta Política."
+      },
+      "s1": {
+        "heading": "2. Información que Recopilamos",
+        "p0": "Información de la cuenta: su nombre, dirección de correo electrónico, rol y la empresa o equipo al que pertenece.",
+        "p1": "Contenido que usted proporciona: metas SMART, declaraciones de visión, resultados de evaluaciones DISC y de Inteligencia Emocional, autoevaluaciones y evaluaciones de habilidades entre pares, notas de coaching y mentoría, planes de desarrollo de carrera, retroalimentación y entradas similares. Parte de esta información es de naturaleza reflexiva o evaluativa y debe tratarse como sensible.",
+        "p2": "Información de uso: actividad dentro del Servicio (como las herramientas utilizadas y las marcas de tiempo de sesión), que se utiliza para calcular su Puntuación de Rendición de Cuentas y para mejorar el Servicio.",
+        "p3": "Información técnica: información almacenada localmente en su navegador o dispositivo (como el almacenamiento local utilizado para recordar qué videos guiados ha visto)."
+      },
+      "s2": {
+        "heading": "3. Cómo Usamos Su Información",
+        "p0": "Usamos su información para: proporcionar y operar el Servicio; calcular puntuaciones y generar paneles y reportes; enviar correos electrónicos transaccionales como mensajes de bienvenida, recordatorios y reportes semanales; habilitar el intercambio autorizado dentro de su organización; mantener la seguridad; y mejorar y desarrollar el Servicio."
+      },
+      "s3": {
+        "heading": "4. Cómo se Comparte la Información Dentro de Su Organización",
+        "p0": "El Servicio está diseñado para uso en equipo y organizacional. Dependiendo de la configuración: los administradores pueden ver la información de los miembros en toda su organización; los líderes o gerentes designados pueden ver las Puntuaciones de Rendición de Cuentas y el progreso de sus subordinados directos cuando se haya otorgado dicha visibilidad; y las evaluaciones entre pares se comparten con la persona evaluada. Tenga esto en cuenta al ingresar contenido."
+      },
+      "s4": {
+        "heading": "5. Proveedores de Servicios (Subprocesadores)",
+        "p0": "Utilizamos proveedores externos de confianza para operar el Servicio, incluido Google Firebase para autenticación, base de datos, alojamiento y funciones en la nube, y un proveedor de entrega de correo electrónico para correo transaccional. Estos proveedores procesan datos en nuestro nombre y están sujetos a sus propios compromisos de seguridad y privacidad."
+      },
+      "s5": {
+        "heading": "6. Retención y Eliminación de Datos",
+        "p0": "Conservamos su información mientras su cuenta esté activa o según sea necesario para proporcionar el Servicio. Usted puede solicitar la eliminación de su cuenta y datos asociados, y los administradores pueden eliminar cuentas de usuario. Eliminaremos o desidentificaremos los datos dentro de un período razonable después de una solicitud válida, sujeto a obligaciones legales que puedan requerir retención."
+      },
+      "s6": {
+        "heading": "7. Sus Derechos",
+        "p0": "Dependiendo de su ubicación, es posible que tenga derechos para acceder, corregir, eliminar o exportar su información personal, y para objetar o restringir cierto procesamiento. Para ejercer estos derechos, contáctenos en hectorg@accountability-app.com. Si se encuentra en la UE/EEE, el Reino Unido o California, pueden aplicarse derechos adicionales bajo el RGPD, el RGPD del Reino Unido o la CCPA/CPRA."
+      },
+      "s7": {
+        "heading": "8. Seguridad",
+        "p0": "Utilizamos medidas técnicas y organizativas razonables para proteger su información, incluyendo controles de autenticación y acceso proporcionados por nuestros proveedores de infraestructura. Sin embargo, ningún método de transmisión o almacenamiento es completamente seguro, y no podemos garantizar seguridad absoluta."
+      },
+      "s8": {
+        "heading": "9. Menores",
+        "p0": "El Servicio no está dirigido a personas menores de 18 años, y no recopilamos a sabiendas información personal de ellas."
+      },
+      "s9": {
+        "heading": "10. Usuarios Internacionales y Transferencias de Datos",
+        "p0": "Estamos ubicados en los Estados Unidos y utilizamos proveedores de servicios, incluido Google Firebase, que almacenan y procesan datos en servidores que pueden estar ubicados en los Estados Unidos y otros países. Esto significa que su información puede ser transferida, almacenada y procesada en un país diferente al que usted reside.",
+        "p1": "Cuando los datos personales de personas en el Espacio Económico Europeo (EEE), el Reino Unido o Suiza se transfieren a los Estados Unidos, confiamos en las salvaguardas de nuestros proveedores de servicios para dichas transferencias, incluido el Marco de Privacidad de Datos UE-EE. UU. y/o las Cláusulas Contractuales Estándar de la Comisión Europea, según corresponda. Google Cloud / Firebase, nuestro proveedor de infraestructura principal, ofrece estos mecanismos."
+      },
+      "s10": {
+        "heading": "11. Sus Derechos en el EEE, el Reino Unido y Suiza (RGPD)",
+        "p0": "Si se encuentra en el Espacio Económico Europeo, el Reino Unido o Suiza, el Reglamento General de Protección de Datos (RGPD) y leyes equivalentes le otorgan derechos específicos sobre sus datos personales. Actuamos como responsable del tratamiento de los datos personales que usted proporciona a través del Servicio.",
+        "p1": "Base legal para el procesamiento: procesamos sus datos personales basándonos en (a) su consentimiento, que usted otorga al registrarse y aceptar estas políticas y que puede retirar en cualquier momento; (b) nuestros intereses legítimos en operar, asegurar y mejorar el Servicio; y (c) cuando corresponda, la ejecución de un contrato con usted o su organización.",
+        "p2": "Sus derechos incluyen: el derecho de acceso a los datos personales que tenemos sobre usted; el derecho de rectificación de datos inexactos; el derecho de supresión (\"derecho al olvido\"); el derecho a restringir u objetar cierto procesamiento; el derecho a la portabilidad de datos (para recibir sus datos en un formato portátil); y el derecho a retirar el consentimiento en cualquier momento sin afectar el procesamiento ya realizado.",
+        "p3": "Para ejercer cualquiera de estos derechos, contáctenos en hectorg@accountability-app.com. Responderemos dentro de los plazos requeridos por la ley aplicable.",
+        "p4": "También tiene derecho a presentar una queja ante su autoridad local de protección de datos. En los Países Bajos, esta es la Autoriteit Persoonsgegevens (Autoridad de Protección de Datos de los Países Bajos). También puede contactar a la autoridad supervisora en su país de residencia o trabajo.",
+        "p5": "Conservamos sus datos personales solo el tiempo necesario para los fines descritos en esta Política o según lo requiera la ley, después de lo cual se eliminan o desidentifican."
+      },
+      "s11": {
+        "heading": "12. Cambios a Esta Política",
+        "p0": "Podemos actualizar esta Política de Privacidad de vez en cuando. Publicaremos la versión actualizada y, cuando sea apropiado, le notificaremos por correo electrónico o a través del Servicio."
+      },
+      "s12": {
+        "heading": "13. Contáctenos",
+        "p0": "¿Preguntas sobre esta Política de Privacidad o sus datos? Contáctenos en hectorg@accountability-app.com."
+      }
+    }
   }
 }
