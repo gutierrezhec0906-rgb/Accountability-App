@@ -84,7 +84,7 @@ function goalQualityPct(goal) {
 }
 
 function QualityBadge({ pct }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const color = pct >= 80 ? '#0d9488' : pct >= 50 ? '#f59e0b' : '#ef4444';
   const label = pct >= 80 ? t('smartGoals.quality.high', 'High Quality') : pct >= 50 ? t('smartGoals.quality.developing', 'Developing') : t('smartGoals.quality.incomplete', 'Incomplete');
   return (
@@ -97,7 +97,7 @@ function QualityBadge({ pct }) {
 const emptyForm = { title: '', specific: '', measurable: '', achievable: '', relevant: '', timeBound: '', dueDate: '', status: 'draft' };
 
 export default function SmartGoals() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentUser, userProfile } = useAuth();
   const [goals, setGoals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -164,7 +164,7 @@ export default function SmartGoals() {
     setDraftingSmart(true);
     try {
       const fn = httpsCallable(getFunctions(), 'smartGoalAiAssist');
-      const res = await fn({ title: form.title, dueDate: form.dueDate });
+      const res = await fn({ title: form.title, dueDate: form.dueDate, language: i18n.language });
       const draft = res.data?.draft;
       if (draft) setForm(f => ({ ...f, ...draft }));
     } catch (e) {

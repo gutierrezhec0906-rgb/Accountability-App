@@ -43,7 +43,7 @@ function StarRow({ rating }) {
 // `reactions` is { emoji: [uid, ...] }. Shows every emoji that has at least
 // one reaction, plus the full picker so a new reaction can always be added.
 function ReactionRow({ reactions = {}, myUid, onToggle }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const active = new Set(REACTION_EMOJIS.filter(e => (reactions[e] || []).includes(myUid)));
   return (
     <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap', marginTop: 10 }}>
@@ -84,7 +84,7 @@ function Avatar({ name }) {
 // ── Relationship filter (right, small box) ──
 // Filters the Given/Received feed shown in the big left box by relationship type.
 function RelationshipFilter({ filterType, onSelect, isMobile }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   return (
     <div style={{ width: isMobile ? '100%' : 200, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
       <div style={{ background: '#0f2044', borderRadius: '12px 12px 0 0', padding: '0.75rem 1rem' }}>
@@ -105,7 +105,7 @@ function RelationshipFilter({ filterType, onSelect, isMobile }) {
 
 // ── Request Feedback Modal ──
 function RequestModal({ teamMembers, onClose, onSave }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [selected, setSelected] = useState([]);
   const [category, setCategory] = useState('General');
   const [note, setNote] = useState('');
@@ -120,7 +120,7 @@ function RequestModal({ teamMembers, onClose, onSave }) {
     setImproving(true);
     try {
       const fn = httpsCallable(getFunctions(), 'improveFeedbackMessage');
-      const res = await fn({ note, category });
+      const res = await fn({ note, category, language: i18n.language });
       if (res.data?.improved) setNote(res.data.improved);
     } catch (e) {
       toast.error(e?.message || t('feedback.toast.aiImprovementFailed', 'AI improvement failed'));
@@ -219,7 +219,7 @@ function RequestModal({ teamMembers, onClose, onSave }) {
 }
 
 export default function Feedback() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentUser, userProfile } = useAuth();
   const isMobile = useIsMobile();
   const [showForm, setShowForm]       = useState(false);
@@ -331,7 +331,7 @@ export default function Feedback() {
     setImprovingSBI(true);
     try {
       const fn = httpsCallable(getFunctions(), 'improveFeedbackSBI');
-      const res = await fn({ when: form.when, what: form.what, effect: form.effect });
+      const res = await fn({ when: form.when, what: form.what, effect: form.effect, language: i18n.language });
       if (res.data) {
         setForm(f => ({
           ...f,

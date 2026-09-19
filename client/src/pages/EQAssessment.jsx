@@ -20,7 +20,7 @@ const SCALE_LABELS = {
 function trScale(t, n, field) { return t(`eqAssessment.scale.${n}.${field}`, SCALE_LABELS[n][field]); }
 
 function ScaleButton({ n, selected, onClick, isLast }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [hovered, setHovered] = useState(false);
   const isActive = n <= selected;
   const color = isActive ? '#0d9488' : hovered ? '#0f2044' : '#e2e8f0';
@@ -380,7 +380,7 @@ function ScoreBar({ value, max = 5 }) {
 function trGuide(t, key, field) { return t(`eqAssessment.guides.${key}.${field}`, EQ_GUIDES[key][field]); }
 
 function QuestionGuide({ guideKey }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const guide = EQ_GUIDES[guideKey];
   if (!guide) return null;
@@ -440,7 +440,7 @@ function QuestionGuide({ guideKey }) {
 // (detailed examples / concrete actions) without touching the user's own
 // assessment answers.
 function StrategyBoard() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [selected, setSelected] = useState(null); // { dimId, strategy }
   const [deepDive, setDeepDive] = useState('');
   const [loadingDive, setLoadingDive] = useState(false);
@@ -459,7 +459,7 @@ function StrategyBoard() {
     try {
       const dim = eqDimensions.find(d => d.id === selected.dimId);
       const fn = httpsCallable(getFunctions(), 'eqStrategyDeepDive');
-      const res = await fn({ dimensionLabel: dim?.label || '', strategy: selected.strategy });
+      const res = await fn({ dimensionLabel: dim?.label || '', strategy: selected.strategy, language: i18n.language });
       setDeepDive(res.data?.explanation || '');
     } catch (e) {
       setDiveError(true);
@@ -530,7 +530,7 @@ function StrategyBoard() {
 }
 
 export default function EQAssessment() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentUser, userProfile } = useAuth();
   const [eqScores, setEqScores] = useState({});
   const [saving, setSaving] = useState(false);

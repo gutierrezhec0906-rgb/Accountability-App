@@ -107,7 +107,7 @@ function trPrompt(t, mode, p, field) {
 }
 
 function SavedPanel({ entries, onDelete, onLoad, onEdit, onMarkReviewed, activeTab, setActiveTab, expandedId, setExpandedId }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const personal = entries.filter(e => e.mode === 'personal');
   const team     = entries.filter(e => e.mode === 'team');
   const list     = activeTab === 'personal' ? personal : team;
@@ -207,7 +207,7 @@ function SavedPanel({ entries, onDelete, onLoad, onEdit, onMarkReviewed, activeT
 }
 
 export default function Vision() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentUser } = useAuth();
   const [saved, setSaved]           = useState([]);
   const [panelTab, setPanelTab]     = useState('personal');
@@ -284,7 +284,7 @@ export default function Vision() {
     setPolishing(true);
     try {
       const fn = httpsCallable(getFunctions(), 'visionAiPolish');
-      const res = await fn({ vision, mode });
+      const res = await fn({ vision, mode, language: i18n.language });
       if (res.data?.vision) {
         setVision(res.data.vision);
         toast.success(`✨ ${t('vision.toast.visionPolished', 'Vision polished!')}`);

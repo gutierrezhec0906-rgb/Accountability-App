@@ -1167,12 +1167,22 @@ function stripCodeFence(text) {
   return text.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
 }
 
+// Every AI-assist function below is called from a client that may be set to
+// Spanish (the app's i18n language, passed through as `language: 'es'`).
+// Claude otherwise defaults to English regardless of the UI language, so
+// each system prompt gets this instruction appended when the caller is in
+// Spanish — written in natural Spanish, not translated field-by-field.
+function withLanguageInstruction(systemPrompt, language) {
+  if (language !== 'es') return systemPrompt;
+  return `${systemPrompt}\n\nIMPORTANT: Write your entire response in natural, fluent Spanish (español) — not a literal translation, but how a native Spanish-speaking professional would actually phrase it. This applies to all output text, including any JSON string values.`;
+}
+
 // AI assistant for the Coaching Log — two modes:
 //   'questions' — suggest 4 open-ended coaching questions from a coaching goal
 //   'outcome'   — draft a short outcome summary from session notes + action items
 exports.coachingAiAssist = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
-  const { mode, goal, notes, actionItems } = request.data || {};
+  const { mode, goal, notes, actionItems, language } = request.data || {};
   let systemPrompt, userPrompt;
 
   if (mode === 'questions') {
@@ -1191,6 +1201,7 @@ exports.coachingAiAssist = onCall(async (request) => {
     throw new HttpsError('invalid-argument', 'Unknown mode');
   }
 
+  systemPrompt = withLanguageInstruction(systemPrompt, language);
   const text = await callClaude(systemPrompt, userPrompt);
 
   if (mode === 'questions') {
@@ -1214,7 +1225,7 @@ exports.coachingAiAssist = onCall(async (request) => {
 //   'suggestRootCause' — synthesize a root cause + countermeasure from the full chain
 exports.fiveWhysAiAssist = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
-  const { mode, problem, whys, index } = request.data || {};
+  const { mode, problem, whys, index, language } = request.data || {};
   if (!(problem || '').trim()) throw new HttpsError('invalid-argument', 'Fill in the Problem Statement first');
   const chain = (whys || []).map(w => (w || '').trim()).filter(Boolean);
 
@@ -1235,6 +1246,7 @@ exports.fiveWhysAiAssist = onCall(async (request) => {
     throw new HttpsError('invalid-argument', 'Unknown mode');
   }
 
+  systemPrompt = withLanguageInstruction(systemPrompt, language);
   const text = await callClaude(systemPrompt, userPrompt, 300);
   return { suggestion: text };
 });
@@ -1255,7 +1267,7 @@ const FISHBONE_CATS = [
 
 exports.fishboneAiFeedback = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
-  const { problem, causes } = request.data || {};
+  const { problem, causes, language } = request.data || {};
   if (!(problem || '').trim()) throw new HttpsError('invalid-argument', 'Missing effect/problem statement');
 
   const causesText = FISHBONE_CATS.map(cat => {
@@ -1263,7 +1275,8 @@ exports.fishboneAiFeedback = onCall(async (request) => {
     return `${cat.label}: ${list.length ? list.join('; ') : '(nothing entered)'}`;
   }).join('\n');
 
-  const systemPrompt = `You are an expert Lean/Six Sigma facilitator reviewing a completed Fishbone (Ishikawa) diagram. You do NOT rewrite or judge the user's own entries — you add value by offering OTHER perspectives and potential root causes they may not have considered yet, category by category, plus one short overall coaching note. For any category with nothing entered, suggest 1-2 realistic causes worth considering for that type of problem. Keep each category's feedback to 1-2 sentences, practical and specific to the stated problem — no generic filler. Return ONLY a JSON object with exactly these keys: people, process, materials, machine, environment, measurement, overall — each a string. No markdown, no code fences, no other text.`;
+  let systemPrompt = `You are an expert Lean/Six Sigma facilitator reviewing a completed Fishbone (Ishikawa) diagram. You do NOT rewrite or judge the user's own entries — you add value by offering OTHER perspectives and potential root causes they may not have considered yet, category by category, plus one short overall coaching note. For any category with nothing entered, suggest 1-2 realistic causes worth considering for that type of problem. Keep each category's feedback to 1-2 sentences, practical and specific to the stated problem — no generic filler. Return ONLY a JSON object with exactly these keys: people, process, materials, machine, environment, measurement, overall — each a string. No markdown, no code fences, no other text.`;
+  systemPrompt = withLanguageInstruction(systemPrompt, language);
   const userPrompt = `Effect / Problem: ${problem.trim()}\n\nCauses already identified by the user:\n${causesText}`;
 
   const text = await callClaude(systemPrompt, userPrompt, 700);
@@ -1286,10 +1299,11 @@ exports.fishboneAiFeedback = onCall(async (request) => {
 // strategy list gets practical detail beyond the bare title.
 exports.eqStrategyDeepDive = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
-  const { dimensionLabel, strategy } = request.data || {};
+  const { dimensionLabel, strategy, language } = request.data || {};
   if (!(strategy || '').trim()) throw new HttpsError('invalid-argument', 'Missing strategy');
 
-  const systemPrompt = 'You are an expert in emotional intelligence coaching for workplace leaders. Given an EQ strategy name and the EQ pillar it belongs to, write a practical deep dive covering: (1) a 1-2 sentence explanation of what the strategy means in practice, (2) a realistic workplace example showing it in action, (3) 3-4 specific, concrete action steps a leader could start doing this week. Write it as plain text with short paragraph breaks between the three parts (no markdown headers, bullets, or asterisks) — label each part inline like "What it means:", "Example:", "Try this week:". Keep the whole thing under 180 words.';
+  let systemPrompt = 'You are an expert in emotional intelligence coaching for workplace leaders. Given an EQ strategy name and the EQ pillar it belongs to, write a practical deep dive covering: (1) a 1-2 sentence explanation of what the strategy means in practice, (2) a realistic workplace example showing it in action, (3) 3-4 specific, concrete action steps a leader could start doing this week. Write it as plain text with short paragraph breaks between the three parts (no markdown headers, bullets, or asterisks) — label each part inline like "What it means:", "Example:", "Try this week:". Keep the whole thing under 180 words.';
+  systemPrompt = withLanguageInstruction(systemPrompt, language);
   const userPrompt = `EQ Pillar: ${dimensionLabel || 'Emotional Intelligence'}\nStrategy: ${strategy.trim()}`;
 
   const explanation = await callClaude(systemPrompt, userPrompt, 400);
@@ -1301,10 +1315,11 @@ exports.eqStrategyDeepDive = onCall(async (request) => {
 // so a user can start from a draft instead of a blank field for each one.
 exports.smartGoalAiAssist = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
-  const { title, dueDate } = request.data || {};
+  const { title, dueDate, language } = request.data || {};
   if (!(title || '').trim()) throw new HttpsError('invalid-argument', 'Enter a goal title first');
 
-  const systemPrompt = 'You are an expert in SMART goal-setting for leadership development. Given a rough goal title (and optionally a target date), draft a strong, specific version of each SMART component: Specific, Measurable, Achievable, Relevant, and Time-Bound. Each should be 1-2 concrete sentences (20-40 words), written as if the goal-owner wrote it themselves in first person. Return ONLY a JSON object with exactly these keys: specific, measurable, achievable, relevant, timeBound. No other text, no markdown.';
+  let systemPrompt = 'You are an expert in SMART goal-setting for leadership development. Given a rough goal title (and optionally a target date), draft a strong, specific version of each SMART component: Specific, Measurable, Achievable, Relevant, and Time-Bound. Each should be 1-2 concrete sentences (20-40 words), written as if the goal-owner wrote it themselves in first person. Return ONLY a JSON object with exactly these keys: specific, measurable, achievable, relevant, timeBound. No other text, no markdown.';
+  systemPrompt = withLanguageInstruction(systemPrompt, language);
   const userPrompt = `Goal title: ${title.trim()}${dueDate ? `\nTarget date: ${dueDate}` : ''}`;
 
   const text = await callClaude(systemPrompt, userPrompt, 600);
@@ -1545,10 +1560,11 @@ exports.coachingPracticeReply = onCall(async (request) => {
 // for feedback from a coworker, peer, or direct report.
 exports.improveFeedbackMessage = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
-  const { note, category } = request.data || {};
+  const { note, category, language } = request.data || {};
   if (!(note || '').trim()) throw new HttpsError('invalid-argument', 'Write your main idea first');
 
-  const systemPrompt = 'You are an expert in workplace communication and leadership development. Given a rough, unpolished idea for a request for feedback from a coworker, peer, or direct report, rewrite it as a clear, warm, specific, and professional message — 2-4 sentences. Keep the original intent and any specifics the person mentioned (what/when/topic). Make it easy for the recipient to know exactly what kind of feedback would help. Return ONLY the rewritten message — no preamble, no quotes, no markdown.';
+  let systemPrompt = 'You are an expert in workplace communication and leadership development. Given a rough, unpolished idea for a request for feedback from a coworker, peer, or direct report, rewrite it as a clear, warm, specific, and professional message — 2-4 sentences. Keep the original intent and any specifics the person mentioned (what/when/topic). Make it easy for the recipient to know exactly what kind of feedback would help. Return ONLY the rewritten message — no preamble, no quotes, no markdown.';
+  systemPrompt = withLanguageInstruction(systemPrompt, language);
   const userPrompt = `Feedback topic: ${category || 'General'}\nRough idea: ${note.trim()}`;
 
   const improved = await callClaude(systemPrompt, userPrompt, 250);
@@ -1560,12 +1576,13 @@ exports.improveFeedbackMessage = onCall(async (request) => {
 // without inventing details the user didn't provide.
 exports.improveFeedbackSBI = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
-  const { when, what, effect } = request.data || {};
+  const { when, what, effect, language } = request.data || {};
   if (!(when || '').trim() && !(what || '').trim() && !(effect || '').trim()) {
     throw new HttpsError('invalid-argument', 'Fill in at least one field first');
   }
 
-  const systemPrompt = 'You are an expert in giving effective, specific, behavior-based feedback (Situation-Behavior-Impact model). Given a leader\'s rough notes for the When/What/Effect fields of a piece of feedback, rewrite each field to be clearer, more specific, and more impactful — 1-2 sentences each. Do not invent new facts or details not implied by the input; only sharpen and clarify what was given. If a field is empty, leave it as an empty string in your output. Return ONLY a JSON object with exactly these keys: when, what, effect. No other text, no markdown.';
+  let systemPrompt = 'You are an expert in giving effective, specific, behavior-based feedback (Situation-Behavior-Impact model). Given a leader\'s rough notes for the When/What/Effect fields of a piece of feedback, rewrite each field to be clearer, more specific, and more impactful — 1-2 sentences each. Do not invent new facts or details not implied by the input; only sharpen and clarify what was given. If a field is empty, leave it as an empty string in your output. Return ONLY a JSON object with exactly these keys: when, what, effect. No other text, no markdown.';
+  systemPrompt = withLanguageInstruction(systemPrompt, language);
   const userPrompt = `When: ${(when || '').trim() || '(empty)'}\nWhat: ${(what || '').trim() || '(empty)'}\nEffect: ${(effect || '').trim() || '(empty)'}`;
 
   const text = await callClaude(systemPrompt, userPrompt, 400);
@@ -1589,11 +1606,12 @@ exports.improveFeedbackSBI = onCall(async (request) => {
 // user's actual ideas/words rather than inventing generic new content.
 exports.visionAiPolish = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
-  const { vision, mode } = request.data || {};
+  const { vision, mode, language } = request.data || {};
   if (!(vision || '').trim()) throw new HttpsError('invalid-argument', 'Nothing to polish yet — generate a vision statement first');
 
   const who = mode === 'team' ? 'a team' : 'an individual leader';
-  const systemPrompt = `You are an expert leadership coach and editor. You will be given a rough, auto-generated vision statement for ${who}, built by stitching together the person's own raw answers to a few prompts — it often has grammar mistakes, run-on sentences, repeated ideas, or awkward phrasing. Rewrite it into a single polished, grammatically correct, genuinely motivational vision statement. Preserve every specific idea, value, and goal the person actually included — do not invent new commitments or remove substance — but fix grammar, tighten the flow, remove redundancy, and elevate the language so it reads as an inspiring, confident vision rather than a run-on list. Keep it roughly the same length (typically 3-5 sentences). Return ONLY the rewritten statement as plain text — no quotes, no preamble, no markdown.`;
+  let systemPrompt = `You are an expert leadership coach and editor. You will be given a rough, auto-generated vision statement for ${who}, built by stitching together the person's own raw answers to a few prompts — it often has grammar mistakes, run-on sentences, repeated ideas, or awkward phrasing. Rewrite it into a single polished, grammatically correct, genuinely motivational vision statement. Preserve every specific idea, value, and goal the person actually included — do not invent new commitments or remove substance — but fix grammar, tighten the flow, remove redundancy, and elevate the language so it reads as an inspiring, confident vision rather than a run-on list. Keep it roughly the same length (typically 3-5 sentences). Return ONLY the rewritten statement as plain text — no quotes, no preamble, no markdown.`;
+  systemPrompt = withLanguageInstruction(systemPrompt, language);
   const userPrompt = `Rough vision statement:\n${vision.trim()}`;
 
   const polished = await callClaude(systemPrompt, userPrompt, 500);
@@ -1607,10 +1625,11 @@ exports.visionAiPolish = onCall(async (request) => {
 // write their reflection for them.
 exports.mindfulnessReflectionAssist = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
-  const { affirmation, represents, apply } = request.data || {};
+  const { affirmation, represents, apply, language } = request.data || {};
   if (!(affirmation || '').trim()) throw new HttpsError('invalid-argument', 'Missing affirmation');
 
-  const systemPrompt = `You are a leadership coach helping someone reflect on a daily leadership affirmation. Given the affirmation and whatever they've already drafted (which may be empty), offer a short, practical recommendation to help them go deeper — NOT a rewrite of their reflection. Cover: (1) one concept or angle on the affirmation worth considering that they may not have thought of, and (2) one concrete, realistic day-to-day example of applying it (different from anything they already wrote, if they wrote something). Write it as plain text, 2 short paragraphs, no markdown, no headers, under 130 words total. Address the reader as "you".`;
+  let systemPrompt = `You are a leadership coach helping someone reflect on a daily leadership affirmation. Given the affirmation and whatever they've already drafted (which may be empty), offer a short, practical recommendation to help them go deeper — NOT a rewrite of their reflection. Cover: (1) one concept or angle on the affirmation worth considering that they may not have thought of, and (2) one concrete, realistic day-to-day example of applying it (different from anything they already wrote, if they wrote something). Write it as plain text, 2 short paragraphs, no markdown, no headers, under 130 words total. Address the reader as "you".`;
+  systemPrompt = withLanguageInstruction(systemPrompt, language);
   const userPrompt = `Affirmation: "${affirmation.trim()}"\n\nWhat it represents to them so far: ${(represents || '').trim() || '(nothing written yet)'}\n\nHow they plan to apply it so far: ${(apply || '').trim() || '(nothing written yet)'}`;
 
   const suggestion = await callClaude(systemPrompt, userPrompt, 350);

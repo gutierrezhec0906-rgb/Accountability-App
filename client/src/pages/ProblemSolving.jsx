@@ -35,7 +35,7 @@ function trTool(t, tool) { return t(`problemSolving.tools.${TOOL_KEYS[tool]}`, t
 
 // ─── Shared: Saved panel ──────────────────────────────────────────────────────
 function SavedPanel({ entries, onDelete, onLoad, printEntry }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const isMobile = useIsMobile();
   return (
     <div style={{ width: isMobile ? '100%' : 260, flexShrink: 0, display: 'flex', flexDirection: 'column' }}>
@@ -146,7 +146,7 @@ function problemStatementWarning(text, t) {
 }
 
 function GuidePanel({ whyIndex }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const g = WHY_GUIDE[whyIndex];
   const goal = t(`problemSolving.whyGuide.${whyIndex}.goal`, g.goal);
@@ -205,7 +205,7 @@ const WHY_LABELS = ['Why #1', 'Why #2', 'Why #3', 'Why #4', 'Why #5'];
 
 // ─── Next Step Recommendation ────────────────────────────────────────────────
 function NextStepRecommendation({ title, problem, rootCause, onGoToA3 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const navigate = useNavigate();
   const [choice, setChoice] = useState(null); // 'action' | 'project'
 
@@ -291,7 +291,7 @@ function NextStepRecommendation({ title, problem, rootCause, onGoToA3 }) {
 }
 
 function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [title,     setTitle]     = useState('');
   const [problem,   setProblem]   = useState('');
   const [whys,      setWhys]      = useState(['', '', '', '', '']);
@@ -306,7 +306,7 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
     setSuggestingWhy(i);
     try {
       const fn = httpsCallable(getFunctions(), 'fiveWhysAiAssist');
-      const res = await fn({ mode: 'suggestWhy', problem, whys, index: i });
+      const res = await fn({ mode: 'suggestWhy', problem, whys, index: i, language: i18n.language });
       if (res.data?.suggestion) setWhys(ws => ws.map((w, j) => j === i ? res.data.suggestion : w));
     } catch (e) {
       toast.error(e?.message || t('problemSolving.toast.aiSuggestionFailed', 'AI suggestion failed'));
@@ -320,7 +320,7 @@ function FiveWhys({ onSave, savedEntries, onDelete, onGoToA3 }) {
     setSuggestingRootCause(true);
     try {
       const fn = httpsCallable(getFunctions(), 'fiveWhysAiAssist');
-      const res = await fn({ mode: 'suggestRootCause', problem, whys });
+      const res = await fn({ mode: 'suggestRootCause', problem, whys, language: i18n.language });
       if (res.data?.suggestion) setRootCause(res.data.suggestion);
     } catch (e) {
       toast.error(e?.message || t('problemSolving.toast.aiSuggestionFailed', 'AI suggestion failed'));
@@ -617,7 +617,7 @@ function fishboneCauseNudge(catId, value, t) {
 }
 
 function FishboneGuidePanel({ catId }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const g = FISHBONE_GUIDE[catId];
   if (!g) return null;
@@ -663,7 +663,7 @@ function AutoGrowTextarea({ value, style, ...props }) {
 function trCategory(t, cat) { return t(`problemSolving.categories.${cat.id}`, cat.label); }
 
 function CatCard({ cat, position, causes, onUpdate, effectText, priority }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const clip = position === 'top'
     ? 'polygon(0 0, calc(100% - 8px) 0, 100% 50%, calc(100% - 8px) 100%, 0 100%)'
     : 'polygon(8px 0, 100% 0, 100% 100%, 8px 100%, 0 50%)';
@@ -751,7 +751,7 @@ function getFilledCategories(causes = {}) {
 const PRIORITY_EMOJIS = { 1: '🥇', 2: '🥈', 3: '🥉' };
 
 function PrioritizeCategories({ causes, onComplete, onBack }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const filledCats = getFilledCategories(causes);
   const [priorities, setPriorities] = useState(Object.fromEntries(filledCats.map(c => [c.id, null])));
 
@@ -882,7 +882,7 @@ function PrioritizeCategories({ causes, onComplete, onBack }) {
 // never changes the user's own entries, it just surfaces other perspectives
 // and potential root causes worth considering for each of the 6 categories.
 function FishboneAiFeedback({ problem, causes, onContinue }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [feedback, setFeedback] = useState(null);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState(false);
@@ -892,7 +892,7 @@ function FishboneAiFeedback({ problem, causes, onContinue }) {
     (async () => {
       try {
         const fn = httpsCallable(getFunctions(), 'fishboneAiFeedback');
-        const res = await fn({ problem, causes });
+        const res = await fn({ problem, causes, language: i18n.language });
         if (!cancelled) setFeedback(res.data?.feedback || null);
       } catch (e) {
         if (!cancelled) { setError(true); toast.error(e?.message || t('problemSolving.toast.aiFeedbackFailed', 'Could not get AI feedback')); }
@@ -982,7 +982,7 @@ function fishbonePrintHTML(entry, t) {
 }
 
 function Fishbone({ onSave, savedEntries, onDelete, onGoTo5Whys }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [name,    setName]    = useState('');
   const [problem, setProblem] = useState('');
   const [causes,  setCauses]  = useState(emptyCauses);
@@ -1304,7 +1304,7 @@ const A3_GUIDE = {
 function trA3Label(t, key) { return t(`problemSolving.a3Guide.${key}.label`, A3_GUIDE[key].label); }
 
 function A3GuidePanel({ fieldKey }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const g = A3_GUIDE[fieldKey];
   if (!g) return null;
@@ -1481,7 +1481,7 @@ function a3PrintHTML(entry, t) {
 }
 
 function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [title, setTitle] = useState('');
   const [owner, setOwner] = useState('');
   const [team,  setTeam]  = useState('');
@@ -1758,7 +1758,7 @@ function A3Template({ onSave, savedEntries, onDelete, prefill, onPrefillConsumed
 
 // ─── Main page ────────────────────────────────────────────────────────────────
 export default function ProblemSolving() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentUser } = useAuth();
   const [activeTool, setActiveTool] = useState('5 Whys');
   const [saved, setSaved]           = useState({ '5whys': [], fishbone: [], a3: [] });

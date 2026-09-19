@@ -71,7 +71,7 @@ const GUIDES = {
 };
 
 function FieldGuide({ guideKey }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [open, setOpen] = useState(false);
   const g = GUIDES[guideKey];
   if (!g) return null;
@@ -111,7 +111,7 @@ function FieldGuide({ guideKey }) {
 }
 
 function ActionItemsGrid({ rows, onChange }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   function updateRow(i, field, value) {
     const updated = rows.map((r, idx) => idx === i ? { ...r, [field]: value } : r);
     onChange(updated);
@@ -185,7 +185,7 @@ function trSessionType(t, type) {
 }
 
 export default function Coaching() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentUser } = useAuth();
   const { names: savedNames, remember: rememberName } = useSavedNames();
   const [sessions, setSessions]           = useState([]);
@@ -293,7 +293,7 @@ export default function Coaching() {
     setSuggestedQuestions([]);
     try {
       const fn = httpsCallable(getFunctions(), 'coachingAiAssist');
-      const res = await fn({ mode: 'questions', goal });
+      const res = await fn({ mode: 'questions', goal, language: i18n.language });
       setSuggestedQuestions(res.data?.questions || []);
     } catch (e) {
       toast.error(e?.message || t('coaching.toast.aiSuggestionFailed', 'AI suggestion failed'));
@@ -306,7 +306,7 @@ export default function Coaching() {
     setSuggestingOutcome(true);
     try {
       const fn = httpsCallable(getFunctions(), 'coachingAiAssist');
-      const res = await fn({ mode: 'outcome', notes: session.notes, actionItems: session.actionItems });
+      const res = await fn({ mode: 'outcome', notes: session.notes, actionItems: session.actionItems, language: i18n.language });
       if (res.data?.outcome) setCloseForm(f => ({ ...f, outcome: res.data.outcome }));
     } catch (e) {
       toast.error(e?.message || t('coaching.toast.aiSuggestionFailed', 'AI suggestion failed'));

@@ -89,7 +89,7 @@ function formatDate(iso) {
 }
 
 export default function Mindfulness() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { currentUser } = useAuth();
   const [selectedEx, setSelectedEx] = useState(exercises[0]);
   const [running, setRunning] = useState(false);
@@ -146,7 +146,7 @@ export default function Mindfulness() {
     setAiSuggestion('');
     try {
       const fn = httpsCallable(getFunctions(), 'mindfulnessReflectionAssist');
-      const res = await fn({ affirmation: affirmations[affIdx], represents: reflectRepresents, apply: reflectApply });
+      const res = await fn({ affirmation: affirmations[affIdx], represents: reflectRepresents, apply: reflectApply, language: i18n.language });
       setAiSuggestion(res.data?.suggestion || '');
     } catch (e) {
       toast.error(e?.message || t('mindfulness.toast.aiFailed', 'Could not get AI recommendation — try again'));
