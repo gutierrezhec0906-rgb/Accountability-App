@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { isLocked, TIER_LABELS, TIER_ICONS } from '../utils/subscription';
@@ -12,69 +13,79 @@ const categories = [
   {
     id: 'model',
     label: 'Set the Bar',
+    labelKey: 'dashboard.categories.model.label',
     icon: '🧭',
     accent: '#3b82f6',
     bg: 'linear-gradient(135deg,#1e3a8a,#2563eb)',
     desc: 'Set the standard. Lead by example.',
+    descKey: 'dashboard.categories.model.desc',
     modules: [
-      { id: 'visual-board',  label: 'Visual Management', icon: '🔴', path: '/visual-board',   iconBg: 'linear-gradient(135deg,#fca5a5,#f87171)' },
-      { id: 'lob',           label: 'Line of Balance (LOB)',   icon: '📈', path: '/lob',             iconBg: 'linear-gradient(135deg,#a5b4fc,#818cf8)' },
-      { id: 'urgency',       label: 'Sense of Urgency',  icon: '⚡', path: '/urgency',         iconBg: 'linear-gradient(135deg,#fb923c,#ea580c)' },
-      { id: 'eq-opex',       label: 'OpEx Tools',        icon: '⚙️', path: '/eq-opex',         iconBg: 'linear-gradient(135deg,#fef08a,#facc15)' },
+      { id: 'visual-board',  label: 'Visual Management', labelKey: 'dashboard.modules.visualBoard', icon: '🔴', path: '/visual-board',   iconBg: 'linear-gradient(135deg,#fca5a5,#f87171)' },
+      { id: 'lob',           label: 'Line of Balance (LOB)', labelKey: 'dashboard.modules.lob',  icon: '📈', path: '/lob',             iconBg: 'linear-gradient(135deg,#a5b4fc,#818cf8)' },
+      { id: 'urgency',       label: 'Sense of Urgency', labelKey: 'dashboard.modules.urgency', icon: '⚡', path: '/urgency',         iconBg: 'linear-gradient(135deg,#fb923c,#ea580c)' },
+      { id: 'eq-opex',       label: 'OpEx Tools', labelKey: 'dashboard.modules.eqOpex',       icon: '⚙️', path: '/eq-opex',         iconBg: 'linear-gradient(135deg,#fef08a,#facc15)' },
     ],
   },
   {
     id: 'inspire',
     label: 'Spark the Vision',
+    labelKey: 'dashboard.categories.inspire.label',
     icon: '🔭',
     accent: '#0d9488',
     bg: 'linear-gradient(135deg,#134e4a,#0d9488)',
     desc: 'Paint the picture. Unite around purpose.',
+    descKey: 'dashboard.categories.inspire.desc',
     modules: [
-      { id: 'vision',      label: 'Vision Builder', icon: '🔭', path: '/vision',      iconBg: 'linear-gradient(135deg,#60a5fa,#2563eb)' },
-      { id: 'smart-goals', label: 'SMART Goals',    icon: '🎯', path: '/smart-goals', iconBg: 'linear-gradient(135deg,#fde68a,#fbbf24)' },
-      { id: 'mindfulness', label: 'Mindfulness',    icon: '🧘', path: '/mindfulness', iconBg: 'linear-gradient(135deg,#0d9488,#0f766e)' },
+      { id: 'vision',      label: 'Vision Builder', labelKey: 'dashboard.modules.vision', icon: '🔭', path: '/vision',      iconBg: 'linear-gradient(135deg,#60a5fa,#2563eb)' },
+      { id: 'smart-goals', label: 'SMART Goals', labelKey: 'dashboard.modules.smartGoals',    icon: '🎯', path: '/smart-goals', iconBg: 'linear-gradient(135deg,#fde68a,#fbbf24)' },
+      { id: 'mindfulness', label: 'Mindfulness', labelKey: 'dashboard.modules.mindfulness',    icon: '🧘', path: '/mindfulness', iconBg: 'linear-gradient(135deg,#0d9488,#0f766e)' },
     ],
   },
   {
     id: 'challenge',
     label: 'Improve the Flow',
+    labelKey: 'dashboard.categories.challenge.label',
     icon: '⚙️',
     accent: '#d97706',
     bg: 'linear-gradient(135deg,#78350f,#d97706)',
     desc: 'Question the status quo. Drive improvement.',
+    descKey: 'dashboard.categories.challenge.desc',
     modules: [
-      { id: 'lean',           label: 'Lean Toolkit',    icon: '🏭', path: '/lean',           iconBg: 'linear-gradient(135deg,#fdba74,#f97316)' },
-      { id: 'problem-solving',label: 'Problem Solving', icon: '🔍', path: '/problem-solving', iconBg: 'linear-gradient(135deg,#e879f9,#c026d3)' },
-      { id: 'disc',           label: 'DISC Assessment', icon: '🎯', path: '/disc',           iconBg: 'linear-gradient(135deg,#fda4af,#fb7185)' },
+      { id: 'lean',           label: 'Lean Toolkit', labelKey: 'dashboard.modules.lean',    icon: '🏭', path: '/lean',           iconBg: 'linear-gradient(135deg,#fdba74,#f97316)' },
+      { id: 'problem-solving',label: 'Problem Solving', labelKey: 'dashboard.modules.problemSolving', icon: '🔍', path: '/problem-solving', iconBg: 'linear-gradient(135deg,#e879f9,#c026d3)' },
+      { id: 'disc',           label: 'DISC Assessment', labelKey: 'dashboard.modules.disc', icon: '🎯', path: '/disc',           iconBg: 'linear-gradient(135deg,#fda4af,#fb7185)' },
     ],
   },
   {
     id: 'enable',
     label: 'Enable the Team',
+    labelKey: 'dashboard.categories.enable.label',
     icon: '🤝',
     accent: '#7c3aed',
     bg: 'linear-gradient(135deg,#4c1d95,#7c3aed)',
     desc: 'Build capacity. Foster collaboration.',
+    descKey: 'dashboard.categories.enable.desc',
     modules: [
-      { id: 'skills',   label: 'Skills Development', icon: '⭐', path: '/skills',   iconBg: 'linear-gradient(135deg,#fcd34d,#f59e0b)' },
-      { id: 'training', label: 'Training Center',    icon: '🎓', path: '/training', iconBg: 'linear-gradient(135deg,#93c5fd,#60a5fa)' },
-      { id: 'mentoring',label: 'Mentoring Tracker',  icon: '🫂', path: '/mentoring',iconBg: 'linear-gradient(135deg,#86efac,#4ade80)' },
-      { id: 'career',   label: 'Career Development', icon: '🚀', path: '/career',   iconBg: 'linear-gradient(135deg,#7dd3fc,#0ea5e9)' },
+      { id: 'skills',   label: 'Skills Development', labelKey: 'dashboard.modules.skills', icon: '⭐', path: '/skills',   iconBg: 'linear-gradient(135deg,#fcd34d,#f59e0b)' },
+      { id: 'training', label: 'Training Center', labelKey: 'dashboard.modules.training',    icon: '🎓', path: '/training', iconBg: 'linear-gradient(135deg,#93c5fd,#60a5fa)' },
+      { id: 'mentoring',label: 'Mentoring Tracker', labelKey: 'dashboard.modules.mentoring',  icon: '🫂', path: '/mentoring',iconBg: 'linear-gradient(135deg,#86efac,#4ade80)' },
+      { id: 'career',   label: 'Career Development', labelKey: 'dashboard.modules.career', icon: '🚀', path: '/career',   iconBg: 'linear-gradient(135deg,#7dd3fc,#0ea5e9)' },
     ],
   },
   {
     id: 'encourage',
     label: 'Winning with Compassion',
+    labelKey: 'dashboard.categories.encourage.label',
     icon: '❤️',
     accent: '#e11d48',
     bg: 'linear-gradient(135deg,#881337,#e11d48)',
     desc: 'Recognize contributions. Celebrate wins.',
+    descKey: 'dashboard.categories.encourage.desc',
     modules: [
-      { id: 'feedback', label: 'Feedback Box',      icon: '📬', path: '/feedback', iconBg: 'linear-gradient(135deg,#6ee7b7,#34d399)' },
-      { id: 'coaching', label: 'Coaching Log',      icon: '📝', path: '/coaching', iconBg: 'linear-gradient(135deg,#fde68a,#fbbf24)' },
-      { id: 'quotes',   label: 'Leadership Quotes', icon: '💬', path: '/quotes',   iconBg: 'linear-gradient(135deg,#c084fc,#a855f7)' },
-      { id: 'eq',       label: 'Emotional Intelligence (EQ)',     icon: '💡', path: '/eq',       iconBg: 'linear-gradient(135deg,#fef08a,#facc15)' },
+      { id: 'feedback', label: 'Feedback Box', labelKey: 'dashboard.modules.feedback',      icon: '📬', path: '/feedback', iconBg: 'linear-gradient(135deg,#6ee7b7,#34d399)' },
+      { id: 'coaching', label: 'Coaching Log', labelKey: 'dashboard.modules.coaching',      icon: '📝', path: '/coaching', iconBg: 'linear-gradient(135deg,#fde68a,#fbbf24)' },
+      { id: 'quotes',   label: 'Leadership Quotes', labelKey: 'dashboard.modules.quotes',   icon: '💬', path: '/quotes',   iconBg: 'linear-gradient(135deg,#c084fc,#a855f7)' },
+      { id: 'eq',       label: 'Emotional Intelligence (EQ)', labelKey: 'dashboard.modules.eq',     icon: '💡', path: '/eq',       iconBg: 'linear-gradient(135deg,#fef08a,#facc15)' },
     ],
   },
 ];
@@ -117,13 +128,14 @@ function Sparkline({ history, width = 300, height = 56 }) {
 }
 
 const quickActions = [
-  { label: 'Log Coaching Session', icon: '📝', path: '/coaching' },
-  { label: 'Submit Feedback',       icon: '📬', path: '/feedback' },
-  { label: 'Update Skills',         icon: '⭐', path: '/skills' },
-  { label: 'Add SMART Goal',        icon: '🎯', path: '/smart-goals' },
+  { label: 'Log Coaching Session', labelKey: 'dashboard.quickActions.logCoaching', icon: '📝', path: '/coaching' },
+  { label: 'Submit Feedback', labelKey: 'dashboard.quickActions.submitFeedback',       icon: '📬', path: '/feedback' },
+  { label: 'Update Skills', labelKey: 'dashboard.quickActions.updateSkills',         icon: '⭐', path: '/skills' },
+  { label: 'Add SMART Goal', labelKey: 'dashboard.quickActions.addSmartGoal',        icon: '🎯', path: '/smart-goals' },
 ];
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const { currentUser, userProfile } = useAuth();
   const navigate = useNavigate();
   const [score, setScore] = useState(null);
@@ -232,9 +244,7 @@ export default function Dashboard() {
     })();
   }, [currentUser]);
 
-  const firstName = currentUser?.displayName?.split(' ')[0] || 'Leader';
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  const firstName = currentUser?.displayName?.split(' ')[0] || t('dashboard.leaderFallback', 'Leader');
   const userTier = userProfile?.subscriptionTier || 'free';
 
   // Teammates who asked ME to complete their skills peer assessment
@@ -247,10 +257,10 @@ export default function Dashboard() {
     const cp = userProfile?.careerPlan;
     if (!cp?.completedAt) return null;
     const windows = [
-      { key: 'd30', label: '30-day', days: 30,  penalty: '−2 pts' },
-      { key: 'd90', label: '90-day', days: 90,  penalty: '−3 pts' },
-      { key: 'm6',  label: '6-month', days: 180, penalty: '−2 pts' },
-      { key: 'm12', label: '12-month', days: 365, penalty: 'all remaining points' },
+      { key: 'd30', label: t('dashboard.career.window30', '30-day'), days: 30,  penalty: '−2 pts' },
+      { key: 'd90', label: t('dashboard.career.window90', '90-day'), days: 90,  penalty: '−3 pts' },
+      { key: 'm6',  label: t('dashboard.career.window6mo', '6-month'), days: 180, penalty: '−2 pts' },
+      { key: 'm12', label: t('dashboard.career.window12mo', '12-month'), days: 365, penalty: t('dashboard.career.allRemainingPoints', 'all remaining points') },
     ];
     const daysSince = (Date.now() - new Date(cp.completedAt).getTime()) / 86400000;
     for (const w of windows) {
@@ -282,37 +292,37 @@ export default function Dashboard() {
         <div style={{ position: 'absolute', right: 80, bottom: -70, width: 170, height: 170, borderRadius: '50%', background: 'rgba(52,211,153,0.07)', pointerEvents: 'none' }} />
 
         <div style={{ position: 'relative', flex: '1 1 300px', minWidth: 260 }}>
-          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.9rem', fontWeight: 500, margin: '0 0 2px' }}>Welcome back,</p>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.9rem', fontWeight: 500, margin: '0 0 2px' }}>{t('dashboard.welcomeBack', 'Welcome back,')}</p>
           <h1 style={{ color: 'white', fontSize: '2rem', fontWeight: 900, margin: '0 0 6px', lineHeight: 1.15 }}>
             {firstName} <span style={{ fontWeight: 400 }}>👋</span>
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.9rem', margin: '0 0 20px', fontWeight: 400 }}>
-            {userProfile?.role || 'Leader'} · Track your accountability and growth
+            {userProfile?.role || t('dashboard.leaderFallback', 'Leader')} · {t('dashboard.trackSubtitle', 'Track your accountability and growth')}
           </p>
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <button
               onClick={() => navigate('/scores')}
               style={{ background: '#10b981', color: 'white', border: 'none', borderRadius: 12, padding: '0.6rem 1.3rem', fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer', boxShadow: '0 4px 14px rgba(16,185,129,0.35)' }}
             >
-              View My Score
+              {t('dashboard.viewMyScore', 'View My Score')}
             </button>
             <button
               onClick={() => navigate('/smart-goals')}
               style={{ background: 'white', color: '#0b3b2c', border: 'none', borderRadius: 12, padding: '0.6rem 1.3rem', fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer' }}
             >
-              My SMART Goals
+              {t('dashboard.mySmartGoals', 'My SMART Goals')}
             </button>
             <button
               onClick={() => navigate('/self-assessment')}
               style={{ background: 'rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: '0.6rem 1rem', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}
             >
-              📋 Self-Assessment
+              📋 {t('dashboard.selfAssessment', 'Self-Assessment')}
             </button>
             <button
               onClick={() => navigate('/pricing')}
               style={{ background: 'rgba(255,255,255,0.10)', color: 'rgba(255,255,255,0.85)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 12, padding: '0.6rem 1rem', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer' }}
             >
-              {TIER_ICONS[userTier]} {TIER_LABELS[userTier]} Plan
+              {TIER_ICONS[userTier]} {TIER_LABELS[userTier]} {t('dashboard.plan', 'Plan')}
             </button>
           </div>
         </div>
@@ -327,11 +337,11 @@ export default function Dashboard() {
             display: 'flex', flexDirection: 'column', justifyContent: 'center',
           }}
         >
-          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', margin: '0 0 2px' }}>Accountability Score</p>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.68rem', fontWeight: 800, letterSpacing: '0.12em', textTransform: 'uppercase', margin: '0 0 2px' }}>{t('dashboard.accountabilityScore', 'Accountability Score')}</p>
           <p style={{ color: 'white', fontSize: '3.25rem', fontWeight: 900, margin: 0, lineHeight: 1 }}>
             {score ?? '—'}
           </p>
-          <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.72rem', margin: '2px 0 6px' }}>out of 100</p>
+          <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '0.72rem', margin: '2px 0 6px' }}>{t('dashboard.outOf100', 'out of 100')}</p>
           <Sparkline history={history} />
         </button>
       </div>
@@ -345,15 +355,19 @@ export default function Dashboard() {
           <span style={{ fontSize: '1.5rem', flexShrink: 0 }}>🙋</span>
           <div style={{ flex: 1, minWidth: 200 }}>
             <p style={{ fontWeight: 800, color: '#a16207', margin: '0 0 2px', fontSize: '0.9rem' }}>
-              Action needed: peer assessment{incomingSkillsRequests.length > 1 ? 's' : ''} waiting on you
+              {incomingSkillsRequests.length > 1
+                ? t('dashboard.skillsRequest.titlePlural', 'Action needed: peer assessments waiting on you')
+                : t('dashboard.skillsRequest.title', 'Action needed: peer assessment waiting on you')}
             </p>
             <p style={{ fontSize: '0.8rem', color: '#854d0e', margin: 0, lineHeight: 1.5 }}>
-              {incomingSkillsRequests.map(m => m.displayName || m.email || 'A teammate').join(', ')} asked you to rate their skills in the Skills Development Matrix.
+              {t('dashboard.skillsRequest.desc', '{{names}} asked you to rate their skills in the Skills Development Matrix.', {
+                names: incomingSkillsRequests.map(m => m.displayName || m.email || t('dashboard.skillsRequest.teammate', 'A teammate')).join(', '),
+              })}
             </p>
           </div>
           <button onClick={() => navigate('/skills')}
             style={{ background: '#ca8a04', color: 'white', border: 'none', borderRadius: 10, padding: '0.5rem 1.1rem', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', flexShrink: 0 }}>
-            Complete Assessment →
+            {t('dashboard.skillsRequest.cta', 'Complete Assessment →')}
           </button>
         </div>
       )}
@@ -369,18 +383,18 @@ export default function Dashboard() {
           <div style={{ flex: 1, minWidth: 200 }}>
             <p style={{ fontWeight: 800, margin: '0 0 2px', fontSize: '0.9rem', color: careerReminder.overdue ? '#b91c1c' : '#1e40af' }}>
               {careerReminder.overdue
-                ? `Your ${careerReminder.label} career check-in is overdue`
-                : `Your ${careerReminder.label} career check-in is due in ${careerReminder.daysUntil} day${careerReminder.daysUntil === 1 ? '' : 's'}`}
+                ? t('dashboard.career.overdueTitle', 'Your {{label}} career check-in is overdue', { label: careerReminder.label })
+                : t('dashboard.career.dueTitle', 'Your {{label}} career check-in is due in {{days}} day{{plural}}', { label: careerReminder.label, days: careerReminder.daysUntil, plural: careerReminder.daysUntil === 1 ? '' : 's' })}
             </p>
             <p style={{ fontSize: '0.8rem', margin: 0, lineHeight: 1.5, color: careerReminder.overdue ? '#991b1b' : '#3730a3' }}>
               {careerReminder.overdue
-                ? `Add your progress note to restore your points (${careerReminder.penalty} at stake).`
-                : `Log a progress note on your Career Development Plan to keep your points (${careerReminder.penalty} at stake).`}
+                ? t('dashboard.career.overdueDesc', 'Add your progress note to restore your points ({{penalty}} at stake).', { penalty: careerReminder.penalty })
+                : t('dashboard.career.dueDesc', 'Log a progress note on your Career Development Plan to keep your points ({{penalty}} at stake).', { penalty: careerReminder.penalty })}
             </p>
           </div>
           <button onClick={() => navigate('/career')}
             style={{ background: careerReminder.overdue ? '#dc2626' : '#0d9488', color: 'white', border: 'none', borderRadius: 10, padding: '0.5rem 1.1rem', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer', flexShrink: 0 }}>
-            {careerReminder.overdue ? 'Update Now →' : 'Add Progress Note →'}
+            {careerReminder.overdue ? t('dashboard.career.updateNow', 'Update Now →') : t('dashboard.career.addProgressNote', 'Add Progress Note →')}
           </button>
         </div>
       )}
@@ -398,8 +412,8 @@ export default function Dashboard() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
               <span style={{ fontSize: '1.25rem' }}>⚠️</span>
               <div style={{ textAlign: 'left' }}>
-                <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.95rem' }}>Coming Due Soon</h3>
-                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>Due within 2 weeks — act now, before it goes past due.</p>
+                <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.95rem' }}>{t('dashboard.dueSoon.title', 'Coming Due Soon')}</h3>
+                <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>{t('dashboard.dueSoon.subtitle', 'Due within 2 weeks — act now, before it goes past due.')}</p>
               </div>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -424,7 +438,7 @@ export default function Dashboard() {
                     <span style={{ fontSize: '1rem', flexShrink: 0 }}>{item.icon}</span>
                     <span style={{ flex: 1, minWidth: 0, fontSize: '0.83rem', fontWeight: 600, color: '#78350f', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.label}</span>
                     <span style={{ fontSize: '0.75rem', fontWeight: 800, color: status.color, flexShrink: 0 }}>
-                      {daysLeft <= 0 ? 'Due today' : `${daysLeft}d left`}
+                      {daysLeft <= 0 ? t('dashboard.dueSoon.dueToday', 'Due today') : t('dashboard.dueSoon.daysLeft', '{{days}}d left', { days: daysLeft })}
                     </span>
                   </button>
                 );
@@ -439,8 +453,8 @@ export default function Dashboard() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
           <span style={{ fontSize: '1.25rem' }}>📆</span>
           <div>
-            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.95rem' }}>Usage Streak Tracker</h3>
-            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>How much time you've spent in the app each day, last 4 weeks (Monday–Sunday).</p>
+            <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '0.95rem' }}>{t('dashboard.usageStreak.title', 'Usage Streak Tracker')}</h3>
+            <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '2px 0 0' }}>{t('dashboard.usageStreak.subtitle', "How much time you've spent in the app each day, last 4 weeks (Monday–Sunday).")}</p>
           </div>
         </div>
         <UsageStreakTracker toolSessions={toolSessions} />
@@ -449,10 +463,10 @@ export default function Dashboard() {
       {/* ── Stats row ── */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 12 }}>
         {[
-          { label: 'Accountability Score', value: score ?? '—', sub: 'calculated by the app', accent: '#0d9488', icon: '🏆' },
-          { label: 'Active Modules',        value: allModules.length, sub: 'tools available',      accent: '#1e3a6e', icon: '🗂' },
-          { label: 'Role',                  value: userProfile?.role || 'Leader', sub: 'your position', accent: '#7c3aed', icon: '👤' },
-          { label: 'Today',                 value: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), sub: new Date().toLocaleDateString('en-US', { weekday: 'long' }), accent: '#0891b2', icon: '📅' },
+          { label: t('dashboard.stats.score', 'Accountability Score'), value: score ?? '—', sub: t('dashboard.stats.scoreSub', 'calculated by the app'), accent: '#0d9488', icon: '🏆' },
+          { label: t('dashboard.stats.activeModules', 'Active Modules'),        value: allModules.length, sub: t('dashboard.stats.activeModulesSub', 'tools available'),      accent: '#1e3a6e', icon: '🗂' },
+          { label: t('dashboard.stats.role', 'Role'),                  value: userProfile?.role || t('dashboard.leaderFallback', 'Leader'), sub: t('dashboard.stats.roleSub', 'your position'), accent: '#7c3aed', icon: '👤' },
+          { label: t('dashboard.stats.today', 'Today'),                 value: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), sub: new Date().toLocaleDateString('en-US', { weekday: 'long' }), accent: '#0891b2', icon: '📅' },
         ].map(s => (
           <div key={s.label} className="stat-tile">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -481,12 +495,12 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span style={{ fontSize: '1.125rem' }}>{cat.icon}</span>
                   <div>
-                    <p style={{ color: 'white', fontWeight: 800, fontSize: '0.875rem', margin: 0, lineHeight: 1.2 }}>{cat.label}</p>
-                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem', margin: 0 }}>{cat.desc}</p>
+                    <p style={{ color: 'white', fontWeight: 800, fontSize: '0.875rem', margin: 0, lineHeight: 1.2 }}>{t(cat.labelKey, cat.label)}</p>
+                    <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem', margin: 0 }}>{t(cat.descKey, cat.desc)}</p>
                   </div>
                 </div>
                 <span style={{ background: 'rgba(255,255,255,0.15)', color: 'white', fontSize: '0.7rem', fontWeight: 700, borderRadius: 99, padding: '2px 8px' }}>
-                  {cat.modules.length} tools
+                  {t('dashboard.toolsCount', '{{count}} tools', { count: cat.modules.length })}
                 </span>
               </div>
               {/* Module cards for this category */}
@@ -517,7 +531,7 @@ export default function Dashboard() {
                       <div style={{ width: 38, height: 38, borderRadius: 10, background: m.iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.125rem', filter: locked ? 'grayscale(40%)' : 'none' }}>
                         {locked ? '🔒' : m.icon}
                       </div>
-                      <p style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.35 }}>{m.label}</p>
+                      <p style={{ fontSize: '0.8125rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.35 }}>{t(m.labelKey, m.label)}</p>
                       <div style={{ height: 3, borderRadius: 9999, background: '#e2e8f0', overflow: 'hidden' }}>
                         <div style={{ height: '100%', borderRadius: 9999, background: locked ? '#e2e8f0' : cat.bg, width: '40%' }} />
                       </div>
@@ -531,7 +545,7 @@ export default function Dashboard() {
 
         {/* Quick Actions */}
         <div>
-          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 0.875rem', fontSize: '1rem' }}>Quick Actions</h3>
+          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 0.875rem', fontSize: '1rem' }}>{t('dashboard.quickActions.title', 'Quick Actions')}</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {quickActions.map(a => (
               <button
@@ -549,7 +563,7 @@ export default function Dashboard() {
                 onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = '#fff'; }}
               >
                 <span style={{ fontSize: '1.125rem' }}>{a.icon}</span>
-                <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{a.label}</span>
+                <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{t(a.labelKey, a.label)}</span>
               </button>
             ))}
           </div>
@@ -560,9 +574,9 @@ export default function Dashboard() {
             background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)',
             border: '1px solid #bbf7d0',
           }}>
-            <p style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#15803d', margin: '0 0 4px' }}>💡 Tip</p>
+            <p style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#15803d', margin: '0 0 4px' }}>💡 {t('dashboard.tip.label', 'Tip')}</p>
             <p style={{ fontSize: '0.8rem', color: '#166534', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
-              Use more tools consistently to grow your Accountability Score.
+              {t('dashboard.tip.text', 'Use more tools consistently to grow your Accountability Score.')}
             </p>
           </div>
         </div>
@@ -573,11 +587,11 @@ export default function Dashboard() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
             <div>
-              <h2 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1.1rem' }}>👥 My Team</h2>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: '2px 0 0' }}>{userProfile?.companyName} · {teamMembers.length} member{teamMembers.length !== 1 ? 's' : ''}</p>
+              <h2 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: 0, fontSize: '1.1rem' }}>👥 {t('dashboard.team.title', 'My Team')}</h2>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.8rem', margin: '2px 0 0' }}>{userProfile?.companyName} · {teamMembers.length} {teamMembers.length === 1 ? t('dashboard.team.member', 'member') : t('dashboard.team.members', 'members')}</p>
             </div>
             <button onClick={() => navigate('/team')} style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 8, padding: '6px 14px', fontSize: 12, fontWeight: 600, color: 'var(--text-secondary)', cursor: 'pointer' }}>
-              View All →
+              {t('dashboard.team.viewAll', 'View All →')}
             </button>
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>

@@ -3,5 +3,100 @@
     "language": "Idioma",
     "english": "Inglés",
     "spanish": "Español"
+  },
+  "dashboard": {
+    "leaderFallback": "Líder",
+    "welcomeBack": "Bienvenido de nuevo,",
+    "trackSubtitle": "Da seguimiento a tu responsabilidad y crecimiento",
+    "viewMyScore": "Ver mi puntuación",
+    "mySmartGoals": "Mis metas SMART",
+    "selfAssessment": "Autoevaluación",
+    "plan": "Plan",
+    "accountabilityScore": "Puntuación de responsabilidad",
+    "outOf100": "de 100",
+    "toolsCount": "{{count}} herramientas",
+    "skillsRequest": {
+      "title": "Acción requerida: evaluación de compañero pendiente",
+      "titlePlural": "Acción requerida: evaluaciones de compañeros pendientes",
+      "desc": "{{names}} te pidió(eron) que califiques sus habilidades en la Matriz de Desarrollo de Habilidades.",
+      "teammate": "Un compañero de equipo",
+      "cta": "Completar evaluación →"
+    },
+    "career": {
+      "window30": "30 días",
+      "window90": "90 días",
+      "window6mo": "6 meses",
+      "window12mo": "12 meses",
+      "allRemainingPoints": "todos los puntos restantes",
+      "overdueTitle": "Tu seguimiento de carrera de {{label}} está vencido",
+      "dueTitle": "Tu seguimiento de carrera de {{label}} vence en {{days}} día{{plural}}",
+      "overdueDesc": "Agrega tu nota de progreso para restaurar tus puntos ({{penalty}} en juego).",
+      "dueDesc": "Registra una nota de progreso en tu Plan de Desarrollo de Carrera para conservar tus puntos ({{penalty}} en juego).",
+      "updateNow": "Actualizar ahora →",
+      "addProgressNote": "Agregar nota de progreso →"
+    },
+    "dueSoon": {
+      "title": "Próximo a vencer",
+      "subtitle": "Vence dentro de 2 semanas — actúa ahora, antes de que se venza.",
+      "dueToday": "Vence hoy",
+      "daysLeft": "{{days}}d restantes"
+    },
+    "usageStreak": {
+      "title": "Rastreador de racha de uso",
+      "subtitle": "Cuánto tiempo has usado la app cada día, últimas 4 semanas (lunes–domingo)."
+    },
+    "stats": {
+      "score": "Puntuación de responsabilidad",
+      "scoreSub": "calculada por la app",
+      "activeModules": "Módulos activos",
+      "activeModulesSub": "herramientas disponibles",
+      "role": "Rol",
+      "roleSub": "tu posición",
+      "today": "Hoy"
+    },
+    "categories": {
+      "model": { "label": "Marca la Pauta", "desc": "Establece el estándar. Lidera con el ejemplo." },
+      "inspire": { "label": "Enciende la Visión", "desc": "Pinta la imagen. Únete en torno a un propósito." },
+      "challenge": { "label": "Mejora el Flujo", "desc": "Cuestiona el status quo. Impulsa la mejora." },
+      "enable": { "label": "Capacita al Equipo", "desc": "Desarrolla capacidad. Fomenta la colaboración." },
+      "encourage": { "label": "Gana con Compasión", "desc": "Reconoce contribuciones. Celebra los logros." }
+    },
+    "modules": {
+      "visualBoard": "Gestión Visual",
+      "lob": "Línea de Balance (LOB)",
+      "urgency": "Sentido de Urgencia",
+      "eqOpex": "Herramientas OpEx",
+      "vision": "Constructor de Visión",
+      "smartGoals": "Metas SMART",
+      "mindfulness": "Mindfulness",
+      "lean": "Kit de Herramientas Lean",
+      "problemSolving": "Resolución de Problemas",
+      "disc": "Evaluación DISC",
+      "skills": "Desarrollo de Habilidades",
+      "training": "Centro de Capacitación",
+      "mentoring": "Seguimiento de Mentoría",
+      "career": "Desarrollo de Carrera",
+      "feedback": "Buzón de Retroalimentación",
+      "coaching": "Registro de Coaching",
+      "quotes": "Frases de Liderazgo",
+      "eq": "Inteligencia Emocional (EQ)"
+    },
+    "quickActions": {
+      "title": "Acciones Rápidas",
+      "logCoaching": "Registrar sesión de coaching",
+      "submitFeedback": "Enviar retroalimentación",
+      "updateSkills": "Actualizar habilidades",
+      "addSmartGoal": "Agregar meta SMART"
+    },
+    "tip": {
+      "label": "Consejo",
+      "text": "Usa más herramientas de forma constante para aumentar tu puntuación de responsabilidad."
+    },
+    "team": {
+      "title": "Mi Equipo",
+      "member": "miembro",
+      "members": "miembros",
+      "viewAll": "Ver todos →"
+    }
   }
 }
