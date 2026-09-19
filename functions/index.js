@@ -1481,7 +1481,8 @@ const PRACTICE_SCENARIOS = {
 
 exports.coachingPracticeReply = onCall(async (request) => {
   if (!request.auth) throw new HttpsError('unauthenticated', 'Sign in required');
-  const { scenario, history, message, customDescription } = request.data || {};
+  const { scenario, history, message, customDescription, language } = request.data || {};
+  const isSpanish = language === 'es';
   let persona = PRACTICE_SCENARIOS[scenario];
   if (scenario === 'custom') {
     const desc = (customDescription || '').trim();
@@ -1491,7 +1492,10 @@ exports.coachingPracticeReply = onCall(async (request) => {
   if (!persona) throw new HttpsError('invalid-argument', 'Unknown or missing scenario');
   if (!(message || '').trim()) throw new HttpsError('invalid-argument', 'Missing coach message');
 
-  const systemPrompt = `${persona}\n\nStay fully in character as this person for the entire conversation. Respond naturally and conversationally, as if speaking out loud — 1 to 4 sentences, no stage directions, no asterisks, no narration, just what you would actually say. Never break character to give coaching advice or acknowledge you are an AI.`;
+  const languageInstruction = isSpanish
+    ? '\n\nIMPORTANT: Respond ONLY in natural, conversational Spanish (español) — as a native Spanish speaker would actually talk, not a literal translation. The coach is speaking to you in Spanish; stay in Spanish for the entire conversation regardless of the language used in your character description above.'
+    : '';
+  const systemPrompt = `${persona}\n\nStay fully in character as this person for the entire conversation. Respond naturally and conversationally, as if speaking out loud — 1 to 4 sentences, no stage directions, no asterisks, no narration, just what you would actually say. Never break character to give coaching advice or acknowledge you are an AI.${languageInstruction}`;
 
   const messages = (Array.isArray(history) ? history : [])
     .filter(h => (h?.text || '').trim())
@@ -1502,7 +1506,9 @@ exports.coachingPracticeReply = onCall(async (request) => {
 
   // Text-to-speech via ElevenLabs, so the reply is heard, not just read.
   // Optional: if no key is configured, still return the text so the practice
-  // tool works in text-only mode.
+  // tool works in text-only mode. eleven_turbo_v2 is English-optimized;
+  // eleven_multilingual_v2 is used for Spanish so the voice pronounces it
+  // correctly instead of reading it with an English accent.
   const elevenKey = process.env.ELEVENLABS_API_KEY;
   const voiceId = process.env.ELEVENLABS_VOICE_ID || '21m00Tcm4TlvDq8ikWAM'; // "Rachel" — a default premade voice
   let audioBase64 = null;
@@ -1517,7 +1523,7 @@ exports.coachingPracticeReply = onCall(async (request) => {
         },
         body: JSON.stringify({
           text: replyText,
-          model_id: 'eleven_turbo_v2',
+          model_id: isSpanish ? 'eleven_multilingual_v2' : 'eleven_turbo_v2',
           voice_settings: { stability: 0.4, similarity_boost: 0.75 },
         }),
       });

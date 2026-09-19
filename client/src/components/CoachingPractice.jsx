@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { getFunctions, httpsCallable } from 'firebase/functions';
 import toast from 'react-hot-toast';
 
@@ -11,11 +12,14 @@ const SCENARIOS = [
   { key: 'custom',           icon: '✍️', label: 'Other — Describe Your Own Situation', desc: 'Not seeing your situation? Describe it and the AI will play the part.' },
 ];
 
+function trScenario(t, s, field) { return t(`coachingPractice.scenarios.${s.key}.${field}`, s[field]); }
+
 function getSpeechRecognition() {
   return window.SpeechRecognition || window.webkitSpeechRecognition || null;
 }
 
 export default function CoachingPractice({ onClose }) {
+  const { t, i18n } = useTranslation();
   const [scenario, setScenario] = useState(null);
   const [customDescription, setCustomDescription] = useState('');
   const [customStarted, setCustomStarted] = useState(false);
@@ -53,7 +57,7 @@ export default function CoachingPractice({ onClose }) {
     const SR = getSpeechRecognition();
     if (!SR) return;
     const recognition = new SR();
-    recognition.lang = 'en-US';
+    recognition.lang = i18n.language === 'es' ? 'es-ES' : 'en-US';
     recognition.continuous = false;
     recognition.interimResults = false;
     recognition.maxAlternatives = 1;
@@ -106,7 +110,7 @@ export default function CoachingPractice({ onClose }) {
     setThinking(true);
     try {
       const fn = httpsCallable(getFunctions(), 'coachingPracticeReply');
-      const res = await fn({ scenario: scenario.key, history, message: trimmed, customDescription });
+      const res = await fn({ scenario: scenario.key, history, message: trimmed, customDescription, language: i18n.language });
       const { replyText, audioBase64 } = res.data || {};
       if (replyText) {
         setHistory(h => [...h, { role: 'coachee', text: replyText }]);
@@ -116,7 +120,7 @@ export default function CoachingPractice({ onClose }) {
         }
       }
     } catch (e) {
-      toast.error(e?.message || 'Practice session failed — try again');
+      toast.error(e?.message || t('coachingPractice.toast.sessionFailed', 'Practice session failed — try again'));
     }
     setThinking(false);
   }
@@ -140,21 +144,21 @@ export default function CoachingPractice({ onClose }) {
       <div style={{ background: 'white', borderRadius: 18, width: '100%', maxWidth: 640, maxHeight: '90vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 70px rgba(0,0,0,0.35)' }}>
         <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           <div>
-            <h3 style={{ fontWeight: 800, color: '#0f2044', margin: 0, fontSize: '1.05rem' }}>🎙️ AI Practice Conversation</h3>
-            <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '2px 0 0' }}>Practice a real coaching conversation with an AI-powered coachee.</p>
+            <h3 style={{ fontWeight: 800, color: '#0f2044', margin: 0, fontSize: '1.05rem' }}>🎙️ {t('coachingPractice.title', 'AI Practice Conversation')}</h3>
+            <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '2px 0 0' }}>{t('coachingPractice.subtitle', 'Practice a real coaching conversation with an AI-powered coachee.')}</p>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.4rem', color: '#94a3b8', cursor: 'pointer' }}>✕</button>
         </div>
 
         {!scenario ? (
           <div style={{ padding: '1.5rem', overflowY: 'auto' }}>
-            <p style={{ fontSize: '0.85rem', color: '#475569', marginBottom: 14 }}>Choose a scenario to practice:</p>
+            <p style={{ fontSize: '0.85rem', color: '#475569', marginBottom: 14 }}>{t('coachingPractice.chooseScenario', 'Choose a scenario to practice:')}</p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {SCENARIOS.map(s => (
                 <button key={s.key} onClick={() => setScenario(s)}
                   style={{ textAlign: 'left', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 12, padding: '0.9rem 1.1rem', cursor: 'pointer' }}>
-                  <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 3px', fontSize: '0.92rem' }}>{s.icon} {s.label}</p>
-                  <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0, lineHeight: 1.45 }}>{s.desc}</p>
+                  <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 3px', fontSize: '0.92rem' }}>{s.icon} {trScenario(t, s, 'label')}</p>
+                  <p style={{ fontSize: '0.78rem', color: '#64748b', margin: 0, lineHeight: 1.45 }}>{trScenario(t, s, 'desc')}</p>
                 </button>
               ))}
             </div>
@@ -162,37 +166,37 @@ export default function CoachingPractice({ onClose }) {
         ) : scenario.key === 'custom' && !customStarted ? (
           <div style={{ padding: '1.5rem', overflowY: 'auto' }}>
             <button onClick={() => setScenario(null)} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', padding: 0, marginBottom: 14 }}>
-              ← Back to scenarios
+              ← {t('coachingPractice.backToScenarios', 'Back to scenarios')}
             </button>
-            <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 6px', fontSize: '0.92rem' }}>✍️ Describe your situation</p>
+            <p style={{ fontWeight: 700, color: '#0f2044', margin: '0 0 6px', fontSize: '0.92rem' }}>✍️ {t('coachingPractice.describeSituation', 'Describe your situation')}</p>
             <p style={{ fontSize: '0.78rem', color: '#64748b', margin: '0 0 12px', lineHeight: 1.45 }}>
-              Tell the AI who the coachee is and what's going on — it will infer a name and personality and play the role.
+              {t('coachingPractice.describeSituationHint', "Tell the AI who the coachee is and what's going on — it will infer a name and personality and play the role.")}
             </p>
             <textarea
               className="input"
               value={customDescription}
               onChange={e => setCustomDescription(e.target.value)}
-              placeholder="e.g. A new supervisor on my team is struggling to give feedback to people who used to be their peers, and is avoiding tough conversations."
+              placeholder={t('coachingPractice.describePlaceholder', 'e.g. A new supervisor on my team is struggling to give feedback to people who used to be their peers, and is avoiding tough conversations.')}
               rows={5}
               style={{ width: '100%', resize: 'vertical', marginBottom: 12 }}
             />
             <button className="btn-primary" onClick={() => setCustomStarted(true)} disabled={!customDescription.trim()} style={{ width: '100%' }}>
-              Start Practicing →
+              {t('coachingPractice.startPracticing', 'Start Practicing')} →
             </button>
           </div>
         ) : (
           <>
             <div style={{ padding: '0.75rem 1.5rem', background: '#f5f3ff', borderBottom: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#6d28d9' }}>{scenario.icon} Practicing: {scenario.label}</span>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#6d28d9' }}>{scenario.icon} {t('coachingPractice.practicing', 'Practicing')}: {trScenario(t, scenario, 'label')}</span>
               <button onClick={endPractice} style={{ background: 'none', border: '1px solid #ddd6fe', borderRadius: 8, color: '#6d28d9', fontWeight: 700, fontSize: '0.72rem', padding: '4px 10px', cursor: 'pointer' }}>
-                ↺ Change Scenario
+                ↺ {t('coachingPractice.changeScenario', 'Change Scenario')}
               </button>
             </div>
 
             <div style={{ flex: 1, overflowY: 'auto', padding: '1.25rem 1.5rem', display: 'flex', flexDirection: 'column', gap: 10, minHeight: 200 }}>
               {history.length === 0 && (
                 <p style={{ fontSize: '0.82rem', color: '#94a3b8', textAlign: 'center', marginTop: 20 }}>
-                  {speechSupported ? 'Press and hold the mic to talk, release when you\'re done speaking.' : 'Type your opening line below to start the conversation.'}
+                  {speechSupported ? t('coachingPractice.holdMicHint', "Press and hold the mic to talk, release when you're done speaking.") : t('coachingPractice.typeOpeningHint', 'Type your opening line below to start the conversation.')}
                 </p>
               )}
               {history.map((h, i) => (
@@ -208,7 +212,7 @@ export default function CoachingPractice({ onClose }) {
               ))}
               {thinking && (
                 <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
-                  <div style={{ padding: '0.6rem 0.9rem', borderRadius: 14, background: '#f1f5f9', color: '#94a3b8', fontSize: '0.82rem' }}>{scenario.key === 'custom' ? 'The coachee' : scenario.label.split(' ')[0]} is thinking…</div>
+                  <div style={{ padding: '0.6rem 0.9rem', borderRadius: 14, background: '#f1f5f9', color: '#94a3b8', fontSize: '0.82rem' }}>{t('coachingPractice.isThinking', '{{who}} is thinking…', { who: scenario.key === 'custom' ? t('coachingPractice.theCoachee', 'The coachee') : trScenario(t, scenario, 'label').split(' ')[0] })}</div>
                 </div>
               )}
               <div ref={transcriptEndRef} />
@@ -225,7 +229,7 @@ export default function CoachingPractice({ onClose }) {
                   onTouchStart={e => { e.preventDefault(); startListening(); }}
                   onTouchEnd={e => { e.preventDefault(); stopListening(); }}
                   disabled={thinking}
-                  title={listening ? 'Release to send' : 'Hold to talk'}
+                  title={listening ? t('coachingPractice.releaseToSend', 'Release to send') : t('coachingPractice.holdToTalk', 'Hold to talk')}
                   style={{
                     width: 44, height: 44, borderRadius: '50%', border: 'none', flexShrink: 0, fontSize: '1.2rem', cursor: 'pointer',
                     background: listening ? '#dc2626' : '#0d9488', color: 'white', userSelect: 'none', touchAction: 'none',
@@ -239,12 +243,12 @@ export default function CoachingPractice({ onClose }) {
                 value={typedMessage}
                 onChange={e => setTypedMessage(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && !thinking) sendMessage(typedMessage); }}
-                placeholder={speechSupported ? 'Or type instead…' : 'Type what you would say…'}
+                placeholder={speechSupported ? t('coachingPractice.orTypeInstead', 'Or type instead…') : t('coachingPractice.typeWhatYouWouldSay', 'Type what you would say…')}
                 style={{ flex: 1 }}
                 disabled={thinking}
               />
               <button className="btn-primary" onClick={() => sendMessage(typedMessage)} disabled={thinking || !typedMessage.trim()}>
-                Send
+                {t('coachingPractice.send', 'Send')}
               </button>
             </div>
             <style>{`@keyframes pulse { 0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.5); } 50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); } }`}</style>

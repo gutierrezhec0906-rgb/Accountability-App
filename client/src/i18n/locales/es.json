@@ -4636,5 +4636,55 @@
       "postFailed": "No se pudo publicar el comentario. Por favor intenta de nuevo.",
       "deleteFailed": "No se pudo eliminar el comentario."
     }
+  },
+  "coachingPractice": {
+    "title": "Conversación de Práctica con IA",
+    "subtitle": "Practica una conversación de coaching real con un coachee impulsado por IA.",
+    "chooseScenario": "Elige un escenario para practicar:",
+    "backToScenarios": "Volver a los escenarios",
+    "describeSituation": "Describe tu situación",
+    "describeSituationHint": "Cuéntale a la IA quién es el coachee y qué está pasando — inferirá un nombre y personalidad y interpretará el papel.",
+    "describePlaceholder": "ej. Un nuevo supervisor en mi equipo tiene dificultades para dar retroalimentación a personas que antes eran sus compañeros, y evita conversaciones difíciles.",
+    "startPracticing": "Comenzar a Practicar",
+    "practicing": "Practicando",
+    "changeScenario": "Cambiar Escenario",
+    "holdMicHint": "Mantén presionado el micrófono para hablar, suéltalo cuando termines.",
+    "typeOpeningHint": "Escribe tu frase de apertura abajo para comenzar la conversación.",
+    "isThinking": "{{who}} está pensando…",
+    "theCoachee": "El coachee",
+    "releaseToSend": "Suelta para enviar",
+    "holdToTalk": "Mantén presionado para hablar",
+    "orTypeInstead": "O escribe en su lugar…",
+    "typeWhatYouWouldSay": "Escribe lo que dirías…",
+    "send": "Enviar",
+    "toast": {
+      "sessionFailed": "La sesión de práctica falló — intenta de nuevo"
+    },
+    "scenarios": {
+      "underperformance": {
+        "label": "Empleado con Bajo Rendimiento",
+        "desc": "Jordan ha incumplido plazos y tiene un problema de calidad — algo a la defensiva, posiblemente agotado."
+      },
+      "conflict": {
+        "label": "Conflicto de Equipo",
+        "desc": "Sam se siente ignorado en un conflicto tenso con un compañero por responsabilidades compartidas."
+      },
+      "career": {
+        "label": "Conversación de Crecimiento Profesional",
+        "desc": "Alex es ambicioso pero no está seguro de cómo crecer hacia el liderazgo — entusiasta, un poco inseguro."
+      },
+      "resistance": {
+        "label": "Resistencia al Cambio",
+        "desc": "Casey es escéptico sobre un nuevo proceso y le preocupa que ralentice las cosas."
+      },
+      "disciplinary": {
+        "label": "Conversación Disciplinaria",
+        "desc": "Taylor está ansioso y algo a la defensiva sobre un problema repetido de conducta/asistencia."
+      },
+      "custom": {
+        "label": "Otro — Describe tu Propia Situación",
+        "desc": "¿No ves tu situación? Descríbela y la IA interpretará el papel."
+      }
+    }
   }
 }
