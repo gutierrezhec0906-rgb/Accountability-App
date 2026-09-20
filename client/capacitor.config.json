@@ -2,6 +2,10 @@
   "appId": "com.accountabilityapp.app",
   "appName": "Accountability App",
   "webDir": "dist",
+  "server": {
+    "url": "https://www.accountability-app.com",
+    "cleartext": false
+  },
   "android": {
     "allowMixedContent": false
   }
