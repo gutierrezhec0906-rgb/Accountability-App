@@ -5102,5 +5102,65 @@
         "tip": "Úsala al delegar, para enmarcarlo como una expresión de confianza en lugar de solo descargar trabajo."
       }
     }
+  },
+  "profile": {
+    "title": "Configuración del Perfil",
+    "subtitle": "Administra tu información personal y foto.",
+    "profilePhoto": "Foto de Perfil",
+    "user": "Usuario",
+    "uploadPhotoHint": "Sube una foto para personalizar tu perfil. Aparecerá en la página de Equipo y en la barra lateral.",
+    "choosePhoto": "Elegir Foto",
+    "uploading": "Subiendo...",
+    "photoFormatHint": "JPG, PNG o GIF · Máx. 5 MB",
+    "displayName": "Nombre para Mostrar",
+    "yourFullName": "Tu nombre completo",
+    "save": "Guardar",
+    "saving": "Guardando...",
+    "phoneNumber": "Número de Teléfono",
+    "phoneNumberHint": "Agrega tu número de teléfono para recibir un mensaje de texto cuando se cree un nuevo elemento de acción en el Tablero de Accountability. Déjalo en blanco para no participar.",
+    "phoneFormatHint": "Usa el formato internacional completo, ej. +1 para EE. UU.",
+    "accountabilityReminders": "Recordatorios de Accountability",
+    "remindersHint": "Elige cómo la aplicación da seguimiento si dejas de usarla — una semana completa o más sin abrirla.",
+    "reminderLevels": {
+      "none": "Sin Recordatorios",
+      "medium": "Recordatorios Medios",
+      "aggressive": "Recordatorios Agresivos"
+    },
+    "noRemindersNote": "No recibirás ningún recordatorio de inactividad.",
+    "medium": {
+      "week1": "Semana 1 sin usar la aplicación — sin recordatorio",
+      "week2": "Semana 2 — 1er recordatorio por correo",
+      "week3": "Semana 3 — 2do recordatorio por correo + mensaje de texto",
+      "week4": "Semana 4+ — correo de escalación a tu líder"
+    },
+    "aggressive": {
+      "week1": "Semana 1 sin usar la aplicación — 1er recordatorio por correo",
+      "week2": "Semana 2 — 2do recordatorio por correo + mensaje de texto",
+      "week3": "Semana 3+ — correo de escalación a tu líder"
+    },
+    "textRemindersNote": "Los recordatorios por texto usan el número de teléfono anterior, si hay uno registrado.",
+    "accountInfo": "Información de la Cuenta",
+    "email": "Correo Electrónico",
+    "role": "Rol",
+    "status": "Estado",
+    "statusValues": {
+      "pending": "Pendiente",
+      "approved": "Aprobado",
+      "rejected": "Rechazado",
+      "active": "Activo"
+    },
+    "toast": {
+      "chooseImageFile": "Por favor elige un archivo de imagen",
+      "imageTooLarge": "La imagen es demasiado grande (máx. 25 MB)",
+      "photoUpdated": "¡Foto de perfil actualizada!",
+      "uploadFailed": "La subida falló o expiró. Por favor intenta de nuevo.",
+      "phoneSaved": "¡Número de teléfono guardado!",
+      "phoneRemoved": "Número de teléfono eliminado",
+      "phoneSaveFailed": "Error al guardar el número de teléfono.",
+      "reminderSaved": "¡Configuración de recordatorio guardada!",
+      "reminderSaveFailed": "Error al guardar la configuración de recordatorio.",
+      "nameUpdated": "¡Nombre actualizado!",
+      "nameUpdateFailed": "Error al actualizar el nombre."
+    }
   }
 }

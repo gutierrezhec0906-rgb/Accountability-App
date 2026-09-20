@@ -9,6 +9,11 @@ import toast from 'react-hot-toast';
 import { useTranslation } from 'react-i18next';
 import LanguagePicker from '../components/LanguagePicker';
 
+const STATUS_KEYS = { pending: 'pending', approved: 'approved', rejected: 'rejected', active: 'active' };
+function trStatus(t, status) { return t(`profile.statusValues.${STATUS_KEYS[status] || status}`, status); }
+const ROLE_KEYS = { Leader: 'leader', Manager: 'manager', Supervisor: 'supervisor', 'Individual Contributor': 'individualContributor' };
+function trRole(t, role) { return t(`signup.roles.${ROLE_KEYS[role] || role}`, role); }
+
 function Avatar({ name, photoURL, size = 80 }) {
   const initials = name ? name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : '?';
   const colors = ['#0d9488', '#0f2044', '#7c3aed', '#be185d', '#b45309', '#065f46'];
@@ -51,8 +56,8 @@ export default function Profile() {
     const file = e.target.files[0];
     e.target.value = '';
     if (!file) return;
-    if (!file.type.startsWith('image/')) { toast.error('Please choose an image file'); return; }
-    if (file.size > 25 * 1024 * 1024) { toast.error('Image is too large (max 25 MB)'); return; }
+    if (!file.type.startsWith('image/')) { toast.error(t('profile.toast.chooseImageFile', 'Please choose an image file')); return; }
+    if (file.size > 25 * 1024 * 1024) { toast.error(t('profile.toast.imageTooLarge', 'Image is too large (max 25 MB)')); return; }
     setUploading(true);
     try {
       // Compress in the browser first so avatar uploads are fast on mobile.
@@ -67,9 +72,9 @@ export default function Profile() {
       await updateDoc(doc(db, 'users', currentUser.uid), { photoURL: url });
       await updateProfile(auth.currentUser, { photoURL: url });
       await fetchProfile(currentUser.uid);
-      toast.success('Profile photo updated!');
+      toast.success(t('profile.toast.photoUpdated', 'Profile photo updated!'));
     } catch (err) {
-      toast.error('Upload failed or timed out. Please try again.');
+      toast.error(t('profile.toast.uploadFailed', 'Upload failed or timed out. Please try again.'));
     }
     setUploading(false);
   }
@@ -80,9 +85,9 @@ export default function Profile() {
     try {
       await updateDoc(doc(db, 'users', currentUser.uid), { phoneNumber: phoneNumber.trim() });
       await fetchProfile(currentUser.uid);
-      toast.success(phoneNumber.trim() ? 'Phone number saved!' : 'Phone number removed');
+      toast.success(phoneNumber.trim() ? t('profile.toast.phoneSaved', 'Phone number saved!') : t('profile.toast.phoneRemoved', 'Phone number removed'));
     } catch {
-      toast.error('Failed to save phone number.');
+      toast.error(t('profile.toast.phoneSaveFailed', 'Failed to save phone number.'));
     }
     setSavingPhone(false);
   }
@@ -93,9 +98,9 @@ export default function Profile() {
     try {
       await updateDoc(doc(db, 'users', currentUser.uid), { reminderLevel: level });
       await fetchProfile(currentUser.uid);
-      toast.success('Reminder setting saved!');
+      toast.success(t('profile.toast.reminderSaved', 'Reminder setting saved!'));
     } catch {
-      toast.error('Failed to save reminder setting.');
+      toast.error(t('profile.toast.reminderSaveFailed', 'Failed to save reminder setting.'));
     }
     setSavingReminder(false);
   }
@@ -108,9 +113,9 @@ export default function Profile() {
       await updateProfile(auth.currentUser, { displayName: displayName.trim() });
       await updateDoc(doc(db, 'users', currentUser.uid), { displayName: displayName.trim() });
       await fetchProfile(currentUser.uid);
-      toast.success('Name updated!');
+      toast.success(t('profile.toast.nameUpdated', 'Name updated!'));
     } catch {
-      toast.error('Failed to update name.');
+      toast.error(t('profile.toast.nameUpdateFailed', 'Failed to update name.'));
     }
     setSavingName(false);
   }
@@ -118,8 +123,8 @@ export default function Profile() {
   return (
     <div style={{ maxWidth: 560, margin: '0 auto' }} className="space-y-6">
       <div>
-        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>Profile Settings</h1>
-        <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: 4 }}>Manage your personal information and photo.</p>
+        <h1 style={{ fontSize: '1.5rem', fontWeight: 800, color: '#1e293b', margin: 0 }}>{t('profile.title', 'Profile Settings')}</h1>
+        <p style={{ color: '#64748b', fontSize: '0.875rem', marginTop: 4 }}>{t('profile.subtitle', 'Manage your personal information and photo.')}</p>
       </div>
 
       {/* Language card */}
@@ -133,7 +138,7 @@ export default function Profile() {
 
       {/* Photo card */}
       <div className="card" style={{ padding: '1.75rem' }}>
-        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', marginBottom: 20 }}>Profile Photo</h2>
+        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', marginBottom: 20 }}>{t('profile.profilePhoto', 'Profile Photo')}</h2>
         <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
           <div style={{ position: 'relative' }}>
             <Avatar name={currentUser?.displayName} photoURL={photoURL} size={110} />
@@ -144,12 +149,12 @@ export default function Profile() {
             )}
           </div>
           <div>
-            <p style={{ fontWeight: 800, color: '#1e293b', fontSize: '1rem', margin: '0 0 2px' }}>{currentUser?.displayName || 'User'}</p>
+            <p style={{ fontWeight: 800, color: '#1e293b', fontSize: '1rem', margin: '0 0 2px' }}>{currentUser?.displayName || t('profile.user', 'User')}</p>
             {userProfile?.companyName && (
               <p style={{ color: '#0d9488', fontWeight: 700, fontSize: '0.8rem', margin: '0 0 10px' }}>🏢 {userProfile.companyName}</p>
             )}
             <p style={{ color: '#475569', fontSize: '0.875rem', marginBottom: 12 }}>
-              Upload a photo to personalize your profile. It will appear on the Team page and sidebar.
+              {t('profile.uploadPhotoHint', 'Upload a photo to personalize your profile. It will appear on the Team page and sidebar.')}
             </p>
             <button
               className="btn-primary"
@@ -157,9 +162,9 @@ export default function Profile() {
               onClick={() => fileRef.current.click()}
               disabled={uploading}
             >
-              {uploading ? 'Uploading...' : '📷 Choose Photo'}
+              {uploading ? t('profile.uploading', 'Uploading...') : `📷 ${t('profile.choosePhoto', 'Choose Photo')}`}
             </button>
-            <p style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 8 }}>JPG, PNG or GIF · Max 5 MB</p>
+            <p style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 8 }}>{t('profile.photoFormatHint', 'JPG, PNG or GIF · Max 5 MB')}</p>
             <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handlePhotoChange} />
           </div>
         </div>
@@ -167,26 +172,26 @@ export default function Profile() {
 
       {/* Name card */}
       <div className="card" style={{ padding: '1.75rem' }}>
-        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', marginBottom: 20 }}>Display Name</h2>
+        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', marginBottom: 20 }}>{t('profile.displayName', 'Display Name')}</h2>
         <form onSubmit={handleSaveName} style={{ display: 'flex', gap: 10 }}>
           <input
             className="input"
             style={{ flex: 1 }}
             value={displayName}
             onChange={e => setDisplayName(e.target.value)}
-            placeholder="Your full name"
+            placeholder={t('profile.yourFullName', 'Your full name')}
           />
           <button className="btn-primary" type="submit" disabled={savingName || !displayName.trim()}>
-            {savingName ? 'Saving...' : 'Save'}
+            {savingName ? t('profile.saving', 'Saving...') : t('profile.save', 'Save')}
           </button>
         </form>
       </div>
 
       {/* Phone number card */}
       <div className="card" style={{ padding: '1.75rem' }}>
-        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>📱 Phone Number</h2>
+        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>📱 {t('profile.phoneNumber', 'Phone Number')}</h2>
         <p style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: 16 }}>
-          Add your phone number to receive a text message whenever a new action item is created on the Accountability Board. Leave blank to opt out.
+          {t('profile.phoneNumberHint', 'Add your phone number to receive a text message whenever a new action item is created on the Accountability Board. Leave blank to opt out.')}
         </p>
         <form onSubmit={handleSavePhone} style={{ display: 'flex', gap: 10 }}>
           <input
@@ -198,17 +203,17 @@ export default function Profile() {
             placeholder="+1 555 123 4567"
           />
           <button className="btn-primary" type="submit" disabled={savingPhone}>
-            {savingPhone ? 'Saving...' : 'Save'}
+            {savingPhone ? t('profile.saving', 'Saving...') : t('profile.save', 'Save')}
           </button>
         </form>
-        <p style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 8 }}>Use full international format, e.g. +1 for the US.</p>
+        <p style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 8 }}>{t('profile.phoneFormatHint', 'Use full international format, e.g. +1 for the US.')}</p>
       </div>
 
       {/* Inactivity reminder level */}
       <div className="card" style={{ padding: '1.75rem' }}>
-        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>🔔 Accountability Reminders</h2>
+        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', marginBottom: 6 }}>🔔 {t('profile.accountabilityReminders', 'Accountability Reminders')}</h2>
         <p style={{ color: '#64748b', fontSize: '0.8rem', marginBottom: 16 }}>
-          Choose how the app follows up if you go quiet — a full week or more without opening it.
+          {t('profile.remindersHint', 'Choose how the app follows up if you go quiet — a full week or more without opening it.')}
         </p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 14 }}>
           {[
@@ -223,39 +228,39 @@ export default function Profile() {
                 background: reminderLevel === opt.key ? '#0d9488' : 'white',
                 color: reminderLevel === opt.key ? 'white' : '#475569',
               }}>
-              {opt.label}
+              {t(`profile.reminderLevels.${opt.key}`, opt.label)}
             </button>
           ))}
         </div>
         {reminderLevel === 'none' && (
-          <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: 0, lineHeight: 1.6 }}>You won't receive any inactivity reminders.</p>
+          <p style={{ color: '#94a3b8', fontSize: '0.78rem', margin: 0, lineHeight: 1.6 }}>{t('profile.noRemindersNote', "You won't receive any inactivity reminders.")}</p>
         )}
         {reminderLevel === 'medium' && (
           <ul style={{ margin: 0, paddingLeft: 18, color: '#64748b', fontSize: '0.78rem', lineHeight: 1.7 }}>
-            <li>Week 1 without using the app — no reminder</li>
-            <li>Week 2 — 1st email reminder</li>
-            <li>Week 3 — 2nd email reminder + text message</li>
-            <li>Week 4+ — escalation email to your leader</li>
+            <li>{t('profile.medium.week1', 'Week 1 without using the app — no reminder')}</li>
+            <li>{t('profile.medium.week2', 'Week 2 — 1st email reminder')}</li>
+            <li>{t('profile.medium.week3', 'Week 3 — 2nd email reminder + text message')}</li>
+            <li>{t('profile.medium.week4', 'Week 4+ — escalation email to your leader')}</li>
           </ul>
         )}
         {reminderLevel === 'aggressive' && (
           <ul style={{ margin: 0, paddingLeft: 18, color: '#64748b', fontSize: '0.78rem', lineHeight: 1.7 }}>
-            <li>Week 1 without using the app — 1st email reminder</li>
-            <li>Week 2 — 2nd email reminder + text message</li>
-            <li>Week 3+ — escalation email to your leader</li>
+            <li>{t('profile.aggressive.week1', 'Week 1 without using the app — 1st email reminder')}</li>
+            <li>{t('profile.aggressive.week2', 'Week 2 — 2nd email reminder + text message')}</li>
+            <li>{t('profile.aggressive.week3', 'Week 3+ — escalation email to your leader')}</li>
           </ul>
         )}
-        <p style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 12, marginBottom: 0 }}>Text reminders use the phone number above, if one is on file.</p>
+        <p style={{ color: '#94a3b8', fontSize: '0.72rem', marginTop: 12, marginBottom: 0 }}>{t('profile.textRemindersNote', 'Text reminders use the phone number above, if one is on file.')}</p>
       </div>
 
       {/* Read-only info */}
       <div className="card" style={{ padding: '1.75rem' }}>
-        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', marginBottom: 16 }}>Account Info</h2>
+        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#1e293b', marginBottom: 16 }}>{t('profile.accountInfo', 'Account Info')}</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {[
-            { label: 'Email', value: currentUser?.email },
-            { label: 'Role', value: userProfile?.role },
-            { label: 'Status', value: userProfile?.status },
+            { label: t('profile.email', 'Email'), value: currentUser?.email },
+            { label: t('profile.role', 'Role'), value: userProfile?.role ? trRole(t, userProfile.role) : null },
+            { label: t('profile.status', 'Status'), value: userProfile?.status ? trStatus(t, userProfile.status) : null },
           ].map(({ label, value }) => (
             <div key={label} style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
               <span style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: 600, minWidth: 60 }}>{label}</span>
