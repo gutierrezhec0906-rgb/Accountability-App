@@ -155,7 +155,8 @@ export function pickTodaysPhrase(date = new Date()) {
   const dayIdx = ((daysSinceEpoch % totalDays) + totalDays) % totalDays;
   const catId = CAT_ORDER[dayIdx % CAT_ORDER.length];
   const phraseIdx = Math.floor(dayIdx / CAT_ORDER.length);
-  return { ...PHRASES_BY_CAT[catId][phraseIdx], day: dayIdx + 1 };
+  const idx = DAILY_PHRASES.indexOf(PHRASES_BY_CAT[catId][phraseIdx]);
+  return { ...PHRASES_BY_CAT[catId][phraseIdx], day: dayIdx + 1, idx };
 }
 
 // "YYYY-MM-DD" for the seen-today localStorage gate — local calendar date.

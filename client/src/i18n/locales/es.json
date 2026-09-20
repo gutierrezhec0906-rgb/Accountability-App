@@ -4686,5 +4686,421 @@
         "desc": "¿No ves tu situación? Descríbela y la IA interpretará el papel."
       }
     }
+  },
+  "dailyPhrase": {
+    "header": "Frase Accountability de hoy · #{{day}}/{{total}} · {{category}}",
+    "whenToUseIt": "Cuándo usarla",
+    "gotIt": "Entendido →",
+    "shareTooltip": "Compartir esta frase",
+    "shareTitle": "Frase Accountability",
+    "shareFooter": "Frase Accountability de hoy, de la app Accountability.",
+    "shareTextMessage": "Mensaje de Texto",
+    "shareWhatsApp": "WhatsApp",
+    "shareEmail": "Correo",
+    "shareCopy": "Copiar Texto",
+    "copied": "Copiado al portapapeles",
+    "copyFailed": "No se pudo copiar — inténtalo de nuevo",
+    "bank": {
+      "0": {
+        "text": "Elevemos el estándar.",
+        "tip": "Úsala cuando el equipo se está conformando con \"suficientemente bueno\" — reajusta el estándar sin atacar el esfuerzo pasado de nadie."
+      },
+      "1": {
+        "text": "Quiero que peleemos por encima de nuestro peso.",
+        "tip": "Úsala para retar a un equipo que subestima su propia capacidad frente a competidores más grandes o con más recursos."
+      },
+      "2": {
+        "text": "¿Cuál es nuestro plan de respaldo si esto no funciona?",
+        "tip": "Pregúntalo antes de comprometerte con un plan arriesgado — obliga a hablar de contingencias en lugar de optimismo ciego."
+      },
+      "3": {
+        "text": "Lo que se mide, se gestiona.",
+        "tip": "Dilo cuando una meta todavía no tiene una métrica asociada — es un recordatorio para definir cómo se medirá el éxito."
+      },
+      "4": {
+        "text": "No dejemos que lo perfecto sea enemigo de lo bueno.",
+        "tip": "Úsala cuando la parálisis por análisis o el pulido interminable está retrasando una decisión que ya estaría bien lanzar."
+      },
+      "5": {
+        "text": "Prefiero estar aproximadamente en lo correcto que perfectamente equivocado.",
+        "tip": "Úsala cuando un equipo está estancado buscando certeza — da permiso para avanzar con una estimación razonable."
+      },
+      "6": {
+        "text": "Hecho es mejor que perfecto.",
+        "tip": "Un empujón breve para un compañero perfeccionista que está refinando algo con rendimientos decrecientes."
+      },
+      "7": {
+        "text": "Ajustemos el ciclo de retroalimentación.",
+        "tip": "Úsala cuando los resultados tardan demasiado en llegar a quienes deben actuar sobre ellos — acorta el ciclo."
+      },
+      "8": {
+        "text": "¿Cuál es el retorno de esto?",
+        "tip": "Pregúntalo antes de dar luz verde a trabajo nuevo — obliga a justificar el valor en lugar de actividad por actividad."
+      },
+      "9": {
+        "text": "Pongamos a prueba esa suposición.",
+        "tip": "Úsala cuando un plan se apoya en algo que nadie ha verificado realmente — ponlo a prueba antes de comprometer recursos."
+      },
+      "10": {
+        "text": "Quiero ver los datos detrás de eso.",
+        "tip": "Úsala cuando una afirmación o recomendación se basa solo en intuición — pide la evidencia."
+      },
+      "11": {
+        "text": "Separemos la señal del ruido.",
+        "tip": "Úsala en una discusión llena de datos para refocalizar en las pocas métricas que realmente importan."
+      },
+      "12": {
+        "text": "Los números no mienten.",
+        "tip": "Úsala cuando el relato se está alejando de lo que muestran los resultados reales — regresa la conversación a los hechos."
+      },
+      "13": {
+        "text": "Redoblemos la apuesta en lo que está funcionando.",
+        "tip": "Úsala en una reunión de revisión para redirigir la energía hacia los logros comprobados en lugar de perseguir cada idea nueva."
+      },
+      "14": {
+        "text": "Necesitamos mover la aguja.",
+        "tip": "Úsala cuando el esfuerzo se está gastando en cosas que parecen ocupadas pero no cambian el resultado que importa."
+      },
+      "15": {
+        "text": "Ese es un indicador rezagado — ¿cuál es el adelantado?",
+        "tip": "Úsala cuando un equipo solo mide resultados después del hecho — pide una señal de alerta más temprana."
+      },
+      "16": {
+        "text": "No reaccionemos de más ante un solo dato.",
+        "tip": "Úsala cuando un número malo (o bueno) está por generar una respuesta desproporcionada — pide la tendencia."
+      },
+      "17": {
+        "text": "Este es un problema que se puede resolver.",
+        "tip": "Úsala para replantear la mentalidad de un equipo desanimado de \"esto está roto\" a \"esto tiene un camino hacia adelante\"."
+      },
+      "18": {
+        "text": "No tratemos de resolverlo todo a la vez.",
+        "tip": "Úsala cuando el alcance se está saliendo de control — redirige al grupo hacia la versión más pequeña que sí resuelve el problema."
+      },
+      "19": {
+        "text": "¿Esto es prioritario o solo urgente?",
+        "tip": "Úsala cuando una petición ruidosa y urgente está desplazando trabajo más importante — separa la urgencia de la importancia."
+      },
+      "20": {
+        "text": "Alejémonos un momento para ver el panorama completo.",
+        "tip": "Úsala cuando una discusión está atascada en los detalles — trae al grupo de vuelta al panorama general."
+      },
+      "21": {
+        "text": "¿Cuál es nuestra estrella guía aquí?",
+        "tip": "Úsala cuando un equipo tiene varias prioridades en competencia y necesita un punto de referencia compartido para alinearse."
+      },
+      "22": {
+        "text": "Necesitamos pensar tres pasos adelante.",
+        "tip": "Úsala cuando una decisión se está tomando de forma aislada — pregunta qué habilita (o bloquea) más adelante."
+      },
+      "23": {
+        "text": "Hagamos que esta decisión sea a prueba de futuro.",
+        "tip": "Úsala antes de comprometerte con una elección costosa de revertir — contrástala con necesidades futuras probables."
+      },
+      "24": {
+        "text": "¿Cuál es el efecto de segundo orden?",
+        "tip": "Úsala cuando el beneficio inmediato de un plan es obvio pero sus consecuencias posteriores aún no se han discutido."
+      },
+      "25": {
+        "text": "Estamos jugando a largo plazo.",
+        "tip": "Úsala para justificar un sacrificio de corto plazo (costo, velocidad, comodidad) al servicio de un beneficio futuro mayor."
+      },
+      "26": {
+        "text": "Esto necesita escalar, no solo funcionar.",
+        "tip": "Úsala cuando se propone una solución frágil y puntual para algo que se repetirá o crecerá."
+      },
+      "27": {
+        "text": "Convirtamos esto en una oportunidad.",
+        "tip": "Úsala justo después de un contratiempo, para redirigir la energía del equipo de la culpa hacia lo que ahora se puede construir."
+      },
+      "28": {
+        "text": "No estamos aquí para jugar a lo seguro.",
+        "tip": "Úsala cuando la cautela está limitando la ambición en silencio — da permiso al equipo para proponer la opción más audaz."
+      },
+      "29": {
+        "text": "Esto es un maratón, no una carrera corta.",
+        "tip": "Úsala cuando el equipo se está agotando persiguiendo victorias de corto plazo — reajusta el ritmo para que sea sostenible."
+      },
+      "30": {
+        "text": "Creo en la misión.",
+        "tip": "Úsala en un momento de duda para reconectar el trabajo diario del equipo con el propósito mayor detrás de él."
+      },
+      "31": {
+        "text": "Estamos construyendo algo que importa.",
+        "tip": "Úsala cuando el trabajo rutinario se siente desconectado de un sentido — recuerda al equipo para qué suma todo."
+      },
+      "32": {
+        "text": "Esto es más grande que cualquiera de nosotros.",
+        "tip": "Úsala para desactivar un conflicto de territorio o de ego, reenfocando a todos en el resultado compartido."
+      },
+      "33": {
+        "text": "Disruptamos antes de que alguien más lo haga.",
+        "tip": "Úsala cuando la comodidad con el modelo actual está cegando al equipo ante una amenaza competitiva que se acerca."
+      },
+      "34": {
+        "text": "Estamos construyendo el avión mientras volamos.",
+        "tip": "Úsala para reconocer con honestidad una ejecución imperfecta y en marcha, en lugar de fingir que todo está totalmente planeado."
+      },
+      "35": {
+        "text": "El crecimiento no es lineal.",
+        "tip": "Úsala cuando el progreso se estanca o cae — recuerda al equipo que las mesetas son parte normal del crecimiento real."
+      },
+      "36": {
+        "text": "Cuestionemos nuestras propias suposiciones.",
+        "tip": "Úsala antes de una gran decisión para asegurarte de que el equipo no solo está repitiendo \"como siempre lo hemos hecho\"."
+      },
+      "37": {
+        "text": "Estamos en modo construcción.",
+        "tip": "Úsala para fijar la expectativa de que la fase actual es de crear e iterar, no de optimizar todavía."
+      },
+      "38": {
+        "text": "No seamos sentimentales sobre cómo llegamos hasta aquí.",
+        "tip": "Úsala cuando el costo hundido o la nostalgia están bloqueando un cambio de rumbo necesario."
+      },
+      "39": {
+        "text": "Adelante.",
+        "tip": "Úsala como cierre breve a una conversación difícil o una semana dura — reconócela y luego avancen juntos."
+      },
+      "40": {
+        "text": "Enfoquémonos en resultados, no en actividad.",
+        "tip": "Úsala cuando una actualización de estado está llena de \"ocupado\" pero baja en resultados reales — redirige hacia lo que cambió."
+      },
+      "41": {
+        "text": "¿Qué nos está bloqueando?",
+        "tip": "Úsala en un proyecto estancado para sacar a la luz el obstáculo real en lugar de dejarlo sin nombre."
+      },
+      "42": {
+        "text": "No dejemos que esto se pierda de vista.",
+        "tip": "Úsala cuando un pendiente no tiene un dueño claro ni un siguiente paso — márcalo antes de que se pierda."
+      },
+      "43": {
+        "text": "¿Cuál es el plan para retomar el rumbo?",
+        "tip": "Úsala cuando un proyecto se ha atrasado — cambia la conversación del \"por qué\" se atrasó al \"cómo\" se recupera."
+      },
+      "44": {
+        "text": "Cerremos ese ciclo.",
+        "tip": "Úsala cuando un pendiente de una conversación anterior no se ha resuelto ni comunicado de vuelta todavía."
+      },
+      "45": {
+        "text": "Hablemos de eso fuera de esta reunión.",
+        "tip": "Úsala en una reunión cuando un tema secundario está descarrilando la agenda — apártalo para un seguimiento más pequeño."
+      },
+      "46": {
+        "text": "¿Podemos alinearnos en los próximos pasos?",
+        "tip": "Úsala para cerrar una discusión que generó buenas ideas pero todavía ninguna acción concreta."
+      },
+      "47": {
+        "text": "Dejemos eso en pausa por ahora.",
+        "tip": "Úsala para reconocer un punto válido sin descarrilar la agenda actual — comprométete a retomarlo después."
+      },
+      "48": {
+        "text": "Pospongamos eso por el momento.",
+        "tip": "Úsala cuando un tema necesita más información o a las personas correctas antes de poder decidirse útilmente."
+      },
+      "49": {
+        "text": "La conclusión primero, por favor.",
+        "tip": "Úsala cuando una actualización está tardando demasiado en llegar al punto — pide la conclusión primero."
+      },
+      "50": {
+        "text": "No convirtamos esto en una reunión sobre otra reunión.",
+        "tip": "Úsala cuando la sobrecarga de agendar reemplaza la toma de decisiones real — impulsa una resolución directa en su lugar."
+      },
+      "51": {
+        "text": "Te doy seguimiento a eso.",
+        "tip": "Úsala cuando necesitas tiempo para dar la respuesta correcta — te compromete a hacer seguimiento en lugar de dejarlo pasar."
+      },
+      "52": {
+        "text": "Asegurémonos de que no estemos hablando de cosas distintas.",
+        "tip": "Úsala cuando una discusión da vueltas en círculos — pausa para verificar que ambas partes usan los mismos términos."
+      },
+      "53": {
+        "text": "¿Cuál es el costo de no actuar?",
+        "tip": "Úsala cuando un equipo se está estancando en una decisión — haz explícito el riesgo de no hacer nada."
+      },
+      "54": {
+        "text": "Reduzcamos el riesgo antes de comprometernos.",
+        "tip": "Úsala antes de una gran apuesta — identifica las mayores incógnitas y pruébalas de forma económica primero."
+      },
+      "55": {
+        "text": "Controlemos lo que podemos controlar.",
+        "tip": "Úsala cuando un equipo está atascado preocupándose por factores fuera de su influencia — reenfoca en las palancas accionables."
+      },
+      "56": {
+        "text": "No dejemos que esto se convierta en un simulacro de incendio.",
+        "tip": "Úsala temprano ante un problema creciente, antes de que cunda el pánico, para mantener la respuesta calmada y planeada."
+      },
+      "57": {
+        "text": "¿Cuál es nuestra exposición aquí?",
+        "tip": "Úsala al evaluar un riesgo — pregunta con claridad cuánto podría perder el equipo si algo sale mal."
+      },
+      "58": {
+        "text": "Quiero un plan B sobre la mesa.",
+        "tip": "Úsala cuando un plan solo tiene un camino hacia el éxito — exige un respaldo antes de comprometerte."
+      },
+      "59": {
+        "text": "Adelantémonos a esto.",
+        "tip": "Úsala cuando un problema pequeño es visible ahora pero podría crecer — actúa de forma proactiva en lugar de esperar a que escale."
+      },
+      "60": {
+        "text": "¿Quién es el dueño de esto?",
+        "tip": "Úsala siempre que una tarea o decisión no tenga un nombre claro asociado — asigna la responsabilidad de inmediato."
+      },
+      "61": {
+        "text": "Necesito que revises esto antes del final del día.",
+        "tip": "Úsala para fijar una expectativa clara y con tiempo definido, en lugar de un vago \"cuando puedas\"."
+      },
+      "62": {
+        "text": "Yo soy responsable de esa decisión.",
+        "tip": "Úsala para asumir responsabilidad visible por una decisión que tomaste, sobre todo si no salió como esperabas."
+      },
+      "63": {
+        "text": "Me hago responsable de ese error.",
+        "tip": "Úsala después de un error para dar el ejemplo de responsabilidad en lugar de desviar la culpa — marca la pauta para el equipo."
+      },
+      "64": {
+        "text": "Sin sorpresas — avísenme pronto.",
+        "tip": "Úsala para establecer la norma de que los problemas deben señalarse en cuanto se detectan, no ocultarse hasta la fecha límite."
+      },
+      "65": {
+        "text": "¿Qué aprendimos de esto?",
+        "tip": "Úsala después de cualquier proyecto —ganado o perdido— para convertir la experiencia en una lección en lugar de solo cerrarlo."
+      },
+      "66": {
+        "text": "Empoderemos a las personas para que decidan.",
+        "tip": "Úsala cuando las decisiones se están atascando arriba — delega la autoridad a quien esté más cerca del trabajo."
+      },
+      "67": {
+        "text": "Confío en que el equipo lo va a resolver.",
+        "tip": "Úsala cuando estás tentado a microgestionar un problema que se puede resolver — dale al equipo espacio para hacerlo suyo."
+      },
+      "68": {
+        "text": "Quiero escuchar la voz discrepante.",
+        "tip": "Úsala antes de finalizar una decisión, para invitar activamente al desacuerdo en lugar de asumir que el silencio es consenso."
+      },
+      "69": {
+        "text": "Hagamos espacio para esa conversación.",
+        "tip": "Úsala cuando un problema real se está pasando por alto — haz espacio explícito para abordarlo como corresponde."
+      },
+      "70": {
+        "text": "Esa es una oportunidad de crecimiento para ti.",
+        "tip": "Úsala al asignar un reto que exige más — enmárcalo como desarrollo, no solo como trabajo extra."
+      },
+      "71": {
+        "text": "Creo en este equipo.",
+        "tip": "Úsala antes de un reto difícil para dar confianza al equipo y un voto de confianza por adelantado."
+      },
+      "72": {
+        "text": "Ganamos y perdemos juntos.",
+        "tip": "Úsala después de un contratiempo compartido para evitar que se culpen entre sí y mantener al equipo unido."
+      },
+      "73": {
+        "text": "No dejemos que una buena conversación se desperdicie.",
+        "tip": "Úsala al final de una discusión rica para asegurarte de que se convierta en una decisión o acción."
+      },
+      "74": {
+        "text": "Quiero dueños y fechas antes de salir de esta sala.",
+        "tip": "Úsala para cerrar una reunión — exige compromisos concretos en lugar de vagas intenciones de seguimiento."
+      },
+      "75": {
+        "text": "Resumamos en qué quedamos.",
+        "tip": "Úsala al final de una reunión para confirmar que todos comparten el mismo entendimiento del resultado."
+      },
+      "76": {
+        "text": "Gran discusión — convirtamos esto en acción.",
+        "tip": "Úsala para pasar de una conversación productiva a un siguiente paso concreto antes de que baje la energía."
+      },
+      "77": {
+        "text": "Asegurémonos de que esto no se quede solo en una presentación.",
+        "tip": "Úsala cuando un plan corre el riesgo de convertirse en un documento que nadie ejecuta — exige seguimiento real."
+      },
+      "78": {
+        "text": "Quiero convicción, no consenso.",
+        "tip": "Úsala cuando un grupo está diluyendo una decisión solo para que todos se sientan cómodos — pide una postura real."
+      },
+      "79": {
+        "text": "Decidamos y avancemos.",
+        "tip": "Úsala cuando una decisión ya se ha debatido lo suficiente — decide con la información disponible y avanza."
+      },
+      "80": {
+        "text": "Buen punto — construyamos sobre eso.",
+        "tip": "Úsala para validar una contribución y mantener el impulso de una buena idea en la sala."
+      },
+      "81": {
+        "text": "Agradezco el contrapunto — así se toman las buenas decisiones.",
+        "tip": "Úsala cuando alguien te desafía directamente — premia la honestidad en lugar de ponerte a la defensiva."
+      },
+      "82": {
+        "text": "Gracias por la franqueza — así mejoramos.",
+        "tip": "Úsala después de recibir retroalimentación difícil, para reforzar que la honestidad es bienvenida, no castigada."
+      },
+      "83": {
+        "text": "Mantengamos la cabeza baja y entreguemos.",
+        "tip": "Úsala cuando las distracciones o el ruido están robando el enfoque — vuelve a centrar al equipo en la ejecución."
+      },
+      "84": {
+        "text": "Cada contratiempo es la base de una remontada.",
+        "tip": "Úsala después de una pérdida para replantearla como el punto de partida de la próxima victoria, no como un callejón sin salida."
+      },
+      "85": {
+        "text": "Ganémonos el derecho a ganar.",
+        "tip": "Úsala para enfatizar que los resultados vienen del esfuerzo constante, no de atajos ni derecho adquirido."
+      },
+      "86": {
+        "text": "Terminemos con fuerza.",
+        "tip": "Úsala cerca del final de un proyecto o trimestre para reunir energía hacia un cierre fuerte en lugar de bajar el ritmo."
+      },
+      "87": {
+        "text": "Vamos a construir.",
+        "tip": "Úsala como cierre motivador de una sesión de planeación — señala que es momento de pasar de hablar a actuar."
+      },
+      "88": {
+        "text": "No entremos en pánico — evaluemos.",
+        "tip": "Úsala en un momento de crisis para frenar las reacciones y obtener una lectura precisa antes de responder."
+      },
+      "89": {
+        "text": "Quiero una visión clara del riesgo.",
+        "tip": "Úsala cuando el optimismo (o el miedo) está distorsionando cómo se describe una situación — pide la verdad sin adornos."
+      },
+      "90": {
+        "text": "La complacencia es el verdadero competidor.",
+        "tip": "Úsala cuando un equipo está viviendo de su éxito pasado — la verdadera amenaza es la comodidad, no el mercado."
+      },
+      "91": {
+        "text": "No dejemos que la complacencia gane.",
+        "tip": "Úsala como recordatorio a mitad de una racha de buenos resultados, para que el estándar no baje en silencio."
+      },
+      "92": {
+        "text": "Necesitamos estar cómodos con la incomodidad.",
+        "tip": "Úsala cuando se resiste un cambio necesario porque se siente incómodo o difícil, no porque esté equivocado."
+      },
+      "93": {
+        "text": "Necesitamos desaprender algunos hábitos viejos.",
+        "tip": "Úsala cuando el éxito pasado está haciendo que el equipo se resista a un nuevo enfoque necesario."
+      },
+      "94": {
+        "text": "Nivelemos la información con todos.",
+        "tip": "Úsala cuando distintas personas tienen información distinta — trae a todo el grupo a la misma base."
+      },
+      "95": {
+        "text": "¿Podemos estar en la misma página?",
+        "tip": "Úsala cuando la desalineación está causando fricción — una forma simple y no confrontacional de pedir claridad."
+      },
+      "96": {
+        "text": "Quiero escuchar la voz discrepante.",
+        "tip": "Úsala aquí para escuchar con empatía — pregunta para que la voz en desacuerdo se sienta realmente escuchada, no solo tolerada."
+      },
+      "97": {
+        "text": "No dejemos que esto se vuelva personal — hagamos que sea productivo.",
+        "tip": "Úsala cuando un conflicto se está desviando del problema hacia las personas — vuelve a enfocarlo en el asunto."
+      },
+      "98": {
+        "text": "Los grandes equipos no se acomodan. Mejoran.",
+        "tip": "Úsala para retar a un equipo de alto desempeño a no estancarse — sigan subiendo su propio estándar."
+      },
+      "99": {
+        "text": "No porque quieras más — porque confías en ellos.",
+        "tip": "Úsala al delegar, para enmarcarlo como una expresión de confianza en lugar de solo descargar trabajo."
+      }
+    }
   }
 }

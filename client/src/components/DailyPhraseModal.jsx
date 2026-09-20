@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import ShareIcon from './ShareIcon';
 import { DAILY_PHRASES, PHRASE_CATEGORIES, pickTodaysPhrase, localDateKey } from '../utils/dailyPhrases';
@@ -13,22 +14,35 @@ const LS_KEY_PREFIX = 'dailyPhraseSeenDate_';
 // account to even look around.
 const SHARE_LINK = 'https://www.accountability-app.com/?utm_source=share&utm_medium=daily_phrase';
 
-function shareText(phrase, catLabel) {
-  return `"${phrase.text}"\n\n(${catLabel}) — ${phrase.tip}\n\nToday's Accountability Phrase, from the Accountability App.\n${SHARE_LINK}`;
+// DAILY_PHRASES is a module-level constant, so it can't use the
+// useTranslation hook directly — these helpers take the array index and
+// look up the per-phrase translation from within a component that has `t`.
+function trPhraseText(t, phrase, idx) {
+  return t(`dailyPhrase.bank.${idx}.text`, phrase.text);
+}
+function trPhraseTip(t, phrase, idx) {
+  return t(`dailyPhrase.bank.${idx}.tip`, phrase.tip);
+}
+
+// text/tip here should already be the translated strings (translated at the
+// call site, since this function has no access to the phrase's index).
+function shareText(t, text, tip, catLabel) {
+  return `"${text}"\n\n(${catLabel}) — ${tip}\n\n${t('dailyPhrase.shareFooter', "Today's Accountability Phrase, from the Accountability App.")}\n${SHARE_LINK}`;
 }
 
 // Share icon + fallback menu for the phrase. Uses the native share sheet
 // (covers Messages/WhatsApp/Mail/everything installed) when available —
 // mainly mobile — and falls back to explicit SMS/WhatsApp/Email/Copy links
 // on desktop where navigator.share doesn't exist.
-function ShareButton({ phrase, cat }) {
+function ShareButton({ phrase, cat, text, tip }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const text = shareText(phrase, cat.label);
+  const shareBody = shareText(t, text, tip, cat.label);
 
   async function handleClick() {
     if (navigator.share) {
       try {
-        await navigator.share({ title: 'Accountability Phrase', text });
+        await navigator.share({ title: t('dailyPhrase.shareTitle', 'Accountability Phrase'), text: shareBody });
       } catch { /* user cancelled — no-op */ }
       return;
     }
@@ -37,19 +51,19 @@ function ShareButton({ phrase, cat }) {
 
   async function copyText() {
     try {
-      await navigator.clipboard.writeText(text);
-      toast.success('Copied to clipboard');
+      await navigator.clipboard.writeText(shareBody);
+      toast.success(t('dailyPhrase.copied', 'Copied to clipboard'));
     } catch {
-      toast.error('Could not copy — try again');
+      toast.error(t('dailyPhrase.copyFailed', 'Could not copy — try again'));
     }
     setOpen(false);
   }
 
-  const encoded = encodeURIComponent(text);
+  const encoded = encodeURIComponent(shareBody);
 
   return (
     <div style={{ position: 'relative', flexShrink: 0 }}>
-      <button onClick={handleClick} title="Share this phrase"
+      <button onClick={handleClick} title={t('dailyPhrase.shareTooltip', 'Share this phrase')}
         style={{
           width: 32, height: 32, borderRadius: '50%', border: 'none', cursor: 'pointer',
           background: 'rgba(255,255,255,0.15)', color: 'white',
@@ -69,19 +83,19 @@ function ShareButton({ phrase, cat }) {
           }}>
             <a href={`sms:?body=${encoded}`} onClick={() => setOpen(false)}
               style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.45rem 0.6rem', borderRadius: 6, color: 'white', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 600 }}>
-              💬 Text Message
+              💬 {t('dailyPhrase.shareTextMessage', 'Text Message')}
             </a>
             <a href={`https://wa.me/?text=${encoded}`} target="_blank" rel="noreferrer" onClick={() => setOpen(false)}
               style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.45rem 0.6rem', borderRadius: 6, color: 'white', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 600 }}>
-              🟢 WhatsApp
+              🟢 {t('dailyPhrase.shareWhatsApp', 'WhatsApp')}
             </a>
-            <a href={`mailto:?subject=${encodeURIComponent('Accountability Phrase')}&body=${encoded}`} onClick={() => setOpen(false)}
+            <a href={`mailto:?subject=${encodeURIComponent(t('dailyPhrase.shareTitle', 'Accountability Phrase'))}&body=${encoded}`} onClick={() => setOpen(false)}
               style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.45rem 0.6rem', borderRadius: 6, color: 'white', textDecoration: 'none', fontSize: '0.78rem', fontWeight: 600 }}>
-              ✉️ Email
+              ✉️ {t('dailyPhrase.shareEmail', 'Email')}
             </a>
             <button onClick={copyText}
               style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.45rem 0.6rem', borderRadius: 6, background: 'none', border: 'none', cursor: 'pointer', color: 'white', textAlign: 'left', fontSize: '0.78rem', fontWeight: 600 }}>
-              📋 Copy Text
+              📋 {t('dailyPhrase.shareCopy', 'Copy Text')}
             </button>
           </div>
         </>
@@ -100,6 +114,7 @@ function ShareButton({ phrase, cat }) {
 // switching accounts on the same device/browser doesn't have one account's
 // dismissal suppress it for every other account.
 export default function DailyPhraseModal() {
+  const { t } = useTranslation();
   const { currentUser, userProfile } = useAuth();
   const [show, setShow] = useState(false);
   const [phrase, setPhrase] = useState(null);
@@ -127,6 +142,9 @@ export default function DailyPhraseModal() {
 
   if (!show || !phrase) return null;
   const cat = PHRASE_CATEGORIES[phrase.cat];
+  const catLabel = t(`layout.categories.${phrase.cat}`, cat.label);
+  const phraseText = trPhraseText(t, phrase, phrase.idx);
+  const phraseTip = trPhraseTip(t, phrase, phrase.idx);
 
   return (
     <div style={{
@@ -143,23 +161,23 @@ export default function DailyPhraseModal() {
         <div style={{ padding: '1.5rem 1.75rem 1.25rem', background: `linear-gradient(135deg, ${cat.color}, ${cat.color}cc)`, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
           <div style={{ flex: 1, minWidth: 0 }}>
             <p style={{ margin: '0 0 6px', fontSize: '0.72rem', fontWeight: 800, color: 'rgba(255,255,255,0.85)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
-              {cat.icon} Today's Accountability Phrase · #{phrase.day}/{DAILY_PHRASES.length} · {cat.label}
+              {cat.icon} {t('dailyPhrase.header', "Today's Accountability Phrase · #{{day}}/{{total}} · {{category}}", { day: phrase.day, total: DAILY_PHRASES.length, category: catLabel })}
             </p>
             <p style={{ margin: 0, fontSize: '1.35rem', fontWeight: 900, color: 'white', lineHeight: 1.35 }}>
-              "{phrase.text}"
+              "{phraseText}"
             </p>
           </div>
-          <ShareButton phrase={phrase} cat={cat} />
+          <ShareButton phrase={phrase} cat={{ ...cat, label: catLabel }} text={phraseText} tip={phraseTip} />
         </div>
 
         <div style={{ padding: '1.25rem 1.75rem' }}>
-          <p style={{ margin: '0 0 4px', fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>When to use it</p>
-          <p style={{ margin: 0, fontSize: '0.9rem', color: '#334155', lineHeight: 1.6 }}>{phrase.tip}</p>
+          <p style={{ margin: '0 0 4px', fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('dailyPhrase.whenToUseIt', 'When to use it')}</p>
+          <p style={{ margin: 0, fontSize: '0.9rem', color: '#334155', lineHeight: 1.6 }}>{phraseTip}</p>
         </div>
 
         <div style={{ padding: '0 1.75rem 1.5rem' }}>
           <button onClick={dismiss} className="btn-primary" style={{ width: '100%' }}>
-            Got it →
+            {t('dailyPhrase.gotIt', 'Got it →')}
           </button>
         </div>
       </div>
