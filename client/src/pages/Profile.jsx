@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { doc, updateDoc } from 'firebase/firestore';
 import { updateProfile } from 'firebase/auth';
@@ -268,6 +269,24 @@ export default function Profile() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Danger zone */}
+      <div className="card" style={{ padding: '1.75rem', border: '1px solid #fecaca' }}>
+        <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#991b1b', marginBottom: 8 }}>{t('profile.dangerZone', 'Danger Zone')}</h2>
+        <p style={{ color: '#64748b', fontSize: '0.82rem', marginBottom: 14, lineHeight: 1.6 }}>
+          {t('profile.deleteAccountNote', 'Permanently delete your account and all associated data. This cannot be undone.')}
+        </p>
+        <Link
+          to="/delete-account"
+          style={{
+            display: 'inline-block', padding: '0.55rem 1.1rem', borderRadius: 8,
+            background: '#fee2e2', color: '#991b1b', fontWeight: 700, fontSize: '0.82rem',
+            textDecoration: 'none', border: '1px solid #fecaca',
+          }}
+        >
+          {t('profile.deleteAccountLink', 'Delete My Account')}
+        </Link>
       </div>
     </div>
   );

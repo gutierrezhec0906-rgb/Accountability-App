@@ -6,6 +6,7 @@ import Layout from './components/Layout';
 import InstallPrompt from './components/InstallPrompt';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
+import DeleteAccount from './pages/DeleteAccount';
 import Dashboard from './pages/Dashboard';
 import Team from './pages/Team';
 import Approvals from './pages/Approvals';
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="/signup" element={<Signup />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/delete-account" element={<DeleteAccount />} />
           <Route path="/complete-profile" element={<PrivateRoute><CompleteProfile /></PrivateRoute>} />
           <Route path="/dashboard" element={<PrivateLayout><Dashboard /></PrivateLayout>} />
           <Route path="/team" element={<PrivateLayout><Team /></PrivateLayout>} />
