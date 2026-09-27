@@ -489,9 +489,17 @@ export default function Layout({ children }) {
       {/* ── Main ── */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
+        <style>{`
+          .header-date { display: inline; }
+          @media (max-width: 480px) {
+            .header-title-text { display: none; }
+            .header-date { display: none; }
+            .header-actions { gap: 6px !important; }
+          }
+        `}</style>
         <header style={{
-          display: 'flex', alignItems: 'center', gap: 12,
-          padding: '0 1.5rem', height: 60, flexShrink: 0,
+          display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
+          padding: '0.5rem 1.5rem', minHeight: 60, flexShrink: 0,
           background: '#fff',
           borderBottom: '1px solid var(--border)',
           boxShadow: '0 1px 6px rgba(15,32,68,0.05)',
@@ -501,14 +509,14 @@ export default function Layout({ children }) {
             ☰
           </button>
 
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: '1rem' }}>{currentNavItem?.icon}</span>
-            <h2 style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9375rem', margin: 0 }}>
+            <h2 className="header-title-text" style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.9375rem', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
               {currentNavItem ? trNavLabel(t, currentNavItem.id, currentNavItem.label) : t('layout.nav.dashboard', 'Dashboard')}
             </h2>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div className="header-actions" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
             {hasToolVideo && (
               <button
                 onClick={() => setToolVideoOpen(true)}
@@ -517,7 +525,7 @@ export default function Layout({ children }) {
                   background: 'linear-gradient(135deg,#0f2044,#1e3a6e)',
                   color: 'white', border: 'none', borderRadius: 8,
                   padding: '0.375rem 0.875rem', fontSize: '0.775rem', fontWeight: 700,
-                  cursor: 'pointer', letterSpacing: '0.01em',
+                  cursor: 'pointer', letterSpacing: '0.01em', whiteSpace: 'nowrap',
                 }}
               >
                 ▶ {t('layout.seeWhy', 'See Why')}
@@ -527,13 +535,13 @@ export default function Layout({ children }) {
             {canApprove && pendingCount > 0 && (
               <button
                 onClick={() => navigate('/approvals')}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fef9c3', color: '#b45309', border: '1px solid #fcd34d', borderRadius: 8, padding: '0.375rem 0.75rem', fontSize: '0.775rem', fontWeight: 700, cursor: 'pointer' }}
+                style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#fef9c3', color: '#b45309', border: '1px solid #fcd34d', borderRadius: 8, padding: '0.375rem 0.75rem', fontSize: '0.775rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
               >
                 ⏳ {t('layout.nPending', '{{count}} pending', { count: pendingCount })}
               </button>
             )}
 
-            <span style={{ color: '#94a3b8', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+            <span className="header-date" style={{ color: '#94a3b8', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
               {new Date().toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
             </span>
           </div>
