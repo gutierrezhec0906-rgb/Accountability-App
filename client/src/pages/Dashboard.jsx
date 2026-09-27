@@ -127,13 +127,6 @@ function Sparkline({ history, width = 300, height = 56 }) {
   );
 }
 
-const quickActions = [
-  { label: 'Log Coaching Session', labelKey: 'dashboard.quickActions.logCoaching', icon: '📝', path: '/coaching' },
-  { label: 'Submit Feedback', labelKey: 'dashboard.quickActions.submitFeedback',       icon: '📬', path: '/feedback' },
-  { label: 'Update Skills', labelKey: 'dashboard.quickActions.updateSkills',         icon: '⭐', path: '/skills' },
-  { label: 'Add SMART Goal', labelKey: 'dashboard.quickActions.addSmartGoal',        icon: '🎯', path: '/smart-goals' },
-];
-
 export default function Dashboard() {
   const { t } = useTranslation();
   const { currentUser, userProfile } = useAuth();
@@ -479,10 +472,8 @@ export default function Dashboard() {
         ))}
       </div>
 
-      {/* ── Categories + Quick Actions ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 220px', gap: '1.5rem', alignItems: 'start' }}>
-        {/* Category sections */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+      {/* ── Categories ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           {categories.map(cat => (
             <div key={cat.id}>
               {/* Category header */}
@@ -541,45 +532,6 @@ export default function Dashboard() {
               </div>
             </div>
           ))}
-        </div>
-
-        {/* Quick Actions */}
-        <div>
-          <h3 style={{ fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 0.875rem', fontSize: '1rem' }}>{t('dashboard.quickActions.title', 'Quick Actions')}</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {quickActions.map(a => (
-              <button
-                key={a.path}
-                onClick={() => navigate(a.path)}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  background: '#fff', border: '1px solid var(--border)',
-                  borderRadius: 12, padding: '0.75rem 1rem',
-                  cursor: 'pointer', textAlign: 'left',
-                  transition: 'all 0.18s ease',
-                  boxShadow: '0 1px 4px rgba(15,32,68,0.05)',
-                }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = '#0d9488'; e.currentTarget.style.background = '#f0fdfa'; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border)'; e.currentTarget.style.background = '#fff'; }}
-              >
-                <span style={{ fontSize: '1.125rem' }}>{a.icon}</span>
-                <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--text-secondary)' }}>{t(a.labelKey, a.label)}</span>
-              </button>
-            ))}
-          </div>
-
-          {/* Mini tip card */}
-          <div style={{
-            marginTop: '1rem', borderRadius: 12, padding: '1rem',
-            background: 'linear-gradient(135deg,#f0fdf4,#dcfce7)',
-            border: '1px solid #bbf7d0',
-          }}>
-            <p style={{ fontSize: '0.7rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#15803d', margin: '0 0 4px' }}>💡 {t('dashboard.tip.label', 'Tip')}</p>
-            <p style={{ fontSize: '0.8rem', color: '#166534', margin: 0, lineHeight: 1.5, fontWeight: 500 }}>
-              {t('dashboard.tip.text', 'Use more tools consistently to grow your Accountability Score.')}
-            </p>
-          </div>
-        </div>
       </div>
 
       {/* ── Team Members ── */}
