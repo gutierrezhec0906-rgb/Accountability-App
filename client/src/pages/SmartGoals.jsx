@@ -117,6 +117,10 @@ export default function SmartGoals() {
   const [submittingApproval, setSubmittingApproval] = useState(false);
 
   const isLeader = userProfile?.isAdmin || userProfile?.role === 'Leader' || userProfile?.role === 'Manager';
+  // Top of the org hierarchy has no one above them to approve a completion —
+  // Individual Contributors, Supervisors, and Managers all have a Leader (or
+  // admin) who can approve them, but a Leader/admin's own goals self-complete.
+  const isTopOfHierarchy = userProfile?.isAdmin || userProfile?.role === 'Leader';
 
   async function fetchGoals() {
     if (!currentUser) return;
@@ -312,6 +316,25 @@ export default function SmartGoals() {
     } catch (e) {
       console.error(e);
       toast.error(t('smartGoals.toast.approvalFailedTryAgain', 'Approval failed — try again.'));
+    }
+  }
+
+  // Leaders/admins have no one above them to request approval from — mark
+  // the goal completed and award the points directly, same as an approval
+  // would, without going through the pending_approval review step.
+  async function handleSelfCompleteGoal(id) {
+    try {
+      await persist(goals.map(g => g.id === id ? { ...g, status: 'completed', completedAt: new Date().toISOString(), approvedBy: currentUser.uid } : g));
+      const { awarded } = await logPointEvent(currentUser.uid, {
+        points: 2,
+        toolLabel: 'SMART Goal Completed',
+        reason: 'Goal completion self-marked (no approver above this role)',
+      });
+      if (awarded) await calculateScore(currentUser.uid);
+      toast.success(t('smartGoals.toast.selfCompleted', '+2 pts earned — goal marked complete.'));
+    } catch (e) {
+      console.error(e);
+      toast.error(t('smartGoals.toast.completeFailed', 'Could not mark complete — try again.'));
     }
   }
 
@@ -584,7 +607,7 @@ export default function SmartGoals() {
                             {filled ? `✓ ${t('smartGoals.ptEarnedCreated', '+1 pt earned (created)')}` : `○ ${t('smartGoals.ptFillFields', 'Fill all 5 fields + set a future due date → +1 pt')}`}
                           </span>
                           <span style={{ fontSize: '0.72rem', padding: '3px 10px', borderRadius: 9999, fontWeight: 700, background: completed ? '#f0fdf4' : '#f8fafc', color: completed ? '#0d9488' : '#94a3b8', border: `1px solid ${completed ? '#0d948840' : '#e2e8f0'}` }}>
-                            {completed ? `✓ ${t('smartGoals.ptsEarnedApproved', '+2 pts earned (approved)')}` : `○ ${t('smartGoals.ptsGetApproval', 'Get leader approval → +2 pts')}`}
+                            {completed ? `✓ ${t('smartGoals.ptsEarnedApproved', '+2 pts earned (approved)')}` : isTopOfHierarchy ? `○ ${t('smartGoals.ptsMarkComplete', 'Mark complete → +2 pts')}` : `○ ${t('smartGoals.ptsGetApproval', 'Get leader approval → +2 pts')}`}
                           </span>
                         </div>
                       );
@@ -604,7 +627,14 @@ export default function SmartGoals() {
                       {(goal.status === 'active' || goal.status === 'draft') && (
                         <button className="btn-secondary" style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem' }} onClick={() => changeStatus(goal.id, 'paused')}>⏸ {t('smartGoals.pause', 'Pause')}</button>
                       )}
-                      {goal.status === 'active' && (
+                      {goal.status === 'active' && isTopOfHierarchy && (
+                        <button
+                          onClick={() => handleSelfCompleteGoal(goal.id)}
+                          style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem', borderRadius: 8, fontWeight: 700, border: 'none', background: '#0f2044', color: 'white', cursor: 'pointer' }}>
+                          ✓ {t('smartGoals.markComplete', 'Mark Complete (+2 pts)')}
+                        </button>
+                      )}
+                      {goal.status === 'active' && !isTopOfHierarchy && (
                         <button
                           onClick={() => { setRequestingGoal(goal); setApprovalNote(''); setApprovalFile(null); }}
                           style={{ fontSize: '0.8rem', padding: '0.4rem 0.875rem', borderRadius: 8, fontWeight: 700, border: 'none', background: '#0f2044', color: 'white', cursor: 'pointer' }}>
