@@ -338,7 +338,10 @@ export default function SqdipBoard() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
                     {actionItems.map(it => (
                       <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.4rem 0.6rem', borderRadius: 7, background: 'rgba(255,255,255,0.04)' }}>
-                        <span style={{ flex: 1, minWidth: 0, color: 'white', fontSize: '0.78rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.title}</span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ color: 'white', fontSize: '0.78rem', fontWeight: 600, textDecoration: it.status === 'completed' ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{it.title}</div>
+                          {it.owner && <div style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.66rem', marginTop: 1 }}>👤 {it.owner}</div>}
+                        </div>
                         {it.dueDate && <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', flexShrink: 0 }}>{it.dueDate}</span>}
                         <span style={{ fontSize: '0.68rem', fontWeight: 700, color: ACTION_STATUS[it.status]?.color, background: ACTION_STATUS[it.status]?.bg, borderRadius: 999, padding: '2px 8px', flexShrink: 0 }}>
                           {ACTION_STATUS[it.status]?.label || it.status}

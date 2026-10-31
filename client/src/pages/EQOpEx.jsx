@@ -35,17 +35,19 @@ const SQDIP_MAX_ROWS = Math.max(...SQDIP_ORDER.map(k => letterGridSize(k).rows))
 function ActionPlanSection({ items, onChange }) {
   const { t } = useTranslation();
   const [title, setTitle] = useState('');
+  const [owner, setOwner] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
+  const [editOwner, setEditOwner] = useState('');
   const [editDueDate, setEditDueDate] = useState('');
   const counts = { open: 0, pending: 0, atrisk: 0, completed: 0 };
   items.forEach(it => { if (counts[it.status] !== undefined) counts[it.status]++; });
 
   function addItem() {
     if (!title.trim()) return;
-    onChange([...items, { id: Date.now().toString(), title: title.trim(), dueDate, status: 'open' }]);
-    setTitle(''); setDueDate('');
+    onChange([...items, { id: Date.now().toString(), title: title.trim(), owner: owner.trim(), dueDate, status: 'open' }]);
+    setTitle(''); setOwner(''); setDueDate('');
   }
   function updateStatus(id, status) {
     onChange(items.map(it => it.id === id ? { ...it, status } : it));
@@ -57,11 +59,12 @@ function ActionPlanSection({ items, onChange }) {
   function startEdit(it) {
     setEditingId(it.id);
     setEditTitle(it.title);
+    setEditOwner(it.owner || '');
     setEditDueDate(it.dueDate || '');
   }
   function saveEdit(id) {
     if (!editTitle.trim()) return;
-    onChange(items.map(it => it.id === id ? { ...it, title: editTitle.trim(), dueDate: editDueDate } : it));
+    onChange(items.map(it => it.id === id ? { ...it, title: editTitle.trim(), owner: editOwner.trim(), dueDate: editDueDate } : it));
     setEditingId(null);
   }
 
@@ -82,44 +85,61 @@ function ActionPlanSection({ items, onChange }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
           {items.map(it => (
             editingId === it.id ? (
-              <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.4rem 0.5rem', borderRadius: 8, background: '#eff6ff', border: '1px solid #bfdbfe' }}>
+              <div key={it.id} style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '0.4rem 0.5rem', borderRadius: 8, background: '#eff6ff', border: '1px solid #bfdbfe' }}>
                 <input value={editTitle} onChange={e => setEditTitle(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && saveEdit(it.id)}
-                  autoFocus
-                  style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', padding: '0.3rem 0.45rem', borderRadius: 6, border: '1px solid #bfdbfe' }} />
-                <input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)}
-                  style={{ fontSize: '0.68rem', padding: '0.3rem 0.35rem', borderRadius: 6, border: '1px solid #bfdbfe', width: 122, flexShrink: 0 }} />
-                <button onClick={() => saveEdit(it.id)} title={t('eqOpex.save', 'Save')}
-                  style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>{t('eqOpex.save', 'Save')}</button>
-                <button onClick={() => setEditingId(null)} title={t('eqOpex.cancel', 'Cancel')}
-                  style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>✕</button>
+                  autoFocus placeholder={t('eqOpex.actionTitlePlaceholder', 'Action title…')}
+                  style={{ width: '100%', boxSizing: 'border-box', fontSize: '0.78rem', padding: '0.3rem 0.45rem', borderRadius: 6, border: '1px solid #bfdbfe' }} />
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                  <input value={editOwner} onChange={e => setEditOwner(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && saveEdit(it.id)}
+                    placeholder={t('eqOpex.ownerPlaceholder', 'Owner / Responsible')}
+                    style={{ flex: 1, minWidth: 100, fontSize: '0.72rem', padding: '0.3rem 0.45rem', borderRadius: 6, border: '1px solid #bfdbfe' }} />
+                  <input type="date" value={editDueDate} onChange={e => setEditDueDate(e.target.value)}
+                    style={{ fontSize: '0.68rem', padding: '0.3rem 0.35rem', borderRadius: 6, border: '1px solid #bfdbfe', width: 122, flexShrink: 0 }} />
+                  <button onClick={() => saveEdit(it.id)} title={t('eqOpex.save', 'Save')}
+                    style={{ background: '#0d9488', color: 'white', border: 'none', borderRadius: 6, padding: '3px 8px', fontSize: '0.68rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>{t('eqOpex.save', 'Save')}</button>
+                  <button onClick={() => setEditingId(null)} title={t('eqOpex.cancel', 'Cancel')}
+                    style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>✕</button>
+                </div>
               </div>
             ) : (
-              <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.4rem 0.5rem', borderRadius: 8, background: it.status === 'completed' ? '#f0fdf4' : '#f8fafc', border: `1px solid ${it.status === 'completed' ? '#bbf7d0' : '#e2e8f0'}` }}>
-                <span onClick={() => startEdit(it)} title={t('eqOpex.clickToEdit', 'Click to edit')}
-                  style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', fontWeight: 600, color: it.status === 'completed' ? '#86a893' : '#1e293b', textDecoration: it.status === 'completed' ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}>{it.title}</span>
-                {it.dueDate && <span style={{ fontSize: '0.68rem', color: '#94a3b8', flexShrink: 0 }}>{it.dueDate}</span>}
-                <select value={it.status} onChange={e => updateStatus(it.id, e.target.value)}
-                  style={{ fontSize: '0.68rem', fontWeight: 700, color: ACTION_STATUS[it.status].color, background: ACTION_STATUS[it.status].bg, border: 'none', borderRadius: 999, padding: '2px 6px', flexShrink: 0, cursor: 'pointer' }}>
-                  {Object.entries(ACTION_STATUS).map(([key, s]) => <option key={key} value={key}>{s.label}</option>)}
-                </select>
-                {it.status !== 'completed' && (
-                  <button onClick={() => updateStatus(it.id, 'completed')} title={t('eqOpex.complete', 'Mark complete')} style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>✅</button>
+              <div key={it.id} style={{ padding: '0.4rem 0.5rem', borderRadius: 8, background: it.status === 'completed' ? '#f0fdf4' : '#f8fafc', border: `1px solid ${it.status === 'completed' ? '#bbf7d0' : '#e2e8f0'}` }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <span onClick={() => startEdit(it)} title={t('eqOpex.clickToEdit', 'Click to edit')}
+                    style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', fontWeight: 600, color: it.status === 'completed' ? '#86a893' : '#1e293b', textDecoration: it.status === 'completed' ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}>{it.title}</span>
+                  <select value={it.status} onChange={e => updateStatus(it.id, e.target.value)}
+                    style={{ fontSize: '0.68rem', fontWeight: 700, color: ACTION_STATUS[it.status].color, background: ACTION_STATUS[it.status].bg, border: 'none', borderRadius: 999, padding: '2px 6px', flexShrink: 0, cursor: 'pointer' }}>
+                    {Object.entries(ACTION_STATUS).map(([key, s]) => <option key={key} value={key}>{s.label}</option>)}
+                  </select>
+                  {it.status !== 'completed' && (
+                    <button onClick={() => updateStatus(it.id, 'completed')} title={t('eqOpex.complete', 'Mark complete')} style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>✅</button>
+                  )}
+                  <button onClick={() => startEdit(it)} title={t('eqOpex.edit', 'Edit')} style={{ background: 'none', border: 'none', color: '#93c5fd', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>✏️</button>
+                  <button onClick={() => removeItem(it.id)} title={t('eqOpex.delete', 'Delete')} style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>🗑</button>
+                </div>
+                {(it.owner || it.dueDate) && (
+                  <div style={{ display: 'flex', gap: 10, marginTop: 3, fontSize: '0.68rem', color: '#94a3b8' }}>
+                    {it.owner && <span>👤 {it.owner}</span>}
+                    {it.dueDate && <span>📅 {it.dueDate}</span>}
+                  </div>
                 )}
-                <button onClick={() => startEdit(it)} title={t('eqOpex.edit', 'Edit')} style={{ background: 'none', border: 'none', color: '#93c5fd', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>✏️</button>
-                <button onClick={() => removeItem(it.id)} title={t('eqOpex.delete', 'Delete')} style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>🗑</button>
               </div>
             )
           ))}
         </div>
       )}
 
-      <div style={{ display: 'flex', gap: 6 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <input value={title} onChange={e => setTitle(e.target.value)} placeholder={t('eqOpex.actionTitlePlaceholder', 'Action title…')}
-          style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', padding: '0.35rem 0.5rem', borderRadius: 8, border: '1px solid #e2e8f0' }} />
-        <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
-          style={{ fontSize: '0.72rem', padding: '0.35rem 0.4rem', borderRadius: 8, border: '1px solid #e2e8f0', width: 128, flexShrink: 0 }} />
-        <button onClick={addItem} style={{ background: '#0f2044', color: 'white', border: 'none', borderRadius: 8, padding: '0.35rem 0.7rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>+ {t('eqOpex.add', 'Add')}</button>
+          style={{ width: '100%', boxSizing: 'border-box', fontSize: '0.78rem', padding: '0.35rem 0.5rem', borderRadius: 8, border: '1px solid #e2e8f0' }} />
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          <input value={owner} onChange={e => setOwner(e.target.value)} placeholder={t('eqOpex.ownerPlaceholder', 'Owner / Responsible')}
+            style={{ flex: 1, minWidth: 110, fontSize: '0.75rem', padding: '0.35rem 0.5rem', borderRadius: 8, border: '1px solid #e2e8f0' }} />
+          <input type="date" value={dueDate} onChange={e => setDueDate(e.target.value)}
+            style={{ fontSize: '0.72rem', padding: '0.35rem 0.4rem', borderRadius: 8, border: '1px solid #e2e8f0', width: 128, flexShrink: 0 }} />
+          <button onClick={addItem} style={{ background: '#0f2044', color: 'white', border: 'none', borderRadius: 8, padding: '0.35rem 0.7rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', flexShrink: 0 }}>+ {t('eqOpex.add', 'Add')}</button>
+        </div>
       </div>
     </div>
   );

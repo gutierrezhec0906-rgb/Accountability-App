@@ -77,7 +77,7 @@ export default function GlobalPastDueModal() {
         });
         Object.entries(d.sqdipBoard?.actionPlans || {}).forEach(([letterKey, list]) => {
           (list || []).forEach(it => {
-            if (it.status !== 'completed' && overdue(it.dueDate)) items.push({ key: `sqdip-${letterKey}-${it.id}`, kind: 'sqdip', id: it.id, letterKey, title: it.title || 'Untitled action', sub: letterKey, due: it.dueDate, recommits: it.recommitmentCount });
+            if (it.status !== 'completed' && overdue(it.dueDate)) items.push({ key: `sqdip-${letterKey}-${it.id}`, kind: 'sqdip', id: it.id, letterKey, title: it.title || 'Untitled action', sub: it.owner || letterKey, due: it.dueDate, recommits: it.recommitmentCount });
           });
         });
         // Career milestone check-ins that are past due with no progress note logged.
@@ -188,7 +188,7 @@ export default function GlobalPastDueModal() {
                       <div key={item.key} style={{ border: '1px solid #fecaca', borderLeft: '4px solid #ef4444', borderRadius: 10, padding: '0.75rem 0.9rem', background: '#fff8f8' }}>
                         <p style={{ fontWeight: 800, color: '#1e293b', margin: '0 0 4px', fontSize: '0.9rem' }}>{item.title}</p>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, fontSize: '0.73rem', color: '#64748b', marginBottom: 6 }}>
-                          {item.sub && <span>{item.kind === 'training' ? '🏷️' : item.kind === 'sqdip' ? '🔤' : '👤'} {item.sub}</span>}
+                          {item.sub && <span>{item.kind === 'training' ? '🏷️' : item.kind === 'sqdip' ? (item.sub === item.letterKey ? '🔤' : '👤') : '👤'} {item.sub}</span>}
                           <span style={{ color: '#dc2626', fontWeight: 700 }}>🚨 {daysOverdue(item.due)}d overdue</span>
                           <span>📅 was due {new Date(item.due + 'T00:00:00').toLocaleDateString()}</span>
                           {item.recommits > 0 && <span style={{ color: recommitColor(item.recommits).color, fontWeight: 700 }}>🔄 {item.recommits} prior</span>}
