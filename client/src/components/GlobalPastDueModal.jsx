@@ -77,7 +77,7 @@ export default function GlobalPastDueModal() {
         });
         Object.entries(d.sqdipBoard?.actionPlans || {}).forEach(([letterKey, list]) => {
           (list || []).forEach(it => {
-            if (overdue(it.dueDate)) items.push({ key: `sqdip-${letterKey}-${it.id}`, kind: 'sqdip', id: it.id, letterKey, title: it.title || 'Untitled action', sub: letterKey, due: it.dueDate, recommits: it.recommitmentCount });
+            if (it.status !== 'completed' && overdue(it.dueDate)) items.push({ key: `sqdip-${letterKey}-${it.id}`, kind: 'sqdip', id: it.id, letterKey, title: it.title || 'Untitled action', sub: letterKey, due: it.dueDate, recommits: it.recommitmentCount });
           });
         });
         // Career milestone check-ins that are past due with no progress note logged.

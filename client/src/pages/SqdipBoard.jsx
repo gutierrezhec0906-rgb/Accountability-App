@@ -188,7 +188,7 @@ export default function SqdipBoard() {
   const redCount = Object.values(cellStatus).filter(v => v === 'red').length;
   const filled = greenCount + amberCount + redCount;
 
-  const counts = { open: 0, pending: 0, atrisk: 0 };
+  const counts = { open: 0, pending: 0, atrisk: 0, completed: 0 };
   actionItems.forEach(it => { if (counts[it.status] !== undefined) counts[it.status]++; });
 
   return (

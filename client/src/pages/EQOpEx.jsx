@@ -39,7 +39,7 @@ function ActionPlanSection({ items, onChange }) {
   const [editingId, setEditingId] = useState(null);
   const [editTitle, setEditTitle] = useState('');
   const [editDueDate, setEditDueDate] = useState('');
-  const counts = { open: 0, pending: 0, atrisk: 0 };
+  const counts = { open: 0, pending: 0, atrisk: 0, completed: 0 };
   items.forEach(it => { if (counts[it.status] !== undefined) counts[it.status]++; });
 
   function addItem() {
@@ -95,14 +95,17 @@ function ActionPlanSection({ items, onChange }) {
                   style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>✕</button>
               </div>
             ) : (
-              <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.4rem 0.5rem', borderRadius: 8, background: '#f8fafc', border: '1px solid #e2e8f0' }}>
+              <div key={it.id} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '0.4rem 0.5rem', borderRadius: 8, background: it.status === 'completed' ? '#f0fdf4' : '#f8fafc', border: `1px solid ${it.status === 'completed' ? '#bbf7d0' : '#e2e8f0'}` }}>
                 <span onClick={() => startEdit(it)} title={t('eqOpex.clickToEdit', 'Click to edit')}
-                  style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', fontWeight: 600, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}>{it.title}</span>
+                  style={{ flex: 1, minWidth: 0, fontSize: '0.78rem', fontWeight: 600, color: it.status === 'completed' ? '#86a893' : '#1e293b', textDecoration: it.status === 'completed' ? 'line-through' : 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', cursor: 'pointer' }}>{it.title}</span>
                 {it.dueDate && <span style={{ fontSize: '0.68rem', color: '#94a3b8', flexShrink: 0 }}>{it.dueDate}</span>}
                 <select value={it.status} onChange={e => updateStatus(it.id, e.target.value)}
                   style={{ fontSize: '0.68rem', fontWeight: 700, color: ACTION_STATUS[it.status].color, background: ACTION_STATUS[it.status].bg, border: 'none', borderRadius: 999, padding: '2px 6px', flexShrink: 0, cursor: 'pointer' }}>
                   {Object.entries(ACTION_STATUS).map(([key, s]) => <option key={key} value={key}>{s.label}</option>)}
                 </select>
+                {it.status !== 'completed' && (
+                  <button onClick={() => updateStatus(it.id, 'completed')} title={t('eqOpex.complete', 'Mark complete')} style={{ background: 'none', border: 'none', color: '#16a34a', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>✅</button>
+                )}
                 <button onClick={() => startEdit(it)} title={t('eqOpex.edit', 'Edit')} style={{ background: 'none', border: 'none', color: '#93c5fd', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>✏️</button>
                 <button onClick={() => removeItem(it.id)} title={t('eqOpex.delete', 'Delete')} style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', fontSize: '0.75rem', flexShrink: 0 }}>🗑</button>
               </div>

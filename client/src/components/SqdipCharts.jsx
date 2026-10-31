@@ -4,9 +4,10 @@
 export const SQDIP_COLORS = { green: '#16a34a', amber: '#f59e0b', red: '#dc2626' };
 export const SQDIP_STATUS_LABEL = { green: 'Meet Goal', amber: 'Behind Goal', red: 'At Risk' };
 export const ACTION_STATUS = {
-  open:    { label: 'Open',    color: '#2563eb', bg: '#eff6ff' },
-  pending: { label: 'Pending', color: '#b45309', bg: '#fef9c3' },
-  atrisk:  { label: 'At Risk', color: '#dc2626', bg: '#fee2e2' },
+  open:      { label: 'Open',      color: '#2563eb', bg: '#eff6ff' },
+  pending:   { label: 'Pending',   color: '#b45309', bg: '#fef9c3' },
+  atrisk:    { label: 'At Risk',   color: '#dc2626', bg: '#fee2e2' },
+  completed: { label: 'Completed', color: '#16a34a', bg: '#f0fdf4' },
 };
 
 // Bucket a letter's day statuses into ISO-ish weeks (WK1 = days 1-7, etc.)
