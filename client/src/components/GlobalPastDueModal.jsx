@@ -27,14 +27,15 @@ function daysOverdue(dateStr) {
   return Math.abs(Math.round((new Date(dateStr + 'T00:00:00') - today) / 86400000));
 }
 
-// Section metadata: which user-doc array each source lives in, plus labels.
+// Section metadata: which user-doc array each source lives in, plus labels
+// and the route each item's "Take me there" button jumps to.
 const SECTIONS = [
-  { kind: 'board',    field: 'visualBoard',      label: 'Accountability Board', icon: '🔴' },
-  { kind: 'training', field: 'trainings',        label: 'Training Center',      icon: '🎓' },
-  { kind: 'goal',     field: 'smartGoals',       label: 'SMART Goals',          icon: '🎯' },
-  { kind: 'coaching', field: 'coachingSessions', label: 'Coaching Log',         icon: '📝' },
-  { kind: 'career',   field: null,               label: 'Career Development',   icon: '🚀' },
-  { kind: 'sqdip',    field: 'sqdipBoard',       label: 'SQDIP Action Plan',    icon: '📋' },
+  { kind: 'board',    field: 'visualBoard',      label: 'Accountability Board', icon: '🔴', path: '/visual-board' },
+  { kind: 'training', field: 'trainings',        label: 'Training Center',      icon: '🎓', path: '/training' },
+  { kind: 'goal',     field: 'smartGoals',       label: 'SMART Goals',          icon: '🎯', path: '/smart-goals' },
+  { kind: 'coaching', field: 'coachingSessions', label: 'Coaching Log',         icon: '📝', path: '/coaching' },
+  { kind: 'career',   field: null,               label: 'Career Development',   icon: '🚀', path: '/career' },
+  { kind: 'sqdip',    field: 'sqdipBoard',       label: 'SQDIP Action Plan',    icon: '📋', path: '/sqdip-board' },
 ];
 
 // Session-start reminder shown on EVERY module: lists every past-due activity across
@@ -209,6 +210,10 @@ export default function GlobalPastDueModal() {
                                 background: valid && saving !== item.key ? '#0f2044' : '#e2e8f0',
                                 color: valid && saving !== item.key ? 'white' : '#94a3b8' }}>
                               {saving === item.key ? 'Saving…' : '✓ Recommit'}
+                            </button>
+                            <button onClick={() => { setOpen(false); navigate(sec.path); }}
+                              style={{ padding: '0.45rem 0.9rem', borderRadius: 8, border: '1px solid #cbd5e1', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', background: '#fff', color: '#334155' }}>
+                              Take me there →
                             </button>
                           </div>
                         )}
