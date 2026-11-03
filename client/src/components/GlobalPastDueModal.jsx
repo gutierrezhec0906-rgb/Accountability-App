@@ -70,7 +70,7 @@ export default function GlobalPastDueModal() {
           if (!t.completed && overdue(t.dueDate)) items.push({ key: `training-${t.id}`, kind: 'training', id: t.id, title: t.title || 'Untitled training', sub: t.category, due: t.dueDate, recommits: t.recommitmentCount });
         });
         (d.smartGoals || []).forEach(g => {
-          if (g && g.status !== 'completed' && g.status !== 'deleted' && overdue(g.dueDate)) items.push({ key: `goal-${g.id}`, kind: 'goal', id: g.id, title: g.title || 'Untitled goal', due: g.dueDate, recommits: g.recommitmentCount });
+          if (g && g.status !== 'completed' && g.status !== 'deleted' && overdue(g.dueDate)) items.push({ key: `goal-${g.id}`, kind: 'goal', id: g.id, title: g.title || 'Untitled goal', due: g.dueDate, recommits: g.recommitmentCount, status: g.status });
         });
         (d.coachingSessions || []).forEach(s => {
           if (!s.closed && overdue(s.nextSession)) items.push({ key: `coaching-${s.id}`, kind: 'coaching', id: s.id, title: `Coaching follow-up — ${s.coachee || 'Untitled coachee'}`, sub: s.coachee, due: s.nextSession, recommits: s.recommitmentCount });
@@ -199,6 +199,16 @@ export default function GlobalPastDueModal() {
                             style={{ padding: '0.45rem 0.9rem', borderRadius: 8, border: 'none', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', background: '#0f2044', color: 'white' }}>
                             📝 Add Progress Note →
                           </button>
+                        ) : item.kind === 'goal' && item.status === 'pending_approval' ? (
+                          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#b45309', padding: '0.4rem 0.875rem', background: '#fefce8', borderRadius: 8, border: '1px solid #fde68a' }}>
+                              ⏳ Pending your leader's approval
+                            </span>
+                            <button onClick={() => { setOpen(false); navigate(sec.path); }}
+                              style={{ padding: '0.45rem 0.9rem', borderRadius: 8, border: '1px solid #cbd5e1', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', background: '#fff', color: '#334155' }}>
+                              Take me there →
+                            </button>
+                          </div>
                         ) : (
                           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
                             <input type="date" min={todayStr()} value={dateVal}
