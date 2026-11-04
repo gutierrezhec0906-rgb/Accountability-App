@@ -57,3 +57,42 @@ export function exportActionsToExcel(items, filename, sheetName = 'Actions') {
   XLSX.utils.book_append_sheet(wb, ws, sheetName);
   XLSX.writeFile(wb, filename);
 }
+
+// Team Action Tracker export — mirrors TeamBoard.jsx's enriched/filtered row
+// shape exactly (title, ownerName=Creator, owner=Responsible, st=computeStatus
+// result, recommitmentCount, notes) so the downloaded file matches whatever
+// view (filters/sort) was on screen when the user clicked export. A 🔴/🟡/🟢
+// glyph is prefixed onto the Status text as the stand-in for the on-screen
+// color badge — the free xlsx library can't paint cell background colors.
+export function exportTeamActionsToExcel(items, filename, companyName) {
+  const rows = items.map(item => {
+    const activeDue = item.recommitmentDate || item.dueDate;
+    const daysLeft = item.st?.daysLeft;
+    const dot = item.st?.label === 'Red' ? '🔴' : item.st?.label === 'Yellow' ? '🟡' : '🟢';
+    return {
+      'Title': item.title || '',
+      'Creator': item.ownerName || '',
+      'Responsible': item.owner || '',
+      'Due Date': activeDue || '',
+      'Status': `${dot} ${item.st?.label || ''}`,
+      'Days Left': daysLeft === null || daysLeft === undefined ? '' : daysLeft,
+      'Recommitments': item.recommitmentCount || 0,
+      'Notes': item.notes || '',
+    };
+  });
+  const ws = XLSX.utils.json_to_sheet(rows.length ? rows : [{ 'Title': 'No items to export' }]);
+  ws['!cols'] = [
+    { wch: 44 }, // Title
+    { wch: 20 }, // Creator
+    { wch: 20 }, // Responsible
+    { wch: 12 }, // Due Date
+    { wch: 12 }, // Status
+    { wch: 10 }, // Days Left
+    { wch: 14 }, // Recommitments
+    { wch: 44 }, // Notes
+  ];
+  const wb = XLSX.utils.book_new();
+  const safeSheetName = (companyName || 'Team Actions').replace(/[/\\?*[\]:]/g, ' ').slice(0, 31) || 'Team Actions';
+  XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+  XLSX.writeFile(wb, filename);
+}

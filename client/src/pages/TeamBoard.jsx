@@ -4,6 +4,7 @@ import { collection, getDocs, query, where, doc, getDoc, setDoc } from 'firebase
 import { db } from '../firebase';
 import { useAuth } from '../context/AuthContext';
 import { RecommitBadge } from '../components/DateStatus';
+import { exportTeamActionsToExcel } from '../utils/excelExport';
 
 const REFRESH_INTERVAL = 60;
 
@@ -176,6 +177,12 @@ export default function TeamBoard() {
           </div>
           <button onClick={fetchAll} style={{ padding: '5px 14px', borderRadius: 8, background: 'rgba(255,255,255,0.07)', border: '1px solid rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.6)', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 700 }}>
             ↻ Refresh
+          </button>
+          <button
+            onClick={() => exportTeamActionsToExcel(filtered, `team-action-tracker-${new Date().toISOString().split('T')[0]}.xlsx`, userProfile?.companyName)}
+            title="Download the actions currently shown as an Excel file you can share"
+            style={{ padding: '5px 14px', borderRadius: 8, background: 'rgba(34,197,94,0.12)', border: '1px solid rgba(34,197,94,0.3)', color: '#4ade80', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 700, whiteSpace: 'nowrap' }}>
+            📥 Export to Excel
           </button>
           {lastRefresh && <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.68rem' }}>{lastRefresh.toLocaleTimeString()}</span>}
         </div>
