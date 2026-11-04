@@ -4,6 +4,7 @@ import { getFunctions, httpsCallable } from 'firebase/functions';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../firebase';
 import { useAuth } from '../context/AuthContext';
+import { compressImage, withTimeout } from '../utils/image';
 import toast from 'react-hot-toast';
 
 const MASTER_ADMIN = 'hectorg@accountability-app.com';
@@ -74,6 +75,7 @@ export default function AdminPanel() {
   const [invitesLoaded, setInvitesLoaded] = useState(false);
   const [expandedViewer, setExpandedViewer] = useState(null); // uid of viewer whose report list is open
   const [savingVis, setSavingVis] = useState(null);
+  const [uploadingLogo, setUploadingLogo] = useState(null); // companyId currently uploading
 
   const isMasterAdmin = currentUser?.email === MASTER_ADMIN;
 
@@ -236,6 +238,38 @@ export default function AdminPanel() {
       toast.success(`"${name}" deleted`);
     } catch (e) {
       toast.error('Failed to delete company: ' + (e?.code || e?.message || 'unknown error'));
+    }
+  }
+
+  // Company logo — shown wherever a company's identity needs to be visible
+  // (currently just the Team Action Tracker header, next to its title).
+  async function uploadCompanyLogo(companyId, file) {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { toast.error('Please choose an image file'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5 MB'); return; }
+    setUploadingLogo(companyId);
+    try {
+      const storageRef = ref(storage, `companyLogos/${companyId}/logo.jpg`);
+      const { blob } = await compressImage(file, 400, 0.9);
+      await withTimeout(uploadBytes(storageRef, blob, { contentType: 'image/jpeg' }), 45000, 'Logo upload');
+      const url = await withTimeout(getDownloadURL(storageRef), 15000, 'Logo link');
+      await updateDoc(doc(db, 'companies', companyId), { logoUrl: url });
+      setCompanies(c => c.map(x => x.id === companyId ? { ...x, logoUrl: url } : x));
+      toast.success('Logo uploaded');
+    } catch (e) {
+      toast.error('Upload failed: ' + (e?.code || e?.message || 'check Storage rules'));
+    } finally {
+      setUploadingLogo(null);
+    }
+  }
+
+  async function removeCompanyLogo(companyId) {
+    try {
+      await updateDoc(doc(db, 'companies', companyId), { logoUrl: '' });
+      setCompanies(c => c.map(x => x.id === companyId ? { ...x, logoUrl: '' } : x));
+      toast.success('Logo removed');
+    } catch (e) {
+      toast.error('Could not remove: ' + (e?.message || e));
     }
   }
 
@@ -609,13 +643,30 @@ export default function AdminPanel() {
               companies.map(c => {
                 const memberCount = users.filter(u => u.companyId === c.id).length;
                 const teamCount = teams.filter(t => t.companyId === c.id).length;
+                const uploading = uploadingLogo === c.id;
                 return (
                   <div key={c.id} className="card p-4" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ fontSize: 24 }}>🏢</span>
+                    {c.logoUrl ? (
+                      <img src={c.logoUrl} alt={`${c.name} logo`} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', flexShrink: 0, border: '1px solid var(--border)' }} />
+                    ) : (
+                      <span style={{ fontSize: 24 }}>🏢</span>
+                    )}
                     <div style={{ flex: 1 }}>
                       <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{c.name}</div>
                       <div style={{ fontSize: 12, color: 'var(--text-secondary)' }}>{memberCount} member{memberCount !== 1 ? 's' : ''} · {teamCount} team{teamCount !== 1 ? 's' : ''}</div>
                     </div>
+                    <label style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 7, padding: '5px 12px', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', cursor: uploading ? 'default' : 'pointer', whiteSpace: 'nowrap' }}>
+                      {uploading ? 'Uploading…' : c.logoUrl ? '🖼 Change Logo' : '🖼 Add Logo'}
+                      <input type="file" accept="image/*" style={{ display: 'none' }} disabled={uploading}
+                        onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; uploadCompanyLogo(c.id, f); }} />
+                    </label>
+                    {c.logoUrl && (
+                      <button onClick={() => removeCompanyLogo(c.id)}
+                        style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 7, padding: '5px 12px', fontSize: 12, fontWeight: 700, color: 'var(--text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                        title="Remove logo">
+                        ✕ Remove Logo
+                      </button>
+                    )}
                     <button onClick={() => deleteCompany(c.id, c.name)}
                       style={{ background: 'none', border: '1px solid #f87171', borderRadius: 7, padding: '5px 12px', fontSize: 12, fontWeight: 700, color: '#ef4444', cursor: 'pointer', whiteSpace: 'nowrap' }}
                       title="Delete company">

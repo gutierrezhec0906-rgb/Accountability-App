@@ -38,6 +38,7 @@ export default function TeamBoard() {
   const [loading, setLoading]       = useState(true);
   const [lastRefresh, setLastRefresh] = useState(null);
   const [countdown, setCountdown]   = useState(REFRESH_INTERVAL);
+  const [companyLogoUrl, setCompanyLogoUrl] = useState('');
 
   // Filters
   const [filterStatus,  setFilterStatus]  = useState('All');
@@ -72,6 +73,14 @@ export default function TeamBoard() {
     const interval = setInterval(fetchAll, REFRESH_INTERVAL * 1000);
     return () => clearInterval(interval);
   }, [fetchAll]);
+
+  useEffect(() => {
+    const companyId = userProfile?.companyId;
+    if (!companyId) { setCompanyLogoUrl(''); return; }
+    getDoc(doc(db, 'companies', companyId))
+      .then(snap => setCompanyLogoUrl(snap.exists() ? (snap.data().logoUrl || '') : ''))
+      .catch(() => setCompanyLogoUrl(''));
+  }, [userProfile?.companyId]);
 
   // Leaders/managers/admins can remove any team action from the monitor. Actions
   // live in their CREATOR's user doc, so we delete from the owner's document —
@@ -149,7 +158,13 @@ export default function TeamBoard() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
           <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,#ef4444,#b91c1c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>📋</div>
           <div>
-            <h1 style={{ margin: 0, color: 'white', fontSize: '1.25rem', fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1 }}>Team Action Tracker</h1>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <h1 style={{ margin: 0, color: 'white', fontSize: '1.25rem', fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1 }}>Team Action Tracker</h1>
+              {companyLogoUrl && (
+                <img src={companyLogoUrl} alt={`${userProfile?.companyName || 'Company'} logo`}
+                  style={{ width: 30, height: 30, borderRadius: 7, objectFit: 'cover', border: '1px solid rgba(255,255,255,0.15)', flexShrink: 0 }} />
+              )}
+            </div>
             {userProfile?.companyName && <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem', fontWeight: 500 }}>{userProfile.companyName}</p>}
           </div>
         </div>
