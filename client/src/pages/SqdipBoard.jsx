@@ -254,7 +254,7 @@ export default function SqdipBoard() {
             </div>
             {companyLogoUrl && (
               <img src={companyLogoUrl} alt="Company logo"
-                style={{ height: 40, maxWidth: 150, width: 'auto', borderRadius: 8, objectFit: 'contain', background: 'white', padding: '4px 8px', flexShrink: 0 }} />
+                style={{ height: 58, maxWidth: 210, width: 'auto', borderRadius: 8, objectFit: 'contain', background: 'white', padding: '5px 10px', flexShrink: 0 }} />
             )}
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
