@@ -647,7 +647,7 @@ export default function AdminPanel() {
                 return (
                   <div key={c.id} className="card p-4" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                     {c.logoUrl ? (
-                      <img src={c.logoUrl} alt={`${c.name} logo`} style={{ width: 40, height: 40, borderRadius: 8, objectFit: 'cover', flexShrink: 0, border: '1px solid var(--border)' }} />
+                      <img src={c.logoUrl} alt={`${c.name} logo`} style={{ height: 40, maxWidth: 80, width: 'auto', borderRadius: 8, objectFit: 'contain', background: 'white', padding: 3, flexShrink: 0, border: '1px solid var(--border)' }} />
                     ) : (
                       <span style={{ fontSize: 24 }}>🏢</span>
                     )}

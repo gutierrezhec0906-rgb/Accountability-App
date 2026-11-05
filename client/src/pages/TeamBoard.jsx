@@ -158,15 +158,16 @@ export default function TeamBoard() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1 }}>
           <div style={{ width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg,#ef4444,#b91c1c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem', flexShrink: 0 }}>📋</div>
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <h1 style={{ margin: 0, color: 'white', fontSize: '1.25rem', fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1 }}>Team Action Tracker</h1>
-              {companyLogoUrl && (
-                <img src={companyLogoUrl} alt={`${userProfile?.companyName || 'Company'} logo`}
-                  style={{ width: 30, height: 30, borderRadius: 7, objectFit: 'cover', border: '1px solid rgba(255,255,255,0.15)', flexShrink: 0 }} />
-              )}
-            </div>
+            <h1 style={{ margin: 0, color: 'white', fontSize: '1.25rem', fontWeight: 900, letterSpacing: '-0.02em', lineHeight: 1 }}>Team Action Tracker</h1>
             {userProfile?.companyName && <p style={{ margin: '2px 0 0', color: 'rgba(255,255,255,0.45)', fontSize: '0.78rem', fontWeight: 500 }}>{userProfile.companyName}</p>}
           </div>
+          {companyLogoUrl && (
+            <>
+              <div style={{ width: 1, height: 36, background: 'rgba(255,255,255,0.12)', flexShrink: 0 }} />
+              <img src={companyLogoUrl} alt={`${userProfile?.companyName || 'Company'} logo`}
+                style={{ height: 52, maxWidth: 180, width: 'auto', borderRadius: 8, objectFit: 'contain', background: 'white', padding: '4px 8px', flexShrink: 0 }} />
+            </>
+          )}
         </div>
 
         {/* Status filter pills */}
