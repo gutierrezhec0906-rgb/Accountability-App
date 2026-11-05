@@ -27,6 +27,7 @@ export default function SqdipBoard() {
   const [teammates, setTeammates] = useState([]); // [{uid, name, hasBoard}] — same team, for the board-owner picker
   const [ownerUid, setOwnerUid] = useState(null);
   const [ownerName, setOwnerName] = useState('');
+  const [companyLogoUrl, setCompanyLogoUrl] = useState('');
 
   // Find teammates (same teamId) so a team member can pick which teammate's
   // board to view — SQDIP boards are per-person (usually the leader's), so
@@ -38,6 +39,11 @@ export default function SqdipBoard() {
         const meSnap = await getDoc(doc(db, 'users', currentUser.uid));
         const me = meSnap.exists() ? meSnap.data() : {};
         const teamId = me.teamId || null;
+        if (me.companyId) {
+          getDoc(doc(db, 'companies', me.companyId))
+            .then(snap => setCompanyLogoUrl(snap.exists() ? (snap.data().logoUrl || '') : ''))
+            .catch(() => {});
+        }
         let mates = [{ uid: currentUser.uid, name: me.displayName || me.email || 'Me', role: me.role, hasBoard: !!me.sqdipBoard }];
         if (teamId) {
           const snap = await getDocs(query(collection(db, 'users'), where('teamId', '==', teamId)));
@@ -241,9 +247,15 @@ export default function SqdipBoard() {
           <div style={{ width: 40, height: 40, borderRadius: 10, background: `linear-gradient(135deg, ${meta.color}, ${meta.color}cc)`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
             <LetterIcon letterKey={key} icon={meta.icon} size="1.3rem" />
           </div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <h2 style={{ margin: 0, color: 'white', fontSize: '1.35rem', fontWeight: 900, letterSpacing: '-0.02em' }}>{label}</h2>
-            <p style={{ margin: 0, color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontWeight: 600 }}>{metricName} · {filled}/{days} logged</p>
+          <div style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div>
+              <h2 style={{ margin: 0, color: 'white', fontSize: '1.35rem', fontWeight: 900, letterSpacing: '-0.02em' }}>{label}</h2>
+              <p style={{ margin: 0, color: 'rgba(255,255,255,0.5)', fontSize: '0.78rem', fontWeight: 600 }}>{metricName} · {filled}/{days} logged</p>
+            </div>
+            {companyLogoUrl && (
+              <img src={companyLogoUrl} alt="Company logo"
+                style={{ height: 40, maxWidth: 150, width: 'auto', borderRadius: 8, objectFit: 'contain', background: 'white', padding: '4px 8px', flexShrink: 0 }} />
+            )}
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
             <p style={{ margin: 0, color: 'white', fontSize: '0.95rem', fontWeight: 800 }}>{monthLabel}</p>
