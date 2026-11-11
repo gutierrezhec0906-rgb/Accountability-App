@@ -109,6 +109,8 @@ export default function Layout({ children }) {
   const [pendingSmartGoals, setPendingSmartGoals] = useState(0);
   const [pendingSkillsRequests, setPendingSkillsRequests] = useState(0);
   const [toolVideoOpen, setToolVideoOpen] = useState(false);
+  // null = not yet loaded (auto-video effect waits), true/false = determined
+  const [companyVideosEnabled, setCompanyVideosEnabled] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { currentUser, userProfile, logout } = useAuth();
@@ -150,13 +152,30 @@ export default function Layout({ children }) {
   // would carry over and replay the next module's (already-seen) video.
   useEffect(() => { setToolVideoOpen(false); }, [location.pathname]);
 
+  // Per-company kill switch for the automatic onboarding video pop-ups
+  // (companies/{companyId}.videosEnabled, toggled from AdminPanel's Companies
+  // tab). Defaults to enabled (true) when the field is missing, so existing
+  // companies keep today's behavior until an admin explicitly turns it off.
+  // No companyId means nothing to gate on — treat as enabled immediately.
+  useEffect(() => {
+    const companyId = userProfile?.companyId;
+    if (!companyId) { setCompanyVideosEnabled(true); return; }
+    getDoc(doc(db, 'companies', companyId))
+      .then(snap => setCompanyVideosEnabled(snap.exists() ? snap.data().videosEnabled !== false : true))
+      .catch(() => setCompanyVideosEnabled(true));
+  }, [userProfile?.companyId]);
+
   // Auto-show tool help video on first visit. Waits for the org welcome video
   // (WelcomeModal) to be dismissed first — otherwise both autoPlay videos
-  // fire together on a brand-new account's very first Dashboard load.
+  // fire together on a brand-new account's very first Dashboard load. Also
+  // waits for the company's video-popups setting to resolve, and skips
+  // entirely when that company has them turned off.
   useEffect(() => {
     if (!currentUser || !userProfile) return;
     if (userProfile.status === 'pending') return;
     if (!userProfile.hasSeenWelcome) return;
+    if (companyVideosEnabled === null) return;
+    if (companyVideosEnabled === false) return;
     const toolId = location.pathname.replace('/', '') || 'dashboard';
     if (!VIDEO_TOOL_IDS.has(toolId)) return;
     // "Seen" = recorded in the profile OR in this device's localStorage mirror,
@@ -164,7 +183,7 @@ export default function Layout({ children }) {
     const seen = new Set([...(userProfile.seenToolVideos || []), ...seenVideosLocal()]);
     if (seen.has(toolId)) return;
     setToolVideoOpen(true);
-  }, [location.pathname, currentUser, userProfile]);
+  }, [location.pathname, currentUser, userProfile, companyVideosEnabled]);
 
   useEffect(() => {
     if (!canApprove) return;

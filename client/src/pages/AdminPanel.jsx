@@ -273,6 +273,19 @@ export default function AdminPanel() {
     }
   }
 
+  // Kill switch for the automatic onboarding video pop-ups (the welcome video
+  // + the first-visit "how to use this tool" videos) for every user in this
+  // company. Missing field == enabled, so this only needs writing on toggle.
+  async function toggleCompanyVideos(companyId, nextEnabled) {
+    try {
+      await updateDoc(doc(db, 'companies', companyId), { videosEnabled: nextEnabled });
+      setCompanies(c => c.map(x => x.id === companyId ? { ...x, videosEnabled: nextEnabled } : x));
+      toast.success(nextEnabled ? 'Video pop-ups enabled for this company' : 'Video pop-ups disabled for this company');
+    } catch (e) {
+      toast.error('Could not update: ' + (e?.message || e));
+    }
+  }
+
   async function fetchTeams() {
     const snap = await getDocs(collection(db, 'teams'));
     setTeams(snap.docs.map(d => ({ id: d.id, ...d.data() })));
@@ -644,8 +657,9 @@ export default function AdminPanel() {
                 const memberCount = users.filter(u => u.companyId === c.id).length;
                 const teamCount = teams.filter(t => t.companyId === c.id).length;
                 const uploading = uploadingLogo === c.id;
+                const videosOn = c.videosEnabled !== false;
                 return (
-                  <div key={c.id} className="card p-4" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <div key={c.id} className="card p-4" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
                     {c.logoUrl ? (
                       <img src={c.logoUrl} alt={`${c.name} logo`} style={{ height: 40, maxWidth: 80, width: 'auto', borderRadius: 8, objectFit: 'contain', background: 'white', padding: 3, flexShrink: 0, border: '1px solid var(--border)' }} />
                     ) : (
@@ -667,6 +681,27 @@ export default function AdminPanel() {
                         ✕ Remove Logo
                       </button>
                     )}
+                    <button
+                      onClick={() => toggleCompanyVideos(c.id, !videosOn)}
+                      title="Controls the welcome video and first-visit 'how to use this tool' videos for everyone in this company"
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 6,
+                        background: videosOn ? '#f0fdf4' : '#f8fafc',
+                        border: `1px solid ${videosOn ? '#bbf7d0' : 'var(--border)'}`,
+                        borderRadius: 7, padding: '5px 12px', fontSize: 12, fontWeight: 700,
+                        color: videosOn ? '#15803d' : 'var(--text-secondary)', cursor: 'pointer', whiteSpace: 'nowrap',
+                      }}>
+                      <span style={{
+                        width: 28, height: 16, borderRadius: 999, position: 'relative', flexShrink: 0,
+                        background: videosOn ? '#22c55e' : '#cbd5e1', transition: 'background 0.15s',
+                      }}>
+                        <span style={{
+                          position: 'absolute', top: 2, left: videosOn ? 14 : 2, width: 12, height: 12, borderRadius: '50%',
+                          background: 'white', transition: 'left 0.15s',
+                        }} />
+                      </span>
+                      🎬 Video Pop-ups: {videosOn ? 'On' : 'Off'}
+                    </button>
                     <button onClick={() => deleteCompany(c.id, c.name)}
                       style={{ background: 'none', border: '1px solid #f87171', borderRadius: 7, padding: '5px 12px', fontSize: 12, fontWeight: 700, color: '#ef4444', cursor: 'pointer', whiteSpace: 'nowrap' }}
                       title="Delete company">

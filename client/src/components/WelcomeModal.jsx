@@ -13,20 +13,42 @@ export default function WelcomeModal() {
     if (userProfile.status === 'pending') return;
     if (userProfile.hasSeenWelcome) return;
 
-    // Load video URL from Firestore app config
-    getDoc(doc(db, 'appConfig', 'welcome')).then(snap => {
-      const url = snap.exists() ? snap.data().videoUrl : '';
-      if (url) {
-        setVideoUrl(url);
-        setShow(true);
-      } else {
-        // No welcome video configured — mark it seen right away so Layout's
-        // auto-tool-video gate (which waits on hasSeenWelcome) isn't blocked forever.
-        updateDoc(doc(db, 'users', currentUser.uid), { hasSeenWelcome: true })
-          .then(() => fetchProfile(currentUser.uid))
-          .catch(() => {});
+    async function skipWelcome() {
+      // No welcome video configured, or this company has video pop-ups
+      // turned off — mark it seen right away so Layout's auto-tool-video
+      // gate (which waits on hasSeenWelcome) isn't blocked forever.
+      try {
+        await updateDoc(doc(db, 'users', currentUser.uid), { hasSeenWelcome: true });
+        await fetchProfile(currentUser.uid);
+      } catch {}
+    }
+
+    (async () => {
+      // Per-company kill switch (companies/{companyId}.videosEnabled, toggled
+      // from AdminPanel's Companies tab). Defaults to enabled when the field
+      // is missing, so existing companies keep today's behavior.
+      if (userProfile.companyId) {
+        try {
+          const companySnap = await getDoc(doc(db, 'companies', userProfile.companyId));
+          if (companySnap.exists() && companySnap.data().videosEnabled === false) {
+            await skipWelcome();
+            return;
+          }
+        } catch {}
       }
-    }).catch(() => {});
+
+      // Load video URL from Firestore app config
+      try {
+        const snap = await getDoc(doc(db, 'appConfig', 'welcome'));
+        const url = snap.exists() ? snap.data().videoUrl : '';
+        if (url) {
+          setVideoUrl(url);
+          setShow(true);
+        } else {
+          await skipWelcome();
+        }
+      } catch {}
+    })();
   }, [currentUser, userProfile]);
 
   async function dismiss() {
